@@ -1,0 +1,157 @@
+services:
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - backend
+
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8002:8000"
+    env_file:
+      - .env
+    environment:
+      SERVICE_NAME: api
+    networks:
+      - backend
+
+  worker:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      SERVICE_NAME: worker
+    networks:
+      - backend
+
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    networks:
+      - backend
+
+  redis:
+    image: redis:7
+    restart: unless-stopped
+    networks:
+      - backend
+
+  ingestor:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      SERVICE_NAME: ingestor
+    command: ["python", "-u", "ingestor.py"]
+    networks:
+      - backend
+
+  indicator_worker_0:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      SERVICE_NAME: indicator_worker
+      WORKER_INDEX: "0"
+      N_WORKERS: "2"
+    command: ["python", "-u", "indicator_worker.py"]
+    networks:
+      - backend
+
+  indicator_worker_1:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      SERVICE_NAME: indicator_worker
+      WORKER_INDEX: "1"
+      N_WORKERS: "2"
+    command: ["python", "-u", "indicator_worker.py"]
+    networks:
+      - backend
+
+  signal_worker_0:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      SERVICE_NAME: signal_worker
+      WORKER_INDEX: "0"
+      N_WORKERS: "2"
+    command: ["python", "-u", "signal_worker.py"]
+    networks:
+      - backend
+
+  signal_worker_1:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      SERVICE_NAME: signal_worker
+      WORKER_INDEX: "1"
+      N_WORKERS: "2"
+    command: ["python", "-u", "signal_worker.py"]
+    networks:
+      - backend
+
+  unicorn_pipeline:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      SERVICE_NAME: unicorn_pipeline
+      UNICORN_PIPELINE_INTERVAL_S: "300"
+    command: ["python", "-u", "unicorn_pipeline.py"]
+    networks:
+      - backend
+
+volumes:
+  caddy_data:
+  caddy_config:
+  pg_data:
+
+networks:
+  backend:

@@ -1,0 +1,40 @@
+# Caddyfile for MCAS UI
+# Deploy this alongside your built dist/ folder
+
+# Option 1: Standalone UI on its own domain
+# Replace your.ui.domain with your actual domain
+your.ui.domain {
+    root * /srv/mcas-ui
+    
+    # SPA routing: try file, then directory, then fallback to index.html
+    try_files {path} {path}/ /index.html
+    
+    file_server
+    
+    # Optional: proxy API requests to backend
+    # handle /v1/* {
+    #     reverse_proxy api:8000
+    # }
+    # handle /health {
+    #     reverse_proxy api:8000
+    # }
+}
+
+# Option 2: UI served from /ui path on same domain as API
+# Uncomment this section if serving UI alongside API
+# your.api.domain {
+#     # API routes
+#     handle /v1/* {
+#         reverse_proxy api:8000
+#     }
+#     handle /health {
+#         reverse_proxy api:8000
+#     }
+#     
+#     # UI routes (everything else)
+#     handle /* {
+#         root * /srv/mcas-ui
+#         try_files {path} {path}/ /index.html
+#         file_server
+#     }
+# }

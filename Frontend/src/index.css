@@ -1,0 +1,199 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #111115;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #3f3f4a;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #5c5c6d;
+}
+
+/* Custom focus ring */
+*:focus-visible {
+  outline: 2px solid #f59e0b;
+  outline-offset: 2px;
+}
+
+/* Loading skeleton animation */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, #1f1f26 25%, #27272f 50%, #1f1f26 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Toast animations */
+.toast-enter {
+  opacity: 0;
+  transform: translateX(100%);
+}
+
+.toast-enter-active {
+  opacity: 1;
+  transform: translateX(0);
+  transition: opacity 300ms, transform 300ms;
+}
+
+.toast-exit {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.toast-exit-active {
+  opacity: 0;
+  transform: translateX(100%);
+  transition: opacity 300ms, transform 300ms;
+}
+
+/* Number formatting */
+.mono-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Chart container */
+.chart-container {
+  position: relative;
+  width: 100%;
+}
+
+/* Badge styles */
+.badge {
+  @apply inline-flex items-center px-2 py-0.5 rounded text-xs font-medium;
+}
+
+.badge-long {
+  @apply bg-signal-long/20 text-signal-long;
+}
+
+.badge-short {
+  @apply bg-signal-short/20 text-signal-short;
+}
+
+.badge-neutral {
+  @apply bg-terminal-600 text-terminal-200;
+}
+
+/* Card hover effect */
+.card-hover {
+  @apply transition-all duration-200;
+}
+
+.card-hover:hover {
+  @apply bg-terminal-600/50 border-terminal-400;
+}
+
+/* Data grid */
+.data-grid {
+  display: grid;
+  gap: 1px;
+  background: #27272f;
+}
+
+.data-grid > * {
+  background: #111115;
+  padding: 0.75rem 1rem;
+}
+
+/* Pulse indicator */
+.pulse-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  animation: pulse-ring 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse-ring {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Input styles */
+input[type="text"],
+input[type="number"],
+input[type="date"],
+select,
+textarea {
+  @apply bg-terminal-800 border border-terminal-500 rounded px-3 py-2 text-terminal-100 placeholder-terminal-400;
+  @apply focus:border-amber-500 focus:ring-1 focus:ring-amber-500/20 focus:outline-none;
+  @apply transition-colors duration-200;
+}
+
+input[type="text"]:disabled,
+input[type="number"]:disabled,
+select:disabled {
+  @apply opacity-50 cursor-not-allowed;
+}
+
+/* Button base */
+.btn {
+  @apply inline-flex items-center justify-center gap-2 px-4 py-2 rounded font-medium;
+  @apply transition-all duration-200;
+  @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 focus-visible:ring-offset-terminal-900;
+}
+
+.btn-primary {
+  @apply bg-amber-600 text-white hover:bg-amber-500 active:bg-amber-700;
+}
+
+.btn-secondary {
+  @apply bg-terminal-600 text-terminal-100 hover:bg-terminal-500 active:bg-terminal-700 border border-terminal-500;
+}
+
+.btn-ghost {
+  @apply text-terminal-200 hover:text-terminal-100 hover:bg-terminal-700;
+}
+
+.btn-danger {
+  @apply bg-red-600/20 text-red-400 hover:bg-red-600/30 border border-red-600/30;
+}
+
+.btn-sm {
+  @apply px-3 py-1.5 text-sm;
+}
+
+.btn-xs {
+  @apply px-2 py-1 text-xs;
+}
+
+/* Toggle switch */
+.toggle {
+  @apply relative inline-flex h-6 w-11 items-center rounded-full;
+  @apply transition-colors duration-200;
+}
+
+.toggle-enabled {
+  @apply bg-amber-600;
+}
+
+.toggle-disabled {
+  @apply bg-terminal-600;
+}
+
+.toggle-knob {
+  @apply inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200;
+}

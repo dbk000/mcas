@@ -1,0 +1,6 @@
+psycopg[binary]
+redis
+requests
+numpy
+python-json-logger
+websocket-client

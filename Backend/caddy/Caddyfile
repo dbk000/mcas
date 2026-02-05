@@ -1,0 +1,58 @@
+{
+  log {
+    format json
+    level INFO
+    output stdout
+  }
+}
+
+# Replace with your actual domain (requires DNS A record → VPS IP)
+# Caddy auto-provisions HTTPS via Let's Encrypt
+api.mcasui.com {
+  log {
+    format json
+    level INFO
+    output stdout
+  }
+
+  # CORS for frontend on mcasui.com
+  header {
+    Access-Control-Allow-Origin "https://mcasui.com"
+    Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+    Access-Control-Allow-Headers "Content-Type, X-API-Key, X-Correlation-ID"
+    Access-Control-Max-Age "86400"
+  }
+
+  # Handle CORS preflight
+  @options method OPTIONS
+  handle @options {
+    respond 204
+  }
+
+  handle /health {
+    reverse_proxy api:8000
+  }
+
+  handle /v1/* {
+    reverse_proxy api:8000
+  }
+
+  handle {
+    respond "MCAS API" 200
+  }
+}
+
+# Keep local HTTP access for Docker internal use
+:80 {
+  handle /health {
+    reverse_proxy api:8000
+  }
+
+  handle /v1/* {
+    reverse_proxy api:8000
+  }
+
+  handle {
+    respond "Trading API alive" 200
+  }
+}

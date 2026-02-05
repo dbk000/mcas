@@ -1,0 +1,9 @@
+# secrets (root + anywhere)
+.env
+.env.*
+**/.env
+**/.env.*
+
+# allow example files
+!.env.example
+!**/.env.example
