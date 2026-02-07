@@ -655,10 +655,10 @@ export default function PaperTrading() {
   const performance = accountData?.performance || {}
   
   const tabs = [
-    { id: 'account', label: 'Account', icon: Wallet },
-    { id: 'positions', label: 'Positions', icon: Target },
-    { id: 'trades', label: 'Trades', icon: Clock },
-    { id: 'performance', label: 'Performance', icon: BarChart2 },
+    { value: 'account', label: 'Account', icon: Wallet },
+    { value: 'positions', label: 'Positions', icon: Target },
+    { value: 'trades', label: 'Trades', icon: Clock },
+    { value: 'performance', label: 'Performance', icon: BarChart2 },
   ]
   
   return (

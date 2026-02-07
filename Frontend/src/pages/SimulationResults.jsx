@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { ArrowLeft, TrendingUp, TrendingDown, Target, BarChart2 } from 'lucide-react'
-import { useFetch } from '../hooks/useData'
+import { usePolling } from '../hooks/useData'
 import {
   Card,
   CardHeader,
@@ -46,9 +46,10 @@ export default function SimulationResults() {
   const [limit] = useState(100)
   const [offset, setOffset] = useState(0)
 
-  const { data, loading, lastUpdated, refetch } = useFetch(
-    `/runs/${runId}/simulation-results?limit=${limit}&offset=${offset}`,
-    { refreshInterval: 5000 }
+  const { data, loading, lastUpdated, refetch, meta } = usePolling(
+    `/runs/${runId}/simulation-results`,
+    { limit, offset },
+    5000
   )
 
   const summary = data?.summary || {}
@@ -101,7 +102,7 @@ export default function SimulationResults() {
             </p>
           </div>
         </div>
-        <RefreshControl lastUpdated={lastUpdated} onRefresh={refetch} loading={loading} />
+        <RefreshControl lastUpdated={lastUpdated} onRefresh={refetch} loading={loading} serverAsOf={meta?.as_of_ts} />
       </div>
 
       {/* Summary Stats */}

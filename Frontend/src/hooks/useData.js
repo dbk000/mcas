@@ -12,6 +12,7 @@ export function useFetch(endpoint, params = {}, options = {}) {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true) // Start true until first fetch completes
   const [error, setError] = useState(null)
+  const [meta, setMeta] = useState(null) // Canon §1.5: envelope meta (as_of_ts etc.)
   const { skip = false, showError = true } = options
   const hasFetchedRef = useRef(false)
 
@@ -32,6 +33,7 @@ export function useFetch(endpoint, params = {}, options = {}) {
     try {
       const result = await get(endpoint, params)
       setData(result)
+      if (result?.__meta) setMeta(result.__meta)
       hasFetchedRef.current = true
     } catch (err) {
       log.warn('Fetch error', { event: 'fetch_error', endpoint, error_message: err.message })
@@ -54,7 +56,7 @@ export function useFetch(endpoint, params = {}, options = {}) {
     fetchData()
   }, [fetchData])
 
-  return { data, loading, error, refetch: fetchData }
+  return { data, loading, error, meta, refetch: fetchData }
 }
 
 // Polling hook - loading only true for first fetch, refreshing for subsequent polls
@@ -65,6 +67,7 @@ export function usePolling(endpoint, params = {}, intervalMs = 15000, options = 
   const [refreshing, setRefreshing] = useState(false) // For poll updates
   const [error, setError] = useState(null)
   const [lastUpdated, setLastUpdated] = useState(null)
+  const [meta, setMeta] = useState(null) // Canon §1.5: envelope meta (as_of_ts etc.)
   const { skip = false, enabled = true } = options
   const intervalRef = useRef(null)
   const hasFetchedRef = useRef(false)
@@ -83,6 +86,7 @@ export function usePolling(endpoint, params = {}, intervalMs = 15000, options = 
     try {
       const result = await get(endpoint, params)
       setData(result)
+      if (result?.__meta) setMeta(result.__meta)
       setLastUpdated(new Date())
       setError(null)
       hasFetchedRef.current = true
@@ -130,7 +134,7 @@ export function usePolling(endpoint, params = {}, intervalMs = 15000, options = 
   // Manual refetch triggers refreshing indicator
   const refetch = useCallback(() => fetchData(true), [fetchData])
 
-  return { data, loading, refreshing, error, lastUpdated, refetch }
+  return { data, loading, refreshing, error, lastUpdated, meta, refetch }
 }
 
 // Markets hook

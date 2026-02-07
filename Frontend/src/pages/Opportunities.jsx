@@ -21,6 +21,7 @@ import {
   formatPrice,
   formatDollar,
   formatRelativeTime,
+  formatDateTime,
   formatTradePlan,
   copyToClipboard
 } from '../utils/formatters'
@@ -66,7 +67,61 @@ function ExpiryBadge({ expiresAt }) {
   )
 }
 
+function ActionByLabel({ actionByTs }) {
+  const [label, setLabel] = useState('')
+  const [isUrgent, setIsUrgent] = useState(false)
+
+  useEffect(() => {
+    if (!actionByTs) return
+
+    function update() {
+      const targetMs = typeof actionByTs === 'number'
+        ? (actionByTs < 1e12 ? actionByTs * 1000 : actionByTs)
+        : new Date(actionByTs).getTime()
+      if (isNaN(targetMs)) { setLabel(''); return }
+
+      const diffMs = targetMs - Date.now()
+      if (diffMs <= 0) {
+        setLabel('Deadline passed')
+        setIsUrgent(true)
+        return
+      }
+      const mins = Math.floor(diffMs / 60000)
+      const hours = Math.floor(mins / 60)
+      const remainMins = mins % 60
+      if (hours > 0) {
+        setLabel(`Act by: ${hours}h ${remainMins}m`)
+      } else {
+        setLabel(`Act by: ${mins}m`)
+      }
+      setIsUrgent(diffMs < 600000) // < 10 minutes
+    }
+
+    update()
+    const interval = setInterval(update, 30000)
+    return () => clearInterval(interval)
+  }, [actionByTs])
+
+  if (!actionByTs || !label) return null
+
+  return (
+    <span className={`inline-flex items-center gap-1 font-mono ${
+      isUrgent ? 'text-red-400' : 'text-terminal-500'
+    }`}>
+      <Clock className="w-3 h-3" />
+      {label}
+    </span>
+  )
+}
+
 function sortOpportunities(opps, sortBy) {
+  // Canon §1.5D: Primary ranking is server-side. Backend returns
+  // opportunities pre-ranked by score. Secondary sort options below
+  // are display-only reordering for user convenience.
+  if (sortBy === 'score' || !sortBy) {
+    // Default: preserve server-provided ranking order (already sorted by score)
+    return opps
+  }
   const sorted = [...opps]
   switch (sortBy) {
     case 'newest':
@@ -83,9 +138,7 @@ function sortOpportunities(opps, sortBy) {
         return expA - expB
       })
       break
-    case 'score':
     default:
-      sorted.sort((a, b) => (b.score || 0) - (a.score || 0))
       break
   }
   return sorted
@@ -117,7 +170,7 @@ export default function Opportunities() {
   const apiParams = { status: filters.status, min_score: filters.min_score, limit: filters.limit }
   if (filters.setup_id) apiParams.setup_id = filters.setup_id
 
-  const { data, loading, lastUpdated, refetch } = useOpportunities(apiParams)
+  const { data, loading, lastUpdated, refetch, meta } = useOpportunities(apiParams)
   const rawOpportunities = data?.opportunities || []
   const opportunities = sortOpportunities(rawOpportunities, sortBy)
 
@@ -175,7 +228,7 @@ export default function Opportunities() {
             Ranked trade opportunities from latest scans
           </p>
         </div>
-        <RefreshControl lastUpdated={lastUpdated} onRefresh={refetch} loading={loading} />
+        <RefreshControl lastUpdated={lastUpdated} onRefresh={refetch} loading={loading} serverAsOf={meta?.as_of_ts} />
       </div>
 
       {/* Filters */}
@@ -386,6 +439,8 @@ function OpportunityCard({ opportunity, onCopy }) {
 
   const payload = opportunity.payload || {}
   const linkId = opportunity.id || `${opportunity.setup_id}:${opportunity.symbol}:${opportunity.timeframe}`
+  const sinceTs = opportunity.since_ts || payload.since_ts || null
+  const actionByTs = opportunity.action_by_ts || payload.action_by_ts || null
 
   return (
     <Card hover className="relative">
@@ -445,6 +500,20 @@ function OpportunityCard({ opportunity, onCopy }) {
             <p className="text-sm text-terminal-400 line-clamp-2 border-t border-terminal-600 pt-3">
               {opportunity.reason}
             </p>
+          )}
+
+          {/* Timing: since_ts / action_by_ts (Canon §1.5) */}
+          {(sinceTs || actionByTs) && (
+            <div className="flex items-center gap-3 text-xs text-terminal-500 border-t border-terminal-600 pt-3">
+              {sinceTs && (
+                <span title={formatDateTime(sinceTs)}>
+                  Active {formatRelativeTime(sinceTs)}
+                </span>
+              )}
+              {actionByTs && (
+                <ActionByLabel actionByTs={actionByTs} />
+              )}
+            </div>
           )}
 
           {/* Footer */}

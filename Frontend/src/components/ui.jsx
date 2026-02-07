@@ -385,12 +385,17 @@ export function StatCard({ label, value, change, trend, icon: Icon }) {
 }
 
 // Refresh button with timestamp
-export function RefreshControl({ lastUpdated, onRefresh, loading }) {
+export function RefreshControl({ lastUpdated, onRefresh, loading, serverAsOf }) {
   return (
     <div className="flex items-center gap-3 text-sm">
+      {serverAsOf && (
+        <span className="text-terminal-500" title={`Server as_of_ts: ${serverAsOf}`}>
+          Server: {new Date(serverAsOf).toLocaleTimeString()}
+        </span>
+      )}
       {lastUpdated && (
         <span className="text-terminal-400">
-          Updated: {new Date(lastUpdated).toLocaleTimeString()}
+          Polled: {new Date(lastUpdated).toLocaleTimeString()}
         </span>
       )}
       <button

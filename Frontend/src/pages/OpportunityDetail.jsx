@@ -19,6 +19,7 @@ import {
   formatPrice,
   formatDollar,
   formatDateTime,
+  formatRelativeTime,
   formatTradePlan,
   copyToClipboard
 } from '../utils/formatters'
@@ -60,6 +61,51 @@ function ExpiryCountdown({ expiresAt }) {
   }, [expiresAt])
 
   if (!expiresAt) return null
+
+  return (
+    <span className={`font-mono ${isUrgent ? 'text-red-400' : 'text-terminal-300'}`}>
+      {remaining}
+    </span>
+  )
+}
+
+function ActionByCountdown({ actionByTs }) {
+  const [remaining, setRemaining] = useState('')
+  const [isUrgent, setIsUrgent] = useState(false)
+
+  useEffect(() => {
+    if (!actionByTs) return
+
+    function update() {
+      const targetMs = typeof actionByTs === 'number'
+        ? (actionByTs < 1e12 ? actionByTs * 1000 : actionByTs)
+        : new Date(actionByTs).getTime()
+      if (isNaN(targetMs)) { setRemaining(''); return }
+
+      const diffMs = targetMs - Date.now()
+      if (diffMs <= 0) {
+        setRemaining('Deadline passed')
+        setIsUrgent(true)
+        return
+      }
+      const totalMins = Math.floor(diffMs / 60000)
+      const hours = Math.floor(totalMins / 60)
+      const mins = totalMins % 60
+      const secs = Math.floor((diffMs % 60000) / 1000)
+      if (hours > 0) {
+        setRemaining(`${hours}h ${mins}m ${secs}s`)
+      } else {
+        setRemaining(`${mins}m ${secs}s`)
+      }
+      setIsUrgent(diffMs < 600000) // < 10 minutes
+    }
+
+    update()
+    const interval = setInterval(update, 30000)
+    return () => clearInterval(interval)
+  }, [actionByTs])
+
+  if (!actionByTs || !remaining) return null
 
   return (
     <span className={`font-mono ${isUrgent ? 'text-red-400' : 'text-terminal-300'}`}>
@@ -141,6 +187,8 @@ export default function OpportunityDetail() {
   }
 
   const payload = opp.payload || {}
+  const sinceTs = opp.since_ts || payload.since_ts || null
+  const actionByTs = opp.action_by_ts || payload.action_by_ts || null
 
   return (
     <div className="space-y-6">
@@ -269,12 +317,49 @@ export default function OpportunityDetail() {
             </CardContent>
           </Card>
 
-          {/* Timestamps */}
+          {/* Timing: since_ts / action_by_ts (Canon §1.5) */}
+          {(sinceTs || actionByTs) && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Timing</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {sinceTs && (
+                  <DataRow label="Signal Active Since" value={
+                    <div>
+                      <span className="text-terminal-200">{formatDateTime(sinceTs)}</span>
+                      <span className="text-terminal-500 text-xs ml-2">
+                        ({formatRelativeTime(sinceTs)})
+                      </span>
+                    </div>
+                  } />
+                )}
+                {actionByTs && (
+                  <DataRow label="Act By" value={
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-3 h-3 text-terminal-400" />
+                      <div>
+                        <span className="text-terminal-200">{formatDateTime(actionByTs)}</span>
+                        <span className="text-xs ml-2">
+                          <ActionByCountdown actionByTs={actionByTs} />
+                        </span>
+                      </div>
+                    </div>
+                  } />
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Timestamps (Canon §1.5: candle_ts + as_of_ts) */}
           <Card>
             <CardHeader>
               <CardTitle>Timestamps</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
+              {(opp.candle_ts || opp.bar_start_ts || payload.candle_ts || payload.bar_start_ts) && (
+                <DataRow label="Candle (bar_start_ts)" value={formatDateTime(opp.candle_ts || opp.bar_start_ts || payload.candle_ts || payload.bar_start_ts)} />
+              )}
               <DataRow label="Updated" value={formatDateTime(opp.updated_ts)} />
             </CardContent>
           </Card>

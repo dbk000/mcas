@@ -222,9 +222,17 @@ export function ApiProvider({ children }) {
 
       log.debug('API request', { event: 'api_request', method, path: endpoint, status: response.status, duration_ms })
 
-      // Handle envelope vs plain response
+      // Handle envelope vs plain response — preserve meta (Canon §1.5)
       if (data.data !== undefined) {
-        return data.data
+        const unwrapped = data.data
+        if (data.meta && unwrapped != null && typeof unwrapped === 'object') {
+          Object.defineProperty(unwrapped, '__meta', {
+            value: data.meta,
+            enumerable: false,
+            configurable: true,
+          })
+        }
+        return unwrapped
       }
       return data
     } catch (error) {

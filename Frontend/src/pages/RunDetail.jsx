@@ -469,7 +469,7 @@ function OverviewTab({ run }) {
             <CardTitle>Data</CardTitle>
           </CardHeader>
           <CardContent>
-            <JsonView data={run.data} />
+            <JsonView data={run.data_spec || run.data} />
           </CardContent>
         </Card>
       </div>
