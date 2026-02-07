@@ -83,11 +83,11 @@ CREATE TABLE IF NOT EXISTS run_events (
     run_id UUID NOT NULL REFERENCES runs(id) ON DELETE CASCADE,
     event_type TEXT NOT NULL CHECK (event_type IN ('INFO', 'WARNING', 'ERROR', 'DEBUG')),
     message TEXT NOT NULL,
-    data_json TEXT,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    payload_json TEXT,
+    ts TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS idx_run_events_run ON run_events(run_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_run_events_run ON run_events(run_id, ts DESC);
 
 CREATE TABLE IF NOT EXISTS run_trades (
     id UUID PRIMARY KEY,
