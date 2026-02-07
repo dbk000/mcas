@@ -196,7 +196,7 @@ export default function Opportunities() {
   const handleSimulateExpired = async () => {
     setSimulating(true)
     try {
-      const response = await post('/control/runs/simulation', {
+      const response = await post('/v1/control/runs/simulation', {
         position_size_usd: simConfig.position_size_usd,
         limit: simConfig.limit,
         setup_ids: filters.setup_id ? [filters.setup_id] : null,
