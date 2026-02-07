@@ -9,3 +9,6 @@ import os
 
 # Add worker/app to path so we can import run_executor, execution, etc.
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'worker', 'app'))
+
+# Add api/app to path so we can import main, trading_api, control_api, etc.
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'api', 'app'))

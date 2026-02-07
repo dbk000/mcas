@@ -1,0 +1,98 @@
+name: MCAS Canon CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  PYTHON_VERSION: "3.11"
+  POSTGRES_DB: trading
+  POSTGRES_USER: trading
+  POSTGRES_PASSWORD: trading_ci
+
+jobs:
+  canon-checks:
+    name: Canon Compliance Checks (§1.11)
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: ${{ env.POSTGRES_DB }}
+          POSTGRES_USER: ${{ env.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ env.POSTGRES_PASSWORD }}
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          pip install -r Backend/api/requirements.txt
+          pip install -r Backend/worker/requirements.txt
+          pip install pytest
+
+      - name: Apply schema
+        env:
+          PGHOST: localhost
+          PGPORT: 5432
+          PGUSER: ${{ env.POSTGRES_USER }}
+          PGPASSWORD: ${{ env.POSTGRES_PASSWORD }}
+          PGDATABASE: ${{ env.POSTGRES_DB }}
+        run: |
+          psql -f Backend/docs/db/schema/mcas_schema.sql
+          for f in Backend/docs/db/migrations/*.sql; do
+            echo "Applying $f"
+            psql -f "$f"
+          done
+
+      - name: Run canon compliance tests
+        env:
+          DATABASE_URL: postgresql://${{ env.POSTGRES_USER }}:${{ env.POSTGRES_PASSWORD }}@localhost:5432/${{ env.POSTGRES_DB }}
+          REDIS_URL: redis://localhost:6379/0
+          API_KEY: ci_test_key_not_secret
+          PYTHONPATH: Backend/worker:Backend/api
+        run: |
+          pytest Backend/tests/ -v --tb=short -x
+
+  lint:
+    name: Lint & Format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Check Python syntax
+        run: |
+          python -m py_compile Backend/api/app/main.py
+          python -m py_compile Backend/worker/app/worker.py
+          python -m py_compile Backend/worker/app/indicators.py
+          python -m py_compile Backend/worker/app/signal_engine.py
