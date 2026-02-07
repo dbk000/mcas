@@ -16,12 +16,15 @@ Trade levels (entry/stop/TP) are suggested levels for human execution
 and for future backtest consistency.
 """
 
+import logging
 import numpy as np
 from dataclasses import dataclass, field
 from datetime import datetime, timezone, timedelta
 from typing import Optional
 from statistics import median, stdev, mean
 from enum import Enum
+
+logger = logging.getLogger(__name__)
 
 import sys
 from pathlib import Path
@@ -770,13 +773,18 @@ class U1Evaluator:
         self,
         candles: list[OHLCV],
         prev_state: Optional[U1State] = None,
+        is_final: bool = True,
     ) -> U1State:
         """
         Evaluate promotion gates (Pipeline worker calls this).
 
+        Canon §1.8: Gates evaluate on final bars only by default.
+        The pipeline should pass is_final=True (bars are closed 5m candles).
+
         Args:
             candles: OHLCV candles (need ~96 bars for two windows)
             prev_state: Previous state for continuity
+            is_final: Whether current bar is final (Canon §1.8)
 
         Returns:
             Updated U1State with gate results and scores
@@ -861,12 +869,18 @@ class U1Evaluator:
         state: U1State,
         symbol: str,
         timeframe: str,
+        is_final: bool = True,
     ) -> Optional[U1Signal]:
         """
         Evaluate ignition trigger (Signal worker calls this for EMBRYO_ACTIVE symbols).
 
         Returns U1Signal if triggered, None otherwise.
         """
+        # Canon §1.8: Anti-lookahead — only trigger on closed/final candles
+        if not is_final:
+            logger.debug("U1 gate:forming_candle %s %s (is_final=False)", symbol, timeframe)
+            return None
+
         # Only evaluate for EMBRYO_ACTIVE
         if state.phase not in (U1Phase.EMBRYO_ACTIVE, U1Phase.IGNITION_WATCH):
             return None

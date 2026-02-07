@@ -23,6 +23,7 @@ import os
 import logging
 import numpy as np
 from dataclasses import dataclass
+from datetime import datetime, timezone, timedelta
 from typing import Optional
 
 logger = logging.getLogger(__name__)
@@ -123,6 +124,10 @@ class S2Signal:
 
     # Canon 7A: time-stop for action_by_ts derivation
     time_stop_bars: int = 24
+
+    # Canon 5E: timing metadata (signal freshness + action deadline)
+    since_ts: Optional[datetime] = None       # bar_start_ts of the trigger candle (UTC)
+    action_by_ts: Optional[datetime] = None   # time-stop deadline (UTC)
 
 
 class S2Evaluator:
@@ -317,12 +322,18 @@ class S2Evaluator:
         state: S2State,
         symbol: str,
         timeframe: str,
+        is_final: bool = True,
     ) -> Optional[S2Signal]:
         """
         Evaluate if trigger conditions are met.
-        
+
         Returns S2Signal if triggered, None otherwise.
         """
+        # Canon §8: Anti-lookahead — only trigger on closed/final candles
+        if not is_final:
+            logger.debug("S2 gate:forming_candle %s %s (is_final=False)", symbol, timeframe)
+            return None
+
         # Preconditions (with diagnostic logging)
         if not state.converging:
             logger.debug("S2 gate:not_converging %s %s wide=%s narrow=%s dec=%s",
@@ -451,6 +462,21 @@ class S2Evaluator:
             why_items.append(f"BTC shock filter: {'up' if state.btc_shock_up else 'down'} — accounted for")
         explain = ExplainPayload(why_items=why_items[:8])
 
+        # Canon 5E: compute since_ts and action_by_ts for timing metadata
+        # since_ts = bar_start_ts of the trigger candle (UTC)
+        # action_by_ts = since_ts + time_stop_bars * bar_duration
+        _tf_seconds = {
+            "1m": 60, "5m": 300, "15m": 900, "30m": 1800,
+            "1h": 3600, "4h": 14400, "1d": 86400,
+        }
+        bar_seconds = _tf_seconds.get(timeframe, 3600)
+        since_ts = datetime.fromtimestamp(
+            current.timestamp / 1000, tz=timezone.utc
+        )
+        action_by_ts = since_ts + timedelta(
+            seconds=self.time_stop_bars * bar_seconds
+        )
+
         return S2Signal(
             symbol=symbol,
             timeframe=timeframe,
@@ -470,4 +496,6 @@ class S2Evaluator:
             state=state,
             explain=explain,
             time_stop_bars=self.time_stop_bars,
+            since_ts=since_ts,
+            action_by_ts=action_by_ts,
         )

@@ -435,7 +435,7 @@ class ShadowTradeSimulator:
             stop_price=position.stop_price,
             tp1_price=position.tp1_price,
             r_value=position.r_value,
-            exit_ts=bar.open_time if hasattr(bar, 'open_time') else datetime.now(timezone.utc),
+            exit_ts=bar.bar_start_ts if hasattr(bar, 'bar_start_ts') else datetime.now(timezone.utc),
             exit_price=exit_price,
             exit_price_with_slippage=exit_with_slippage,
             exit_reason=pending.exit_reason,

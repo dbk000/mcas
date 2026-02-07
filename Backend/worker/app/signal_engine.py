@@ -16,6 +16,7 @@ import time
 import json
 import random
 import logging
+from datetime import datetime, timezone
 from dataclasses import dataclass, asdict
 from typing import Optional, Union
 from collections import defaultdict
@@ -26,8 +27,16 @@ import requests
 from json_logging import ctx_symbol
 from indicators import FeatureFactory, IndicatorSnapshot, OHLCV
 from setups import S1Evaluator, S1Signal, S2Evaluator, S2Signal
+from data_layer import log_signal_event
 
 logger = logging.getLogger(__name__)
+
+
+def _bar_start_dt(snapshot: IndicatorSnapshot) -> datetime:
+    """Extract bar_start_ts as UTC datetime from the last candle in the snapshot."""
+    ts_ms = snapshot.ohlcv[-1].timestamp
+    return datetime.fromtimestamp(ts_ms / 1000, tz=timezone.utc)
+
 
 # Concurrency settings
 MAX_WORKERS = 10  # Parallel OHLCV fetches (reduced from 20 for rate limit compliance)
@@ -332,15 +341,76 @@ class SignalEngine:
         s1_signal = self.s1_evaluator.evaluate_trigger(snapshot, s1_state, symbol, tf)
         if s1_signal:
             signals.append(s1_signal)
-        
+            # Canon §1.9: log SETUP_FIRED event
+            try:
+                log_signal_event(
+                    event_type="SETUP_FIRED",
+                    symbol=symbol,
+                    timeframe=tf,
+                    setup_id="S1",
+                    direction=s1_signal.direction.value,
+                    bar_start_ts=_bar_start_dt(snapshot),
+                    setup_score=s1_signal.setup_score,
+                    feature_snapshot={
+                        "bb_width": snapshot.bb_width,
+                        "bb_width_pctile": s1_state.bb_width_pctile,
+                        "squeeze_age": s1_state.squeeze_age,
+                        "bias_score": s1_state.bias_score,
+                        "clv": snapshot.clv,
+                        "volume_z": snapshot.volume_z,
+                        "atr": snapshot.atr,
+                    },
+                    score_components={
+                        "severity": s1_signal.severity,
+                        "bias_strength": s1_signal.bias_strength,
+                        "participation": s1_signal.participation,
+                        "break_quality": s1_signal.break_quality,
+                        "clean_close": s1_signal.clean_close,
+                    },
+                    reason_codes=s1_signal.explain.why_items if s1_signal.explain else None,
+                )
+            except Exception:
+                logger.debug("S1 SETUP_FIRED log failed", exc_info=True)
+
         # S2 - Golden Cross Anticipation
         ma_gap_history = self.indicator_cache.get_ma_gap_history(symbol, tf)
         s2_state = self.s2_evaluator.compute_state(snapshot, ma_gap_history)
-        
+
         s2_signal = self.s2_evaluator.evaluate_trigger(snapshot, s2_state, symbol, tf)
         if s2_signal:
             signals.append(s2_signal)
-        
+            # Canon §1.9: log SETUP_FIRED event
+            try:
+                log_signal_event(
+                    event_type="SETUP_FIRED",
+                    symbol=symbol,
+                    timeframe=tf,
+                    setup_id="S2",
+                    direction=s2_signal.direction.value,
+                    bar_start_ts=_bar_start_dt(snapshot),
+                    setup_score=s2_signal.setup_score,
+                    feature_snapshot={
+                        "ma_gap_atr": s2_state.ma_gap_atr,
+                        "dec_count": s2_state.dec_count,
+                        "converging": s2_state.converging,
+                        "clv": snapshot.clv,
+                        "volume_z": snapshot.volume_z,
+                        "sma50_slope_atr": snapshot.sma50_slope_atr,
+                        "sma200_slope_atr": snapshot.sma200_slope_atr,
+                    },
+                    score_components={
+                        "conv_tight": s2_signal.conv_tight,
+                        "conv_speed": s2_signal.conv_speed,
+                        "trend_strength": s2_signal.trend_strength,
+                        "participation": s2_signal.participation,
+                        "break_quality": s2_signal.break_quality,
+                        "clean_close": s2_signal.clean_close,
+                    },
+                    reason_codes=s2_signal.explain.why_items if s2_signal.explain else None,
+                )
+            except Exception:
+                logger.debug("S2 SETUP_FIRED log failed", exc_info=True)
+
         return signals
     
     def signal_to_ranked(self, signal: Union[S1Signal, S2Signal]) -> RankedSignal:
@@ -557,6 +627,26 @@ class SignalEngine:
                 deduplicated.append(sig)
                 seen_symbols.add(sig.symbol)
         
+        # Canon §1.9: log RANK_CHANGE for each signal in the top-N
+        top_n_signals = deduplicated[:self.top_n]
+        for rank_idx, sig in enumerate(top_n_signals, start=1):
+            try:
+                bar_dt = datetime.fromtimestamp(sig.timestamp, tz=timezone.utc)
+                log_signal_event(
+                    event_type="RANK_CHANGE",
+                    symbol=sig.symbol,
+                    timeframe=sig.timeframe,
+                    setup_id=sig.setup_id,
+                    direction=sig.direction,
+                    bar_start_ts=bar_dt,
+                    setup_score=sig.setup_score,
+                    rank=rank_idx,
+                    score_components=sig.payload.get("score_components"),
+                    reason_codes=sig.payload.get("why_items"),
+                )
+            except Exception:
+                logger.debug("RANK_CHANGE log failed for %s", sig.symbol, exc_info=True)
+
         total_time = round(time.time() - fetch_start, 1)
         logger.info("Scan complete", extra={
             "event": "scan_complete",
@@ -564,9 +654,9 @@ class SignalEngine:
             "top_n": self.top_n,
             "total_duration_s": total_time,
         })
-        
+
         # Return top N
-        return deduplicated[:self.top_n]
+        return top_n_signals
     
     def scan_symbol(self, symbol: str, tf: str) -> Optional[RankedSignal]:
         """

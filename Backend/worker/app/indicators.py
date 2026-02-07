@@ -16,9 +16,49 @@ All indicators use ring buffers for efficiency.
 ATR-normalised where appropriate for cross-asset comparability.
 """
 
+import re
 import numpy as np
 from dataclasses import dataclass, field
 from typing import Optional
+
+
+# =============================================================================
+# Canon §1.6: Canonical Indicator ID Generator
+# =============================================================================
+
+_INDICATOR_ID_RE = re.compile(r'^[A-Z0-9_.]+$')
+
+
+def generate_indicator_id(family: str, *params) -> str:
+    """
+    Canon §1.6 compliant: single canonical generator for indicator IDs.
+
+    Grammar: <FAMILY>_<PARAMS> using uppercase A-Z, digits 0-9,
+    underscores, and dots only.
+
+    Args:
+        family: Indicator family name (e.g. "ATR", "BB", "EMA").
+        *params: Positional parameters (converted to str, joined with '_').
+
+    Returns:
+        Canonical indicator ID string.
+
+    Raises:
+        ValueError: If the resulting ID contains invalid characters.
+    """
+    family_upper = family.upper()
+    if params:
+        param_str = "_".join(str(p) for p in params)
+        result = f"{family_upper}_{param_str}"
+    else:
+        result = family_upper
+    # Validate: only A-Z, 0-9, underscore, dot allowed
+    if not _INDICATOR_ID_RE.match(result):
+        raise ValueError(
+            f"Invalid indicator ID '{result}': only A-Z, 0-9, underscore, "
+            f"and dot are allowed."
+        )
+    return result
 
 
 # =============================================================================
@@ -51,33 +91,33 @@ def _register(ind: IndicatorDef):
 
 # Tier 1
 _register(IndicatorDef(
-    indicator_id="ATR_14", name="Average True Range", tier=1,
+    indicator_id=generate_indicator_id("ATR", 14), name="Average True Range", tier=1,
     inputs=["high", "low", "close"], params={"n": 14},
     implementation="FeatureFactory._atr",
 ))
 _register(IndicatorDef(
-    indicator_id="CLV", name="Close Location Value", tier=1,
+    indicator_id=generate_indicator_id("CLV"), name="Close Location Value", tier=1,
     inputs=["high", "low", "close"], params={},
     implementation="FeatureFactory._clv",
 ))
 _register(IndicatorDef(
-    indicator_id="VOLUME_Z_20", name="Volume Z-Score", tier=1,
+    indicator_id=generate_indicator_id("VOLUME_Z", 20), name="Volume Z-Score", tier=1,
     inputs=["volume"], params={"n": 20},
     implementation="FeatureFactory._volume_z",
 ))
 _register(IndicatorDef(
-    indicator_id="RSI_14", name="RSI (Wilder)", tier=1,
+    indicator_id=generate_indicator_id("RSI", 14), name="RSI (Wilder)", tier=1,
     inputs=["close"], params={"n": 14},
     implementation="FeatureFactory._rsi_series",
 ))
 _register(IndicatorDef(
-    indicator_id="RSI_SMA_14", name="RSI SMA", tier=1,
+    indicator_id=generate_indicator_id("RSI_SMA", 14), name="RSI SMA", tier=1,
     inputs=["close"], params={"n_rsi": 14, "n_sma": 14},
     expression_type="value",
     implementation="FeatureFactory._sma(rsi_series)",
 ))
 _register(IndicatorDef(
-    indicator_id="RSI_SLOPE", name="RSI Slope (1-bar delta)", tier=1,
+    indicator_id=generate_indicator_id("RSI_SLOPE"), name="RSI Slope (1-bar delta)", tier=1,
     inputs=["close"], params={"n_rsi": 14},
     expression_type="slope",
     implementation="rsi[-1] - rsi[-2]",
@@ -86,38 +126,38 @@ _register(IndicatorDef(
 # Tier 2 — MAs
 for _n in [9, 20, 21, 50]:
     _register(IndicatorDef(
-        indicator_id=f"EMA_{_n}", name=f"EMA {_n}", tier=2,
+        indicator_id=generate_indicator_id("EMA", _n), name=f"EMA {_n}", tier=2,
         inputs=["close"], params={"n": _n},
         implementation="FeatureFactory._ema",
     ))
 for _n in [50, 200]:
     _register(IndicatorDef(
-        indicator_id=f"SMA_{_n}", name=f"SMA {_n}", tier=2,
+        indicator_id=generate_indicator_id("SMA", _n), name=f"SMA {_n}", tier=2,
         inputs=["close"], params={"n": _n},
         implementation="FeatureFactory._sma",
     ))
 
 # Tier 2 — Bands
 _register(IndicatorDef(
-    indicator_id="BB_20_2", name="Bollinger Bands (20, 2σ)", tier=2,
+    indicator_id=generate_indicator_id("BB", 20, 2), name="Bollinger Bands (20, 2σ)", tier=2,
     inputs=["close"], params={"n": 20, "k": 2.0},
     implementation="FeatureFactory._sma + FeatureFactory._std",
 ))
 _register(IndicatorDef(
-    indicator_id="KC_20_1.5", name="Keltner Channels (20, 1.5×ATR)", tier=2,
+    indicator_id=generate_indicator_id("KC", 20, "1_5"), name="Keltner Channels (20, 1.5×ATR)", tier=2,
     inputs=["high", "low", "close"], params={"n": 20, "mult": 1.5},
     implementation="FeatureFactory._ema + ATR",
 ))
 
 # Tier 2 — Slopes
 _register(IndicatorDef(
-    indicator_id="SMA50_SLOPE_ATR", name="SMA50 slope (ATR-normalised)", tier=2,
+    indicator_id=generate_indicator_id("SMA50_SLOPE", "ATR"), name="SMA50 slope (ATR-normalised)", tier=2,
     inputs=["close"], params={"n": 50},
     expression_type="slope",
     implementation="(sma50[-1] - sma50[-2]) / atr",
 ))
 _register(IndicatorDef(
-    indicator_id="SMA200_SLOPE_ATR", name="SMA200 slope (ATR-normalised)", tier=2,
+    indicator_id=generate_indicator_id("SMA200_SLOPE", "ATR"), name="SMA200 slope (ATR-normalised)", tier=2,
     inputs=["close"], params={"n": 200},
     expression_type="slope",
     implementation="(sma200[-1] - sma200[-2]) / atr",
@@ -125,11 +165,81 @@ _register(IndicatorDef(
 
 # Tier 2 — Derived
 _register(IndicatorDef(
-    indicator_id="MA_GAP_ATR", name="abs(SMA50 - SMA200) / ATR", tier=2,
+    indicator_id=generate_indicator_id("MA_GAP", "ATR"), name="abs(SMA50 - SMA200) / ATR", tier=2,
     inputs=["close"], params={"n_fast": 50, "n_slow": 200},
     expression_type="value",
     implementation="abs(sma_50 - sma_200) / atr",
 ))
+
+# Tier 2 — Band components (derived from BB_20_2)
+_register(IndicatorDef(
+    indicator_id=generate_indicator_id("BB_MB"), name="BB Middle Band (SMA20)", tier=2,
+    inputs=["close"], params={"n": 20},
+    implementation="SMA(close, 20)",
+    version="1.0.0",
+))
+_register(IndicatorDef(
+    indicator_id=generate_indicator_id("BB_UB"), name="BB Upper Band", tier=2,
+    inputs=["close"], params={"n": 20, "k": 2.0},
+    implementation="SMA(close, 20) + k * STD(close, 20)",
+    version="1.0.0",
+))
+_register(IndicatorDef(
+    indicator_id=generate_indicator_id("BB_LB"), name="BB Lower Band", tier=2,
+    inputs=["close"], params={"n": 20, "k": 2.0},
+    implementation="SMA(close, 20) - k * STD(close, 20)",
+    version="1.0.0",
+))
+_register(IndicatorDef(
+    indicator_id=generate_indicator_id("BB_WIDTH"), name="BB Width (normalised)", tier=2,
+    inputs=["close"], params={"n": 20, "k": 2.0},
+    implementation="(bb_ub - bb_lb) / bb_mb",
+    version="1.0.0",
+))
+
+# Tier 2 — KC components (derived from KC_20_1_5)
+_register(IndicatorDef(
+    indicator_id=generate_indicator_id("KC_MB"), name="KC Middle Band (EMA20)", tier=2,
+    inputs=["close"], params={"n": 20},
+    implementation="EMA(close, 20)",
+    version="1.0.0",
+))
+_register(IndicatorDef(
+    indicator_id=generate_indicator_id("KC_UB"), name="KC Upper Band", tier=2,
+    inputs=["high", "low", "close"], params={"n": 20, "mult": 1.5},
+    implementation="EMA(close, 20) + mult * ATR(14)",
+    version="1.0.0",
+))
+_register(IndicatorDef(
+    indicator_id=generate_indicator_id("KC_LB"), name="KC Lower Band", tier=2,
+    inputs=["high", "low", "close"], params={"n": 20, "mult": 1.5},
+    implementation="EMA(close, 20) - mult * ATR(14)",
+    version="1.0.0",
+))
+
+# Tier 2 — HTF proxies
+_register(IndicatorDef(
+    indicator_id=generate_indicator_id("HTF_CLOSE"), name="HTF Close", tier=2,
+    inputs=["close"], params={},
+    implementation="htf_candles[-1].close",
+    version="1.0.0",
+))
+_register(IndicatorDef(
+    indicator_id=generate_indicator_id("HTF_SMA50"), name="HTF SMA 50", tier=2,
+    inputs=["close"], params={"n": 50},
+    implementation="SMA(htf_close, 50)",
+    version="1.0.0",
+))
+_register(IndicatorDef(
+    indicator_id=generate_indicator_id("HTF_BB_MB"), name="HTF BB Middle Band", tier=2,
+    inputs=["close"], params={"n": 20},
+    implementation="SMA(htf_close, 20)",
+    version="1.0.0",
+))
+
+# Canon §1.6: Module-level uniqueness assertion — fail fast on ID collisions
+assert len(INDICATOR_REGISTRY) == len(set(d.indicator_id for d in INDICATOR_REGISTRY.values())), \
+    "Indicator ID collision detected in INDICATOR_REGISTRY!"
 
 
 def get_indicator_library_fingerprint() -> str:

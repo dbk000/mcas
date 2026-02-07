@@ -14,14 +14,32 @@ POST /v1/runs/compare     - Compare two runs by fingerprint
 
 import os
 import json
+import time
 from datetime import datetime, timezone
-from typing import Optional
+from typing import Optional, Any
 
 import psycopg
 from fastapi import APIRouter, Query, HTTPException
 
 # We'll import these dynamically since we're in API, not worker
 DATABASE_URL = os.getenv("DATABASE_URL")
+
+
+def envelope(data: Any, compute_start: float, as_of_ts: float = None) -> dict:
+    """Standard response envelope with metadata.
+
+    Canon §1.5A: Every response includes as_of_ts (backend data freshness).
+    """
+    meta = {
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "version": "v1",
+        "compute_ms": round((time.time() - compute_start) * 1000, 1),
+    }
+    if as_of_ts is not None:
+        meta["as_of_ts"] = datetime.fromtimestamp(as_of_ts, tz=timezone.utc).isoformat()
+    else:
+        meta["as_of_ts"] = datetime.now(timezone.utc).isoformat()
+    return {"data": data, "meta": meta}
 
 
 def get_conn():
@@ -41,6 +59,7 @@ def list_runs(
     limit: int = Query(default=50, ge=1, le=200),
 ):
     """List runs with optional filters."""
+    t0 = time.time()
     conditions = []
     params = []
     
@@ -82,11 +101,10 @@ def list_runs(
             "error": row[9],
         })
     
-    return {
-        "as_of_ts": datetime.now(timezone.utc).isoformat(),
+    return envelope({
         "runs": runs,
         "count": len(runs),
-    }
+    }, t0)
 
 
 @router.get("/latest")
@@ -94,6 +112,7 @@ def get_latest_run(
     run_type: str = Query(default="SCAN", description="Run type to filter"),
 ):
     """Get the most recent successful run of a given type."""
+    t0 = time.time()
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute("""
@@ -110,8 +129,7 @@ def get_latest_run(
     if not row:
         raise HTTPException(status_code=404, detail="No successful runs found")
     
-    return {
-        "as_of_ts": datetime.now(timezone.utc).isoformat(),
+    return envelope({
         "id": str(row[0]),
         "run_type": row[1],
         "status": row[2],
@@ -123,12 +141,13 @@ def get_latest_run(
         "universe": json.loads(row[8]) if row[8] else {},
         "strategy": json.loads(row[9]) if row[9] else {},
         "summary": json.loads(row[10]) if row[10] else {},
-    }
+    }, t0)
 
 
 @router.get("/{run_id}")
 def get_run(run_id: str):
     """Get full run details by ID."""
+    t0 = time.time()
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute("""
@@ -145,8 +164,7 @@ def get_run(run_id: str):
     if not row:
         raise HTTPException(status_code=404, detail="Run not found")
     
-    return {
-        "as_of_ts": datetime.now(timezone.utc).isoformat(),
+    return envelope({
         "id": str(row[0]),
         "run_type": row[1],
         "status": row[2],
@@ -157,14 +175,14 @@ def get_run(run_id: str):
         "universe": json.loads(row[7]) if row[7] else {},
         "strategy": json.loads(row[8]) if row[8] else {},
         "execution": json.loads(row[9]) if row[9] else {},
-        "data": json.loads(row[10]) if row[10] else {},
+        "data_spec": json.loads(row[10]) if row[10] else {},
         "created_at": row[11].isoformat() if row[11] else None,
         "started_at": row[12].isoformat() if row[12] else None,
         "finished_at": row[13].isoformat() if row[13] else None,
         "summary": json.loads(row[14]) if row[14] else {},
         "error": row[15],
         "parent_run_id": str(row[16]) if row[16] else None,
-    }
+    }, t0)
 
 
 @router.get("/{run_id}/trades")
@@ -173,6 +191,7 @@ def get_run_trades(
     limit: int = Query(default=100, ge=1, le=500),
 ):
     """Get all trades/signals for a run."""
+    t0 = time.time()
     with get_conn() as conn:
         with conn.cursor() as cur:
             # First verify run exists
@@ -223,11 +242,10 @@ def get_run_trades(
             "trace": trace,
         })
 
-    return {
-        "as_of_ts": datetime.now(timezone.utc).isoformat(),
+    return envelope({
         "trades": trades,
         "count": len(trades),
-    }
+    }, t0)
 
 
 @router.get("/{run_id}/events")
@@ -237,6 +255,7 @@ def get_run_events(
     limit: int = Query(default=100, ge=1, le=500),
 ):
     """Get events for a run (for debugging without spelunking logs)."""
+    t0 = time.time()
     with get_conn() as conn:
         with conn.cursor() as cur:
             # First verify run exists
@@ -273,11 +292,10 @@ def get_run_events(
             "payload": json.loads(row[4]) if row[4] else {},
         })
     
-    return {
-        "as_of_ts": datetime.now(timezone.utc).isoformat(),
+    return envelope({
         "events": events,
         "count": len(events),
-    }
+    }, t0)
 
 
 @router.get("/fingerprint/{fingerprint}")
@@ -288,6 +306,7 @@ def get_run_by_fingerprint(fingerprint: str):
     If fingerprint matches, the runs had identical inputs.
     Useful for checking if a run was already executed.
     """
+    t0 = time.time()
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute("""
@@ -310,12 +329,11 @@ def get_run_by_fingerprint(fingerprint: str):
             "summary": json.loads(row[6]) if row[6] else {},
         })
 
-    return {
-        "as_of_ts": datetime.now(timezone.utc).isoformat(),
+    return envelope({
         "fingerprint": fingerprint,
         "runs": runs,
         "count": len(runs),
-    }
+    }, t0)
 
 
 @router.get("/{run_id}/simulation-results")
@@ -329,6 +347,7 @@ def get_simulation_results(
 
     Returns individual opportunity simulation outcomes with pagination.
     """
+    t0 = time.time()
     with get_conn() as conn:
         with conn.cursor() as cur:
             # Verify run exists and is SIMULATION type
@@ -417,8 +436,7 @@ def get_simulation_results(
                 "avg_r": round(total_r / len(valid_results), 4) if valid_results else 0,
             }
 
-    return {
-        "as_of_ts": datetime.now(timezone.utc).isoformat(),
+    return envelope({
         "run_id": run_id,
         "run_status": run_row[1],
         "summary": summary,
@@ -427,4 +445,4 @@ def get_simulation_results(
         "total_count": total_count,
         "limit": limit,
         "offset": offset,
-    }
+    }, t0)

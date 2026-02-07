@@ -13,7 +13,9 @@ These endpoints allow the frontend to display trading state and outcomes.
 
 import os
 import json
+import time
 from datetime import datetime, timezone, timedelta
+from typing import Any
 
 import psycopg
 from fastapi import APIRouter, Query, HTTPException
@@ -21,6 +23,23 @@ from fastapi import APIRouter, Query, HTTPException
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 router = APIRouter(prefix="/trading", tags=["trading"])
+
+
+def envelope(data: Any, compute_start: float, as_of_ts: float = None) -> dict:
+    """Standard response envelope with metadata.
+
+    Canon S1.5A: Every response includes as_of_ts (backend data freshness).
+    """
+    meta = {
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "version": "v1",
+        "compute_ms": round((time.time() - compute_start) * 1000, 1),
+    }
+    if as_of_ts is not None:
+        meta["as_of_ts"] = datetime.fromtimestamp(as_of_ts, tz=timezone.utc).isoformat()
+    else:
+        meta["as_of_ts"] = datetime.now(timezone.utc).isoformat()
+    return {"data": data, "meta": meta}
 
 
 def get_conn():
@@ -38,10 +57,11 @@ def get_conn():
 def get_account():
     """
     Get the active paper trading account status.
-    
+
     Returns:
         Current capital, P&L, win rate, drawdown, etc.
     """
+    t0 = time.time()
     with get_conn() as conn:
         with conn.cursor() as cur:
             # Get active paper run
@@ -60,18 +80,18 @@ def get_account():
             row = cur.fetchone()
     
     if not row:
-        return {
+        return envelope({
             "active": False,
             "message": "No active paper trading session",
-        }
-    
+        }, t0)
+
     (run_id, name, started_at, status,
      initial, current, peak,
      total_trades, wins, losses,
      total_pnl, fees, max_dd,
      exposure, daily_pnl) = row
-    
-    return {
+
+    return envelope({
         "active": True,
         "run_id": str(run_id),
         "run_name": name,
@@ -97,7 +117,7 @@ def get_account():
             "profit_factor": _calculate_profit_factor(str(run_id)),
             "average_r": _calculate_average_r(str(run_id)),
         },
-    }
+    }, t0)
 
 
 def _calculate_profit_factor(run_id: str) -> float:
@@ -157,6 +177,7 @@ def get_positions(
         status: Filter by position status
         limit: Maximum number of positions to return
     """
+    t0 = time.time()
     # Validate status against allowed values to prevent SQL injection
     status_upper = status.upper()
     if status_upper not in VALID_POSITION_STATUSES:
@@ -177,7 +198,7 @@ def get_positions(
             run_row = cur.fetchone()
 
             if not run_row:
-                return {"positions": [], "message": "No active paper trading session"}
+                return envelope({"positions": [], "message": "No active paper trading session"}, t0)
 
             run_id = run_row[0]
 
@@ -226,6 +247,7 @@ def get_positions(
             "setup_id": row[4],
             "status": row[5],
             "signal_ts": row[6].isoformat() if row[6] else None,
+            "candle_ts": row[6].isoformat() if row[6] else None,
             "entry_ts": row[7].isoformat() if row[7] else None,
             "entry_price": row[8],
             "entry_price_with_slippage": row[9],
@@ -247,18 +269,19 @@ def get_positions(
             "fees_paid": row[25],
             "r_multiple": row[26],
         })
-    
-    return {
+
+    return envelope({
         "run_id": str(run_id),
         "status_filter": status,
         "count": len(positions),
         "positions": positions,
-    }
+    }, t0)
 
 
 @router.get("/positions/{position_id}")
 def get_position(position_id: str):
     """Get details for a specific position."""
+    t0 = time.time()
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute("""
@@ -279,10 +302,10 @@ def get_position(position_id: str):
     
     if not row:
         raise HTTPException(status_code=404, detail="Position not found")
-    
+
     trace = json.loads(row[29]) if row[29] else {}
-    
-    return {
+
+    return envelope({
         "id": str(row[0]),
         "run_id": str(row[1]),
         "symbol": row[2],
@@ -291,6 +314,7 @@ def get_position(position_id: str):
         "setup_id": row[5],
         "status": row[6],
         "signal_ts": row[7].isoformat() if row[7] else None,
+        "candle_ts": row[7].isoformat() if row[7] else None,
         "entry_ts": row[8].isoformat() if row[8] else None,
         "entry_price": row[9],
         "entry_price_with_slippage": row[10],
@@ -315,7 +339,7 @@ def get_position(position_id: str):
         "trace": trace,
         "created_at": row[30].isoformat() if row[30] else None,
         "updated_at": row[31].isoformat() if row[31] else None,
-    }
+    }, t0)
 
 
 # =============================================================================
@@ -332,6 +356,7 @@ def get_trades(
     """
     Get trade history (closed positions) for the active session.
     """
+    t0 = time.time()
     with get_conn() as conn:
         with conn.cursor() as cur:
             # Get active or most recent run
@@ -344,7 +369,7 @@ def get_trades(
             run_row = cur.fetchone()
             
             if not run_row:
-                return {"trades": [], "message": "No paper trading sessions found"}
+                return envelope({"trades": [], "message": "No paper trading sessions found"}, t0)
             
             run_id = run_row[0]
             
@@ -398,15 +423,15 @@ def get_trades(
             "r_multiple": row[11],
             "bars_held": row[12],
         })
-    
-    return {
+
+    return envelope({
         "run_id": str(run_id),
         "total": total,
         "offset": offset,
         "limit": limit,
         "count": len(trades),
         "trades": trades,
-    }
+    }, t0)
 
 
 # =============================================================================
@@ -418,6 +443,7 @@ def get_performance():
     """
     Get detailed performance analytics for the active session.
     """
+    t0 = time.time()
     with get_conn() as conn:
         with conn.cursor() as cur:
             # Get active run
@@ -430,7 +456,7 @@ def get_performance():
             run_row = cur.fetchone()
             
             if not run_row:
-                return {"error": "No active paper trading session"}
+                return envelope({"error": "No active paper trading session"}, t0)
             
             run_id, started_at = run_row
             
@@ -495,7 +521,7 @@ def get_performance():
             """, (run_id,))
             daily_pnl = cur.fetchall()
     
-    return {
+    return envelope({
         "run_id": str(run_id),
         "started_at": started_at.isoformat() if started_at else None,
         "overall": {
@@ -539,7 +565,7 @@ def get_performance():
             }
             for row in daily_pnl
         ],
-    }
+    }, t0)
 
 
 # =============================================================================
@@ -551,6 +577,7 @@ def close_position(position_id: str):
     """
     Manually close a position at current market price.
     """
+    t0 = time.time()
     # Get current price from Binance
     import requests
     
@@ -644,7 +671,7 @@ def close_position(position_id: str):
         
         conn.commit()
     
-    return {
+    return envelope({
         "position_id": position_id,
         "symbol": symbol,
         "side": side,
@@ -653,4 +680,4 @@ def close_position(position_id: str):
         "realized_pnl": realized_pnl,
         "r_multiple": r_multiple,
         "message": "Position closed successfully",
-    }
+    }, t0)

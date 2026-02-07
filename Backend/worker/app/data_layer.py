@@ -28,13 +28,74 @@ import psycopg
 
 logger = logging.getLogger(__name__)
 
+# ---------------------------------------------------------------------------
+# Standalone DB connection helper (mirrors worker.py get_conn pattern)
+# Used by module-level functions like log_signal_event().
+# ---------------------------------------------------------------------------
+_DATABASE_URL: str | None = os.getenv("DATABASE_URL")
+
+
+@contextmanager
+def get_conn():
+    """Get a database connection using DATABASE_URL env var."""
+    conn = psycopg.connect(_DATABASE_URL)
+    try:
+        yield conn
+    finally:
+        conn.close()
+
+
+def log_signal_event(
+    event_type: str,
+    symbol: str,
+    timeframe: str,
+    setup_id: str,
+    direction: str | None,
+    bar_start_ts: datetime,
+    setup_score: float | None = None,
+    rank: int | None = None,
+    feature_snapshot: dict | None = None,
+    score_components: dict | None = None,
+    reason_codes: list[str] | None = None,
+    trade_id: str | None = None,
+    run_id: str | None = None,
+):
+    """Log a signal event to signal_events table (Canon \u00a71.9)."""
+    try:
+        with get_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    INSERT INTO signal_events (
+                        event_type, symbol, timeframe, setup_id, direction,
+                        bar_start_ts, as_of_ts,
+                        setup_score, rank, feature_snapshot, score_components,
+                        reason_codes, trade_id, run_id
+                    ) VALUES (
+                        %s, %s, %s, %s, %s,
+                        %s, NOW(),
+                        %s, %s, %s, %s,
+                        %s, %s, %s
+                    )
+                """, (
+                    event_type, symbol, timeframe, setup_id, direction,
+                    bar_start_ts,
+                    setup_score, rank,
+                    json.dumps(feature_snapshot) if feature_snapshot else None,
+                    json.dumps(score_components) if score_components else None,
+                    reason_codes,
+                    trade_id, run_id,
+                ))
+            conn.commit()
+    except Exception as e:
+        logger.warning("signal_event log failed: %s", e)
+
 
 @dataclass
 class OHLCV:
     """Single OHLCV bar (Canon 4A compliant)."""
     symbol: str
     timeframe: str
-    open_time: datetime       # bar_start_ts (UTC)
+    bar_start_ts: datetime       # bar_start_ts (UTC)
     open: float
     high: float
     low: float
@@ -45,7 +106,7 @@ class OHLCV:
 
     def to_tuple(self) -> tuple:
         return (
-            self.symbol, self.timeframe, self.open_time,
+            self.symbol, self.timeframe, self.bar_start_ts,
             self.open, self.high, self.low, self.close, self.volume,
             self.as_of_ts or datetime.now(timezone.utc),
             self.is_final,
@@ -165,7 +226,7 @@ class OHLCVRepository:
             
             # Move start forward
             last_bar = bars[-1]
-            current_start = last_bar.open_time + self._timeframe_to_delta(timeframe)
+            current_start = last_bar.bar_start_ts + self._timeframe_to_delta(timeframe)
             
             # Rate limiting
             time.sleep(0.2)
@@ -210,7 +271,7 @@ class OHLCVRepository:
                 OHLCV(
                     symbol=symbol,
                     timeframe=timeframe,
-                    open_time=datetime.fromtimestamp(bar[0] / 1000, tz=timezone.utc),
+                    bar_start_ts=datetime.fromtimestamp(bar[0] / 1000, tz=timezone.utc),
                     open=float(bar[1]),
                     high=float(bar[2]),
                     low=float(bar[3]),
@@ -242,12 +303,12 @@ class OHLCVRepository:
             with conn.cursor() as cur:
                 cur.executemany("""
                     INSERT INTO ohlcv (
-                        symbol, timeframe, open_time,
+                        symbol, timeframe, bar_start_ts,
                         open, high, low, close, volume,
                         as_of_ts, is_final,
-                        batch_id
-                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                    ON CONFLICT (symbol, timeframe, open_time)
+                        source, batch_id
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    ON CONFLICT (symbol, timeframe, bar_start_ts, source)
                     DO UPDATE SET
                         open = EXCLUDED.open,
                         high = EXCLUDED.high,
@@ -259,7 +320,7 @@ class OHLCVRepository:
                         batch_id = EXCLUDED.batch_id,
                         ingested_at = NOW();
                 """, [
-                    (*bar.to_tuple(), batch_id)
+                    (*bar.to_tuple(), 'binance', batch_id)
                     for bar in bars
                 ])
             conn.commit()
@@ -300,14 +361,14 @@ class OHLCVRepository:
         with self._conn() as conn:
             with conn.cursor() as cur:
                 cur.execute(f"""
-                    SELECT symbol, timeframe, open_time,
+                    SELECT symbol, timeframe, bar_start_ts,
                            open, high, low, close, volume,
                            as_of_ts, is_final
                     FROM ohlcv
                     WHERE symbol = %s AND timeframe = %s
-                    AND open_time >= %s AND open_time <= %s
+                    AND bar_start_ts >= %s AND bar_start_ts <= %s
                     {final_clause}
-                    ORDER BY open_time;
+                    ORDER BY bar_start_ts;
                 """, (symbol, timeframe, start, end))
                 rows = cur.fetchall()
 
@@ -315,7 +376,7 @@ class OHLCVRepository:
             OHLCV(
                 symbol=row[0],
                 timeframe=row[1],
-                open_time=row[2],
+                bar_start_ts=row[2],
                 open=row[3],
                 high=row[4],
                 low=row[5],
@@ -346,12 +407,12 @@ class OHLCVRepository:
             with self._conn() as conn:
                 with conn.cursor() as cur:
                     cur.execute("""
-                        SELECT symbol, timeframe, open_time,
+                        SELECT symbol, timeframe, bar_start_ts,
                                open, high, low, close, volume
                         FROM ohlcv
                         WHERE symbol = %s AND timeframe = %s
-                        AND open_time >= %s AND open_time <= %s
-                        ORDER BY open_time
+                        AND bar_start_ts >= %s AND bar_start_ts <= %s
+                        ORDER BY bar_start_ts
                         LIMIT %s OFFSET %s;
                     """, (symbol, timeframe, start, end, chunk_size, offset))
                     rows = cur.fetchall()
@@ -363,7 +424,7 @@ class OHLCVRepository:
                 yield OHLCV(
                     symbol=row[0],
                     timeframe=row[1],
-                    open_time=row[2],
+                    bar_start_ts=row[2],
                     open=row[3],
                     high=row[4],
                     low=row[5],
@@ -378,11 +439,11 @@ class OHLCVRepository:
         with self._conn() as conn:
             with conn.cursor() as cur:
                 cur.execute("""
-                    SELECT symbol, timeframe, open_time,
+                    SELECT symbol, timeframe, bar_start_ts,
                            open, high, low, close, volume
                     FROM ohlcv
                     WHERE symbol = %s AND timeframe = %s
-                    ORDER BY open_time DESC
+                    ORDER BY bar_start_ts DESC
                     LIMIT 1;
                 """, (symbol, timeframe))
                 row = cur.fetchone()
@@ -393,7 +454,7 @@ class OHLCVRepository:
         return OHLCV(
             symbol=row[0],
             timeframe=row[1],
-            open_time=row[2],
+            bar_start_ts=row[2],
             open=row[3],
             high=row[4],
             low=row[5],
@@ -415,7 +476,7 @@ class OHLCVRepository:
                     cur.execute("""
                         SELECT COUNT(*) FROM ohlcv
                         WHERE symbol = %s AND timeframe = %s
-                        AND open_time >= %s AND open_time <= %s;
+                        AND bar_start_ts >= %s AND bar_start_ts <= %s;
                     """, (symbol, timeframe, start, end))
                 else:
                     cur.execute("""
@@ -433,7 +494,7 @@ class OHLCVRepository:
         with self._conn() as conn:
             with conn.cursor() as cur:
                 cur.execute("""
-                    SELECT MIN(open_time), MAX(open_time)
+                    SELECT MIN(bar_start_ts), MAX(bar_start_ts)
                     FROM ohlcv
                     WHERE symbol = %s AND timeframe = %s;
                 """, (symbol, timeframe))
@@ -524,10 +585,10 @@ class OHLCVRepository:
                     with conn.cursor() as cur:
                         # Hash timestamps + closes
                         cur.execute("""
-                            SELECT open_time, close FROM ohlcv
+                            SELECT bar_start_ts, close FROM ohlcv
                             WHERE symbol = %s AND timeframe = %s
-                            AND open_time >= %s AND open_time <= %s
-                            ORDER BY open_time;
+                            AND bar_start_ts >= %s AND bar_start_ts <= %s
+                            ORDER BY bar_start_ts;
                         """, (symbol, tf, start, end))
                         for row in cur:
                             h.update(f"{row[0].isoformat()}:{row[1]}".encode())
@@ -598,7 +659,7 @@ class OHLCVRepository:
                 total_symbols = cur.fetchone()[0]
                 
                 # Date range
-                cur.execute("SELECT MIN(open_time), MAX(open_time) FROM ohlcv;")
+                cur.execute("SELECT MIN(bar_start_ts), MAX(bar_start_ts) FROM ohlcv;")
                 date_range = cur.fetchone()
                 
                 # By timeframe

@@ -302,21 +302,19 @@ class RunRepository:
             with conn.cursor() as cur:
                 cur.execute("""
                     INSERT INTO run_trades (
-                        id, run_id, asset, timeframe, side, setup_id,
+                        id, run_id, symbol, timeframe, side, setup_id,
                         signal_bar_ts, since_ts, action_by_ts,
-                        entry_ts, entry_price, entry_bar_index,
+                        entry_ts, entry_price, entry_bar_idx,
                         stop_price, tp1_price, tp2_price, r_value,
                         exit_ts, exit_price, exit_reason,
-                        r_multiple, pnl_gross, fees, slippage, pnl_net,
-                        setup_score, trace_json
+                        r_multiple, pnl, fees_paid, trace_json
                     ) VALUES (
                         %s, %s, %s, %s, %s, %s,
                         %s, %s, %s,
                         %s, %s, %s,
                         %s, %s, %s, %s,
                         %s, %s, %s,
-                        %s, %s, %s, %s, %s,
-                        %s, %s
+                        %s, %s, %s, %s
                     );
                 """, (
                     trade.id, trade.run_id, trade.asset, trade.timeframe, trade.side, trade.setup_id,
@@ -324,8 +322,7 @@ class RunRepository:
                     trade.entry_ts, trade.entry_price, trade.entry_bar_index,
                     trade.stop_price, trade.tp1_price, trade.tp2_price, trade.r_value,
                     trade.exit_ts, trade.exit_price, trade.exit_reason,
-                    trade.r_multiple, trade.pnl_gross, trade.fees, trade.slippage, trade.pnl_net,
-                    trade.setup_score, json.dumps(trade.trace.to_dict()),
+                    trade.r_multiple, trade.pnl_gross, trade.fees, json.dumps(trade.trace.to_dict()),
                 ))
             conn.commit()
     
@@ -338,21 +335,19 @@ class RunRepository:
             with conn.cursor() as cur:
                 cur.executemany("""
                     INSERT INTO run_trades (
-                        id, run_id, asset, timeframe, side, setup_id,
+                        id, run_id, symbol, timeframe, side, setup_id,
                         signal_bar_ts, since_ts, action_by_ts,
-                        entry_ts, entry_price, entry_bar_index,
+                        entry_ts, entry_price, entry_bar_idx,
                         stop_price, tp1_price, tp2_price, r_value,
                         exit_ts, exit_price, exit_reason,
-                        r_multiple, pnl_gross, fees, slippage, pnl_net,
-                        setup_score, trace_json
+                        r_multiple, pnl, fees_paid, trace_json
                     ) VALUES (
                         %s, %s, %s, %s, %s, %s,
                         %s, %s, %s,
                         %s, %s, %s,
                         %s, %s, %s, %s,
                         %s, %s, %s,
-                        %s, %s, %s, %s, %s,
-                        %s, %s
+                        %s, %s, %s, %s
                     );
                 """, [
                     (
@@ -361,8 +356,7 @@ class RunRepository:
                         t.entry_ts, t.entry_price, t.entry_bar_index,
                         t.stop_price, t.tp1_price, t.tp2_price, t.r_value,
                         t.exit_ts, t.exit_price, t.exit_reason,
-                        t.r_multiple, t.pnl_gross, t.fees, t.slippage, t.pnl_net,
-                        t.setup_score, json.dumps(t.trace.to_dict()),
+                        t.r_multiple, t.pnl_gross, t.fees, json.dumps(t.trace.to_dict()),
                     )
                     for t in trades
                 ])
@@ -375,13 +369,12 @@ class RunRepository:
         with self._conn() as conn:
             with conn.cursor() as cur:
                 cur.execute("""
-                    SELECT id, run_id, asset, timeframe, side, setup_id,
+                    SELECT id, run_id, symbol, timeframe, side, setup_id,
                            signal_bar_ts, since_ts, action_by_ts,
-                           entry_ts, entry_price, entry_bar_index,
+                           entry_ts, entry_price, entry_bar_idx,
                            stop_price, tp1_price, tp2_price, r_value,
                            exit_ts, exit_price, exit_reason,
-                           r_multiple, pnl_gross, fees, slippage, pnl_net,
-                           setup_score, trace_json
+                           r_multiple, pnl, fees_paid, trace_json
                     FROM run_trades
                     WHERE run_id = %s
                     ORDER BY entry_ts;
@@ -392,7 +385,7 @@ class RunRepository:
 
     def _row_to_trade(self, row: tuple) -> RunTrade:
         """Convert a database row to a RunTrade object."""
-        trace_json = row[25]
+        trace_json = row[22]
         trace_dict = json.loads(trace_json) if isinstance(trace_json, str) else (trace_json or {})
 
         return RunTrade(
@@ -418,9 +411,9 @@ class RunRepository:
             r_multiple=row[19],
             pnl_gross=row[20],
             fees=row[21],
-            slippage=row[22],
-            pnl_net=row[23],
-            setup_score=row[24],
+            slippage=0,
+            pnl_net=row[20] - (row[21] or 0) if row[20] else 0,
+            setup_score=0,
             trace=TradeTrace(
                 conditions_met=trace_dict.get("conditions_met", {}),
                 indicator_values=trace_dict.get("indicator_values", {}),
@@ -438,11 +431,12 @@ class RunRepository:
         with self._conn() as conn:
             with conn.cursor() as cur:
                 cur.execute("""
-                    INSERT INTO run_events (id, run_id, ts, event_type, message, payload_json)
-                    VALUES (%s, %s, %s, %s, %s, %s);
+                    INSERT INTO run_events (run_id, event_type, message, data_json, created_at)
+                    VALUES (%s, %s, %s, %s, %s);
                 """, (
-                    event.id, event.run_id, event.ts,
+                    event.run_id,
                     event.event_type, event.message, json.dumps(event.payload),
+                    event.ts,
                 ))
             conn.commit()
     
@@ -452,20 +446,20 @@ class RunRepository:
             with conn.cursor() as cur:
                 if event_type:
                     cur.execute("""
-                        SELECT id, run_id, ts, event_type, message, payload_json
+                        SELECT id, run_id, created_at, event_type, message, data_json
                         FROM run_events
                         WHERE run_id = %s AND event_type = %s
-                        ORDER BY ts;
+                        ORDER BY created_at;
                     """, (run_id, event_type))
                 else:
                     cur.execute("""
-                        SELECT id, run_id, ts, event_type, message, payload_json
+                        SELECT id, run_id, created_at, event_type, message, data_json
                         FROM run_events
                         WHERE run_id = %s
-                        ORDER BY ts;
+                        ORDER BY created_at;
                     """, (run_id,))
                 rows = cur.fetchall()
-        
+
         return [
             RunEvent(
                 id=str(row[0]),

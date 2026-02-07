@@ -365,6 +365,23 @@ def cleanup_old_frontend_logs():
         logger.debug(f"Frontend logs cleanup failed: {e}")
 
 
+def cleanup_signal_events():
+    """Canon §1.9: Enforce 30-day retention on signal_events."""
+    try:
+        with get_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    DELETE FROM signal_events
+                    WHERE created_at < NOW() - INTERVAL '30 days'
+                """)
+                deleted = cur.rowcount
+            conn.commit()
+            if deleted > 0:
+                logger.info("signal_events retention: pruned %d rows older than 30 days", deleted)
+    except Exception as e:
+        logger.warning("signal_events retention cleanup failed: %s", e)
+
+
 def main():
     if not DATABASE_URL:
         raise RuntimeError("DATABASE_URL not set")
@@ -442,6 +459,7 @@ def main():
     last_scan_time = 0
     last_position_sync_time = 0
     last_cleanup_time = 0
+    last_signal_events_cleanup_time = 0
     runs_executed = 0
     POSITION_SYNC_INTERVAL = 30  # Sync tracked symbols every 30 seconds
     
@@ -454,6 +472,11 @@ def main():
             if time.time() - last_cleanup_time >= 86400:
                 cleanup_old_frontend_logs()
                 last_cleanup_time = time.time()
+
+            # Daily retention cleanup of signal_events (Canon §1.9)
+            if time.time() - last_signal_events_cleanup_time >= 86400:
+                cleanup_signal_events()
+                last_signal_events_cleanup_time = time.time()
 
             # Periodically sync price feed with open positions
             now = time.time()

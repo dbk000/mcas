@@ -108,7 +108,7 @@ DEFAULT_SYMBOLS = [
     "JUPUSDT", "WUSDT", "STRKUSDT", "MANTAUSDT", "ALTUSDT",
     "PIXELUSDT", "PORTALUSDT", "ACEUSDT", "XAIUSDT", "AIUSDT",
     "ONDOUSDT", "ENAUSDT", "WUSDT", "ETHFIUSDT", "SAGAUSDT",
-    # Tier 4 - Active mid/small caps  
+    # Tier 4 - Active mid/small caps
     "CFXUSDT", "CKBUSDT", "HOOKUSDT", "MAGICUSDT", "TUSDT",
     "IDUSDT", "RDNTUSDT", "LQTYUSDT", "SSVUSDT",
     "ANKRUSDT", "IOTXUSDT", "SKLUSDT", "CELRUSDT", "ARPAUSDT",
@@ -136,15 +136,25 @@ DEFAULT_SYMBOLS = [
 # -------------------------
 # Response envelope
 # -------------------------
-def envelope(data: Any, compute_start: float) -> dict:
-    """Standard response envelope with metadata."""
+def envelope(data: Any, compute_start: float, as_of_ts: float = None) -> dict:
+    """Standard response envelope with metadata.
+
+    Canon §1.5A: Every response includes as_of_ts (backend data freshness).
+    as_of_ts is the UTC timestamp of when the data was last computed/refreshed
+    on the backend — distinct from meta.timestamp which is the response time.
+    """
+    meta = {
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "version": "v1",
+        "compute_ms": round((time.time() - compute_start) * 1000, 1),
+    }
+    if as_of_ts is not None:
+        meta["as_of_ts"] = datetime.fromtimestamp(as_of_ts, tz=timezone.utc).isoformat()
+    else:
+        meta["as_of_ts"] = datetime.now(timezone.utc).isoformat()
     return {
         "data": data,
-        "meta": {
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "version": "v1",
-            "compute_ms": int((time.time() - compute_start) * 1000),
-        }
+        "meta": meta,
     }
 
 
@@ -201,7 +211,7 @@ def auth_ping():
 def list_markets():
     """List available symbols with metadata."""
     t0 = time.time()
-    
+
     # For MVP, return static list with basic metadata
     markets = []
     for symbol in DEFAULT_SYMBOLS:
@@ -212,7 +222,7 @@ def list_markets():
             "status": "active",
             "liquidity_tier": 1 if symbol in ["BTCUSDT", "ETHUSDT"] else 2,
         })
-    
+
     return envelope({"markets": markets, "count": len(markets)}, t0)
 
 
@@ -234,34 +244,36 @@ def get_ohlcv(
 ):
     """Get OHLCV candles from Binance."""
     t0 = time.time()
-    
+
     url = "https://api.binance.com/api/v3/klines"
     params = {"symbol": symbol, "interval": tf, "limit": limit}
-    
+
     try:
         resp = requests.get(url, params=params, timeout=10)
         resp.raise_for_status()
         data = resp.json()
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Binance API error: {e}")
-    
+
     candles = []
     for k in data:
         candles.append({
             "timestamp": k[0],
+            "candle_ts": datetime.fromtimestamp(k[0] / 1000, tz=timezone.utc).isoformat(),
             "open": float(k[1]),
             "high": float(k[2]),
             "low": float(k[3]),
             "close": float(k[4]),
             "volume": float(k[5]),
         })
-    
+
+    as_of = time.time()
     return envelope({
         "symbol": symbol,
         "timeframe": tf,
         "candles": candles,
         "count": len(candles),
-    }, t0)
+    }, t0, as_of_ts=as_of)
 
 
 # -------------------------
@@ -274,19 +286,19 @@ def get_squeeze_state(
 ):
     """
     Get BB Squeeze state for a symbol/timeframe.
-    
+
     Returns Tier 3 state useful for:
     - UI showing "squeeze brewing" before trigger
     - Debugging setup evaluation
     """
     t0 = time.time()
-    
+
     # Check Redis cache first
     cache_key = f"squeeze_state:{symbol}:{tf}"
     cached = r.get(cache_key)
     if cached:
         return envelope(json.loads(cached), t0)
-    
+
     # Otherwise compute (would normally call signal engine)
     # For now, return placeholder that UI can use
     return envelope({
@@ -311,16 +323,16 @@ def get_btc_squeeze_status(
 ):
     """
     Get BTC squeeze state for correlation filter.
-    
+
     Used by UI to show "waiting for BTC" status.
     """
     t0 = time.time()
-    
+
     cache_key = f"btc_squeeze:{tf}"
     cached = r.get(cache_key)
     if cached:
         return envelope(json.loads(cached), t0)
-    
+
     return envelope({
         "symbol": "BTCUSDT",
         "timeframe": tf,
@@ -346,7 +358,7 @@ class SignalRequest(BaseModel):
 def queue_signal(req: SignalRequest):
     """Queue a signal for processing by worker."""
     t0 = time.time()
-    
+
     if not DATABASE_URL:
         raise HTTPException(status_code=500, detail="Database not configured")
 
@@ -367,7 +379,7 @@ def queue_signal(req: SignalRequest):
 def get_signal(signal_id: int):
     """Get signal processing result."""
     t0 = time.time()
-    
+
     if not DATABASE_URL:
         raise HTTPException(status_code=500, detail="Database not configured")
 
@@ -400,7 +412,7 @@ def get_top_signals(
 ):
     """Get top N signals by score (ranked queue)."""
     t0 = time.time()
-    
+
     if not DATABASE_URL:
         raise HTTPException(status_code=500, detail="Database not configured")
 
@@ -440,6 +452,7 @@ def get_top_signals(
             "tp1_price": payload.get("tp1_price"),
             "tp2_price": payload.get("tp2_price"),
             "r_value": payload.get("r_value"),
+            "candle_ts": r_[7].isoformat() if r_[7] else None,
             "updated_ts": r_[7].isoformat() if r_[7] else None,
         })
 
@@ -514,6 +527,9 @@ def _read_opportunities_from_redis(min_score: float = 0.0, limit: int = 50, setu
                         "reason": "; ".join(payload.get("why_items", [])) if payload.get("why_items") else None,
                         "payload": payload,
                         "as_of_ts": as_of_ts,
+                        "candle_ts": datetime.fromtimestamp(
+                            float(meta.get("bar_start_ts", 0)), tz=timezone.utc
+                        ).isoformat() if meta.get("bar_start_ts") else None,
                         "expires_at": expires_at,
                         "updated_ts": datetime.fromtimestamp(
                             as_of_ts, tz=timezone.utc
@@ -593,6 +609,7 @@ def list_opportunities(
             "score": r_[6],
             "reason": r_[7],
             "payload": payload,
+            "candle_ts": r_[9].isoformat() if r_[9] else None,
             "updated_ts": r_[9].isoformat() if r_[9] else None,
             "source": "postgres",
         })
@@ -640,6 +657,9 @@ def get_live_opportunity(setup_id: str, symbol: str, tf: str):
             "payload": payload,
             "status": "active",
             "as_of_ts": as_of_ts,
+            "candle_ts": datetime.fromtimestamp(
+                float(meta.get("bar_start_ts", 0)), tz=timezone.utc
+            ).isoformat() if meta.get("bar_start_ts") else None,
             "expires_at": expires_at,
             "updated_ts": datetime.fromtimestamp(
                 as_of_ts, tz=timezone.utc
@@ -658,7 +678,7 @@ def get_live_opportunity(setup_id: str, symbol: str, tf: str):
 def get_opportunity(opp_id: int):
     """Get single opportunity."""
     t0 = time.time()
-    
+
     if not DATABASE_URL:
         raise HTTPException(status_code=500, detail="Database not configured")
 
@@ -687,6 +707,7 @@ def get_opportunity(opp_id: int):
         "reason": r_[7],
         "payload": payload,
         "status": r_[9],
+        "candle_ts": r_[10].isoformat() if r_[10] else None,
         "updated_ts": r_[10].isoformat() if r_[10] else None,
     }, t0)
 
@@ -701,10 +722,10 @@ def get_snapshot(
 ):
     """Get latest candle from Binance."""
     t0 = time.time()
-    
+
     url = "https://api.binance.com/api/v3/klines"
     params = {"symbol": symbol, "interval": timeframe, "limit": 1}
-    
+
     try:
         resp = requests.get(url, params=params, timeout=10)
         resp.raise_for_status()
@@ -721,13 +742,14 @@ def get_snapshot(
         "timeframe": timeframe,
         "snapshot": {
             "timestamp": candle[0],
+            "candle_ts": datetime.fromtimestamp(candle[0] / 1000, tz=timezone.utc).isoformat(),
             "open": float(candle[1]),
             "high": float(candle[2]),
             "low": float(candle[3]),
             "close": float(candle[4]),
             "volume": float(candle[5]),
         },
-    }, t0)
+    }, t0, as_of_ts=time.time())
 
 
 # Mount the protected router

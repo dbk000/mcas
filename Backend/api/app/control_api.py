@@ -17,9 +17,10 @@ This is the "command" side of the API (vs the "query" side in runs_api.py).
 
 import os
 import json
+import time
 import uuid
 from datetime import datetime, timezone
-from typing import Optional
+from typing import Optional, Any
 
 import psycopg
 import redis
@@ -41,6 +42,23 @@ def get_conn():
 
 
 router = APIRouter(prefix="/control", tags=["control-plane"])
+
+
+def envelope(data: Any, compute_start: float, as_of_ts: float = None) -> dict:
+    """Standard response envelope with metadata.
+
+    Canon S1.5A: Every response includes as_of_ts (backend data freshness).
+    """
+    meta = {
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "version": "v1",
+        "compute_ms": round((time.time() - compute_start) * 1000, 1),
+    }
+    if as_of_ts is not None:
+        meta["as_of_ts"] = datetime.fromtimestamp(as_of_ts, tz=timezone.utc).isoformat()
+    else:
+        meta["as_of_ts"] = datetime.now(timezone.utc).isoformat()
+    return {"data": data, "meta": meta}
 
 
 # =============================================================================
@@ -120,9 +138,10 @@ class SimulationRunRequest(BaseModel):
 def create_scan_run(request: ScanRunRequest):
     """
     Create and enqueue a SCAN run.
-    
+
     Worker will pick it up from the queue.
     """
+    t0 = time.time()
     run_id = str(uuid.uuid4())
     now = datetime.now(timezone.utc)
     
@@ -183,14 +202,14 @@ def create_scan_run(request: ScanRunRequest):
     
     # Notify worker via Redis
     r.publish("run_queue", json.dumps({"run_id": run_id, "type": "SCAN"}))
-    
-    return {
+
+    return envelope({
         "run_id": run_id,
         "status": "QUEUED",
         "name": name,
         "fingerprint": fingerprint,
         "message": "Run created and queued for execution",
-    }
+    }, t0)
 
 
 # =============================================================================
@@ -204,6 +223,7 @@ def ingest_ohlcv(request: IngestRequest):
 
     Fetches historical klines and stores them for backtesting.
     """
+    t0 = time.time()
     import requests as http_requests
 
     try:
@@ -265,12 +285,12 @@ def ingest_ohlcv(request: IngestRequest):
                         for k in data:
                             cur.execute("""
                                 INSERT INTO ohlcv (
-                                    symbol, timeframe, open_time,
+                                    symbol, timeframe, bar_start_ts,
                                     open, high, low, close, volume,
                                     as_of_ts, is_final, batch_id
                                 ) VALUES (%s, %s, to_timestamp(%s / 1000.0) AT TIME ZONE 'UTC',
                                           %s, %s, %s, %s, %s, %s, TRUE, %s)
-                                ON CONFLICT (symbol, timeframe, open_time)
+                                ON CONFLICT (symbol, timeframe, bar_start_ts, source)
                                 DO UPDATE SET
                                     open = EXCLUDED.open, high = EXCLUDED.high,
                                     low = EXCLUDED.low, close = EXCLUDED.close,
@@ -293,12 +313,12 @@ def ingest_ohlcv(request: IngestRequest):
             results[key] = bars_ingested
             total_ingested += bars_ingested
 
-    return {
+    return envelope({
         "status": "ok",
         "total_bars_ingested": total_ingested,
         "per_symbol": results,
         "message": f"Ingested {total_ingested} bars across {len(results)} symbol-timeframe pairs",
-    }
+    }, t0)
 
 
 @router.get("/data/availability")
@@ -311,6 +331,7 @@ def get_data_availability(
 
     Returns date ranges and bar counts for pre-flight checks before backtesting.
     """
+    t0 = time.time()
     symbol_list = [s.strip().upper() for s in symbols.split(",") if s.strip()]
     tf_list = [t.strip() for t in timeframes.split(",") if t.strip()]
 
@@ -320,7 +341,7 @@ def get_data_availability(
             for symbol in symbol_list:
                 for tf in tf_list:
                     cur.execute("""
-                        SELECT COUNT(*), MIN(open_time), MAX(open_time)
+                        SELECT COUNT(*), MIN(bar_start_ts), MAX(bar_start_ts)
                         FROM ohlcv
                         WHERE symbol = %s AND timeframe = %s AND is_final = TRUE;
                     """, (symbol, tf))
@@ -332,16 +353,17 @@ def get_data_availability(
                         "last_bar": row[2].isoformat() if row[2] else None,
                     }
 
-    return {"availability": availability}
+    return envelope({"availability": availability}, t0)
 
 
 @router.post("/runs/backtest")
 def create_backtest_run(request: BacktestRunRequest):
     """
     Create and enqueue a BACKTEST run.
-    
+
     Requires OHLCV data to be available in the database.
     """
+    t0 = time.time()
     run_id = str(uuid.uuid4())
     now = datetime.now(timezone.utc)
     
@@ -399,7 +421,7 @@ def create_backtest_run(request: BacktestRunRequest):
                 SELECT COUNT(*) FROM ohlcv
                 WHERE symbol = ANY(%s)
                 AND timeframe = ANY(%s)
-                AND open_time >= %s AND open_time <= %s;
+                AND bar_start_ts >= %s AND bar_start_ts <= %s;
             """, (request.symbols, request.timeframes, start_ts, end_ts))
             data_count = cur.fetchone()[0]
             
@@ -431,14 +453,14 @@ def create_backtest_run(request: BacktestRunRequest):
         
         conn.commit()
     
-    return {
+    return envelope({
         "run_id": run_id,
         "status": "QUEUED",
         "name": name,
         "fingerprint": fingerprint,
         "data_bars_available": data_count,
         "message": "Backtest run created and queued",
-    }
+    }, t0)
 
 
 # =============================================================================
@@ -454,6 +476,7 @@ def create_simulation_run(request: SimulationRunRequest):
     For each expired opportunity, assumes a position opened at signal time
     and walks forward through OHLCV data until exit triggers.
     """
+    t0 = time.time()
     run_id = str(uuid.uuid4())
     now = datetime.now(timezone.utc)
 
@@ -555,7 +578,7 @@ def create_simulation_run(request: SimulationRunRequest):
     # Notify worker via Redis
     r.publish("run_queue", json.dumps({"run_id": run_id, "type": "SIMULATION"}))
 
-    return {
+    return envelope({
         "run_id": run_id,
         "status": "QUEUED",
         "name": name,
@@ -564,7 +587,7 @@ def create_simulation_run(request: SimulationRunRequest):
         "limit": request.limit,
         "position_size_usd": request.position_size_usd,
         "message": f"Simulation run queued for {min(opp_count, request.limit)} expired opportunities",
-    }
+    }, t0)
 
 
 # =============================================================================
@@ -575,14 +598,15 @@ def create_simulation_run(request: SimulationRunRequest):
 def start_paper_trading(request: PaperStartRequest):
     """
     Start a PAPER trading run.
-    
+
     Creates persistent account state and begins tracking positions.
-    
+
     Auto-trade mode:
     - When enabled, automatically opens positions from scan signals
     - Uses top_n best scoring signals per scan
     - Respects max_positions limit
     """
+    t0 = time.time()
     run_id = str(uuid.uuid4())
     now = datetime.now(timezone.utc)
     
@@ -676,7 +700,7 @@ def start_paper_trading(request: PaperStartRequest):
         "auto_trade": request.auto_trade,
     }))
     
-    return {
+    return envelope({
         "run_id": run_id,
         "status": "RUNNING",
         "name": name,
@@ -688,18 +712,19 @@ def start_paper_trading(request: PaperStartRequest):
         "auto_trade_top_n": request.auto_trade_top_n,
         "min_score": request.min_score,
         "message": "Paper trading started" + (" with auto-trade enabled" if request.auto_trade else ""),
-    }
+    }, t0)
 
 
 @router.post("/runs/paper/stop")
 def stop_paper_trading():
     """
     Stop the active PAPER trading run.
-    
+
     Closes all positions at market and finalizes the run.
     """
+    t0 = time.time()
     active_run_id = r.get("paper:active_run_id")
-    
+
     if not active_run_id:
         raise HTTPException(status_code=404, detail="No active paper trading run")
     
@@ -761,25 +786,26 @@ def stop_paper_trading():
     r.delete("paper:active_run_id")
     r.publish("paper_control", json.dumps({"action": "stop", "run_id": active_run_id}))
     
-    return {
+    return envelope({
         "run_id": active_run_id,
         "status": "SUCCESS",
         "summary": summary,
         "message": "Paper trading stopped",
-    }
+    }, t0)
 
 
 @router.get("/paper/status")
 def get_paper_status():
     """
     Get current paper trading status.
-    
+
     Returns account state, open positions, and recent trades.
     """
+    t0 = time.time()
     active_run_id = r.get("paper:active_run_id")
-    
+
     if not active_run_id:
-        return {"active": False, "message": "No active paper trading run"}
+        return envelope({"active": False, "message": "No active paper trading run"}, t0)
     
     with get_conn() as conn:
         with conn.cursor() as cur:
@@ -791,7 +817,7 @@ def get_paper_status():
             run = cur.fetchone()
             
             if not run:
-                return {"active": False, "message": "Run not found"}
+                return envelope({"active": False, "message": "Run not found"}, t0)
             
             # Get account
             cur.execute("""
@@ -823,7 +849,7 @@ def get_paper_status():
             """, (active_run_id,))
             recent_closed = cur.fetchall()
     
-    return {
+    return envelope({
         "active": True,
         "run_id": active_run_id,
         "run_name": run[1],
@@ -857,19 +883,19 @@ def get_paper_status():
         ],
         "recent_trades": [
             {
-                "symbol": t[0],
-                "side": t[1],
-                "setup_id": t[2],
-                "entry_price": t[3],
-                "exit_price": t[4],
-                "exit_reason": t[5],
-                "realized_pnl": t[6],
-                "r_multiple": t[7],
-                "exit_ts": t[8].isoformat() if t[8] else None,
+                "symbol": t_[0],
+                "side": t_[1],
+                "setup_id": t_[2],
+                "entry_price": t_[3],
+                "exit_price": t_[4],
+                "exit_reason": t_[5],
+                "realized_pnl": t_[6],
+                "r_multiple": t_[7],
+                "exit_ts": t_[8].isoformat() if t_[8] else None,
             }
-            for t in recent_closed
+            for t_ in recent_closed
         ],
-    }
+    }, t0)
 
 
 # =============================================================================
@@ -881,6 +907,7 @@ def cancel_run(run_id: str):
     """
     Cancel a pending or running run.
     """
+    t0 = time.time()
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute("""
@@ -917,11 +944,11 @@ def cancel_run(run_id: str):
     # Notify worker
     r.publish("run_control", json.dumps({"action": "cancel", "run_id": run_id}))
     
-    return {
+    return envelope({
         "run_id": run_id,
         "status": "CANCELED",
         "message": "Run canceled",
-    }
+    }, t0)
 
 
 @router.get("/queue")
@@ -929,6 +956,7 @@ def get_queue_status():
     """
     Get run queue status.
     """
+    t0 = time.time()
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute("""
@@ -943,7 +971,7 @@ def get_queue_status():
             """)
             rows = cur.fetchall()
     
-    return {
+    return envelope({
         "queue": [
             {
                 "run_id": str(row[0]),
@@ -959,4 +987,4 @@ def get_queue_status():
             for row in rows
         ],
         "count": len(rows),
-    }
+    }, t0)

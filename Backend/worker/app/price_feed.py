@@ -341,7 +341,7 @@ class PriceFeed:
             if data:
                 candle = data[0]
                 return {
-                    "open_time": candle[0],
+                    "bar_start_ts": candle[0],
                     "open": float(candle[1]),
                     "high": float(candle[2]),
                     "low": float(candle[3]),

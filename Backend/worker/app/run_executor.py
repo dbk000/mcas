@@ -376,7 +376,7 @@ class RunExecutor:
         # Pre-index bars for O(1) lookup (also fixes P1-5 O(N) scan)
         bar_index: dict[str, dict] = {}
         for key, bars in bars_by_symbol.items():
-            bar_index[key] = {bar["open_time"]: bar for bar in bars}
+            bar_index[key] = {bar["bar_start_ts"]: bar for bar in bars}
 
         open_positions: dict[str, dict] = {}  # pos_key -> position dict
         closed_trades: list[dict] = []
@@ -387,7 +387,7 @@ class RunExecutor:
         all_timestamps: set = set()
         for bars in bars_by_symbol.values():
             for bar in bars:
-                all_timestamps.add(bar["open_time"])
+                all_timestamps.add(bar["bar_start_ts"])
         sorted_timestamps = sorted(all_timestamps)
 
         self.repo.add_event(RunEvent(
@@ -584,7 +584,7 @@ class RunExecutor:
                     candle_history[key] = []
 
                 # Convert bar dict to OHLCV
-                bar_ts = bar["open_time"]
+                bar_ts = bar["bar_start_ts"]
                 ts_ms = int(bar_ts.timestamp() * 1000) if hasattr(bar_ts, "timestamp") else int(bar_ts)
                 candle_history[key].append(OHLCV(
                     timestamp=ts_ms,
@@ -812,12 +812,12 @@ class RunExecutor:
                 for symbol in run.universe.assets:
                     for tf in run.universe.timeframes:
                         cur.execute("""
-                            SELECT open_time, open, high, low, close, volume
+                            SELECT bar_start_ts, open, high, low, close, volume
                             FROM ohlcv
                             WHERE symbol = %s AND timeframe = %s
-                            AND open_time >= %s AND open_time <= %s
+                            AND bar_start_ts >= %s AND bar_start_ts <= %s
                             AND is_final = TRUE
-                            ORDER BY open_time;
+                            ORDER BY bar_start_ts;
                         """, (symbol, tf, start_ts, end_ts))
 
                         rows = cur.fetchall()
@@ -837,7 +837,7 @@ class RunExecutor:
 
                         bars = [
                             {
-                                "open_time": row[0],
+                                "bar_start_ts": row[0],
                                 "open": row[1],
                                 "high": row[2],
                                 "low": row[3],
@@ -854,8 +854,8 @@ class RunExecutor:
                         max_gap_found = 0
                         gap_count = 0
                         for i in range(1, len(bars)):
-                            t0 = bars[i - 1]["open_time"]
-                            t1 = bars[i]["open_time"]
+                            t0 = bars[i - 1]["bar_start_ts"]
+                            t1 = bars[i]["bar_start_ts"]
                             if hasattr(t0, "timestamp"):
                                 delta = t1.timestamp() - t0.timestamp()
                             else:
@@ -1400,7 +1400,7 @@ class RunExecutor:
         h = hashlib.sha256()
         for key in sorted(bars_by_symbol.keys()):
             for bar in bars_by_symbol[key]:
-                h.update(f"{bar['open_time']}:{bar['close']}".encode())
+                h.update(f"{bar['bar_start_ts']}:{bar['close']}".encode())
         return h.hexdigest()
 
     def _update_run_data_json(self, run: Run):

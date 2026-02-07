@@ -202,18 +202,18 @@ class OpportunitySimulator:
                     symbol, tf = key.rsplit("_", 1)
 
                     cur.execute("""
-                        SELECT open_time, open, high, low, close, volume
+                        SELECT bar_start_ts, open, high, low, close, volume
                         FROM ohlcv
                         WHERE symbol = %s AND timeframe = %s
-                        AND open_time >= %s AND open_time <= %s
+                        AND bar_start_ts >= %s AND bar_start_ts <= %s
                         AND is_final = TRUE
-                        ORDER BY open_time;
+                        ORDER BY bar_start_ts;
                     """, (symbol, tf, start_ts, end_ts))
 
                     rows = cur.fetchall()
                     bars = [
                         {
-                            "open_time": row[0],
+                            "bar_start_ts": row[0],
                             "open": row[1],
                             "high": row[2],
                             "low": row[3],
@@ -324,7 +324,7 @@ class OpportunitySimulator:
         # Find the first bar after opportunity timestamp (NEXT_OPEN fill)
         entry_bar_idx = None
         for i, bar in enumerate(bars):
-            bar_ts = bar["open_time"]
+            bar_ts = bar["bar_start_ts"]
             if bar_ts.tzinfo is None:
                 bar_ts = bar_ts.replace(tzinfo=timezone.utc)
             if bar_ts > opp_ts:
@@ -361,7 +361,7 @@ class OpportunitySimulator:
         # Position sizing
         position_size = self.config.position_size_usd / entry_with_slip
 
-        result.entry_ts = entry_bar["open_time"]
+        result.entry_ts = entry_bar["bar_start_ts"]
         result.entry_price = actual_entry_price
         result.entry_price_with_slippage = entry_with_slip
         result.position_size = position_size
@@ -406,7 +406,7 @@ class OpportunitySimulator:
 
             if exit_result:
                 exit_reason, exit_price = exit_result
-                exit_ts = bar["open_time"]
+                exit_ts = bar["bar_start_ts"]
                 break
 
         # If no exit triggered, force close at last bar's close
@@ -414,7 +414,7 @@ class OpportunitySimulator:
             last_bar = bars[max_bar_idx] if max_bar_idx < len(bars) else bars[-1]
             exit_reason = "TIME_STOP"
             exit_price = last_bar["close"]
-            exit_ts = last_bar["open_time"]
+            exit_ts = last_bar["bar_start_ts"]
 
         result.exit_ts = exit_ts
         result.exit_price = exit_price
