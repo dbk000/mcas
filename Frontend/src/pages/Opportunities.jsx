@@ -146,7 +146,7 @@ function sortOpportunities(opps, sortBy) {
 
 export default function Opportunities() {
   const { addToast } = useToast()
-  const { apiCall } = useApi()
+  const { post } = useApi()
   const navigate = useNavigate()
 
   // Filters
@@ -196,14 +196,11 @@ export default function Opportunities() {
   const handleSimulateExpired = async () => {
     setSimulating(true)
     try {
-      const response = await apiCall('/control/runs/simulation', {
-        method: 'POST',
-        body: JSON.stringify({
-          position_size_usd: simConfig.position_size_usd,
-          limit: simConfig.limit,
-          setup_ids: filters.setup_id ? [filters.setup_id] : null,
-          min_score: filters.min_score,
-        }),
+      const response = await post('/control/runs/simulation', {
+        position_size_usd: simConfig.position_size_usd,
+        limit: simConfig.limit,
+        setup_ids: filters.setup_id ? [filters.setup_id] : null,
+        min_score: filters.min_score,
       })
 
       if (response.run_id) {
