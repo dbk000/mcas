@@ -27,5 +27,9 @@ pnpm-debug.log*
 # Claude Code local settings
 .claude/settings.local.json
 
+# Docker Compose local overrides (dev-only, never deploy)
+docker-compose.override.yml
+**/docker-compose.override.yml
+
 # Archives
 *.zip
