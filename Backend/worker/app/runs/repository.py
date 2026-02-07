@@ -431,7 +431,7 @@ class RunRepository:
         with self._conn() as conn:
             with conn.cursor() as cur:
                 cur.execute("""
-                    INSERT INTO run_events (run_id, event_type, message, data_json, created_at)
+                    INSERT INTO run_events (run_id, event_type, message, payload_json, created_at)
                     VALUES (%s, %s, %s, %s, %s);
                 """, (
                     event.run_id,
@@ -446,14 +446,14 @@ class RunRepository:
             with conn.cursor() as cur:
                 if event_type:
                     cur.execute("""
-                        SELECT id, run_id, created_at, event_type, message, data_json
+                        SELECT id, run_id, created_at, event_type, message, payload_json
                         FROM run_events
                         WHERE run_id = %s AND event_type = %s
                         ORDER BY created_at;
                     """, (run_id, event_type))
                 else:
                     cur.execute("""
-                        SELECT id, run_id, created_at, event_type, message, data_json
+                        SELECT id, run_id, created_at, event_type, message, payload_json
                         FROM run_events
                         WHERE run_id = %s
                         ORDER BY created_at;
