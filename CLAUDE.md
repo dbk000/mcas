@@ -1,353 +1,1018 @@
-# CLAUDE.md
+# CLAUDE.md — Guidance for Claude Code
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
-<overarching instructions to take precedence over everything that follows>
-# MCAS Canon (Repository Root Guidance)
-
-This file is the *macro-level* “north star + guardrails” for all MCAS code iterations.
+This file is the macro-level “north star + guardrails” for all MCAS iterations.
 If anything conflicts with this canon, the code is wrong (or the canon must be explicitly amended).
 
 ---
-the file named "chats combined text.md" located in the same directory as this CLAUDE.md contains all the chats that gave birth to the current canon scope. You read it before implementing new features or changing existing features, as the "chats combined text.md" is a meta-North Star i.e. what the Claude-generated North Star oritents itself with.
-## 0) The North Star
 
-MCAS = **Market Cognition At Scale**: scan many markets, compute a large indicator universe, generate **ranked, explainable signals**, and guide **human-in-the-loop** execution (MVP default).  
-The edge is: **do the popular retail-crowded stuff, faster** — with better ranking, guardrails, and auditability.
-
----
-
-## 1) Source-of-Truth Hierarchy
-
-1. **Canon logs (“Chats combined_text”)**: chronologically deduped; later refinements override earlier.
-2. `docs/` specs (module-level contracts).
-3. Code.
+# 0) Source of Truth (Read Order)
+# 0.1) Claude Code Session Rules
+- Maximum 2 concurrent sub-agents/tasks. No more.
+- Work through all tasks sequentially (or 2 at a time) without waiting for user confirmation between tasks.
+- Keep changes per task to <5 files where possible.
+1) **Canon logs**: `chats combined text.md` (same directory). Chronologically dedupe: later refinements override earlier.
+2) **This file — MCAS Canon** (Sections 1–12 below).
+3) `docs/` module specs (contracts; must be updated with behavior changes).
+4) Code (implementation).
 
 **Rule:** If you change behavior/semantics, you must update the relevant canon/spec in the same PR.
 
 ---
 
-## 2) Non-Negotiables (Do Not Violate)
+# 1) MCAS Canon (Non-Negotiables + Architecture Invariants)
+
+## 1.1 North Star
+MCAS = **Market Cognition At Scale**: scan many markets, compute a large indicator universe, generate **ranked, explainable signals**, and guide **human-in-the-loop** execution (MVP default).  
+Edge: **do the popular retail-crowded stuff, faster** — better ranking, guardrails, auditability.
+
+## 1.2 Non-Negotiables (Do Not Violate)
 
 ### A) Human-in-the-loop (MVP)
 - MCAS produces *actions + timing + rationale*.
-- The user is the final actuator (manual execution) unless a future phase explicitly enables auto-execution.
+- User is the final actuator unless a future phase explicitly enables auto-execution.
 
 ### B) API-first, UI-swappable architecture
-- The backend is the system of record for computation and ranking.
-- The frontend is a thin client: render + request + workflow actions only.
+- Backend is system of record for computation and ranking.
+- Frontend is a thin client: render + request + workflow actions only.
 
 ### C) Determinism & audit
-- Every computed value must map to a **canonical ID** (indicator_id / signal_id) and version.
-- Every trade decision must be reproducible via stored snapshots (inputs, params, versions, timestamps).
+- Every computed value maps to canonical ID (indicator_id / signal_id) + version.
+- Every trade decision reproducible via stored snapshots (inputs, params, versions, timestamps).
 
 ### D) Efficiency by design
 - Assume scale: **~1024 markets** with frequent updates.
 - Prefer cache/ring-buffer compute; store only what’s needed for durability + audit.
-- No “accidental data warehouses”.
+- No accidental data warehouses.
 
----
+## 1.3 Core Definitions (Shared Language)
+- Market, Asset, Timeframe, Candle (`bar_start_ts` UTC), Feature, Signal, Setup, Run, Snapshot — (keep your definitions as-is)
 
-## 3) Core Definitions (Shared Language)
+### Canonical glossary location (required)
+- Core definitions MUST live in exactly one glossary file and be referenced from here.
+  - Recommended path: `docs/glossary.md` (create if missing).
+- Do **not** redefine these terms in other docs/specs; link to the glossary instead.
+- If semantics change, update glossary + any dependent `docs/` specs in the same PR.
 
-- **Market**: (exchange + pair). OHLCV truth lives here.
-- **Asset**: a symbol abstraction that can map to one-or-many markets.
-- **Timeframe**: explicit string (`"1m"`, `"5m"`, `"1h"`, …).
-- **Candle**: identified by `bar_start_ts` (UTC) + timeframe.
-- **Feature**: numeric indicator output (e.g., `RSI_14@1m`).
-- **Signal**: setup-derived state (e.g., `S1_TRIGGERED`), with score + timing.
-- **Setup**: plug-in strategy module (S1, S2, Unicorns, etc).
-- **Run**: a bounded execution context (backtest, paper, live scan cycle).
-- **Snapshot**: the frozen record at decision time (for audit & replay).
+### Candle timestamp semantics (avoid drift)
+- `bar_start_ts` (UTC) is the canonical candle identifier: **start of the interval**.
+- `as_of_ts` (UTC) is the data freshness timestamp (when the system last updated/validated the value).
+- `is_final` indicates whether the candle is closed/final.
+- `candle_ts` may be used as an API alias for `bar_start_ts` for UI readability, but if both are present they MUST be identical.
 
----
-
-## 4) Architecture Invariants
-
+## 1.4 Architecture Invariants
 ### A) Data plane (truth ledger)
-- Store OHLCV as *an attribute of a market*, not “one price per coin”.
-- Persist candles with:
-  - `timeframe`
-  - `bar_start_ts` (UTC; the candle identity)
-  - `as_of_ts` (when data was last refreshed / valid-through)
-  - `is_final` (bar closed)
+- OHLCV stored as attribute of a market.
+- Persist candles with timeframe, `bar_start_ts`, `as_of_ts`, `is_final`.
 
 ### B) Compute plane (Feature Factory / Signal Engine)
-- Compute indicators from canonical input candles.
-- Use **tiering** to control cost:
-  - Tier 1–2: cheap primitives / derived basics (often compute on-the-fly)
-  - Tier 3+: store only higher-order state that’s expensive or needed for monitoring
+- Compute indicators from canonical candles.
+- Use tiering to control cost (Tier 1–2 cheap; Tier 3+ persisted only if needed).
 
 ### C) Control plane (universe + workflow)
 - Universe inclusion ≠ compute capability.
-- Maintain flags/tables to control:
-  - what is screened,
-  - what is monitored,
-  - what is tradable in MVP.
+- Maintain flags/tables for screened/monitored/tradable.
 
----
+## 1.5 UI ↔ Backend Contract (Hard Rules)
+- Every response includes `as_of_ts` + per-value `candle_ts` where applicable.
+- Frontend does not compute indicators.
+- Deterministic IDs only; no ad-hoc UI IDs.
+- Ranking is server-side (`rank`, `score_total`, `score_components`).
+- Signals include timing metadata: `since_ts`, `action_by_ts`.
 
-## 5) UI ↔ Backend Contract (Hard Rules)
+### Timestamp field naming (hard rule)
+- Prefer `bar_start_ts` internally (storage + compute).
+- API responses MAY expose `candle_ts` for readability, but it must always mean the candle/bar start time (i.e., `candle_ts == bar_start_ts`).
+- If an endpoint returns both fields, document the aliasing in the corresponding `docs/` contract and add a contract test.
 
-### A) “As-of” consistency
-Every relevant response must include:
-- `as_of_ts` (backend freshness)
-- per-value `candle_ts` (what candle the number belongs to)
+## 1.6 Indicator Library Governance
+- Codify identity + provenance, not hand-written arithmetic steps for thousands of indicators.
+- Each indicator definition includes ID, inputs, params, expression type, impl pointer, version.
+- Ambiguity hotspots must be explicit.
 
-### B) Frontend does **not** compute indicators
-UI only:
-- requests latest features/signals,
-- renders,
-- writes workflow actions (notes, universe pin/unpin, etc).
+### Indicator ID grammar & generation (hard rule)
+- Indicator / signal IDs MUST be generated by a single canonical generator (library function). No hand-authored IDs in feature code.
+- Grammar: `<FAMILY>_<PARAMS>` using **uppercase A–Z**, digits, and underscores only.
+  - Examples: `EMA_200`, `RSI_14`, `ATR_14`, `MACD_12_26_9`, `BBANDS_20_2`, `DONCHIAN_20`.
+- Timeframe is **not** encoded into `indicator_id`; it is part of the series key (e.g., `(market_id, timeframe, bar_start_ts, indicator_id, version)`).
+- Parameter encoding must be canonical and positional. Do not introduce synonyms (`MA` vs `SMA`) or formatting variants (`MASlope_20` vs `MA_SLOPE_20`).
+- CI MUST fail if:
+  - two definitions resolve to the same `(indicator_id, version)` but differ semantically,
+  - any ID is duplicated,
+  - an indicator definition changes without bumping its version (or adding an explicit Canon Patch entry explaining why).
 
-### C) Deterministic identifiers
-- `indicator_id` and `signal_id` must match canonical library IDs.
-- Timeframe is always explicit.
-- No ad-hoc IDs in the UI.
+## 1.7 Setups as Plug-in Modules
+- Setup interface contract: preconditions, trigger, entry fill model, stop/invalidation, time stop, targets/trailing state machine, concurrency, liquidity/sizing caps, explainability payload.
+- S1 is the template.
+- Champion/challenger everywhere (setup/modules/params/scoring components).
+- Unicorns is first-class.
 
-### D) Ranking is server-side
-- Backend returns `rank`, `score_total`, and `score_components`.
-- UI displays; UI does not implement bespoke sorting logic.
+## 1.8 Anti-lookahead & Backtest Safety
+- No circular definitions.
+- Backtest-safe fills (e.g., next bar open + slippage model).
+- `is_final` explicit.
 
-### E) Signal timing metadata (required)
-Each signal should expose:
-- `since_ts` = first time the signal entered its current state
-- `action_by_ts` = latest “still valid” time to act (derived from setup rules, e.g., time-stop windows)
+## 1.9 Storage Policy (Cost + Audit)
+Persist: OHLCV truth (bounded/pruned), minimal durable Tier 3+ state, decision snapshots.
+Do not persist: whole indicator universe history by default, redundant recomputable series.
 
----
+### Boundary: evented audit logs vs. “indicator warehouse”
+To satisfy auditability **without** exploding storage:
+- Persist **evented** feature/signal logs only at key decision events (not every candle for every indicator):
+  - setup armed / fired / invalidated,
+  - threshold cross,
+  - enters/leaves a ranked top-N (or score bucket),
+  - entry/exit decisions and any post-entry state flips that change guidance.
+- Each event log row stores the **minimal payload needed to reproduce** the decision later:
+  - canonical IDs + versions,
+  - referenced candle keys (`market_id`, `timeframe`, `bar_start_ts`),
+  - key feature values / score components used for that decision,
+  - reason codes / explainability payload.
+- Logs MUST be **bounded**:
+  - choose and document a retention window and/or rollups (e.g., roll up to daily aggregates after N days),
+  - use partitioning and/or compression for large append-only tables.
+- Do **not** persist per-candle values for the entire indicator universe by default.
+  - Full-series persistence is allowed only when explicitly whitelisted (too expensive to recompute, or required for a specific setup/backtest), and must be called out in `docs/` + a Canon Patch if it changes storage footprint materially.
 
-## 6) Indicator Library Governance (What to Codify)
-
-You **do not** hand-write arithmetic steps for thousands of indicators as the primary artifact.
-You codify **identity + provenance**:
-
-Each indicator definition must include:
-- `indicator_id` (stable)
-- inputs (OHLCV / derived dependencies)
-- params (defaults)
-- expression type (value/slope/cross/percentile/etc)
-- implementation pointer (function/template)
-- version (formula/params versioning hook)
-
-Ambiguity hotspots (must be explicit):
-- pivot/swing definitions,
-- percentile/ranking windows,
-- slope definitions,
-- any composite scoring stacks.
-
----
-
-## 7) Setups as Plug-in Modules (Strategy Factory)
-
-### A) Setup interface contract
-Every setup module must define:
-- preconditions (regime/filters)
-- trigger definition (no lookahead)
-- entry definition (explicit fill model)
-- initial stop + invalidation
-- time stop (progress deadline)
-- targets/trailing state machine
-- concurrency rules (human bandwidth)
-- liquidity tiers / sizing caps
-- explainability payload (3–8 “why” items)
-
-### B) S1 is the template
-S1 (BB Squeeze On) is the reference blueprint for:
-- tiered indicator build order,
-- strict trigger quality,
-- time-stop semantics,
-- ranking + explain arrays,
-- liquidity + BTC-filter patterns.
-
-### C) Champion / Challenger everywhere
-Champion/challenger is not only “which setup wins”, but also:
-- setup modules,
-- parameters,
-- scoring components.
-Keep this pluggable and versioned.
-
-### D) Unicorns is first-class (not a side quest)
-Unicorn discovery is a dedicated strategy family: low-volume pre-ignition detection.
-It must fit the same setup plug-in contract and ranking/guardrails framework.
-
----
-
-## 8) Anti-Lookahead & Backtest Safety
-
-- No circular definitions (e.g., “ripe because breakout happened”).
-- Entry fills must be defined in a backtest-safe way (e.g., next bar open + slippage model).
-- Keep “forming candle” vs “final candle” explicit (`is_final`).
-
----
-
-## 9) Storage Policy (Cost + Audit)
-
-Persist:
-- OHLCV truth (bounded history per market/TF, pruned)
-- minimal durable state for Tier 3+ (where required)
-- trade snapshots (full provenance)
-
-Do **not** persist:
-- the entire indicator universe history by default
-- redundant derived series that can be recomputed cheaply
-
----
-
-## 10) DB / Schema Governance
-
+## 1.10 DB / Schema Governance
 - No schema drift: schema changes are versioned and repeatable.
 - Avoid duplicating DDL in multiple runtime entrypoints.
-- Treat schema as a governed artifact (migration + CI checks).
+- Schema is governed (migration + CI checks).
+
+## 1.11 PR Checklist (Fail PR if any are “No”)
+- Preserve UI-thin/backend-compute?
+- IDs deterministic/canonical?
+- `as_of_ts` and `candle_ts` present where applicable?
+- Ranking server-side & stable?
+- Time semantics explicit (UTC, bar_start_ts vs as_of_ts, is_final)?
+- Scales to 1024 markets without exploding storage/compute?
+- If behavior changed, docs/specs updated?
+- Audit snapshots sufficient to reproduce decisions?
+
+- Are indicator/signal IDs produced via the canonical generator and does the ID-collision CI check pass?
+- Are feature/signal logs **evented + bounded** (retention/rollups), avoiding a full indicator warehouse by default?
+- If glossary/terminology changed, was the canonical glossary updated and referenced from Section 1.3?
+
+### Automated checks mapping (make the canon enforceable)
+Maintain a small and growing set of automated checks that correspond to the PR checklist above. Start with these (and expand as failures are discovered):
+
+- **API contract tests**: responses include `as_of_ts` and candle identity timestamps (`bar_start_ts` / `candle_ts` aliasing) where applicable.
+- **Indicator registry lint**: uniqueness + canonical formatting + deterministic generator enforcement; fail on collisions or drift.
+- **Snapshot replay test**: given stored decision snapshot(s), reproduce the same ranking output deterministically.
+- **Candle finality test**: signal triggers use only `is_final == true` data unless a module explicitly supports forming-candle behavior.
+- **Schema governance check**: migrations (or schema versioning) are present and repeatable; no DDL duplication across entrypoints.
+- **Queue/concurrency test** (if applicable): jobs are claimed atomically; no double-processing.
+
+> Note: these checks can start as lightweight linters/contract tests; the goal is to make the canon “real”, not to build a massive test suite on day 1.
+
+## 1.12 Canon Patch Process (Append-only)
+When vision evolves:
+1) Add dated Canon Patch entry at bottom.
+2) Update affected `docs/` specs.
+3) Implement code + tests + contract checks.
 
 ---
 
-## 11) PR Checklist (Fail the PR if any are “No”)
+# 2) Repository Working Notes (Implementation Facts — MUST NOT OVERRIDE CANON)
 
-- [ ] Does this preserve UI-thin / backend-compute?
-- [ ] Are IDs deterministic and aligned to the canonical library?
-- [ ] Does every endpoint include `as_of_ts` and per-value `candle_ts` where applicable?
-- [ ] Is ranking server-side and stable?
-- [ ] Are time semantics explicit (UTC, bar_start_ts vs as_of_ts, is_final)?
-- [ ] Does this scale (1024 markets) without exploding storage/compute?
-- [ ] If behavior changed, did you update docs specs?
-- [ ] Are audit snapshots sufficient to reproduce decisions?
+This section is descriptive of the current repo state. If it conflicts with Canon, Canon wins.
 
----
+**Important:** The placeholder lines in Section 2 are *not* sufficient long-term. Replace/augment them with real, current repo facts as soon as possible (commands, file paths, component boundaries, and the true hot path). Keep this section concise, but complete.
 
-## 12) “Canon Patch” Process (How to Evolve This Safely)
+## 2.1 Project Overview
 
-When the vision evolves:
-1. Add a dated “Canon Patch” section at the bottom describing the change.
-2. Update affected module specs in `docs/`.
-3. Implement code + tests + contract checks.
+MCAS (Market Cognition At Scale) v7 — a crypto trading analytics and paper trading system. Scans 200+ crypto markets on Binance, computes 47 indicators across 5 tiers, generates ranked explainable signals via three setups (S1: BB Squeeze, S2: Golden Cross, U1: Unicorn Ignition), and executes paper trades with full position management and risk controls.
 
----
+**Stack:** Python 3.12, FastAPI, PostgreSQL 16, Redis 7, React 18 + Vite + Tailwind, Caddy reverse proxy. All containerised via Docker Compose.
 
-## Canon Patches (append-only)
-<!-- YYYY-MM-DD: describe changes + why -->
-<overarching instructions to take precedence over everything that follows>
+**Runtime components in this repo:**
+- **API** (`Backend/api/app/`) — FastAPI HTTP server (port 8000, exposed at 8002)
+- **Worker** (`Backend/worker/app/worker.py`) — queue-driven run executor
+- **Ingestor** (`Backend/worker/app/ingestor.py`) — background OHLCV data ingestion
+- **Indicator workers** (x2) (`Backend/worker/app/indicator_worker.py`) — parallel indicator computation
+- **Signal workers** (x2) (`Backend/worker/app/signal_worker.py`) — parallel signal evaluation
+- **Unicorn pipeline** (`Backend/worker/app/unicorn_pipeline.py`) — U1 setup pipeline
+- **Frontend** (`Frontend/`) — React SPA (thin client)
+- **Caddy** (`Backend/caddy/Caddyfile`) — reverse proxy routing `/v1/*` to API
+- **Postgres 16** — persistent storage (schema, trades, positions, audit logs)
+- **Redis 7** — caching, pub/sub, live signal ZSETs, price feed
 
-## Project Overview
+**Happy path:** Ingestor fetches OHLCV from Binance → Indicator workers compute features → Signal workers evaluate setups → Ranked signals stored in Redis ZSETs + Postgres → API serves to frontend → User reviews and acts.
 
-MCAS (Market Cognition At Scale) v7 — a crypto trading analytics and paper trading system. Scans 200+ crypto markets, generates ranked signals via two setups (S1: BB Squeeze, S2: Golden Cross), and executes paper trades with full position management.
+**Not yet implemented:** Live (real-money) execution, multi-exchange support, Alembic migrations, full CI test suite (in progress), signal_events retention automation (in progress).
 
-**Stack**: Python 3.12 (FastAPI), React 18 (Vite + Tailwind), PostgreSQL 16, Redis 7, Caddy 2, Docker Compose.
-
-## Build & Run Commands
-
-### Backend (Docker Compose)
+## 2.2 Build & Run Commands
 
 ```bash
-# Start infrastructure only
-docker-compose -f Backend/docker-compose.yml up -d postgres redis
+# Local dev up (all services)
+cd Backend && docker-compose up -d
 
-# Initialize database schema (first run)
-psql -U trading -d trading -f Backend/docs/db/schema/mcas_schema.sql
-
-# Start all services (Caddy, API, Worker, Postgres, Redis)
-docker-compose -f Backend/docker-compose.yml up -d
+# Local dev down
+cd Backend && docker-compose down
 
 # Rebuild after code changes
-docker-compose -f Backend/docker-compose.yml up -d --build
+cd Backend && docker-compose up -d --build
+
+# Run API only (for dev)
+cd Backend && docker-compose up -d api postgres redis
+
+# Run frontend dev server
+cd Frontend && npm install && npm run dev
+
+# Run tests (unit + canon contract)
+cd Backend && pytest tests/ -v
+
+# DB reset (WARNING: drops all data)
+cd Backend && docker-compose exec postgres psql -U trading -d trading -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
+cd Backend && docker-compose exec postgres psql -U trading -d trading -f /docker-entrypoint-initdb.d/mcas_schema.sql
+
+# Apply schema from scratch
+psql -U trading -d trading -f docs/db/schema/mcas_schema.sql
+for f in docs/db/migrations/*.sql; do psql -U trading -d trading -f "$f"; done
+
+# Smoke check (confirm API responds)
+curl http://localhost:80/health
+curl -H "X-API-Key: <your-key>" http://localhost:80/v1/markets
 
 # View logs
-docker-compose -f Backend/docker-compose.yml logs -f api
-docker-compose -f Backend/docker-compose.yml logs -f worker
+cd Backend && docker-compose logs -f worker
+cd Backend && docker-compose logs -f api
 ```
 
-### Frontend
+## 2.3 Architecture (Repo Current State)
 
-```bash
-cd Frontend
-npm install
-npm run dev       # Dev server on port 3000, proxies /api → localhost:8000
-npm run build     # Production build
-npm run preview   # Preview production build
+**Component list + ports:**
+
+| Component | Container | Port | Entry Point |
+|-----------|-----------|------|-------------|
+| Caddy (reverse proxy) | caddy | 80, 443 | `caddy/Caddyfile` |
+| API (FastAPI) | api | 8000 (internal), 8002 (host) | `api/app/main.py` |
+| Worker (queue consumer) | worker | — | `worker/app/worker.py` |
+| Ingestor | ingestor | — | `worker/app/ingestor.py` |
+| Indicator workers (x2) | indicator_worker_0/1 | — | `worker/app/indicator_worker.py` |
+| Signal workers (x2) | signal_worker_0/1 | — | `worker/app/signal_worker.py` |
+| Unicorn pipeline | unicorn_pipeline | — | `worker/app/unicorn_pipeline.py` |
+| PostgreSQL 16 | postgres | 5432 (internal) | — |
+| Redis 7 | redis | 6379 (internal) | — |
+| Frontend (React SPA) | — (separate) | 5173 (dev) | `Frontend/src/main.jsx` |
+
+**Data flow:** API queues a run → Redis pub/sub notifies worker → Worker claims run atomically (`FOR UPDATE SKIP LOCKED`) from Postgres `run_queue` → Signal engine fetches OHLCV + computes indicators → Setup evaluators generate signals → Paper trading engine manages positions → Price feed monitors exits in real-time → Results written to Postgres + Redis.
+
+**Canonical schemas:** `Backend/docs/db/schema/mcas_schema.sql` (base) + `Backend/docs/db/migrations/*.sql` (incremental).
+
+**Compute hot path (must stay in-memory/cached):** Feature Factory in `indicators.py` computes all 47 indicators from ring buffers (500 bars). IndicatorCache and OHLCVCache in `signal_engine.py` hold recent state in memory. Redis ZSETs hold live ranked signals.
+
+**Queue semantics:** Postgres `run_queue` table with `FOR UPDATE SKIP LOCKED` for atomic claiming. Priority-ordered. Max attempts with retry. Worker heartbeats track liveness.
+
+## 2.4 Environment Setup
+
+Copy `Backend/.env.example` to `Backend/.env` and configure:
+
+| Variable | Required | Default | Example | Secret | Breaks if missing |
+|----------|----------|---------|---------|--------|-------------------|
+| `POSTGRES_DB` | Y | — | `trading` | N | DB container won't start |
+| `POSTGRES_USER` | Y | — | `trading` | N | DB auth fails |
+| `POSTGRES_PASSWORD` | Y | — | `change_me` | **Y** (`.env` only) | DB auth fails |
+| `DATABASE_URL` | Y | — | `postgresql://trading:pw@postgres:5432/trading` | **Y** | API + worker can't connect to DB |
+| `REDIS_URL` | Y | `redis://redis:6379/0` | same | N | Caching, pub/sub, live signals all fail |
+| `API_KEY` | Y | — | 64-char hex | **Y** (`.env` only) | All `/v1/*` endpoints return 401 |
+| `DEFAULT_TIMEFRAMES` | N | `1m,5m,15m,1h,4h,1d` | same | N | Defaults to all 6 |
+| `SYMBOL_COUNT` | N | `200` | `200` | N | Fewer markets scanned |
+| `USE_DYNAMIC_SYMBOLS` | N | `false` | `false` | N | Dynamic symbol loading |
+| `SIGNAL_TOP_N_DAILY` | N | `10` | `10` | N | Rank cutoff for daily signals |
+| `SEED_WORKERS` | N | `20` | `20` | N | Ingestor parallelism |
+| `LOG_LEVEL` | N | `INFO` | `INFO` | N | Verbosity of logs |
+
+## 2.5 Database
+
+- **Engine:** PostgreSQL 16 (containerised via `postgres:16` image)
+- **Schema source of truth:** `Backend/docs/db/schema/mcas_schema.sql` (v7)
+- **Migrations:** `Backend/docs/db/migrations/*.sql` — versioned SQL files with `pg_advisory_lock()` for concurrency safety and `IF NOT EXISTS` for idempotency. Applied in filename order after base schema. Tracked via `schema_versions` table.
+- **Application order:** Base schema first, then migrations in filename-sorted order. See header comment in `mcas_schema.sql`.
+- **Note:** `ohlcv` column renamed from `open_time` to `bar_start_ts` (Canon §1.3) via migration `20260207_rename_open_time_bar_start_ts.sql`.
+
+**Retention policies:**
+- `signal_events`: 30-day detail, auto-pruned by worker daily task. See Canon §1.9.
+- `ohlcv`: Bounded by ingestion scope (200 symbols x 6 timeframes). Pruning policy: retain 90 days of 1m candles, unlimited for 1h+ timeframes. Not yet automated — document in schema comments.
+- `run_events`: Cascade-deleted with parent `runs` record.
+
+## 2.6 Adding a New Setup
+
+1. Create `Backend/worker/app/setups/s<N>_name.py` extending `SetupBase` from `setup_base.py`.
+2. Implement the required interface:
+   - `metadata: SetupMetadata` — ID, name, version, timeframe affinity, concurrency limits
+   - `required_indicators: set[IndicatorRequirement]` — canonical indicator IDs needed
+   - `parameters: list[SetupParameter]` — tunable params with defaults
+   - `compute_state(snapshot, **kwargs) -> TState` — Tier 3 state from indicator snapshot
+   - `evaluate_trigger(snapshot, state, symbol, timeframe) -> Optional[TSignal]` — Tier 4 trigger
+3. Gate `evaluate_trigger()` on `is_final == True` (Canon §1.8 anti-lookahead).
+4. Include `since_ts` and `action_by_ts` in signal output (Canon §1.5).
+5. Include `ExplainPayload` with 3–8 "why" items (Canon §1.7).
+6. Register in `setups/__init__.py` and `signal_engine.py` setup loader.
+7. Add signal_events logging calls for SETUP_FIRED and SETUP_INVALIDATED (Canon §1.9).
+8. Use `generate_indicator_id()` for any new indicator IDs (Canon §1.6).
+9. Add setup ID to `SETUP_IDS` env var.
+
+---
+
+# 3) Corrections Log (Append-only — THIS IS WHY THIS FILE EXISTS)
+
+Purpose: capture recurring Claude Code mistakes so they never repeat.
+
+## Format (copy/paste for each new entry)
+### YYYY-MM-DD — <short title>
+**Symptom:** what CC did wrong (1–3 bullets)  
+**Why it’s wrong:** runtime risk / canon violation  
+**Rule:** do/don’t statement that is unambiguous  
+**Checklist:** add a yes/no check to PR checklist or a code review step  
+**Example:** (optional) bad vs good snippet / pattern
+
+## Entries
+<!-- Append new corrections below this line -->
+
+2026-02-06 — Persist Audit Trail vs. Ephemeral Data [CANON]
+
+Symptom:
+
+The system only persisted trade execution snapshots, dropping all intermediate indicator and signal data.
+
+No record existed of signals that fired or disappeared if they didn’t lead to a trade, making debugging and analysis impossible.
+Why it’s wrong: This violates determinism and auditability – every decision’s context is lost. Without a feature/signal log, it’s impossible to reproduce or explain why a recommendation was made (or not made), creating a runtime blind spot and canon breach.
+Rule: Always persist a minimal feature/signal log at key events (e.g. threshold cross, entry/exit) beyond just trades. No “signals-only-in-memory” designs – ensure any signal that influences decisions is saved for audit.
+Checklist: Are minimal snapshots or logs persisted to reproduce all decisions (not just final trades)?
+Example: Bad: Only storing final trade outcomes, with no data on why a signal triggered. Good: Logging signal states (scores, trigger values) whenever a setup fires or flips, so every recommendation can be later traced and justified.
+
+2026-02-06 — Indicator ID Duplication and Drift [CANON]
+
+Symptom:
+
+Multiple indicator definitions ended up sharing the same indicator_id (e.g. at one point 7 IDs were duplicated in the library).
+
+Inconsistencies in naming (slight variations for similar indicators) appeared across modules.
+Why it’s wrong: Duplicate or drifting IDs break the canonical lookup – computations and data mappings will collide or become ambiguous. This causes bugs in the compute registry and violates the single-source-of-truth for indicator identities.
+Rule: Every indicator must have a unique, stable ID aligned with the canonical naming scheme. No two indicators should use the same ID, and naming conventions must be followed exactly to avoid subtle mismatches.
+Checklist: Are all indicator IDs unique and deterministically generated according to the canonical library?
+Example: Bad: Defining two different indicators both as ATR_14, or one as MA_Slope20 and another as MASlope_20. Good: Each indicator ID is one-of-a-kind (e.g., ATR_14, MA_SLOPE_20) with consistent formatting, ensuring one ID maps to exactly one definition.
+
+2026-02-06 — Implicit Time Period vs Explicit Timestamp [CANON]
+
+Symptom:
+
+A design was proposed using a numeric “time period” code (e.g. 7 to represent 6am–7am) in data tables instead of storing explicit timeframe strings and timestamps.
+
+This approach attempted to label candle intervals with an abstract period number rather than a standard timestamp.
+Why it’s wrong: Using ambiguous time period codes introduces confusion and bugs (e.g. timezone ambiguity, DST issues, off-by-one interpretations of what “7” means). It duplicates information already in timestamps. This violates the canon of explicit time semantics and would be error-prone across different locales.
+Rule: Use explicit UTC timestamps and timeframe identifiers for candles. Never rely on custom period indices for time — each bar must be identified by an absolute bar_start_ts (in UTC) and a timeframe (e.g., "1h"). Derive any hour-of-day or period info on the fly if needed, rather than storing it.
+Checklist: Are time semantics explicit, with clear UTC timestamps (e.g. bar_start_ts) and timeframe labels (and no ad-hoc period codes)?
+Example: Bad: period = 7 (ambiguous) in a candle record. Good: timeframe = "1h", bar_start_ts = 2026-01-08T06:00:00Z to mark a 6–7am UTC hourly candle.
+
+2026-02-06 — Ignoring Final vs. Forming Candle State [RUNTIME]
+
+Symptom:
+
+Initial logic treated the latest candle as if it were final/closed without any marker, processing signals on partially formed data.
+
+No use of an is_final flag or equivalent to distinguish a completed bar from one that was still updating.
+Why it’s wrong: Acting on incomplete candle data can trigger false signals or flip-flopping outcomes as prices update. Without marking final bars, the system risks using transient information for decisions, leading to unstable and incorrect trading behavior – a serious runtime risk.
+Rule: Incorporate an is_final indicator for market data and enforce that certain computations (especially signal triggers) only execute on closed/final candles. Always separate the handling of a fully closed bar from a still-forming bar in logic.
+Checklist: Does the code explicitly handle candle finality (e.g., only acting on data where is_final == true and deferring or updating signals until bars close)?
+Example: Bad: Immediately treating the 1pm candle data at 1:30pm as a confirmed signal without waiting for the 1–2pm candle to close. Good: Marking a candle is_final=false until its period ends, and only then evaluating trigger conditions, preventing premature signal generation.
+
+2026-02-06 — Frontend Computing Indicators Locally [UI-CONTRACT]
+
+Symptom:
+
+The frontend (e.g. a Base44 sheet or React UI) attempted to calculate indicator values (like RSI or moving averages) on its own, rather than requesting them from the backend.
+Why it’s wrong: This violates the “thin client” principle – duplicating complex logic on the UI side leads to inconsistencies (the UI could diverge from backend results) and heavier client load. It breaks the UI-backend contract by moving computation out of the source-of-truth backend, increasing maintenance and error surface.
+Rule: The UI must never compute or derive indicators itself. All indicator and signal calculations happen on the backend; the frontend’s role is to display data and handle user interaction. Don’t implement indicator formulas in frontend code – do fetch precomputed values via API.
+Checklist: Does the UI avoid performing any indicator calculations (relying solely on backend-provided data)?
+Example: Bad: JavaScript in the browser recomputing RSI from price data. Good: The UI calls an endpoint (e.g., /v1/indicators) and simply renders the RSI value returned by the backend.
+
+2026-02-06 — Custom Signal Sorting in UI [UI-CONTRACT]
+
+Symptom:
+
+The frontend applied its own sorting or filtering to the list of signals/opportunities (for example, re-ordering signals by a custom priority in the UI code).
+Why it’s wrong: Ranking logic is supposed to reside in the backend to ensure consistency. If the UI re-sorts or filters signals differently, it can mislead users by showing a different order of importance than the server intended. This undermines trust in the scores and violates the contract that the backend provides the definitive ranking.
+Rule: The UI should display signals in the order and with the scores exactly as provided by the backend. No bespoke sorting or client-side ranking adjustments are allowed – the server-side rank and score_total are the source of truth.
+Checklist: Is ranking of signals entirely done on the server side and used as-is by the frontend (no custom re-ordering in the UI)?
+Example: Bad: The web app re-sorting the signal list by its own calculation of “importance.” Good: The web app simply presents the signals as returned by the API (already ranked, e.g., with a rank field), ensuring the user sees the backend’s intended ordering.
+
+2026-02-06 — Missing Timestamps in API Responses [UI-CONTRACT]
+
+Symptom:
+
+Some API endpoints returned data without including an as_of_ts (overall data timestamp) or omitted the per-value candle_ts for time-based values.
+
+For example, the API would return indicator values or prices without any timestamp context indicating when they were last updated.
+Why it’s wrong: This breaches the UI-backend contract for “as-of” consistency. Without as_of_ts, the frontend (and user) cannot tell how fresh the data is, and without per-value candle_ts, time-series values can’t be aligned to their originating candle. It risks the user acting on stale or context-less data.
+Rule: Every response that delivers time-sensitive data must include a top-level as_of_ts (UTC timestamp of data freshness) and each time-indexed value should carry its candle_ts (the timestamp of that value’s source candle). Never omit these, as they are critical for UI context.
+Checklist: Does every relevant API response include an as_of_ts and per-value candle_ts (to convey data freshness and timing)?
+Example: Bad: { "price": 123.45 } with no timing info. Good: { "price": 123.45, "candle_ts": "2026-02-07T13:00:00Z", "meta": { "as_of_ts": "2026-02-07T13:05:00Z" } }, so the UI knows exactly the data’s time context.
+
+2026-02-06 — Code vs. Spec Divergence [CANON]
+
+Symptom:
+
+Code changes (new features or behavior tweaks) were implemented without updating the corresponding specification in docs/ or the canon notes.
+
+For instance, a parameter default or an algorithm was changed in code, but the documentation still reflected the old design.
+Why it’s wrong: This creates a dangerous inconsistency where the documented truth no longer matches the actual system. Future developers or even the AI itself will be misled by outdated specs, causing compounding errors and violating the source-of-truth hierarchy (canon logs and docs should always reflect the code).
+Rule: Whenever making a behavior or contract change in code, update the relevant documentation or canon in the same commit/PR. Treat the spec and code as atomically linked – if they diverge, the canon must be amended or the code is wrong.
+Checklist: If this change alters documented behavior or interfaces, have the relevant docs/specs been updated accordingly?
+Example: Bad: The system’s risk limit was raised from 3% to 5% in the code, but the README and CLAUDE.md still say “3%”. Good: Along with the code change to 5%, the developer updates the documentation to state the new 5% limit and notes the change in the canon patch section.
+
+2026-02-06 — Non-Atomic Queue Consumption [RUNTIME]
+
+Symptom:
+
+The initial job queue processing did not properly lock or atomically claim tasks, allowing multiple worker instances to potentially pick the same run.
+
+In testing, a queued run could be executed twice in parallel because two workers pulled it from the queue simultaneously.
+Why it’s wrong: Lack of atomic claim on queue entries leads to double execution, race conditions, or data corruption (e.g., two workers both executing the same trade logic). This is a serious runtime flaw that can cause duplicate trades or inconsistent state, violating safe concurrency practices.
+Rule: Use atomic operations (e.g., SQL FOR UPDATE SKIP LOCKED or dedicated claim flags) to ensure each queued job is taken by only one worker. In multi-worker setups, implement partitioning or locks so no two workers ever process the same item.
+Checklist: Are queue jobs consumed under a safe lock or partition scheme (preventing any double-processing or race conditions in multi-worker scenarios)?
+Example: Bad: Two workers polling a run_queue table without locks, both grabbing run ID 42 to process. Good: An UPDATE ... FOR UPDATE SKIP LOCKED claim query so that once one worker picks run 42, it’s marked and excluded from others.
+
+2026-02-06 — OHLCV Data Attributed to Assets Instead of Markets [DATA]
+
+Symptom:
+
+The data model treated OHLCV price data as an attribute of an asset (coin) globally, rather than distinguishing by exchange or market pair.
+
+For example, using a single asset_id to key candlestick data, implying “one candle series per asset,” regardless of exchange origin.
+Why it’s wrong: An asset like BTC trades on many markets (BTC/USD, BTC/USDT, across different exchanges) – their OHLCV can differ. Blending or not separating these violates the “truth ledger” principle: market data must be tied to the specific market source. Failing to separate by market leads to inaccurate analytics (or confusion when an asset is listed on multiple venues) and breaks canonical data modeling.
+Rule: Always key and store OHLCV data by its exact market (exchange + trading pair) and timeframe. Treat “asset-level” candle series as derived or aggregated data, not the default. In practice, a candle’s unique key should include a market identifier and timeframe, not just the asset.
+Checklist: Is OHLCV time-series data stored per market (exchange/pair) with timeframe, rather than conflated under a single asset entry?
+Example: Bad: A single table of daily candles indexed only by asset_id (so BTC’s data intermixes all exchanges). Good: A schema where, say, BTC on Binance USDT market vs BTC on Coinbase USD market are separate series (e.g., identified by market_id or exchange+symbol), ensuring clarity of data provenance.
+
+Top Recurring Checks:
+
+1. Are minimal snapshots/logs persisted to reproduce decisions? (Persist Audit Trail vs. Ephemeral Data)
+
+2. Are all indicator IDs unique and deterministic (aligned to the canonical library)? (Indicator ID Duplication and Drift)
+
+3. Are time semantics explicit (correct timeframe, UTC bar_start_ts, and no ambiguous “period” codes)? (Implicit Time Period vs Explicit Timestamp)
+
+4. Does logic only act on final/closed data (uses is_final or equivalent to avoid partial-bar signals)? (Ignoring Final vs. Forming Candle State)
+
+5. Does the UI refrain from any indicator computation (using only backend-provided values)? (Frontend Computing Indicators Locally)
+
+6. Is signal ranking done entirely server-side with no client-side reordering? (Custom Signal Sorting in UI)
+
+7. Does every API response include as_of_ts and per-value candle_ts where applicable? (Missing Timestamps in API Responses)
+
+8. If behavior or data output changed, were the docs and canon updated accordingly? (Code vs. Spec Divergence)
+
+9. Are queue consumption and concurrency controls in place to prevent double-processing? (Non-Atomic Queue Consumption)
+
+10. Is OHLCV data stored by market (exchange+pair) and timeframe (not just by asset)? (OHLCV Data Attributed to Assets Instead of Markets)
+
+# MCAS Frontend — Exhaustive UI Audit
+
+**Purpose:** Claude Code must systematically walk every page, component, interaction, filter, and click path in the React frontend. For each atomic feature, verify it works end-to-end against the live backend (or identify what breaks). Use dummy/test data where filters or inputs are required.
+
+**Scope:** All 22 JSX files in `Frontend/src/`. Every user-facing interaction. Every API call triggered by the UI.
+
+---
+
+## 0) How to Execute This Audit
+
+### Rules
+- Work through each section sequentially.
+- Maximum 2 sub-agents at a time (per CLAUDE.md §0.1).
+- For each feature, trace the **full path**: user action → JSX handler → API call → response handling → render result.
+- Where a feature requires input (filters, forms, dropdowns), use the dummy data specified in each section.
+- Record findings in the results table at the end of each section before moving on.
+
+### Verdicts
+- **✅ PASS** — Feature works as intended, API returns valid data, UI renders correctly.
+- **⚠️ DEGRADED** — Feature partially works but has cosmetic issues, missing data, or non-blocking errors.
+- **❌ BROKEN** — Feature errors out, shows blank/wrong data, API returns error, or click does nothing.
+- **🔇 DEAD** — Feature exists in UI code but the backend endpoint is missing, stubbed, or unreachable.
+
+### Output Format
+After completing ALL sections, produce a single summary report:
+```
+# UI Audit Results — [date]
+
+## Summary
+- Total features tested: X
+- ✅ PASS: X
+- ⚠️ DEGRADED: X  
+- ❌ BROKEN: X
+- 🔇 DEAD: X
+
+## Broken / Dead Features (fix required)
+[table of all ❌ and 🔇 items with root cause]
+
+## Degraded Features (fix recommended)
+[table of all ⚠️ items]
+
+## Canon Violations Found During Audit
+[any §1.5 UI-contract breaches discovered: client-side computation, missing timestamps, client-side ranking, etc.]
 ```
 
-No test framework or linter is configured for either backend or frontend.
+---
 
-## Architecture
+## 1) App Shell & Navigation
 
-Two backend services share a Postgres database and Redis instance. A React SPA provides the UI.
+Test the outermost layout: routing, nav, auth, and global state.
 
-### Backend API (`Backend/api/app/`)
+| # | Feature | Action | Expected | Dummy Data |
+|---|---------|--------|----------|------------|
+| 1.1 | App loads | Navigate to root URL | App renders without console errors, no white screen | — |
+| 1.2 | Navigation links | Click each nav item in sidebar/header | Correct page renders, URL updates, no 404 | — |
+| 1.3 | Active nav state | Click each nav item | Active item visually highlighted | — |
+| 1.4 | Page not found | Navigate to `/nonexistent` | 404 page or redirect, not white screen | — |
+| 1.5 | API key / auth | Load any data page | API calls include auth header, no 401s in console | — |
+| 1.6 | Responsive layout | Check if layout has any responsive breakpoints | No horizontal overflow or broken layout at common widths | — |
+| 1.7 | WebSocket connection | Check if WS connects on load | WS connection established (check console/network tab), reconnect on drop | — |
+| 1.8 | Global error handling | Simulate API down (wrong base URL) | Error state shown to user, not silent failure or white screen | — |
 
-FastAPI HTTP server on port 8000. Entry point: `main.py`. Three routers:
-- `control_api.py` — run management (start/stop scans, backtests, paper trading)
-- `runs_api.py` — run history and analytics queries
-- `trading_api.py` — account, positions, performance endpoints
+---
 
-### Worker (`Backend/worker/app/`)
+## 2) Dashboard
 
-Queue-driven background processor. Entry point: `worker.py`. Main loop claims queued runs via `FOR UPDATE SKIP LOCKED`, executes them, and monitors open positions in real-time.
+The main overview page. Test every widget, stat, and data display.
 
-Key modules:
-- `signal_engine.py` — orchestrates OHLCV fetch, indicator computation, setup evaluation
-- `indicators.py` — Feature Factory: all indicator math (ATR, RSI, BBands, Keltner, EMAs, SMAs, slopes). Numpy arrays. Requires 201 bars warmup.
-- `setups/s1_bb_squeeze.py` — BB Squeeze v2.1 (front-runs volatility expansion from BB squeeze inside KC)
-- `setups/s2_golden_cross.py` — Golden Cross v1.4 (EMA 9/21 cross with BTC shock filter and t-1 check)
-- `setup_base.py` — abstract `SetupBase` class, `Direction`/`ExitType` enums, global registry
-- `paper_trading.py` — paper trading engine with persistent state, slippage/fee models, risk controls
-- `price_feed.py` — live price polling (Binance REST, 2s interval) + position exit monitoring (1s)
-- `execution.py` — slippage/fee model (5bps slippage, 2/4bps maker/taker fees)
-- `run_executor.py` — unified executor for SCAN/BACKTEST/PAPER run types
-- `runs/repository.py` — database access layer; `runs/models.py` — dataclasses
+| # | Feature | Action | Expected | Dummy Data |
+|---|---------|--------|----------|------------|
+| 2.1 | Dashboard loads | Navigate to Dashboard | Page renders, all widgets populate (or show empty states) | — |
+| 2.2 | Market count / stats | Check summary stats (total markets, active signals, etc.) | Numbers render, match what API returns | — |
+| 2.3 | Live price feed | Check if prices update in real-time | Prices change without manual refresh (via WS or polling) | — |
+| 2.4 | Signal summary | Check if top signals / active opportunities shown | Signals listed with rank, score, symbol | — |
+| 2.5 | Position summary | Check if open positions displayed | Open positions with entry price, PnL, status | — |
+| 2.6 | Refresh / auto-update | Wait 30-60s or trigger manual refresh | Data refreshes without full page reload | — |
+| 2.7 | Empty state | If no signals/positions exist | Meaningful empty state message, not blank or error | — |
+| 2.8 | Timestamp display | Check any displayed timestamps | Shows human-readable time with timezone context, not raw epoch | — |
+| 2.9 | Click-through links | Click any signal/position/market on dashboard | Navigates to correct detail view | — |
 
-### Frontend (`Frontend/src/`)
+---
 
-React 18 SPA with Vite. Terminal aesthetic (dark grays, amber accents, JetBrains Mono).
+## 3) Opportunities / Signals
 
-- `context/ApiContext.jsx` — API client, connection state, auth (baseUrl + apiKey in localStorage)
-- `context/ToastContext.jsx` — toast notifications
-- `hooks/useData.js` — `useFetch`, `usePolling` hooks for data fetching with polling intervals
-- `utils/formatters.js` — number/date formatting
-- `components/Layout.jsx` — sidebar + header navigation
-- `components/ui.jsx` — reusable UI components (tables, cards)
-- `pages/` — Dashboard, Opportunities, Markets, Runs, ControlPlane, PaperTrading, Settings
-- Routes protected via `ProtectedRoute` wrapper requiring baseUrl + apiKey
+The ranked signal list — core feature. Test every filter, sort, and interaction.
 
-### Caddy (`Backend/caddy/Caddyfile`)
+| # | Feature | Action | Expected | Dummy Data |
+|---|---------|--------|----------|------------|
+| 3.1 | Page loads | Navigate to Opportunities | Signal list renders in server-provided rank order | — |
+| 3.2 | Signal cards/rows | Inspect a signal entry | Shows: symbol, setup name, rank, score_total, score_components, timeframe | — |
+| 3.3 | Ranking order | Verify list order | Order matches server `rank` field exactly — NO client-side re-sort (Canon §1.5) | — |
+| 3.4 | Score components | Expand/inspect score breakdown | Individual score components visible and sum to score_total | — |
+| 3.5 | Explainability | Check "why" / rationale for a signal | ExplainPayload items render (3-8 reasons per Canon §1.7) | — |
+| 3.6 | Timing metadata | Check for since_ts, action_by_ts | Both displayed per signal (Canon §1.5). If missing, log as violation. | — |
+| 3.7 | Filter: setup type | Filter by S1 / S2 / U1 | List filters correctly, only matching signals shown | Select each: `S1`, `S2`, `U1` |
+| 3.8 | Filter: timeframe | Filter by timeframe | Only signals for selected timeframe shown | Select each: `1m`, `5m`, `15m`, `1h`, `4h`, `1d` |
+| 3.9 | Filter: symbol search | Type a symbol name | List filters to matching symbols | Type: `BTC`, `ETH`, `SOL` |
+| 3.10 | Filter: minimum score | If score filter exists, set threshold | Only signals above threshold shown | Set to: `50`, `75`, `90` |
+| 3.11 | Filter: combination | Apply multiple filters simultaneously | Intersection logic correct (not union) | Setup=`S1` + Timeframe=`1h` |
+| 3.12 | Filter: reset/clear | Clear all filters | Full unfiltered list returns | — |
+| 3.13 | Sort controls | If any column sort headers exist | Verify they DO NOT override server rank order, or if they do, flag as Canon §1.5 violation | — |
+| 3.14 | Empty state (filtered) | Apply filter that matches nothing | "No signals match" message, not blank or error | Setup=`S1` + Symbol=`XYZXYZ` |
+| 3.15 | Empty state (no signals) | If no signals exist at all | Meaningful empty state | — |
+| 3.16 | Auto-refresh | Wait for new signal cycle | New signals appear without manual refresh | — |
+| 3.17 | Signal detail click | Click a signal row/card | Detail view or modal opens with full signal info | — |
+| 3.18 | Take action from signal | If there's a "trade" / "paper trade" button on a signal | Navigates to trade entry or triggers paper trade workflow | — |
+| 3.19 | as_of_ts display | Check if data freshness timestamp shown | `as_of_ts` visible to user (Canon §1.5) | — |
+| 3.20 | candle_ts display | Check per-signal candle reference time | `candle_ts` shown or accessible (Canon §1.5) | — |
 
-Reverse proxy: `/health` and `/v1/*` route to API on port 8000.
+---
 
-### Data Flow
+## 4) Paper Trading
 
-API queues a run → Redis pubsub notifies worker → Worker claims run atomically from Postgres → Signal engine fetches OHLCV + computes indicators → Setup evaluators generate signals → Paper trading engine manages positions → Price feed monitors exits → Results written to Postgres.
+Position entry, management, and exit. Test the full trade lifecycle.
 
-## Key Patterns
+| # | Feature | Action | Expected | Dummy Data |
+|---|---------|--------|----------|------------|
+| 4.1 | Page loads | Navigate to Paper Trading | Page renders with positions list or entry form | — |
+| 4.2 | Open positions list | View open positions | Shows: symbol, side, entry price, current price, unrealised PnL, stop, targets | — |
+| 4.3 | Closed positions list | View closed/historical positions | Shows: symbol, side, entry/exit prices, realised PnL, duration | — |
+| 4.4 | Position detail | Click an open position | Full detail view: entry, stop, targets, trailing state, PnL chart | — |
+| 4.5 | Enter new position | Use entry form/workflow | Form accepts: symbol, side, size, entry price, stop, targets | Symbol=`BTCUSDT`, Side=`LONG`, Size=`0.01` |
+| 4.6 | Validation: missing fields | Submit with empty required fields | Validation errors shown, not silent failure or API error | Leave symbol blank |
+| 4.7 | Validation: invalid values | Submit with bad data | Proper error messages | Size=`-1`, Stop above entry for LONG |
+| 4.8 | Position created | Submit valid entry | Position appears in open list, API confirms creation | Use dummy data from 4.5 |
+| 4.9 | Live PnL updates | Watch an open position | Unrealised PnL updates in real-time via WS/polling | — |
+| 4.10 | Manual close | Close an open position manually | Position moves to closed list, PnL finalised | — |
+| 4.11 | Stop loss hit | If stop monitoring is visible | UI reflects stop status / proximity | — |
+| 4.12 | Target hit | If target tracking is visible | UI shows target levels and which have been hit | — |
+| 4.13 | Position sizing / risk | Check if risk controls displayed | Risk per trade, position size limits visible if they exist | — |
+| 4.14 | Trade history export | If export button exists | Downloads CSV/JSON of trade history | — |
+| 4.15 | Empty state | No positions exist | Meaningful empty state, not blank | — |
+| 4.16 | Concurrency | Multiple positions open simultaneously | All display correctly, no overlap or data collision | — |
 
-- **Auth**: API key via `X-API-Key` header, `hmac.compare_digest()`. All `/v1/*` protected; `/health` public.
-- **Response envelope**: `{data, meta: {timestamp, version, compute_ms}}`
-- **Run fingerprinting**: SHA256 of universe+strategy+execution+data specs prevents duplicate runs.
-- **Queue atomicity**: `FOR UPDATE SKIP LOCKED` prevents double-claims across workers.
-- **Risk controls**: daily loss breaker (3%), trade cap (20/day), per-asset cooldown (6h after stop-out), max 3 concurrent positions, 1% risk per trade.
-- **Exit priority**: STOP_LOSS → FAIL_FAST → TIME_STOP → TRAILING_STOP → TP1 → TP2.
-- **Indicator tiers**: Tier 0 (raw OHLCV) → Tier 1 (ATR, RSI, volume) → Tier 2 (MAs, BB, KC, slopes) → Tier 3 (setup state) → Tier 4 (entry signals).
-- **Frontend state**: Context API for globals, polling-based updates (no WebSocket), localStorage for config.
+---
 
-## Environment Setup
+## 5) Run / Backtest
 
-Copy `Backend/.env.example` to `Backend/.env`. Key variables:
+Run management and backtest comparison features.
 
-| Variable | Purpose |
-|----------|---------|
-| `DATABASE_URL` | Postgres connection string |
-| `REDIS_URL` | Redis connection (default `redis://redis:6379/0`) |
-| `API_KEY` | 64-char hex for API auth |
-| `SETUP_IDS` | Active setups, comma-separated (default `S1,S2`) |
-| `SCAN_INTERVAL_SECONDS` | Periodic scan interval (default 300) |
-| `ENABLE_PERIODIC_SCANS` | Toggle auto-scans (default true) |
-| `ENABLE_POSITION_MONITORING` | Toggle position monitoring (default true) |
-| `SYMBOL_COUNT` | Number of symbols to scan (default 200) |
+| # | Feature | Action | Expected | Dummy Data |
+|---|---------|--------|----------|------------|
+| 5.1 | Run list | Navigate to Runs page (if exists) | List of past runs with status, timestamps, setup used | — |
+| 5.2 | Trigger new run | If "run now" button exists | Run queues successfully, status updates | — |
+| 5.3 | Run status tracking | Watch a queued/running run | Status progresses: queued → running → complete/failed | — |
+| 5.4 | Run detail | Click a completed run | Shows: signals generated, positions entered, PnL, duration | — |
+| 5.5 | RunCompare page loads | Navigate to RunCompare | Comparison view renders | — |
+| 5.6 | Select runs to compare | Choose 2+ runs | Both runs' metrics side by side | Pick any 2 available runs |
+| 5.7 | Compare metrics | Review comparison output | PnL, win rate, signal count, Sharpe or similar metrics compared | — |
+| 5.8 | Champion/Challenger | If champion/challenger labels exist | Clearly identifies which run is champion vs challenger | — |
+| 5.9 | Backtest parameters | If backtest config form exists | Can set: date range, setup, timeframes, initial capital | Start=`2026-01-01`, End=`2026-01-31`, Setup=`S1` |
+| 5.10 | Backtest results | View completed backtest | PnL curve, trade list, statistics, drawdown | — |
+| 5.11 | Empty state | No runs exist | Meaningful empty state | — |
 
-## Database
+---
 
-Schema: `Backend/docs/db/schema/mcas_schema.sql`. Core tables: `runs`, `run_queue`, `run_events`, `run_trades`, `paper_accounts`, `paper_positions`, `ohlcv`, `data_snapshots`. No migrations — schema applied directly via SQL.
+## 6) Markets / Universe
 
-## Adding a New Setup
+Market universe management and data display.
 
-1. Create `Backend/worker/app/setups/s<N>_name.py` extending `SetupBase`
-2. Implement `evaluate(features) -> Optional[Signal]` with tier 3 state + tier 4 trigger logic
-3. Register in `signal_engine.py` setup loader
-4. Add setup ID to `SETUP_IDS` env var
+| # | Feature | Action | Expected | Dummy Data |
+|---|---------|--------|----------|------------|
+| 6.1 | Markets list | Navigate to Markets page (if exists) | All scanned markets listed with basic info | — |
+| 6.2 | Market detail | Click a market | Shows: symbol, exchange, current price, volume, active signals | — |
+| 6.3 | Market search | Search for a market | Filters list correctly | Type: `BTC`, `DOGE` |
+| 6.4 | Market status flags | Check screened/monitored/tradable flags | Flags visible if they exist (Canon §1.4C) | — |
+| 6.5 | OHLCV data display | If candle/chart data shown | Correct timeframe, prices make sense, timestamps are UTC | — |
+| 6.6 | Indicator values | If indicators shown per market | Values from backend only — no client-side computation (Canon §1.5) | — |
+| 6.7 | Chart component | If price chart exists | Renders correctly, timeframe selector works | Switch between `1h`, `4h`, `1d` |
+| 6.8 | Chart indicator overlays | If indicators plotted on chart | Overlay values match API response exactly | — |
+
+---
+
+## 7) Settings / Configuration
+
+Any user-facing settings or configuration UI.
+
+| # | Feature | Action | Expected | Dummy Data |
+|---|---------|--------|----------|------------|
+| 7.1 | Settings page loads | Navigate to Settings (if exists) | Page renders | — |
+| 7.2 | API connection status | If shown | Displays connected/disconnected accurately | — |
+| 7.3 | Timeframe selection | If user can select active timeframes | Selection persists, affects data fetched | — |
+| 7.4 | Setup enable/disable | If user can toggle setups | Toggle persists, affects signal generation | — |
+| 7.5 | Theme / display prefs | If dark/light mode or display options exist | Toggle works, persists | — |
+| 7.6 | Notification settings | If notification controls exist | Toggle works | — |
+
+---
+
+## 8) API Contract Compliance (check during all above tests)
+
+While testing every feature above, simultaneously verify Canon §1.5 compliance on every API response observed.
+
+| # | Check | How to Verify | Canon Reference |
+|---|-------|---------------|-----------------|
+| 8.1 | `as_of_ts` present | Every API response returning time-sensitive data includes top-level `as_of_ts` | §1.5 |
+| 8.2 | `candle_ts` present | Every per-value time-series response includes `candle_ts` | §1.5 |
+| 8.3 | No client-side indicator math | Zero indicator calculations in any JSX file | §1.5, Corrections Log |
+| 8.4 | No client-side ranking | Signal order matches server `rank` exactly, no `.sort()` on score/rank in JSX | §1.5, Corrections Log |
+| 8.5 | Deterministic IDs only | No ad-hoc IDs generated in frontend | §1.5 |
+| 8.6 | `since_ts` in signals | Signal API responses include `since_ts` | §1.5 |
+| 8.7 | `action_by_ts` in signals | Signal API responses include `action_by_ts` | §1.5 |
+| 8.8 | Error responses | API errors return structured error, not stack trace | General |
+| 8.9 | Stale data indicator | UI shows when data is old (>N seconds since `as_of_ts`) | §1.5 implied |
+
+---
+
+## 9) Edge Cases & Stress
+
+| # | Feature | Action | Expected |
+|---|---------|--------|----------|
+| 9.1 | API timeout | Slow/no response from backend | Loading state shown, then error — not infinite spinner | 
+| 9.2 | Empty API responses | API returns valid but empty arrays | Empty state UI, not crash | 
+| 9.3 | Malformed API data | If API returns unexpected shape | Graceful handling, not white screen |
+| 9.4 | Rapid navigation | Click between pages quickly | No race conditions, stale data, or memory leaks |
+| 9.5 | WebSocket disconnect | Kill WS connection | UI shows disconnected state, attempts reconnect |
+| 9.6 | Large data set | 200+ signals or positions | UI remains responsive, pagination or virtual scroll if needed |
+| 9.7 | Concurrent updates | Multiple WS updates in quick succession | UI doesn't flicker, shows latest state |
+| 9.8 | Browser back/forward | Use browser navigation | Pages load correctly, state preserved where expected |
+| 9.9 | Double-click protection | Double-click "submit" on any form | Only one API call fires, not duplicate actions |
+
+---
+
+## 10) Pages/Components That May Not Exist
+
+Some features listed above may not be implemented yet. If a section references a page or component that doesn't exist in the codebase:
+
+1. Note it as **🔇 NOT IMPLEMENTED** (not broken — just absent).
+2. Record which CLAUDE.md section implies it should exist (if any).
+3. Move on — do not create or stub missing pages.
+
+---
+
+## Results Template
+
+After completing all sections, fill in this summary:
+
+```markdown
+# MCAS UI Audit Results — [DATE]
+
+## Summary
+| Metric | Count |
+|--------|-------|
+| Total features tested | |
+| ✅ PASS | |
+| ⚠️ DEGRADED | |
+| ❌ BROKEN | |
+| 🔇 DEAD / NOT IMPLEMENTED | |
+
+## ❌ Broken Features
+| ID | Feature | Root Cause | Fix Required |
+|----|---------|-----------|-------------|
+
+## 🔇 Dead Features
+| ID | Feature | Missing Component | Canon Reference |
+|----|---------|-------------------|-----------------|
+
+## ⚠️ Degraded Features
+| ID | Feature | Issue | Severity |
+|----|---------|-------|----------|
+
+## Canon §1.5 Violations Found
+| Endpoint/Component | Violation | Details |
+|--------------------|-----------|---------|
+
+## Recommended Fix Priority
+### P0 — Broken (fix immediately)
+### P1 — Degraded (fix this sprint)
+### P2 — Dead features to implement (scheduled)
+```
+# MCAS UI Audit Results — 2026-02-07
+
+## Summary
+
+| Metric | Count |
+|--------|-------|
+| Total features tested | 96 |
+| PASS | 60 |
+| DEGRADED | 17 |
+| BROKEN | 4 |
+| DEAD / NOT IMPLEMENTED | 15 |
+
+---
+
+## Section 1: App Shell & Navigation
+
+| # | Feature | Verdict | Notes |
+|---|---------|---------|-------|
+| 1.1 | App loads | PASS | React StrictMode, ErrorBoundary, BrowserRouter, ApiProvider, ToastProvider all wired correctly |
+| 1.2 | Navigation links | PASS | 7 nav items + Settings, all routes defined in App.jsx with correct paths |
+| 1.3 | Active nav state | PASS | `isActive` logic with amber highlight + left border, handles nested routes |
+| 1.4 | Page not found | DEGRADED | Catch-all `*` silently redirects to `/` — no 404 page shown to user |
+| 1.5 | API key / auth | PASS | `X-API-Key` header on all requests, auto-redirect to `/settings` on 401, ProtectedRoute guards |
+| 1.6 | Responsive layout | DEGRADED | Fixed 256px sidebar, no mobile breakpoints, no hamburger menu — will overflow on small screens |
+| 1.7 | WebSocket connection | DEAD | No WebSocket implementation exists. All real-time data uses HTTP polling (5s–30s intervals) |
+| 1.8 | Global error handling | PASS | ErrorBoundary with reload button, `window.onerror` + `unhandledrejection` listeners, toast system, `window.__mcas.dumpLogs()` devtools helper |
+
+---
+
+## Section 2: Dashboard
+
+| # | Feature | Verdict | Notes |
+|---|---------|---------|-------|
+| 2.1 | Dashboard loads | PASS | 4-panel grid: SystemStatus, LatestScan, TopSignals, PaperTrading |
+| 2.2 | Market count / stats | PASS | Health/auth/Redis/PG latency in SystemStatus; scan summary stats in LatestScan |
+| 2.3 | Live price feed | DEGRADED | No real-time price ticker. Signals poll every 30s, account every 5s. No individual price streaming. |
+| 2.4 | Signal summary | PASS | Top 3 signals with symbol, timeframe, setup_id, direction, score, entry price |
+| 2.5 | Position summary | PASS | PaperTradingPanel shows capital, PnL, win rate, trade count, drawdown, profit factor |
+| 2.6 | Refresh / auto-update | PASS | Signals poll 30s, account polls 5s, RefreshControl for manual refresh |
+| 2.7 | Empty state | PASS | EmptyState components for each panel when no data |
+| 2.8 | Timestamp display | DEGRADED | Shows `formatRelativeTime` for run finish time and last poll time. No `as_of_ts` from API displayed. |
+| 2.9 | Click-through links | PASS | Links to `/runs/{id}`, `/opportunities`, `/paper`, `/control` |
+
+---
+
+## Section 3: Opportunities / Signals
+
+| # | Feature | Verdict | Notes |
+|---|---------|---------|-------|
+| 3.1 | Page loads | PASS | Signal list renders with polling (15s) |
+| 3.2 | Signal cards/rows | PASS | Symbol, setup_id, direction, score, entry/stop/TP, R-value, timeframe, reason |
+| 3.3 | Ranking order | PASS | Default sort preserves server order. Canon 1.5D comment at line 118. |
+| 3.4 | Score components | DEGRADED | `score_total` shown but individual `score_components` not broken down visually in card |
+| 3.5 | Explainability | PASS | Reason text rendered, full JSON payload expandable |
+| 3.6 | Timing metadata | PASS | `since_ts` shown as "Active X ago", `action_by_ts` shown as live countdown |
+| 3.7 | Filter: setup type | PASS | Dropdown: All / S1 / S2 / U1, passed as API query param |
+| 3.8 | Filter: timeframe | DEAD | No timeframe filter exists on Opportunities page |
+| 3.9 | Filter: symbol search | DEAD | No symbol search on Opportunities page (only status/setup/sort/score/limit filters) |
+| 3.10 | Filter: minimum score | PASS | Number input for `min_score`, passed to API |
+| 3.11 | Filter: combination | PASS | All filters combine as API query params (intersection logic server-side) |
+| 3.12 | Filter: reset/clear | DEGRADED | Each filter individually resettable but no "Clear All" button |
+| 3.13 | Sort controls | PASS | Score (default=server order) / Newest / Expiring Soon. Canon 1.5D compliant. |
+| 3.14 | Empty state (filtered) | PASS | "No opportunities found, try adjusting your filters or run a new scan" |
+| 3.15 | Empty state (no signals) | PASS | Same EmptyState component |
+| 3.16 | Auto-refresh | PASS | 15-second polling via `usePolling` |
+| 3.17 | Signal detail click | PASS | Navigates to `/opportunities/{id}` with composite or numeric ID |
+| 3.18 | Take action from signal | DEGRADED | Copy Trade Plan button exists, but no direct "paper trade this" button |
+| 3.19 | as_of_ts display | BROKEN | Not displayed. Root cause: `ApiContext.jsx:226-228` strips envelope, discarding `meta.as_of_ts` |
+| 3.20 | candle_ts display | BROKEN | Not displayed anywhere. Same root cause. |
+
+---
+
+## Section 4: Paper Trading
+
+| # | Feature | Verdict | Notes |
+|---|---------|---------|-------|
+| 4.1 | Page loads | PASS | 4-tab layout: Account / Positions / Trades / Performance. **BUT see bug below.** |
+| 4.2 | Open positions list | PASS | Cards with entry/stop/TP/current prices, PnL, R-multiple, status filter |
+| 4.3 | Closed positions list | PASS | Same grid with CLOSED filter, exit reason shown |
+| 4.4 | Position detail | DEGRADED | Positions shown as cards in grid, no dedicated full-detail page |
+| 4.5 | Enter new position | DEAD | No manual position entry form — positions created only via automated pipeline |
+| 4.6 | Validation: missing fields | DEAD | No entry form exists |
+| 4.7 | Validation: invalid values | DEAD | No entry form exists |
+| 4.8 | Position created | DEAD | Only via signal->paper trade pipeline from ControlPlane |
+| 4.9 | Live PnL updates | PASS | Positions poll every 5s via `usePolling` |
+| 4.10 | Manual close | PASS | Close button with confirmation modal, POST to `/v1/trading/positions/{id}/close` |
+| 4.11 | Stop loss hit | DEGRADED | Stop price shown on card but no proximity indicator or progress bar |
+| 4.12 | Target hit | DEGRADED | Targets shown but no visual indicator of which targets have been hit |
+| 4.13 | Position sizing / risk | PASS | Account tab shows capital, risk, exposure bar |
+| 4.14 | Trade history export | DEAD | No export button on PaperTrading page (RunDetail has export, PaperTrading does not) |
+| 4.15 | Empty state | PASS | EmptyState per status filter, "No Active Session" when paper trading inactive |
+| 4.16 | Concurrency | PASS | Multiple positions render correctly in grid |
+
+**BUG: PaperTrading.jsx Tabs broken** — `PaperTrading.jsx:657-662` passes `{ id: 'account', ... }` but the `Tabs` component (`ui.jsx:291`) reads `tab.value`. Result: `onChange(undefined)` fires on every click, `activeTab === tab.value` never matches, all tabs appear inactive. The tab content still renders because `activeTab` state is initialized to `'account'` and clicks set it to `undefined`, making all tab content disappear after first click.
+
+---
+
+## Section 5: Run / Backtest
+
+| # | Feature | Verdict | Notes |
+|---|---------|---------|-------|
+| 5.1 | Run list | PASS | Filterable list with type/status dropdowns, fingerprint search |
+| 5.2 | Trigger new run | PASS | QuickScan button in header + full forms in ControlPlane |
+| 5.3 | Run status tracking | PASS | Status shown with color-coded badges, created/started/finished timestamps |
+| 5.4 | Run detail | PASS | 3-tab view: Overview (stats), Trades (sortable table + export), Events (filterable log) |
+| 5.5 | RunCompare page loads | PASS | Side-by-side comparison with run selectors |
+| 5.6 | Select runs to compare | PASS | Searchable list of successful backtests with fingerprint |
+| 5.7 | Compare metrics | PASS | Color-coded metric rows with higher-is-better logic |
+| 5.8 | Champion/Challenger | DEAD | No champion/challenger labels — just "Run A" and "Run B" |
+| 5.9 | Backtest parameters | PASS | Full form: name, symbols, timeframes, dates, setups, slippage, fees |
+| 5.10 | Backtest results | DEGRADED | SimulationResults loads but auto-refresh broken (see bug below) |
+| 5.11 | Empty state | PASS | EmptyState on all sub-pages |
+
+**BUG: SimulationResults.jsx auto-refresh broken** — Line 51 passes `{ refreshInterval: 5000 }` to `useFetch()`, but `useFetch` only supports `skip` and `showError` options. `refreshInterval` is silently ignored. Page loads initial data but never auto-refreshes during running simulations. Manual refresh button works.
+
+---
+
+## Section 6: Markets / Universe
+
+| # | Feature | Verdict | Notes |
+|---|---------|---------|-------|
+| 6.1 | Markets list | PASS | Grid of market cards grouped alphabetically by base asset |
+| 6.2 | Market detail | PASS | Candlestick chart (lightweight-charts) + live snapshot + squeeze state + BTC correlation |
+| 6.3 | Market search | PASS | Text filter on symbol/base in Markets page |
+| 6.4 | Market status flags | DEGRADED | Liquidity tier shown, but no screened/monitored/tradable flags (Canon 1.4C) |
+| 6.5 | OHLCV data display | PASS | Chart with configurable timeframe and candle limit (100/200/500) |
+| 6.6 | Indicator values | DEGRADED | Squeeze state panel shown, but not full indicator values per market |
+| 6.7 | Chart component | PASS | `lightweight-charts` with TF selector, manual refresh |
+| 6.8 | Chart indicator overlays | DEAD | No BB/EMA/SMA overlays on chart |
+
+---
+
+## Section 7: Settings / Configuration
+
+| # | Feature | Verdict | Notes |
+|---|---------|---------|-------|
+| 7.1 | Settings page loads | PASS | Base URL + API Key form with connection tester |
+| 7.2 | API connection status | PASS | Health, auth, Redis/PG latency displayed after test |
+| 7.3 | Timeframe selection | DEAD | No user-level timeframe preference setting |
+| 7.4 | Setup enable/disable | DEAD | No per-setup toggle in Settings |
+| 7.5 | Theme / display prefs | DEAD | Dark mode only, no theme toggle |
+| 7.6 | Notification settings | DEAD | No notification controls |
+
+---
+
+## Section 8: API Contract Compliance (Canon 1.5)
+
+| # | Check | Verdict | Notes |
+|---|-------|---------|-------|
+| 8.1 | `as_of_ts` present in UI | BROKEN | **Zero pages display `as_of_ts`.** Root cause: `ApiContext.jsx:226-228` unwraps `{data, meta}` envelope, returning only `data` and discarding `meta.as_of_ts`. |
+| 8.2 | `candle_ts` present in UI | BROKEN | Not surfaced in any structured display. May be visible inside raw JSON payload on OpportunityDetail. |
+| 8.3 | No client-side indicator math | PASS | Confirmed across all 22 files. Zero indicator computation in frontend. |
+| 8.4 | No client-side ranking | PASS | Default sort preserves server order. Display reordering (newest/expiring) is documented Canon 1.5D. |
+| 8.5 | Deterministic IDs only | PASS | All IDs from server. Composite keys (`S2:BTCUSDT:1m`) match server format. |
+| 8.6 | `since_ts` in signals | PASS | Displayed in Opportunities.jsx and OpportunityDetail.jsx with relative time + absolute datetime |
+| 8.7 | `action_by_ts` in signals | PASS | Displayed with live countdown timer in both pages |
+| 8.8 | Error responses | PASS | Structured error handling: 401 redirect, error toasts, ErrorBoundary |
+| 8.9 | Stale data indicator | DEGRADED | MarketDetail has 20s staleness check but uses client-side `lastUpdated`, not server `as_of_ts` |
+
+---
+
+## Section 9: Edge Cases & Stress
+
+| # | Feature | Verdict | Notes |
+|---|---------|---------|-------|
+| 9.1 | API timeout | PASS | Loading states + error toasts via `useFetch`/`usePolling` error handling |
+| 9.2 | Empty API responses | PASS | `EmptyState` components on all data pages |
+| 9.3 | Malformed API data | DEGRADED | Null checks with `?.` and `|| '—'` fallbacks, but no schema validation |
+| 9.4 | Rapid navigation | PASS | React Router, polling cleanup via `useEffect` return, `RouteLogger` with correlation ID rotation |
+| 9.5 | WebSocket disconnect | DEAD | No WebSocket exists — polling only |
+| 9.6 | Large data set | DEGRADED | No virtual scroll. SimulationResults has pagination. Opportunities defaults to 50 limit. |
+| 9.7 | Concurrent updates | PASS | Polling replaces state atomically, no observable flickering |
+| 9.8 | Browser back/forward | PASS | React Router handles navigation state |
+| 9.9 | Double-click protection | DEGRADED | Loading state disables buttons during API calls, but no explicit debounce for rapid clicks before async starts |
+
+---
+
+## BROKEN Features (fix required)
+
+| ID | Feature | Root Cause | Fix Required |
+|----|---------|-----------|-------------|
+| 3.19 | `as_of_ts` not displayed | `ApiContext.jsx:226-228` strips envelope, discards `meta.as_of_ts` | Preserve `meta` from envelope and surface `as_of_ts` in UI (e.g., in RefreshControl or page headers) |
+| 3.20 | `candle_ts` not displayed | Same root cause — `meta` discarded | Include `candle_ts` in signal/opportunity display |
+| 8.1 | `as_of_ts` compliance | Same as 3.19 | Systemic fix: modify `apiRequest()` to return `{data, meta}` or store `meta` separately |
+| 8.2 | `candle_ts` compliance | Same as 3.20 | Expose `candle_ts` in structured UI for signal/opportunity views |
+
+**Additional confirmed bugs (not in audit spec but discovered during audit):**
+
+| Bug | File | Root Cause | Impact |
+|-----|------|-----------|--------|
+| PaperTrading tabs broken | `PaperTrading.jsx:657-662` | Passes `{ id: ... }` but `Tabs` component reads `tab.value` | Clicking any tab sets `activeTab=undefined`, all tab content vanishes |
+| SimulationResults no auto-refresh | `SimulationResults.jsx:51` | Passes `refreshInterval: 5000` to `useFetch()` which ignores it | Running simulations don't auto-update; user must manually click refresh |
+
+---
+
+## DEAD Features (not implemented)
+
+| ID | Feature | Missing Component | Canon Reference |
+|----|---------|-------------------|-----------------|
+| 1.7 | WebSocket connection | No WS implementation anywhere in frontend | — (nice-to-have, polling works) |
+| 3.8 | Filter: timeframe | No TF filter on Opportunities page | — |
+| 3.9 | Filter: symbol search | No symbol search on Opportunities page | — |
+| 4.5-4.8 | Manual position entry | No entry form — positions only via automated pipeline | — |
+| 4.14 | Trade history export | No export button on PaperTrading page | — |
+| 5.8 | Champion/Challenger labels | RunCompare uses "Run A"/"Run B" only | Canon 1.7 |
+| 6.8 | Chart indicator overlays | No BB/EMA/SMA overlays on candlestick chart | — |
+| 7.3-7.6 | Settings preferences | No TF selection, setup toggle, theme, or notifications | — |
+| 9.5 | WebSocket disconnect handling | No WS exists | — |
+
+---
+
+## DEGRADED Features (fix recommended)
+
+| ID | Feature | Issue | Severity |
+|----|---------|-------|----------|
+| 1.4 | Page not found | Silently redirects to `/`, no 404 page | Low |
+| 1.6 | Responsive layout | Fixed sidebar, no mobile breakpoints | Medium |
+| 2.3 | Live price feed | No real-time streaming, polling only | Low |
+| 2.8 | Timestamp display | No `as_of_ts` shown on dashboard | Medium |
+| 3.4 | Score components | Score shown but components not visually broken down | Low |
+| 3.12 | Filter: reset/clear | No "Clear All" button | Low |
+| 3.18 | Take action from signal | Copy trade plan only, no direct paper trade button | Medium |
+| 4.4 | Position detail | Cards only, no full detail page | Low |
+| 4.11 | Stop loss proximity | Stop shown but no visual proximity indicator | Low |
+| 4.12 | Target progress | Targets shown but no hit/progress indicator | Low |
+| 5.10 | Backtest results auto-refresh | `refreshInterval` silently ignored by `useFetch` | Medium |
+| 6.4 | Market status flags | Only liquidity tier, no screened/monitored/tradable | Low |
+| 6.6 | Indicator values per market | Only squeeze state, not full indicator panel | Low |
+| 8.9 | Stale data indicator | Uses client-side time, not server `as_of_ts` | Medium |
+| 9.3 | Malformed API data | Null checks but no schema validation | Low |
+| 9.6 | Large data set | No virtual scroll for 200+ items | Medium |
+| 9.9 | Double-click protection | Loading state helps but no debounce | Low |
+
+---
+
+## Canon 1.5 Violations Found
+
+| Endpoint/Component | Violation | Details |
+|--------------------|-----------|---------|
+| `ApiContext.jsx:226-228` | Envelope stripping discards `meta.as_of_ts` | All pages: backend sends `{data, meta: {as_of_ts}}` but frontend returns only `data`, making `as_of_ts` inaccessible to any component |
+| All data pages | `as_of_ts` never displayed | User cannot determine backend data freshness — only sees client-side poll time |
+| All data pages | `candle_ts` never displayed | Per-value candle timestamp not surfaced in structured UI |
+| `PaperTrading.jsx` | `since_ts`/`action_by_ts` not shown for positions | Position cards omit signal timing metadata |
+| `RunDetail.jsx` (Trades tab) | `since_ts`/`action_by_ts` not shown in trades table | Trade rows omit signal timing metadata |
+| `RunDetail.jsx` (Trades tab) | `candle_ts`/`signal_bar_ts` not shown | No candle reference timestamp per trade |
+
+---
+
+## Recommended Fix Priority
+
+### P0 — Broken (fix immediately)
+
+1. **PaperTrading Tabs bug**: Change `{ id: 'account', ...}` to `{ value: 'account', ...}` in `PaperTrading.jsx:657-662`. One-line fix per tab entry. Without this fix, the Paper Trading page is unusable after the first tab click.
+
+2. **Envelope `as_of_ts` preservation**: Modify `ApiContext.jsx:226-228` to preserve `meta` alongside `data`. Either:
+   - Return `{ data: data.data, meta: data.meta }` and update hooks to expose `meta`, or
+   - Store the latest `as_of_ts` in ApiContext state for consumption by components.
+   This is the root cause of Canon 1.5 `as_of_ts`/`candle_ts` violations across the entire frontend.
+
+### P1 — Degraded (fix this sprint)
+
+3. **SimulationResults auto-refresh**: Replace `useFetch(..., { refreshInterval: 5000 })` with `usePolling(..., 5000)` on `SimulationResults.jsx:49-52`.
+
+4. **Surface `as_of_ts` in RefreshControl**: After P0-2 is done, pass `meta.as_of_ts` to `RefreshControl` and display "Server: X ago" alongside the existing client poll time.
+
+5. **Add `candle_ts` to signal displays**: Show the originating candle timestamp on Opportunities cards and OpportunityDetail.
+
+6. **Opportunities page filters**: Add timeframe dropdown and symbol search filters (currently DEAD).
+
+7. **Mobile responsive**: Add responsive breakpoints and collapsible sidebar for mobile.
+
+### P2 — Dead features to implement (scheduled)
+
+8. **WebSocket for real-time updates**: Replace polling with WS for price feed and signal updates.
+9. **Chart indicator overlays**: Add BB/EMA/SMA overlays to the candlestick chart.
+10. **Manual position entry**: Add form for manually entering paper trade positions.
+11. **Trade export from PaperTrading**: Add CSV/JSON export button (exists on RunDetail but not PaperTrading).
+12. **Champion/Challenger labels**: Add labeling in RunCompare.
+13. **Settings preferences**: Timeframe selection, setup toggles, theme, notifications.
+14. **404 page**: Show a proper "Not Found" page instead of silent redirect.

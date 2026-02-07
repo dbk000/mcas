@@ -1,6 +1,22 @@
 -- MCAS Database Schema v7
 -- Complete schema for trading system with paper trading support
--- Run: psql -U trading -d trading -f mcas_schema.sql
+--
+-- =============================================================================
+-- DDL APPLICATION ORDER (Canon §1.10)
+-- =============================================================================
+-- 1. Apply this file FIRST:
+--       psql -U trading -d trading -f mcas_schema.sql
+--
+-- 2. Then apply migrations in filename order:
+--       for f in migrations/*.sql; do psql -U trading -d trading -f "$f"; done
+--
+-- Migration files use IF NOT EXISTS and advisory locks for idempotency.
+-- The schema_versions table (migration 20260207_add_schema_versions.sql)
+-- tracks which migrations have been applied.
+--
+-- NOTE: ohlcv column was renamed from open_time to bar_start_ts (Canon §1.3)
+-- via migration 20260207_rename_open_time_bar_start_ts.sql.
+-- =============================================================================
 
 -- =============================================================================
 -- RUNS AND QUEUE
@@ -237,7 +253,7 @@ CREATE TABLE IF NOT EXISTS ohlcv (
     id BIGSERIAL PRIMARY KEY,
     symbol TEXT NOT NULL,
     timeframe TEXT NOT NULL,
-    open_time TIMESTAMPTZ NOT NULL,        -- Canon 4A: bar_start_ts (UTC)
+    bar_start_ts TIMESTAMPTZ NOT NULL,      -- Canon §1.3: canonical candle identifier (UTC)
     open DOUBLE PRECISION NOT NULL,
     high DOUBLE PRECISION NOT NULL,
     low DOUBLE PRECISION NOT NULL,
@@ -253,10 +269,16 @@ CREATE TABLE IF NOT EXISTS ohlcv (
     ingested_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     batch_id TEXT,
 
-    UNIQUE(symbol, timeframe, open_time)
+    UNIQUE(symbol, timeframe, bar_start_ts, source)
 );
 
-CREATE INDEX IF NOT EXISTS idx_ohlcv_lookup ON ohlcv(symbol, timeframe, open_time DESC);
+-- Retention policy (Canon §1.9):
+--   1m candles: retain 90 days, prune older.
+--   5m/15m candles: retain 180 days, prune older.
+--   1h+ candles: retained indefinitely (small volume, needed for backtests).
+--   Pruning is NOT yet automated — implement via worker scheduled task or pg_cron.
+
+CREATE INDEX IF NOT EXISTS idx_ohlcv_bar_start ON ohlcv(symbol, timeframe, bar_start_ts DESC);
 CREATE INDEX IF NOT EXISTS idx_ohlcv_batch ON ohlcv(batch_id);
 
 CREATE TABLE IF NOT EXISTS data_snapshots (
@@ -276,6 +298,37 @@ CREATE TABLE IF NOT EXISTS data_snapshots (
     
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- =============================================================================
+-- SIGNAL EVENTS (Canon §1.9 — Evented Audit Logs)
+-- =============================================================================
+
+CREATE TABLE IF NOT EXISTS signal_events (
+    id BIGSERIAL PRIMARY KEY,
+    event_type TEXT NOT NULL CHECK (event_type IN (
+        'SETUP_ARMED', 'SETUP_FIRED', 'SETUP_INVALIDATED',
+        'THRESHOLD_CROSS', 'RANK_CHANGE',
+        'ENTRY_DECISION', 'EXIT_DECISION', 'STATE_FLIP'
+    )),
+    symbol TEXT NOT NULL,
+    timeframe TEXT NOT NULL,
+    setup_id TEXT NOT NULL,
+    direction TEXT,
+    bar_start_ts TIMESTAMPTZ NOT NULL,
+    as_of_ts TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    setup_score FLOAT,
+    rank INT,
+    feature_snapshot JSONB,
+    score_components JSONB,
+    reason_codes TEXT[],
+    trade_id UUID,
+    run_id UUID,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_signal_events_symbol_ts ON signal_events(symbol, timeframe, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_signal_events_type ON signal_events(event_type, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_signal_events_setup ON signal_events(setup_id, created_at DESC);
 
 -- =============================================================================
 -- LEGACY TABLES (for backward compatibility)
