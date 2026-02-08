@@ -32,7 +32,7 @@ import psycopg
 
 DATABASE_URL = os.environ.get('DATABASE_URL')
 API_KEY = os.environ.get('API_KEY')
-API_BASE = os.environ.get('API_BASE', 'http://localhost:8000')
+API_BASE = os.environ.get('API_BASE', 'http://api:8000')
 
 if not DATABASE_URL:
     print("ERROR: DATABASE_URL not set")
