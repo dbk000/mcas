@@ -7,10 +7,10 @@ SELECT pg_advisory_lock(20260208001);
 
 DO $$
 BEGIN
-    -- Track migration version
-    INSERT INTO schema_versions (version, description, applied_at)
-    VALUES ('20260208_add_setup_version', 'Add setup_version and batch_id to opportunities', NOW())
-    ON CONFLICT (version) DO NOTHING;
+    -- Track migration
+    INSERT INTO schema_versions (filename, applied_at)
+    VALUES ('20260208_add_setup_version_to_opportunities.sql', NOW())
+    ON CONFLICT (filename) DO NOTHING;
 
     -- Add setup_version column: tracks which code version generated this opportunity
     -- e.g. 'S1_v2.1', 'S1_v2.2', 'S2_v1.4'
