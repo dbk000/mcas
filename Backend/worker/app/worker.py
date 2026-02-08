@@ -50,7 +50,8 @@ WORKER_ID = os.getenv("WORKER_ID", f"worker-{os.getpid()}")
 QUEUE_POLL_SECONDS = 2
 SCAN_INTERVAL_SECONDS = int(os.getenv("SCAN_INTERVAL_SECONDS", "300"))
 USE_DYNAMIC_SYMBOLS = os.getenv("USE_DYNAMIC_SYMBOLS", "false").lower() == "true"
-SYMBOL_COUNT = int(os.getenv("SYMBOL_COUNT", "200"))
+SYMBOL_COUNT = int(os.getenv("SYMBOL_COUNT", "200"))  # DEPRECATED: fallback only
+KNOWN_UNIVERSE_SIZE = int(os.getenv("KNOWN_UNIVERSE_SIZE", "1024"))
 SETUP_IDS = os.getenv("SETUP_IDS", "S1,S2").split(",")
 ENABLE_PERIODIC_SCANS = os.getenv("ENABLE_PERIODIC_SCANS", "true").lower() == "true"
 
@@ -79,12 +80,17 @@ def heartbeat():
 
 
 def get_symbols() -> list[str]:
-    """Get symbol universe based on configuration."""
+    """Get symbol universe based on configuration.
+
+    Fallback path — ingestor is the primary universe builder (Canon §1.4C).
+    Prefer reading `universe:monitored` or `universe:known` from Redis.
+    This function is used by the worker for legacy run execution paths.
+    """
     if USE_DYNAMIC_SYMBOLS:
-        symbols = fetch_top_symbols_by_volume(n=SYMBOL_COUNT)
+        symbols = fetch_top_symbols_by_volume(n=KNOWN_UNIVERSE_SIZE)
         logger.info(f"Using dynamic symbols: top {len(symbols)} by volume")
     else:
-        symbols = get_default_symbols()[:SYMBOL_COUNT]
+        symbols = get_default_symbols()[:KNOWN_UNIVERSE_SIZE]
     return symbols
 
 

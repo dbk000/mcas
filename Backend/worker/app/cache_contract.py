@@ -625,6 +625,19 @@ def get_universe(r, key: str = "universe:monitored") -> list[str]:
     return [b2s(m) for m in members]
 
 
+def get_known_universe(r) -> list[str]:
+    """Read Known Universe set from Redis (Canon §1.4C).
+
+    Known Universe (~1024 symbols): all USDT pairs worth tracking.
+    OHLCV ingested hourly via REST. Stored in Redis `universe:known` SET.
+
+    Note: `universe:promoted` is deprecated, replaced by the two-tier
+    known/monitored model. Use get_universe() for the Monitored Universe
+    (symbols with WS streams + full compute pipeline).
+    """
+    return get_universe(r, key="universe:known")
+
+
 def get_timeframes(r) -> list[str]:
     """Read tracked timeframes from Redis."""
     members = r.smembers("cache:timeframes")

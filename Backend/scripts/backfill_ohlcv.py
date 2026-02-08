@@ -239,7 +239,7 @@ def backfill_symbol(
 def main():
     parser = argparse.ArgumentParser(description="Backfill OHLCV data from Binance")
     parser.add_argument("--days", type=int, default=7, help="Number of days to backfill (default: 7)")
-    parser.add_argument("--symbols", type=int, default=200, help="Number of top symbols to fetch (default: 200)")
+    parser.add_argument("--symbols", type=int, default=1024, help="Number of top symbols to fetch (default: 1024)")
     parser.add_argument("--timeframes", type=str, default=None,
                         help="Comma-separated timeframes (default: all 6)")
     parser.add_argument("--workers", type=int, default=MAX_WORKERS,

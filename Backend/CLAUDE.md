@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-MCAS (Market Cognition At Scale) v7 — a crypto trading analytics and paper trading system. Python 3.12, FastAPI, PostgreSQL 16, Redis 7. Scans 200+ crypto markets, generates ranked signals via two setups (S1: BB Squeeze, S2: Golden Cross), and executes paper trades with full position management.
+MCAS (Market Cognition At Scale) v7 — a crypto trading analytics and paper trading system. Python 3.12, FastAPI, PostgreSQL 16, Redis 7. 1024-symbol Known Universe with dynamic Monitored Universe (~200 symbols filtered by 24h volume), generates ranked signals via three setups (S1: BB Squeeze, S2: Golden Cross, U1: Unicorn Ignition), and executes paper trades with full position management.
 
 ## Build & Run Commands
 
@@ -81,7 +81,9 @@ Copy `.env.example` to `.env` and set `POSTGRES_PASSWORD`, `API_KEY`, and `DATAB
 | `SCAN_INTERVAL_SECONDS` | Periodic scan interval (default 300) |
 | `ENABLE_PERIODIC_SCANS` | Toggle auto-scans (default true) |
 | `ENABLE_POSITION_MONITORING` | Toggle position monitoring (default true) |
-| `SYMBOL_COUNT` | Number of symbols to scan (default 200) |
+| `KNOWN_UNIVERSE_SIZE` | Size of Known Universe — top USDT pairs by volume (default 1024) |
+| `MIN_24H_QUOTE_VOLUME_USD` | Volume threshold for Monitored Universe; 0 = monitor all (default 5000000) |
+| `SYMBOL_COUNT` | **DEPRECATED** — fallback only (default 200) |
 
 ## Database
 

@@ -680,9 +680,11 @@ class SignalEngine:
 
 
 def get_default_symbols() -> list[str]:
-    """
-    Get default symbol universe.
-    Top 200 USDT pairs by trading activity.
+    """DEPRECATED: fallback only. Ingestor builds universe dynamically from Binance.
+
+    Use Redis `universe:monitored` or `universe:known` SETs for the live universe.
+    This hardcoded list is retained only as a last-resort fallback if Binance REST
+    is unreachable during startup.
     """
     return [
         # Tier 1 - Majors
@@ -733,10 +735,13 @@ def get_default_symbols() -> list[str]:
     ]
 
 
-def fetch_top_symbols_by_volume(n: int = 200, quote: str = "USDT") -> list[str]:
+def fetch_top_symbols_by_volume(n: int = 1024, quote: str = "USDT") -> list[str]:
     """
     Dynamically fetch top N symbols by 24h quote volume from Binance.
     Falls back to hardcoded list on error.
+
+    Default N changed from 200 to KNOWN_UNIVERSE_SIZE (1024) to align
+    with two-tier universe architecture (Canon §1.4C).
     """
     try:
         resp = requests.get(

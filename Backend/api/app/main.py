@@ -83,7 +83,9 @@ SIGNAL_MAX_AGE_S = 3600  # Signals older than this are considered expired
 
 r = redis.Redis.from_url(REDIS_URL, decode_responses=True)
 
-# Default symbols (200 - matching worker)
+# DEPRECATED: hardcoded fallback only. Ingestor builds universe dynamically
+# from Binance (Canon §1.4C). Prefer reading `universe:monitored` or
+# `universe:known` from Redis for the live universe.
 DEFAULT_SYMBOLS = [
     # Tier 1 - Majors
     "BTCUSDT", "ETHUSDT", "BNBUSDT", "SOLUSDT", "XRPUSDT",
