@@ -131,7 +131,7 @@ def ingest_batch(symbols, timeframes, start_date, end_date=None, batch_size=10):
 
         try:
             resp = requests.post(
-                f"{API_BASE}/v1/data/ingest",
+                f"{API_BASE}/v1/control/data/ingest",
                 headers=headers,
                 json=payload,
                 timeout=600,  # 10 min timeout for large batches
