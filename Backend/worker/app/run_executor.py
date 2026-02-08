@@ -1362,12 +1362,16 @@ class RunExecutor:
                 where_clause = " AND ".join(conditions)
                 params.append(limit)
 
+                # Deduplicate: one opportunity per (symbol, tf, setup_id).
+                # Takes the highest-scored row for each combo. Canon: one
+                # position per symbol per timeframe.
                 cur.execute(f"""
-                    SELECT id, created_ts, symbol, timeframe, setup_id,
+                    SELECT DISTINCT ON (symbol, timeframe, setup_id)
+                           id, created_ts, symbol, timeframe, setup_id,
                            decision, score, reason, payload_json
                     FROM opportunities
                     WHERE {where_clause}
-                    ORDER BY score DESC, created_ts DESC
+                    ORDER BY symbol, timeframe, setup_id, score DESC, created_ts DESC
                     LIMIT %s;
                 """, params)
 

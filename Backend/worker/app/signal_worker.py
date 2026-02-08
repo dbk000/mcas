@@ -441,28 +441,35 @@ class SignalWorker:
                                score: float, reason: str, payload: dict):
         """Persist signal to Postgres opportunities table for durability.
 
-        Upserts: marks any existing active record for this combo as expired,
-        then inserts a new active record.
+        If an active record already exists for this (symbol, tf, setup_id),
+        refreshes it in place (score, reason, payload, updated_ts).
+        Only inserts a new row when no active record exists.
+        This prevents duplicate expired rows when the same signal persists
+        across multiple scan cycles. Canon: one position per symbol per tf.
         """
         if not DATABASE_URL:
             return
         try:
+            payload_json = json.dumps(payload)
             with psycopg.connect(DATABASE_URL) as conn:
                 with conn.cursor() as cur:
-                    # Expire previous active record for this combo
+                    # Try to update existing active record in place
                     cur.execute("""
                         UPDATE opportunities
-                        SET status = 'expired', updated_ts = NOW()
+                        SET score = %s, reason = %s, payload_json = %s, updated_ts = NOW()
                         WHERE symbol = %s AND timeframe = %s AND setup_id = %s
-                          AND status = 'active';
-                    """, (symbol, tf, setup_id))
-                    # Insert new active record
-                    cur.execute("""
-                        INSERT INTO opportunities
-                            (symbol, timeframe, setup_id, decision, score, reason, payload_json, status)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, 'active');
-                    """, (symbol, tf, setup_id, 'SIGNAL', score, reason,
-                          json.dumps(payload)))
+                          AND status = 'active'
+                        RETURNING id;
+                    """, (score, reason, payload_json, symbol, tf, setup_id))
+                    updated = cur.fetchone()
+
+                    if not updated:
+                        # No active record exists — insert new one
+                        cur.execute("""
+                            INSERT INTO opportunities
+                                (symbol, timeframe, setup_id, decision, score, reason, payload_json, status)
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, 'active');
+                        """, (symbol, tf, setup_id, 'SIGNAL', score, reason, payload_json))
                 conn.commit()
         except Exception as e:
             logger.debug(f"Postgres persist failed for {setup_id}:{symbol}:{tf}: {e}")

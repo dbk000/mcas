@@ -500,9 +500,13 @@ def create_simulation_run(request: SimulationRunRequest):
 
             where_clause = " AND ".join(conditions)
 
+            # Count distinct (symbol, tf, setup_id) combos, not raw rows
             cur.execute(f"""
-                SELECT COUNT(*) FROM opportunities
-                WHERE {where_clause};
+                SELECT COUNT(*) FROM (
+                    SELECT DISTINCT symbol, timeframe, setup_id
+                    FROM opportunities
+                    WHERE {where_clause}
+                ) sub;
             """, params)
             opp_count = cur.fetchone()[0]
 
