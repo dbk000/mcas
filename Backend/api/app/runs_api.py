@@ -465,16 +465,18 @@ def export_simulation_results_csv(run_id: str):
                 raise HTTPException(status_code=400, detail="Not a SIMULATION run")
 
             cur.execute("""
-                SELECT symbol, timeframe, setup_id, direction,
-                       opportunity_created_ts, entry_ts, entry_price,
-                       entry_price_with_slippage, position_size, stop_price,
-                       tp1_price, tp2_price, r_value, exit_ts, exit_price,
-                       exit_price_with_slippage, exit_reason, bars_held,
-                       pnl_gross, fees, pnl_net, r_multiple,
-                       data_available, error_message
-                FROM simulation_results
-                WHERE run_id = %s
-                ORDER BY r_multiple DESC NULLS LAST, opportunity_id;
+                SELECT sr.symbol, sr.timeframe, sr.setup_id, sr.direction,
+                       o.score AS opportunity_score,
+                       sr.opportunity_created_ts, sr.entry_ts, sr.entry_price,
+                       sr.entry_price_with_slippage, sr.position_size, sr.stop_price,
+                       sr.tp1_price, sr.tp2_price, sr.r_value, sr.exit_ts, sr.exit_price,
+                       sr.exit_price_with_slippage, sr.exit_reason, sr.bars_held,
+                       sr.pnl_gross, sr.fees, sr.pnl_net, sr.r_multiple,
+                       sr.data_available, sr.error_message
+                FROM simulation_results sr
+                LEFT JOIN opportunities o ON o.id = sr.opportunity_id
+                WHERE sr.run_id = %s
+                ORDER BY sr.r_multiple DESC NULLS LAST, sr.opportunity_id;
             """, (run_id,))
             rows = cur.fetchall()
             columns = [desc[0] for desc in cur.description]
