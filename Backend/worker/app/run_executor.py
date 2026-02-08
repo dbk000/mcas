@@ -1249,6 +1249,8 @@ class RunExecutor:
         min_score = setup_params.get("min_score", 0.0)
         max_age_hours = setup_params.get("max_age_hours")
         limit = setup_params.get("limit", 500)
+        setup_version = setup_params.get("setup_version")  # Backfill filter
+        batch_id = setup_params.get("batch_id")  # Backfill batch filter
 
         # Build simulator config
         sim_config = SimulationConfig(
@@ -1265,6 +1267,8 @@ class RunExecutor:
             min_score=min_score,
             max_age_hours=max_age_hours,
             limit=limit,
+            setup_version=setup_version,
+            batch_id=batch_id,
         )
 
         if not opportunities:
@@ -1326,6 +1330,8 @@ class RunExecutor:
         min_score: float = 0.0,
         max_age_hours: int = None,
         limit: int = 500,
+        setup_version: str = None,
+        batch_id: str = None,
     ) -> list[dict]:
         """
         Load expired opportunities from the database.
@@ -1335,6 +1341,8 @@ class RunExecutor:
             min_score: Minimum score filter
             max_age_hours: How far back to look
             limit: Maximum number of opportunities
+            setup_version: Optional filter by setup version (e.g. 'S1_v2.2')
+            batch_id: Optional filter by batch ID (e.g. 'backfill_20260208_abc123')
 
         Returns:
             List of opportunity dicts
@@ -1359,21 +1367,42 @@ class RunExecutor:
                     conditions.append("created_ts >= NOW() - INTERVAL '%s hours'")
                     params.append(max_age_hours)
 
+                if setup_version:
+                    conditions.append("setup_version = %s")
+                    params.append(setup_version)
+
+                if batch_id:
+                    conditions.append("batch_id = %s")
+                    params.append(batch_id)
+
                 where_clause = " AND ".join(conditions)
                 params.append(limit)
 
-                # Deduplicate: one opportunity per (symbol, tf, setup_id).
-                # Takes the highest-scored row for each combo. Canon: one
-                # position per symbol per timeframe.
-                cur.execute(f"""
-                    SELECT DISTINCT ON (symbol, timeframe, setup_id)
-                           id, created_ts, symbol, timeframe, setup_id,
-                           decision, score, reason, payload_json
-                    FROM opportunities
-                    WHERE {where_clause}
-                    ORDER BY symbol, timeframe, setup_id, score DESC, created_ts DESC
-                    LIMIT %s;
-                """, params)
+                # When filtering by setup_version or batch_id (backfill mode),
+                # return all matching rows — each is a distinct triggered signal
+                # at a different point in time. Without these filters (live mode),
+                # dedup to one per (symbol, tf, setup_id) for Canon concurrency.
+                if setup_version or batch_id:
+                    cur.execute(f"""
+                        SELECT id, created_ts, symbol, timeframe, setup_id,
+                               decision, score, reason, payload_json
+                        FROM opportunities
+                        WHERE {where_clause}
+                        ORDER BY created_ts ASC
+                        LIMIT %s;
+                    """, params)
+                else:
+                    # Legacy dedup: one opportunity per (symbol, tf, setup_id).
+                    # Takes the highest-scored row for each combo.
+                    cur.execute(f"""
+                        SELECT DISTINCT ON (symbol, timeframe, setup_id)
+                               id, created_ts, symbol, timeframe, setup_id,
+                               decision, score, reason, payload_json
+                        FROM opportunities
+                        WHERE {where_clause}
+                        ORDER BY symbol, timeframe, setup_id, score DESC, created_ts DESC
+                        LIMIT %s;
+                    """, params)
 
                 rows = cur.fetchall()
                 for row in rows:

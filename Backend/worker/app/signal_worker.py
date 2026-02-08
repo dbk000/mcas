@@ -437,6 +437,9 @@ class SignalWorker:
             f"score={signal.setup_score:.3f} rel_vol={signal.rel_volume:.1f}x"
         )
 
+    # Setup version mapping for live signals
+    SETUP_VERSIONS = {"S1": "S1_v2.1", "S2": "S2_v1.4", "U1": "U1_v1.0"}
+
     def _persist_signal_to_pg(self, symbol: str, tf: str, setup_id: str,
                                score: float, reason: str, payload: dict):
         """Persist signal to Postgres opportunities table for durability.
@@ -451,25 +454,30 @@ class SignalWorker:
             return
         try:
             payload_json = json.dumps(payload)
+            setup_version = self.SETUP_VERSIONS.get(setup_id, f"{setup_id}_v1.0")
             with psycopg.connect(DATABASE_URL) as conn:
                 with conn.cursor() as cur:
                     # Try to update existing active record in place
                     cur.execute("""
                         UPDATE opportunities
-                        SET score = %s, reason = %s, payload_json = %s, updated_ts = NOW()
+                        SET score = %s, reason = %s, payload_json = %s,
+                            setup_version = %s, updated_ts = NOW()
                         WHERE symbol = %s AND timeframe = %s AND setup_id = %s
                           AND status = 'active'
                         RETURNING id;
-                    """, (score, reason, payload_json, symbol, tf, setup_id))
+                    """, (score, reason, payload_json, setup_version,
+                          symbol, tf, setup_id))
                     updated = cur.fetchone()
 
                     if not updated:
                         # No active record exists — insert new one
                         cur.execute("""
                             INSERT INTO opportunities
-                                (symbol, timeframe, setup_id, decision, score, reason, payload_json, status)
-                            VALUES (%s, %s, %s, %s, %s, %s, %s, 'active');
-                        """, (symbol, tf, setup_id, 'SIGNAL', score, reason, payload_json))
+                                (symbol, timeframe, setup_id, decision, score, reason,
+                                 payload_json, status, setup_version)
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, 'active', %s);
+                        """, (symbol, tf, setup_id, 'SIGNAL', score, reason,
+                              payload_json, setup_version))
                 conn.commit()
         except Exception as e:
             logger.debug(f"Postgres persist failed for {setup_id}:{symbol}:{tf}: {e}")

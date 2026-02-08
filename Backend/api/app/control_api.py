@@ -128,6 +128,8 @@ class SimulationRunRequest(BaseModel):
     max_age_hours: Optional[int] = Field(default=None, ge=1)  # How far back to look
     limit: int = Field(default=500, ge=1, le=2000)
     slippage_bps: float = Field(default=5.0, ge=0, le=50)
+    setup_version: Optional[str] = None  # Filter by setup version (e.g. 'S1_v2.2')
+    batch_id: Optional[str] = None  # Filter by backfill batch ID
 
 
 # =============================================================================
@@ -498,16 +500,31 @@ def create_simulation_run(request: SimulationRunRequest):
                 conditions.append("created_ts >= NOW() - INTERVAL '%s hours'")
                 params.append(request.max_age_hours)
 
+            if request.setup_version:
+                conditions.append("setup_version = %s")
+                params.append(request.setup_version)
+
+            if request.batch_id:
+                conditions.append("batch_id = %s")
+                params.append(request.batch_id)
+
             where_clause = " AND ".join(conditions)
 
-            # Count distinct (symbol, tf, setup_id) combos, not raw rows
-            cur.execute(f"""
-                SELECT COUNT(*) FROM (
-                    SELECT DISTINCT symbol, timeframe, setup_id
-                    FROM opportunities
-                    WHERE {where_clause}
-                ) sub;
-            """, params)
+            # When filtering by version/batch, count all rows (each is unique).
+            # Otherwise dedup count by (symbol, tf, setup_id).
+            if request.setup_version or request.batch_id:
+                cur.execute(f"""
+                    SELECT COUNT(*) FROM opportunities
+                    WHERE {where_clause};
+                """, params)
+            else:
+                cur.execute(f"""
+                    SELECT COUNT(*) FROM (
+                        SELECT DISTINCT symbol, timeframe, setup_id
+                        FROM opportunities
+                        WHERE {where_clause}
+                    ) sub;
+                """, params)
             opp_count = cur.fetchone()[0]
 
     if opp_count == 0:
@@ -525,7 +542,7 @@ def create_simulation_run(request: SimulationRunRequest):
 
     strategy_json = json.dumps({
         "setup_id": ",".join(request.setup_ids) if request.setup_ids else "S1,S2",
-        "setup_version": "v2.0",
+        "setup_version": request.setup_version or "v2.0",
         "setup_params": {
             "position_size_usd": request.position_size_usd,
             "setup_ids": request.setup_ids,
@@ -533,6 +550,8 @@ def create_simulation_run(request: SimulationRunRequest):
             "max_age_hours": request.max_age_hours,
             "limit": request.limit,
             "slippage_bps": request.slippage_bps,
+            "setup_version": request.setup_version,
+            "batch_id": request.batch_id,
         },
     })
 
