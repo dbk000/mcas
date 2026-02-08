@@ -7,6 +7,7 @@ Database operations for Runs and related entities.
 
 import json
 import logging
+import uuid
 from datetime import datetime, timezone
 from typing import Optional
 from contextlib import contextmanager
@@ -431,9 +432,10 @@ class RunRepository:
         with self._conn() as conn:
             with conn.cursor() as cur:
                 cur.execute("""
-                    INSERT INTO run_events (run_id, event_type, message, payload_json, ts)
-                    VALUES (%s, %s, %s, %s, %s);
+                    INSERT INTO run_events (id, run_id, event_type, message, payload_json, ts)
+                    VALUES (%s, %s, %s, %s, %s, %s);
                 """, (
+                    str(uuid.uuid4()),
                     event.run_id,
                     event.event_type, event.message, json.dumps(event.payload),
                     event.ts,
