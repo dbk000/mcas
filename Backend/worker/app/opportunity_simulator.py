@@ -421,12 +421,15 @@ class OpportunitySimulator:
         result.exit_reason = exit_reason
         result.bars_held = bars_held
 
-        # Apply exit slippage
-        exit_slip_bps = self.config.slippage_exit_bps
-        if direction == "long":
-            exit_with_slip = exit_price * (1 - exit_slip_bps / 10000)
+        # Apply exit slippage (NOT for stop losses - fill is already modeled)
+        if exit_reason != "STOP_LOSS":
+            exit_slip_bps = self.config.slippage_exit_bps
+            if direction == "long":
+                exit_with_slip = exit_price * (1 - exit_slip_bps / 10000)
+            else:
+                exit_with_slip = exit_price * (1 + exit_slip_bps / 10000)
         else:
-            exit_with_slip = exit_price * (1 + exit_slip_bps / 10000)
+            exit_with_slip = exit_price
 
         result.exit_price_with_slippage = exit_with_slip
 

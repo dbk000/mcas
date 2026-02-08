@@ -403,8 +403,9 @@ class S2Evaluator:
             stop_price = min(stop_a, swing_high)
             r_value = stop_price - entry_price
         
-        if r_value <= 0:
-            return None
+        min_r = 0.5 * atr
+        if r_value < min_r:
+            return None  # Stop too close to entry (inside noise floor)
         
         # Targets
         if direction == Direction.LONG:

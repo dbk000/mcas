@@ -80,12 +80,22 @@ def check_exit(
     if side == "long":
         stop_triggered = (low < stop_price) if use_through_stop else (low <= stop_price)
         if stop_triggered:
-            fill_price = bar_open if bar_open < stop_price else stop_price
+            if bar_open < stop_price:
+                # Gap-through: cap worst fill at stop_price - 2R
+                worst_fill = stop_price - 2 * r_value if r_value > 0 else bar_open
+                fill_price = max(bar_open, worst_fill)
+            else:
+                fill_price = stop_price
             return ("STOP_LOSS", fill_price)
     else:
         stop_triggered = (high > stop_price) if use_through_stop else (high >= stop_price)
         if stop_triggered:
-            fill_price = bar_open if bar_open > stop_price else stop_price
+            if bar_open > stop_price:
+                # Gap-through: cap worst fill at stop_price + 2R
+                worst_fill = stop_price + 2 * r_value if r_value > 0 else bar_open
+                fill_price = min(bar_open, worst_fill)
+            else:
+                fill_price = stop_price
             return ("STOP_LOSS", fill_price)
 
     # --- FAIL_FAST: close on wrong side of entry within first N bars ---
