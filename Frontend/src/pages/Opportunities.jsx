@@ -164,6 +164,7 @@ export default function Opportunities() {
   const [simConfig, setSimConfig] = useState({
     position_size_usd: 1000,
     limit: 500,
+    min_score: 0,
   })
 
   // Build API params — omit setup_id if empty
@@ -200,7 +201,7 @@ export default function Opportunities() {
         position_size_usd: simConfig.position_size_usd,
         limit: simConfig.limit,
         setup_ids: filters.setup_id ? [filters.setup_id] : null,
-        min_score: filters.min_score,
+        min_score: simConfig.min_score,
       })
 
       if (response.run_id) {
@@ -362,9 +363,25 @@ export default function Opportunities() {
                   />
                 </div>
 
+                <div>
+                  <label className="text-sm text-terminal-400 block mb-1">
+                    Min Score (0 = all)
+                  </label>
+                  <Input
+                    type="number"
+                    value={simConfig.min_score}
+                    onChange={(e) => setSimConfig({
+                      ...simConfig,
+                      min_score: parseFloat(e.target.value) || 0
+                    })}
+                    min={0}
+                    max={1}
+                    step={0.05}
+                  />
+                </div>
+
                 <div className="text-xs text-terminal-500">
                   {filters.setup_id && `Setup: ${filters.setup_id}`}
-                  {filters.min_score > 0 && ` | Min Score: ${filters.min_score}`}
                 </div>
               </div>
 
