@@ -47,7 +47,7 @@ export default function SimulationResults() {
   const [offset, setOffset] = useState(0)
 
   const { data, loading, lastUpdated, refetch, meta } = usePolling(
-    `/runs/${runId}/simulation-results`,
+    `/v1/runs/${runId}/simulation-results`,
     { limit, offset },
     5000
   )
