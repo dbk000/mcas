@@ -18,8 +18,12 @@ import time
 from datetime import datetime, timezone
 from typing import Optional, Any
 
+import csv
+import io
+
 import psycopg
 from fastapi import APIRouter, Query, HTTPException
+from fastapi.responses import Response
 
 # We'll import these dynamically since we're in API, not worker
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -446,3 +450,46 @@ def get_simulation_results(
         "limit": limit,
         "offset": offset,
     }, t0)
+
+
+@router.get("/{run_id}/simulation-results/csv")
+def export_simulation_results_csv(run_id: str):
+    """Export all simulation results as CSV."""
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT run_type FROM runs WHERE id = %s;", (run_id,))
+            run_row = cur.fetchone()
+            if not run_row:
+                raise HTTPException(status_code=404, detail="Run not found")
+            if run_row[0] != "SIMULATION":
+                raise HTTPException(status_code=400, detail="Not a SIMULATION run")
+
+            cur.execute("""
+                SELECT symbol, timeframe, setup_id, direction,
+                       opportunity_created_ts, entry_ts, entry_price,
+                       entry_price_with_slippage, position_size, stop_price,
+                       tp1_price, tp2_price, r_value, exit_ts, exit_price,
+                       exit_price_with_slippage, exit_reason, bars_held,
+                       pnl_gross, fees, pnl_net, r_multiple,
+                       data_available, error_message
+                FROM simulation_results
+                WHERE run_id = %s
+                ORDER BY r_multiple DESC NULLS LAST, opportunity_id;
+            """, (run_id,))
+            rows = cur.fetchall()
+            columns = [desc[0] for desc in cur.description]
+
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+    writer.writerow(columns)
+    for row in rows:
+        writer.writerow([
+            v.isoformat() if hasattr(v, 'isoformat') else v
+            for v in row
+        ])
+
+    return Response(
+        content=buf.getvalue(),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename=sim_{run_id[:8]}.csv"},
+    )

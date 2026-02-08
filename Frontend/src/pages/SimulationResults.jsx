@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { ArrowLeft, TrendingUp, TrendingDown, Target, BarChart2 } from 'lucide-react'
+import { ArrowLeft, TrendingUp, TrendingDown, Target, BarChart2, Download } from 'lucide-react'
 import { usePolling } from '../hooks/useData'
+import { useApi } from '../context/ApiContext'
 import {
   Card,
   CardHeader,
@@ -43,6 +44,7 @@ function ExitReasonBadge({ reason }) {
 
 export default function SimulationResults() {
   const { id: runId } = useParams()
+  const { config } = useApi()
   const [limit] = useState(100)
   const [offset, setOffset] = useState(0)
 
@@ -102,7 +104,27 @@ export default function SimulationResults() {
             </p>
           </div>
         </div>
-        <RefreshControl lastUpdated={lastUpdated} onRefresh={refetch} loading={loading} serverAsOf={meta?.as_of_ts} />
+        <div className="flex items-center gap-3">
+          <button
+            onClick={async () => {
+              const res = await fetch(`${config.baseUrl}/v1/runs/${runId}/simulation-results/csv`, {
+                headers: { 'X-API-Key': config.apiKey },
+              })
+              const blob = await res.blob()
+              const url = URL.createObjectURL(blob)
+              const a = document.createElement('a')
+              a.href = url
+              a.download = `sim_${runId.slice(0, 8)}.csv`
+              a.click()
+              URL.revokeObjectURL(url)
+            }}
+            className="btn btn-ghost btn-sm flex items-center gap-1"
+          >
+            <Download className="w-4 h-4" />
+            CSV
+          </button>
+          <RefreshControl lastUpdated={lastUpdated} onRefresh={refetch} loading={loading} serverAsOf={meta?.as_of_ts} />
+        </div>
       </div>
 
       {/* Summary Stats */}
