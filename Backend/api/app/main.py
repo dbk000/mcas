@@ -578,18 +578,32 @@ def list_opportunities(
 
     with psycopg.connect(DATABASE_URL) as conn:
         with conn.cursor() as cur:
-            query = """
-                SELECT id, signal_id, symbol, timeframe, setup_id, decision, score, reason, payload_json, updated_ts
-                FROM opportunities
-                WHERE status = %s AND score >= %s
-            """
+            # For non-active statuses (e.g. 'expired'), dedup to one row per
+            # (symbol, tf, setup_id) taking the highest-scored version.
+            # Active status is already deduped (one active per combo).
+            if status != "active":
+                query = """
+                    SELECT DISTINCT ON (symbol, timeframe, setup_id)
+                           id, signal_id, symbol, timeframe, setup_id, decision, score, reason, payload_json, updated_ts
+                    FROM opportunities
+                    WHERE status = %s AND score >= %s
+                """
+            else:
+                query = """
+                    SELECT id, signal_id, symbol, timeframe, setup_id, decision, score, reason, payload_json, updated_ts
+                    FROM opportunities
+                    WHERE status = %s AND score >= %s
+                """
             params_list = [status, min_score]
 
             if setup_id:
                 query += " AND setup_id = %s"
                 params_list.append(setup_id)
 
-            query += " ORDER BY score DESC, updated_ts DESC LIMIT %s;"
+            if status != "active":
+                query += " ORDER BY symbol, timeframe, setup_id, score DESC, updated_ts DESC LIMIT %s;"
+            else:
+                query += " ORDER BY score DESC, updated_ts DESC LIMIT %s;"
             params_list.append(limit)
 
             cur.execute(query, params_list)
