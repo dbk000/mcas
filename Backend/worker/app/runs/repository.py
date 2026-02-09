@@ -25,6 +25,20 @@ from .models import (
 logger = logging.getLogger(__name__)
 
 
+def _json_safe(obj):
+    """Convert numpy/non-standard types for JSON serialization."""
+    import numpy as np
+    if isinstance(obj, (np.bool_, bool)):
+        return bool(obj)
+    if isinstance(obj, (np.integer,)):
+        return int(obj)
+    if isinstance(obj, (np.floating,)):
+        return float(obj)
+    if isinstance(obj, np.ndarray):
+        return obj.tolist()
+    return str(obj)
+
+
 class RunRepository:
     """
     Handles all database operations for Runs.
@@ -359,7 +373,7 @@ class RunRepository:
                         t.entry_ts, t.entry_price, t.entry_bar_index,
                         t.stop_price, t.tp1_price, t.tp2_price, t.r_value,
                         t.exit_ts, t.exit_price, t.exit_reason,
-                        t.r_multiple, t.pnl_gross, t.fees, json.dumps(t.trace.to_dict()),
+                        t.r_multiple, t.pnl_gross, t.fees, json.dumps(t.trace.to_dict(), default=_json_safe),
                     )
                     for t in trades
                 ])
