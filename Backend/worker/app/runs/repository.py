@@ -212,6 +212,8 @@ class RunRepository:
             universe=UniverseSpec(
                 assets=universe_dict.get("assets", []),
                 timeframes=universe_dict.get("timeframes", []),
+                start_ts=datetime.fromisoformat(universe_dict["start_ts"]) if universe_dict.get("start_ts") else None,
+                end_ts=datetime.fromisoformat(universe_dict["end_ts"]) if universe_dict.get("end_ts") else None,
                 venue=universe_dict.get("venue", "binance"),
             ),
             strategy=StrategySpec(
