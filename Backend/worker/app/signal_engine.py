@@ -234,12 +234,14 @@ class SignalEngine:
         top_n: int = 3,
         source: str = "rest",
         redis_client=None,
+        run_id: str = None,
     ):
         self.symbols = symbols
         self.timeframes = timeframes
         self.top_n = top_n
         self.source = source
         self.redis_client = redis_client
+        self.run_id = run_id
 
         # Components
         self.client = BinanceClient()
@@ -368,6 +370,7 @@ class SignalEngine:
                         "clean_close": s1_signal.clean_close,
                     },
                     reason_codes=s1_signal.explain.why_items if s1_signal.explain else None,
+                    run_id=self.run_id,
                 )
             except Exception:
                 logger.debug("S1 SETUP_FIRED log failed", exc_info=True)
@@ -407,6 +410,7 @@ class SignalEngine:
                         "clean_close": s2_signal.clean_close,
                     },
                     reason_codes=s2_signal.explain.why_items if s2_signal.explain else None,
+                    run_id=self.run_id,
                 )
             except Exception:
                 logger.debug("S2 SETUP_FIRED log failed", exc_info=True)

@@ -266,6 +266,7 @@ class RunExecutor:
             top_n=run.strategy.setup_params.get("top_n", 10),
             source=source,
             redis_client=self.redis_client,
+            run_id=run.id,
         )
 
         # Record data source on the run
@@ -382,6 +383,7 @@ class RunExecutor:
         closed_trades: list[dict] = []
         total_bars = 0
         signals_generated = 0
+        skip_counters = {"max_positions": 0, "one_per_asset": 0, "circuit_breaker": 0, "invalid_r_value": 0, "position_size_zero": 0}
 
         # Collect all unique timestamps and sort
         all_timestamps: set = set()
@@ -438,6 +440,7 @@ class RunExecutor:
             for entry in fill_queue:
                 # Max positions check
                 if len(open_positions) >= exec_config.max_positions:
+                    skip_counters["max_positions"] += 1
                     break
 
                 sym_key = f"{entry['symbol']}_{entry['timeframe']}"
@@ -448,10 +451,12 @@ class RunExecutor:
                 if exec_config.one_per_asset:
                     existing_symbols = {p["symbol"] for p in open_positions.values()}
                     if entry["symbol"] in existing_symbols:
+                        skip_counters["one_per_asset"] += 1
                         continue
 
                 # Daily loss circuit breaker
                 if daily_pnl.get(today_str, 0.0) <= -(starting_capital * exec_config.max_daily_loss_pct / 100.0):
+                    skip_counters["circuit_breaker"] += 1
                     continue
 
                 bar = current_bars[sym_key]
@@ -469,6 +474,7 @@ class RunExecutor:
                     r_value = stop_price - fill_price
 
                 if r_value <= 0:
+                    skip_counters["invalid_r_value"] += 1
                     continue
 
                 # P0-3: Position sizing = risk_amount / r_value
@@ -482,6 +488,7 @@ class RunExecutor:
                     notional = fill_price * position_size
 
                 if position_size <= 0:
+                    skip_counters["position_size_zero"] += 1
                     continue
 
                 pos_key = f"{entry['symbol']}_{entry['timeframe']}_{bar_idx}"
@@ -506,6 +513,9 @@ class RunExecutor:
                     "entry_reason": f"{entry['setup_id']}_TRIGGER",
                     "conditions_met": {"setup_triggered": True},
                     "indicator_values": entry.get("indicator_values", {}),
+                    "state_snapshot": entry.get("state_snapshot", {}),
+                    "score_components": entry.get("score_components", {}),
+                    "why_items": entry.get("why_items", []),
                 }
 
             # ---------------------------------------------------------
@@ -677,6 +687,15 @@ class RunExecutor:
                                 "clv": snapshot.clv,
                                 "volume_z": snapshot.volume_z,
                             },
+                            "state_snapshot": {k: (v.value if hasattr(v, 'value') else v) for k, v in asdict(s1_state).items()},
+                            "score_components": {
+                                "severity": s1_signal.severity,
+                                "bias_strength": s1_signal.bias_strength,
+                                "participation": s1_signal.participation,
+                                "break_quality": s1_signal.break_quality,
+                                "clean_close": s1_signal.clean_close,
+                            },
+                            "why_items": s1_signal.explain.why_items if s1_signal.explain else [],
                         })
 
                 # ------ S2: Golden Cross Anticipation ------
@@ -711,6 +730,16 @@ class RunExecutor:
                                 "clv": snapshot.clv,
                                 "volume_z": snapshot.volume_z,
                             },
+                            "state_snapshot": asdict(s2_state),
+                            "score_components": {
+                                "conv_tight": s2_signal.conv_tight,
+                                "conv_speed": s2_signal.conv_speed,
+                                "trend_strength": s2_signal.trend_strength,
+                                "participation": s2_signal.participation,
+                                "break_quality": s2_signal.break_quality,
+                                "clean_close": s2_signal.clean_close,
+                            },
+                            "why_items": s2_signal.explain.why_items if s2_signal.explain else [],
                         })
 
             # ---------------------------------------------------------
@@ -781,7 +810,16 @@ class RunExecutor:
                 f"{signals_generated} signals generated"
             ),
         ))
-    
+
+        # Enhancement (c): Log skip summary for debugging fill-loop filtering
+        total_skips = sum(skip_counters.values())
+        if total_skips > 0:
+            self.repo.add_event(RunEvent(
+                run_id=run.id,
+                event_type="INFO",
+                message=f"Backtest fill skips: {total_skips} total — {skip_counters}",
+            ))
+
     def _load_backtest_data(self, run: Run) -> dict[str, list[dict]]:
         """
         Load OHLCV data for backtest from database.
@@ -1178,6 +1216,7 @@ class RunExecutor:
             symbols=run.universe.assets,
             timeframes=run.universe.timeframes,
             top_n=auto_trade_top_n * 2,  # Get more than we need for filtering
+            run_id=run.id,
         )
         
         signals = signal_engine.scan()
@@ -1522,15 +1561,21 @@ class RunExecutor:
     
     def _position_to_trade(self, run_id: str, pos: dict) -> RunTrade:
         """Convert a position dict to a RunTrade."""
+        # Defensive copy: avoid mutating shared dict (TP1 partial-close creates shallow copies)
+        state_snap = dict(pos.get("state_snapshot") or {})
+        state_snap["position_size"] = pos.get("position_size", 1.0)
+        why_items = pos.get("why_items", [])
+        if why_items:
+            state_snap["why_items"] = list(why_items)  # copy to avoid shared ref
+
         trace = TradeTrace(
             conditions_met=pos.get("conditions_met", {}),
             entry_reason=pos.get("entry_reason", ""),
             indicator_values=pos.get("indicator_values", {}),
             exit_reason=pos.get("exit_reason"),
             exit_explanation=f"Exit at {pos.get('r_multiple', 0):.2f}R after {pos.get('bars_held', 0)} bars",
-            state_snapshot={
-                "position_size": pos.get("position_size", 1.0),
-            },
+            state_snapshot=state_snap,
+            score_components=pos.get("score_components", {}),
         )
 
         # Compute total slippage cost for audit (P1-8)
