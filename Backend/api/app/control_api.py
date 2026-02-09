@@ -130,6 +130,8 @@ class SimulationRunRequest(BaseModel):
     slippage_bps: float = Field(default=5.0, ge=0, le=50)
     setup_version: Optional[str] = None  # Filter by setup version (e.g. 'S1_v2.2')
     batch_id: Optional[str] = None  # Filter by backfill batch ID
+    timeframes: Optional[list[str]] = None  # Filter by 1m, 5m, 15m, etc.
+    direction: Optional[str] = None  # Filter by "long" or "short"
 
 
 # =============================================================================
@@ -508,6 +510,14 @@ def create_simulation_run(request: SimulationRunRequest):
                 conditions.append("batch_id = %s")
                 params.append(request.batch_id)
 
+            if request.timeframes:
+                conditions.append("timeframe = ANY(%s)")
+                params.append(request.timeframes)
+
+            if request.direction:
+                conditions.append("decision = %s")
+                params.append(request.direction)
+
             where_clause = " AND ".join(conditions)
 
             # When filtering by version/batch, count all rows (each is unique).
@@ -552,6 +562,8 @@ def create_simulation_run(request: SimulationRunRequest):
             "slippage_bps": request.slippage_bps,
             "setup_version": request.setup_version,
             "batch_id": request.batch_id,
+            "timeframes": request.timeframes,
+            "direction": request.direction,
         },
     })
 

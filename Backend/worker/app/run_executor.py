@@ -1251,6 +1251,8 @@ class RunExecutor:
         limit = setup_params.get("limit", 500)
         setup_version = setup_params.get("setup_version")  # Backfill filter
         batch_id = setup_params.get("batch_id")  # Backfill batch filter
+        timeframes = setup_params.get("timeframes")  # Timeframe filter
+        direction = setup_params.get("direction")  # Direction filter (long/short)
 
         # Build simulator config
         sim_config = SimulationConfig(
@@ -1269,6 +1271,8 @@ class RunExecutor:
             limit=limit,
             setup_version=setup_version,
             batch_id=batch_id,
+            timeframes=timeframes,
+            direction=direction,
         )
 
         if not opportunities:
@@ -1332,6 +1336,8 @@ class RunExecutor:
         limit: int = 500,
         setup_version: str = None,
         batch_id: str = None,
+        timeframes: list[str] = None,
+        direction: str = None,
     ) -> list[dict]:
         """
         Load expired opportunities from the database.
@@ -1374,6 +1380,14 @@ class RunExecutor:
                 if batch_id:
                     conditions.append("batch_id = %s")
                     params.append(batch_id)
+
+                if timeframes:
+                    conditions.append("timeframe = ANY(%s)")
+                    params.append(timeframes)
+
+                if direction:
+                    conditions.append("decision = %s")
+                    params.append(direction)
 
                 where_clause = " AND ".join(conditions)
                 params.append(limit)
