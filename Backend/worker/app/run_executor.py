@@ -38,6 +38,9 @@ from signal_engine import SignalEngine, RankedSignal
 from execution import ExecutionConfig, realistic_config, FixedBpsSlippage, TieredFees
 from indicators import FeatureFactory, IndicatorSnapshot, OHLCV
 from setups import S1Evaluator, S1Signal, S2Evaluator, S2Signal
+from setups import S3Evaluator, S3Signal, S4Evaluator, S4Signal
+from setups import S5Evaluator, S5Signal, S6Evaluator, S6Signal
+from setups import S7Evaluator, S7Signal
 from exit_checker import check_exit, ExitConfig, PositionState
 from opportunity_simulator import OpportunitySimulator, SimulationConfig
 
@@ -154,7 +157,7 @@ class RunExecutor:
         notes: Optional[str] = None,
     ) -> Run:
         """Create a new SCAN run."""
-        setup_ids = setup_ids or ["S1", "S2"]
+        setup_ids = setup_ids or ["S1", "S2", "S3", "S4", "S5", "S6", "S7"]
         
         run = Run(
             run_type=RunType.SCAN,
@@ -345,7 +348,7 @@ class RunExecutor:
 
         # Determine which setups to run
         setup_params = run.strategy.setup_params or {}
-        active_setup_ids = set(setup_params.get("setup_ids", ["S1", "S2"]))
+        active_setup_ids = set(setup_params.get("setup_ids", ["S1", "S2", "S3", "S4", "S5", "S6", "S7"]))
 
         # =====================================================================
         # P0-4: Virtual account
@@ -363,11 +366,19 @@ class RunExecutor:
         feature_factory = FeatureFactory()
         s1_evaluator = S1Evaluator()
         s2_evaluator = S2Evaluator()
+        s3_evaluator = S3Evaluator()
+        s4_evaluator = S4Evaluator()
+        s5_evaluator = S5Evaluator()
+        s6_evaluator = S6Evaluator()
+        s7_evaluator = S7Evaluator()
 
         candle_history: dict[str, list] = {}       # key -> list[OHLCV]
         bb_width_history: dict[str, list] = {}     # key -> list[float]
         ma_gap_history: dict[str, list] = {}       # key -> list[float]
+        vwap_distance_history: dict[str, list] = {} # key -> list[float]
         s1_prev_state: dict[str, object] = {}      # key -> S1State
+        s6_prev_state: dict[str, object] = {}      # key -> S6State
+        s7_prev_snapshot: dict[str, object] = {}   # key -> IndicatorSnapshot
 
         # =====================================================================
         # P0-2: Pending entry queue (NEXT_OPEN fills)
@@ -642,6 +653,13 @@ class RunExecutor:
                 if len(ma_gap_history[key]) > 200:
                     ma_gap_history[key] = ma_gap_history[key][-200:]
 
+                if snapshot.vwap_distance_atr is not None:
+                    if key not in vwap_distance_history:
+                        vwap_distance_history[key] = []
+                    vwap_distance_history[key].append(abs(snapshot.vwap_distance_atr))
+                    if len(vwap_distance_history[key]) > 200:
+                        vwap_distance_history[key] = vwap_distance_history[key][-200:]
+
                 # BTC snapshot for correlation/shock filters
                 btc_snapshot = None
                 btc_key = f"BTCUSDT_{timeframe}"
@@ -740,6 +758,182 @@ class RunExecutor:
                                 "clean_close": s2_signal.clean_close,
                             },
                             "why_items": s2_signal.explain.why_items if s2_signal.explain else [],
+                        })
+
+                # ------ S3: RSI Divergence Reversal ------
+                if "S3" in active_setup_ids:
+                    import numpy as _np
+                    _rsi_series = feature_factory._rsi_series(
+                        _np.array([c.close for c in candle_history[key]]), 14
+                    )
+                    s3_state = s3_evaluator.compute_state(snapshot, _rsi_series)
+                    s3_signal = s3_evaluator.evaluate_trigger(snapshot, s3_state, symbol, timeframe)
+                    if s3_signal:
+                        signals_generated += 1
+                        time_stop = s3_signal.time_stop_bars
+                        div = s3_state.bullish_divergence or s3_state.bearish_divergence
+                        pending_entries.append({
+                            "symbol": symbol, "timeframe": timeframe,
+                            "direction": s3_signal.direction.value,
+                            "setup_id": "S3",
+                            "stop_price": s3_signal.stop_price,
+                            "tp1_price": s3_signal.tp1_price,
+                            "tp2_price": s3_signal.tp2_price,
+                            "r_value": s3_signal.r_value,
+                            "setup_score": s3_signal.setup_score,
+                            "time_stop_bars": time_stop,
+                            "signal_bar_ts": ts, "since_ts": ts,
+                            "action_by_ts": sorted_timestamps[min(bar_idx + time_stop, len(sorted_timestamps) - 1)] if bar_idx + time_stop < len(sorted_timestamps) else None,
+                            "indicator_values": {
+                                "rsi": snapshot.rsi, "rsi_slope": snapshot.rsi_slope,
+                                "clv": snapshot.clv, "volume_z": snapshot.volume_z,
+                            },
+                            "score_components": {
+                                "div_magnitude": s3_signal.div_magnitude,
+                                "rsi_extremity": s3_signal.rsi_extremity,
+                                "participation": s3_signal.participation,
+                                "clean_close": s3_signal.clean_close,
+                                "span_quality": s3_signal.span_quality,
+                            },
+                            "why_items": s3_signal.explain.why_items if s3_signal.explain else [],
+                        })
+
+                # ------ S4: VWAP Reversion (intraday only) ------
+                if "S4" in active_setup_ids:
+                    vwap_hist = vwap_distance_history.get(key, [])
+                    s4_state = s4_evaluator.compute_state(snapshot, vwap_hist)
+                    s4_signal = s4_evaluator.evaluate_trigger(snapshot, s4_state, symbol, timeframe)
+                    if s4_signal:
+                        signals_generated += 1
+                        time_stop = s4_signal.time_stop_bars
+                        pending_entries.append({
+                            "symbol": symbol, "timeframe": timeframe,
+                            "direction": s4_signal.direction.value,
+                            "setup_id": "S4",
+                            "stop_price": s4_signal.stop_price,
+                            "tp1_price": s4_signal.tp1_price,
+                            "tp2_price": s4_signal.tp2_price,
+                            "r_value": s4_signal.r_value,
+                            "setup_score": s4_signal.setup_score,
+                            "time_stop_bars": time_stop,
+                            "signal_bar_ts": ts, "since_ts": ts,
+                            "action_by_ts": sorted_timestamps[min(bar_idx + time_stop, len(sorted_timestamps) - 1)] if bar_idx + time_stop < len(sorted_timestamps) else None,
+                            "indicator_values": {
+                                "vwap_distance_atr": snapshot.vwap_distance_atr,
+                                "rsi": snapshot.rsi, "clv": snapshot.clv,
+                                "volume_z": snapshot.volume_z,
+                            },
+                            "score_components": {
+                                "extension_magnitude": s4_signal.extension_magnitude,
+                                "extreme_pctile": s4_signal.extreme_pctile,
+                                "momentum_fade_strength": s4_signal.momentum_fade_strength,
+                                "clean_close": s4_signal.clean_close,
+                                "volume_fade": s4_signal.volume_fade,
+                            },
+                            "why_items": s4_signal.explain.why_items if s4_signal.explain else [],
+                        })
+
+                # ------ S5: S/R Breakout ------
+                if "S5" in active_setup_ids:
+                    s5_state = s5_evaluator.compute_state(snapshot)
+                    s5_signal = s5_evaluator.evaluate_trigger(snapshot, s5_state, symbol, timeframe)
+                    if s5_signal:
+                        signals_generated += 1
+                        time_stop = s5_signal.time_stop_bars
+                        pending_entries.append({
+                            "symbol": symbol, "timeframe": timeframe,
+                            "direction": s5_signal.direction.value,
+                            "setup_id": "S5",
+                            "stop_price": s5_signal.stop_price,
+                            "tp1_price": s5_signal.tp1_price,
+                            "tp2_price": s5_signal.tp2_price,
+                            "r_value": s5_signal.r_value,
+                            "setup_score": s5_signal.setup_score,
+                            "time_stop_bars": time_stop,
+                            "signal_bar_ts": ts, "since_ts": ts,
+                            "action_by_ts": sorted_timestamps[min(bar_idx + time_stop, len(sorted_timestamps) - 1)] if bar_idx + time_stop < len(sorted_timestamps) else None,
+                            "indicator_values": {
+                                "clv": snapshot.clv, "volume_z": snapshot.volume_z,
+                                "atr": snapshot.atr,
+                            },
+                            "score_components": {
+                                "level_strength": s5_signal.level_strength,
+                                "participation": s5_signal.participation,
+                                "htf_confluence": s5_signal.htf_confluence,
+                                "clean_close": s5_signal.clean_close,
+                                "recency": s5_signal.recency,
+                            },
+                            "why_items": s5_signal.explain.why_items if s5_signal.explain else [],
+                        })
+
+                # ------ S6: Trend Continuation Pullback ------
+                if "S6" in active_setup_ids:
+                    s6_state = s6_evaluator.compute_state(snapshot, s6_prev_state.get(key))
+                    s6_prev_state[key] = s6_state
+                    s6_signal = s6_evaluator.evaluate_trigger(snapshot, s6_state, symbol, timeframe)
+                    if s6_signal:
+                        signals_generated += 1
+                        time_stop = s6_signal.time_stop_bars
+                        pending_entries.append({
+                            "symbol": symbol, "timeframe": timeframe,
+                            "direction": s6_signal.direction.value,
+                            "setup_id": "S6",
+                            "stop_price": s6_signal.stop_price,
+                            "tp1_price": s6_signal.tp1_price,
+                            "tp2_price": s6_signal.tp2_price,
+                            "r_value": s6_signal.r_value,
+                            "setup_score": s6_signal.setup_score,
+                            "time_stop_bars": time_stop,
+                            "signal_bar_ts": ts, "since_ts": ts,
+                            "action_by_ts": sorted_timestamps[min(bar_idx + time_stop, len(sorted_timestamps) - 1)] if bar_idx + time_stop < len(sorted_timestamps) else None,
+                            "indicator_values": {
+                                "ema20_slope_atr": snapshot.ema20_slope_atr,
+                                "ema50_slope_atr": snapshot.ema50_slope_atr,
+                                "clv": snapshot.clv, "volume_z": snapshot.volume_z,
+                            },
+                            "score_components": {
+                                "trend_strength": s6_signal.trend_strength,
+                                "pullback_quality": s6_signal.pullback_quality,
+                                "retrace_depth": s6_signal.retrace_depth,
+                                "participation": s6_signal.participation,
+                                "clean_close": s6_signal.clean_close,
+                            },
+                            "why_items": s6_signal.explain.why_items if s6_signal.explain else [],
+                        })
+
+                # ------ S7: Momentum Breakout (Donchian) ------
+                if "S7" in active_setup_ids:
+                    s7_state = s7_evaluator.compute_state(snapshot, s7_prev_snapshot.get(key))
+                    s7_prev_snapshot[key] = snapshot
+                    s7_signal = s7_evaluator.evaluate_trigger(snapshot, s7_state, symbol, timeframe)
+                    if s7_signal:
+                        signals_generated += 1
+                        time_stop = s7_signal.time_stop_bars
+                        pending_entries.append({
+                            "symbol": symbol, "timeframe": timeframe,
+                            "direction": s7_signal.direction.value,
+                            "setup_id": "S7",
+                            "stop_price": s7_signal.stop_price,
+                            "tp1_price": s7_signal.tp1_price,
+                            "tp2_price": s7_signal.tp2_price,
+                            "r_value": s7_signal.r_value,
+                            "setup_score": s7_signal.setup_score,
+                            "time_stop_bars": time_stop,
+                            "signal_bar_ts": ts, "since_ts": ts,
+                            "action_by_ts": sorted_timestamps[min(bar_idx + time_stop, len(sorted_timestamps) - 1)] if bar_idx + time_stop < len(sorted_timestamps) else None,
+                            "indicator_values": {
+                                "donchian_high_20": snapshot.donchian_high_20,
+                                "donchian_low_20": snapshot.donchian_low_20,
+                                "clv": snapshot.clv, "volume_z": snapshot.volume_z,
+                            },
+                            "score_components": {
+                                "break_strength": s7_signal.break_strength,
+                                "volume_quality": s7_signal.volume_quality,
+                                "bias_strength": s7_signal.bias_strength,
+                                "clean_close": s7_signal.clean_close,
+                                "htf_confluence": s7_signal.htf_confluence,
+                            },
+                            "why_items": s7_signal.explain.why_items if s7_signal.explain else [],
                         })
 
             # ---------------------------------------------------------

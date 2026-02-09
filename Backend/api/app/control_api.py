@@ -83,7 +83,7 @@ class ScanRunRequest(BaseModel):
     name: Optional[str] = None
     symbols: Optional[list[str]] = None  # If None, use default universe
     timeframes: Optional[list[str]] = None  # If None, use default
-    setup_ids: list[str] = Field(default=["S1", "S2"])
+    setup_ids: list[str] = Field(default=["S1", "S2", "S3", "S4", "S5", "S6", "S7"])
     top_n: int = Field(default=10, ge=1, le=100)
     priority: int = Field(default=0, ge=0, le=10)
 
@@ -95,7 +95,7 @@ class BacktestRunRequest(BaseModel):
     timeframes: list[str]
     start_date: str  # ISO format: "2024-01-01"
     end_date: str    # ISO format: "2024-12-31"
-    setup_ids: list[str] = Field(default=["S1", "S2"])
+    setup_ids: list[str] = Field(default=["S1", "S2", "S3", "S4", "S5", "S6", "S7"])
 
     # Execution config
     slippage_bps: float = Field(default=5.0)
@@ -119,7 +119,7 @@ class PaperStartRequest(BaseModel):
     name: Optional[str] = None
     symbols: Optional[list[str]] = None
     timeframes: Optional[list[str]] = None
-    setup_ids: list[str] = Field(default=["S1", "S2"])
+    setup_ids: list[str] = Field(default=["S1", "S2", "S3", "S4", "S5", "S6", "S7"])
 
     # Capital
     initial_capital: float = Field(default=10000.0, gt=0)
@@ -564,7 +564,7 @@ def create_simulation_run(request: SimulationRunRequest):
     })
 
     strategy_json = json.dumps({
-        "setup_id": ",".join(request.setup_ids) if request.setup_ids else "S1,S2",
+        "setup_id": ",".join(request.setup_ids) if request.setup_ids else "S1,S2,S3,S4,S5,S6,S7",
         "setup_version": request.setup_version or "v2.0",
         "setup_params": {
             "position_size_usd": request.position_size_usd,
