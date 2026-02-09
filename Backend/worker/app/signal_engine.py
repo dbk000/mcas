@@ -27,6 +27,9 @@ import requests
 from json_logging import ctx_symbol
 from indicators import FeatureFactory, IndicatorSnapshot, OHLCV
 from setups import S1Evaluator, S1Signal, S2Evaluator, S2Signal
+from setups import S3Evaluator, S3Signal, S4Evaluator, S4Signal
+from setups import S5Evaluator, S5Signal, S6Evaluator, S6Signal
+from setups import S7Evaluator, S7Signal
 from data_layer import log_signal_event
 
 logger = logging.getLogger(__name__)
@@ -51,7 +54,7 @@ class RankedSignal:
     """Unified signal output for ranking."""
     symbol: str
     timeframe: str
-    setup_id: str  # "S1" or "S2"
+    setup_id: str  # "S1".."S7"
     direction: str  # "long" or "short"
     setup_score: float
     entry_price: float
@@ -102,6 +105,7 @@ class IndicatorCache:
         self.max_history = max_history
         self._bb_width: dict[tuple[str, str], list[float]] = defaultdict(list)
         self._ma_gap: dict[tuple[str, str], list[float]] = defaultdict(list)
+        self._vwap_distance: dict[tuple[str, str], list[float]] = defaultdict(list)
     
     def add_bb_width(self, symbol: str, tf: str, value: float):
         key = (symbol, tf)
@@ -120,6 +124,15 @@ class IndicatorCache:
     
     def get_ma_gap_history(self, symbol: str, tf: str) -> list[float]:
         return self._ma_gap.get((symbol, tf), [])
+
+    def add_vwap_distance(self, symbol: str, tf: str, value: float):
+        key = (symbol, tf)
+        self._vwap_distance[key].append(abs(value))
+        if len(self._vwap_distance[key]) > self.max_history:
+            self._vwap_distance[key] = self._vwap_distance[key][-self.max_history:]
+
+    def get_vwap_distance_history(self, symbol: str, tf: str) -> list[float]:
+        return self._vwap_distance.get((symbol, tf), [])
 
 
 class BinanceClient:
@@ -252,9 +265,16 @@ class SignalEngine:
         # Setup evaluators
         self.s1_evaluator = S1Evaluator()
         self.s2_evaluator = S2Evaluator()
+        self.s3_evaluator = S3Evaluator()
+        self.s4_evaluator = S4Evaluator()
+        self.s5_evaluator = S5Evaluator()
+        self.s6_evaluator = S6Evaluator()
+        self.s7_evaluator = S7Evaluator()
 
-        # State tracking (for S1 squeeze age)
+        # State tracking
         self._s1_prev_state: dict[tuple[str, str], any] = {}
+        self._s6_prev_state: dict[tuple[str, str], any] = {}
+        self._s7_prev_snapshot: dict[tuple[str, str], IndicatorSnapshot] = {}
     
     def refresh_ohlcv(self, symbol: str, tf: str) -> bool:
         """
@@ -298,7 +318,9 @@ class SignalEngine:
             # Update indicator cache
             self.indicator_cache.add_bb_width(symbol, tf, snapshot.bb_width)
             self.indicator_cache.add_ma_gap(symbol, tf, snapshot.ma_gap_atr)
-            
+            if snapshot.vwap_distance_atr is not None:
+                self.indicator_cache.add_vwap_distance(symbol, tf, snapshot.vwap_distance_atr)
+
             return snapshot
         except Exception as e:
             logger.error(f"Indicator compute failed for {symbol} {tf}: {e}")
@@ -309,7 +331,7 @@ class SignalEngine:
         symbol: str,
         tf: str,
         snapshot: IndicatorSnapshot,
-    ) -> list[Union[S1Signal, S2Signal]]:
+    ) -> list:
         """
         Run all setup evaluators and return any signals that triggered.
         """
@@ -415,9 +437,181 @@ class SignalEngine:
             except Exception:
                 logger.debug("S2 SETUP_FIRED log failed", exc_info=True)
 
+        # S3 - RSI Divergence Reversal
+        # Needs RSI series from FeatureFactory for pivot detection
+        candles = self.ohlcv_cache.get(symbol, tf)
+        if candles and len(candles) >= 201:
+            from indicators import FeatureFactory as _FF
+            rsi_series = _FF()._rsi_series(
+                __import__('numpy').array([c.close for c in candles]), 14
+            )
+            s3_state = self.s3_evaluator.compute_state(snapshot, rsi_series)
+            s3_signal = self.s3_evaluator.evaluate_trigger(snapshot, s3_state, symbol, tf)
+            if s3_signal:
+                signals.append(s3_signal)
+                try:
+                    log_signal_event(
+                        event_type="SETUP_FIRED",
+                        symbol=symbol, timeframe=tf, setup_id="S3",
+                        direction=s3_signal.direction.value,
+                        bar_start_ts=_bar_start_dt(snapshot),
+                        setup_score=s3_signal.setup_score,
+                        feature_snapshot={
+                            "rsi": snapshot.rsi, "rsi_slope": snapshot.rsi_slope,
+                            "clv": snapshot.clv, "volume_z": snapshot.volume_z,
+                        },
+                        score_components={
+                            "div_magnitude": s3_signal.div_magnitude,
+                            "rsi_extremity": s3_signal.rsi_extremity,
+                            "participation": s3_signal.participation,
+                            "clean_close": s3_signal.clean_close,
+                            "span_quality": s3_signal.span_quality,
+                        },
+                        reason_codes=s3_signal.explain.why_items if s3_signal.explain else None,
+                        run_id=self.run_id,
+                    )
+                except Exception:
+                    logger.debug("S3 SETUP_FIRED log failed", exc_info=True)
+
+        # S4 - VWAP Reversion (intraday only — gated inside evaluator)
+        vwap_distance_history = self.indicator_cache.get_vwap_distance_history(symbol, tf)
+        s4_state = self.s4_evaluator.compute_state(snapshot, vwap_distance_history)
+        s4_signal = self.s4_evaluator.evaluate_trigger(snapshot, s4_state, symbol, tf)
+        if s4_signal:
+            signals.append(s4_signal)
+            try:
+                log_signal_event(
+                    event_type="SETUP_FIRED",
+                    symbol=symbol, timeframe=tf, setup_id="S4",
+                    direction=s4_signal.direction.value,
+                    bar_start_ts=_bar_start_dt(snapshot),
+                    setup_score=s4_signal.setup_score,
+                    feature_snapshot={
+                        "vwap_distance_atr": snapshot.vwap_distance_atr,
+                        "extension_pctile": s4_state.extension_pctile,
+                        "rsi": snapshot.rsi, "rsi_slope": snapshot.rsi_slope,
+                        "clv": snapshot.clv, "volume_z": snapshot.volume_z,
+                    },
+                    score_components={
+                        "extension_magnitude": s4_signal.extension_magnitude,
+                        "extreme_pctile": s4_signal.extreme_pctile,
+                        "momentum_fade_strength": s4_signal.momentum_fade_strength,
+                        "clean_close": s4_signal.clean_close,
+                        "volume_fade": s4_signal.volume_fade,
+                    },
+                    reason_codes=s4_signal.explain.why_items if s4_signal.explain else None,
+                    run_id=self.run_id,
+                )
+            except Exception:
+                logger.debug("S4 SETUP_FIRED log failed", exc_info=True)
+
+        # S5 - Support/Resistance Breakout
+        s5_state = self.s5_evaluator.compute_state(snapshot)
+        s5_signal = self.s5_evaluator.evaluate_trigger(snapshot, s5_state, symbol, tf)
+        if s5_signal:
+            signals.append(s5_signal)
+            try:
+                log_signal_event(
+                    event_type="SETUP_FIRED",
+                    symbol=symbol, timeframe=tf, setup_id="S5",
+                    direction=s5_signal.direction.value,
+                    bar_start_ts=_bar_start_dt(snapshot),
+                    setup_score=s5_signal.setup_score,
+                    feature_snapshot={
+                        "clv": snapshot.clv, "volume_z": snapshot.volume_z,
+                        "atr": snapshot.atr,
+                    },
+                    score_components={
+                        "level_strength": s5_signal.level_strength,
+                        "participation": s5_signal.participation,
+                        "htf_confluence": s5_signal.htf_confluence,
+                        "clean_close": s5_signal.clean_close,
+                        "recency": s5_signal.recency,
+                    },
+                    reason_codes=s5_signal.explain.why_items if s5_signal.explain else None,
+                    run_id=self.run_id,
+                )
+            except Exception:
+                logger.debug("S5 SETUP_FIRED log failed", exc_info=True)
+
+        # S6 - Trend Continuation Pullback
+        prev_s6_state = self._s6_prev_state.get((symbol, tf))
+        s6_state = self.s6_evaluator.compute_state(snapshot, prev_s6_state)
+        self._s6_prev_state[(symbol, tf)] = s6_state
+        s6_signal = self.s6_evaluator.evaluate_trigger(snapshot, s6_state, symbol, tf)
+        if s6_signal:
+            signals.append(s6_signal)
+            try:
+                log_signal_event(
+                    event_type="SETUP_FIRED",
+                    symbol=symbol, timeframe=tf, setup_id="S6",
+                    direction=s6_signal.direction.value,
+                    bar_start_ts=_bar_start_dt(snapshot),
+                    setup_score=s6_signal.setup_score,
+                    feature_snapshot={
+                        "ema20_slope_atr": snapshot.ema20_slope_atr,
+                        "ema50_slope_atr": snapshot.ema50_slope_atr,
+                        "clv": snapshot.clv, "volume_z": snapshot.volume_z,
+                    },
+                    score_components={
+                        "trend_strength": s6_signal.trend_strength,
+                        "pullback_quality": s6_signal.pullback_quality,
+                        "retrace_depth": s6_signal.retrace_depth,
+                        "participation": s6_signal.participation,
+                        "clean_close": s6_signal.clean_close,
+                    },
+                    reason_codes=s6_signal.explain.why_items if s6_signal.explain else None,
+                    run_id=self.run_id,
+                )
+            except Exception:
+                logger.debug("S6 SETUP_FIRED log failed", exc_info=True)
+
+        # S7 - Momentum Breakout (Donchian)
+        prev_s7_snapshot = self._s7_prev_snapshot.get((symbol, tf))
+        s7_state = self.s7_evaluator.compute_state(snapshot, prev_s7_snapshot)
+        self._s7_prev_snapshot[(symbol, tf)] = snapshot
+        s7_signal = self.s7_evaluator.evaluate_trigger(snapshot, s7_state, symbol, tf)
+        if s7_signal:
+            signals.append(s7_signal)
+            try:
+                log_signal_event(
+                    event_type="SETUP_FIRED",
+                    symbol=symbol, timeframe=tf, setup_id="S7",
+                    direction=s7_signal.direction.value,
+                    bar_start_ts=_bar_start_dt(snapshot),
+                    setup_score=s7_signal.setup_score,
+                    feature_snapshot={
+                        "donchian_high_20": snapshot.donchian_high_20,
+                        "donchian_low_20": snapshot.donchian_low_20,
+                        "clv": snapshot.clv, "volume_z": snapshot.volume_z,
+                    },
+                    score_components={
+                        "break_strength": s7_signal.break_strength,
+                        "volume_quality": s7_signal.volume_quality,
+                        "bias_strength": s7_signal.bias_strength,
+                        "clean_close": s7_signal.clean_close,
+                        "htf_confluence": s7_signal.htf_confluence,
+                    },
+                    reason_codes=s7_signal.explain.why_items if s7_signal.explain else None,
+                    run_id=self.run_id,
+                )
+            except Exception:
+                logger.debug("S7 SETUP_FIRED log failed", exc_info=True)
+
         return signals
     
-    def signal_to_ranked(self, signal: Union[S1Signal, S2Signal]) -> RankedSignal:
+    # ── Setup ID + name mapping ──────────────────────────────────────
+    _SETUP_NAMES = {
+        "S1": "BB Squeeze ON v2.1",
+        "S2": "Golden Cross Anticipation v1.4",
+        "S3": "RSI Divergence Reversal v1.0",
+        "S4": "VWAP Reversion v1.0",
+        "S5": "S/R Breakout v1.0",
+        "S6": "Trend Continuation Pullback v1.0",
+        "S7": "Momentum Breakout (Donchian) v1.0",
+    }
+
+    def signal_to_ranked(self, signal) -> RankedSignal:
         """Convert setup-specific signal to unified RankedSignal."""
         now_ts = int(time.time())
 
@@ -425,7 +619,7 @@ class SignalEngine:
             setup_id = "S1"
             payload = {
                 "setup_id": "S1",
-                "setup_name": "BB Squeeze ON v2.1",
+                "setup_name": self._SETUP_NAMES["S1"],
                 "state": {
                     "squeeze_on": signal.state.squeeze_on,
                     "squeeze_age": signal.state.squeeze_age,
@@ -441,16 +635,14 @@ class SignalEngine:
                     "break_quality": signal.break_quality,
                     "clean_close": signal.clean_close,
                 },
-                # Canon 7A: explainability
                 "why_items": signal.explain.why_items if signal.explain else [],
-                # Canon 5E: timing metadata
                 "time_stop_bars": signal.time_stop_bars,
             }
-        else:  # S2Signal
+        elif isinstance(signal, S2Signal):
             setup_id = "S2"
             payload = {
                 "setup_id": "S2",
-                "setup_name": "Golden Cross Anticipation v1.4",
+                "setup_name": self._SETUP_NAMES["S2"],
                 "state": {
                     "converging": signal.state.converging,
                     "ma_gap_atr": signal.state.ma_gap_atr,
@@ -466,10 +658,118 @@ class SignalEngine:
                     "break_quality": signal.break_quality,
                     "clean_close": signal.clean_close,
                 },
-                # Canon 7A: explainability
                 "why_items": signal.explain.why_items if signal.explain else [],
-                # Canon 5E: timing metadata
                 "time_stop_bars": signal.time_stop_bars,
+            }
+        elif isinstance(signal, S3Signal):
+            setup_id = "S3"
+            div = signal.state.bullish_divergence or signal.state.bearish_divergence
+            payload = {
+                "setup_id": "S3",
+                "setup_name": self._SETUP_NAMES["S3"],
+                "state": {
+                    "has_divergence": signal.state.has_divergence,
+                    "div_type": div.divergence_type if div else None,
+                    "div_span_bars": div.span_bars if div else None,
+                },
+                "score_components": {
+                    "div_magnitude": signal.div_magnitude,
+                    "rsi_extremity": signal.rsi_extremity,
+                    "participation": signal.participation,
+                    "clean_close": signal.clean_close,
+                    "span_quality": signal.span_quality,
+                },
+                "why_items": signal.explain.why_items if signal.explain else [],
+                "time_stop_bars": signal.time_stop_bars,
+            }
+        elif isinstance(signal, S4Signal):
+            setup_id = "S4"
+            payload = {
+                "setup_id": "S4",
+                "setup_name": self._SETUP_NAMES["S4"],
+                "state": {
+                    "vwap_distance_atr": signal.state.vwap_distance_atr,
+                    "extension_pctile": signal.state.extension_pctile,
+                    "momentum_fading": signal.state.momentum_fading,
+                },
+                "score_components": {
+                    "extension_magnitude": signal.extension_magnitude,
+                    "extreme_pctile": signal.extreme_pctile,
+                    "momentum_fade_strength": signal.momentum_fade_strength,
+                    "clean_close": signal.clean_close,
+                    "volume_fade": signal.volume_fade,
+                },
+                "why_items": signal.explain.why_items if signal.explain else [],
+                "time_stop_bars": signal.time_stop_bars,
+            }
+        elif isinstance(signal, S5Signal):
+            setup_id = "S5"
+            payload = {
+                "setup_id": "S5",
+                "setup_name": self._SETUP_NAMES["S5"],
+                "state": {
+                    "level_count": len(signal.state.detected_levels),
+                    "htf_bias": signal.state.htf_bias,
+                },
+                "score_components": {
+                    "level_strength": signal.level_strength,
+                    "participation": signal.participation,
+                    "htf_confluence": signal.htf_confluence,
+                    "clean_close": signal.clean_close,
+                    "recency": signal.recency,
+                },
+                "why_items": signal.explain.why_items if signal.explain else [],
+                "time_stop_bars": signal.time_stop_bars,
+            }
+        elif isinstance(signal, S6Signal):
+            setup_id = "S6"
+            payload = {
+                "setup_id": "S6",
+                "setup_name": self._SETUP_NAMES["S6"],
+                "state": {
+                    "trend_direction": signal.state.trend_direction,
+                    "pullback_detected": signal.state.pullback_detected,
+                    "reclaimed_ema20": signal.state.reclaimed_ema20,
+                    "htf_aligned": signal.state.htf_aligned,
+                },
+                "score_components": {
+                    "trend_strength": signal.trend_strength,
+                    "pullback_quality": signal.pullback_quality,
+                    "retrace_depth": signal.retrace_depth,
+                    "participation": signal.participation,
+                    "clean_close": signal.clean_close,
+                },
+                "why_items": signal.explain.why_items if signal.explain else [],
+                "time_stop_bars": signal.time_stop_bars,
+            }
+        elif isinstance(signal, S7Signal):
+            setup_id = "S7"
+            payload = {
+                "setup_id": "S7",
+                "setup_name": self._SETUP_NAMES["S7"],
+                "state": {
+                    "donchian_high": signal.state.donchian_high,
+                    "donchian_low": signal.state.donchian_low,
+                    "long_breakout": signal.state.long_breakout,
+                    "short_breakout": signal.state.short_breakout,
+                    "htf_bias": signal.state.htf_bias,
+                },
+                "score_components": {
+                    "break_strength": signal.break_strength,
+                    "volume_quality": signal.volume_quality,
+                    "bias_strength": signal.bias_strength,
+                    "clean_close": signal.clean_close,
+                    "htf_confluence": signal.htf_confluence,
+                },
+                "why_items": signal.explain.why_items if signal.explain else [],
+                "time_stop_bars": signal.time_stop_bars,
+            }
+        else:
+            setup_id = "UNKNOWN"
+            payload = {
+                "setup_id": setup_id,
+                "why_items": [],
+                "time_stop_bars": 4,
             }
 
         return RankedSignal(
@@ -514,7 +814,7 @@ class SignalEngine:
             if is_cache_ready(self.redis_client):
                 cached = get_top_signals(
                     self.redis_client,
-                    setup_ids=["S1", "S2"],
+                    setup_ids=["S1", "S2", "S3", "S4", "S5", "S6", "S7"],
                     timeframes=self.timeframes,
                     top_n=self.top_n,
                 )

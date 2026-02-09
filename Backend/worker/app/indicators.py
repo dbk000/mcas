@@ -237,6 +237,60 @@ _register(IndicatorDef(
     version="1.0.0",
 ))
 
+# Tier 2 — EMA Slopes (5-bar delta, ATR-normalised)
+_register(IndicatorDef(
+    indicator_id=generate_indicator_id("EMA20_SLOPE", "ATR"), name="EMA20 slope (5-bar, ATR-normalised)", tier=2,
+    inputs=["close"], params={"n_ema": 20, "n_slope": 5},
+    expression_type="slope",
+    implementation="(ema20[-1] - ema20[-6]) / (5 * atr)",
+))
+_register(IndicatorDef(
+    indicator_id=generate_indicator_id("EMA50_SLOPE", "ATR"), name="EMA50 slope (5-bar, ATR-normalised)", tier=2,
+    inputs=["close"], params={"n_ema": 50, "n_slope": 5},
+    expression_type="slope",
+    implementation="(ema50[-1] - ema50[-6]) / (5 * atr)",
+))
+
+# Tier 2 — Donchian Channels (20-bar)
+_register(IndicatorDef(
+    indicator_id=generate_indicator_id("DONCHIAN_HIGH", 20), name="Donchian High (20)", tier=2,
+    inputs=["high"], params={"n": 20},
+    implementation="np.max(highs[-20:])",
+))
+_register(IndicatorDef(
+    indicator_id=generate_indicator_id("DONCHIAN_LOW", 20), name="Donchian Low (20)", tier=2,
+    inputs=["low"], params={"n": 20},
+    implementation="np.min(lows[-20:])",
+))
+_register(IndicatorDef(
+    indicator_id=generate_indicator_id("DONCHIAN_MID", 20), name="Donchian Mid (20)", tier=2,
+    inputs=["high", "low"], params={"n": 20},
+    implementation="(donchian_high + donchian_low) / 2",
+))
+
+# Tier 2 — VWAP (intraday, resets at 00:00 UTC)
+_register(IndicatorDef(
+    indicator_id=generate_indicator_id("VWAP"), name="VWAP (session reset 00:00 UTC)", tier=2,
+    inputs=["high", "low", "close", "volume"], params={},
+    implementation="FeatureFactory._compute_vwap",
+))
+_register(IndicatorDef(
+    indicator_id=generate_indicator_id("VWAP_UPPER_2SD"), name="VWAP + 2σ", tier=2,
+    inputs=["high", "low", "close", "volume"], params={"k": 2.0},
+    implementation="vwap + 2 * vwap_std",
+))
+_register(IndicatorDef(
+    indicator_id=generate_indicator_id("VWAP_LOWER_2SD"), name="VWAP - 2σ", tier=2,
+    inputs=["high", "low", "close", "volume"], params={"k": 2.0},
+    implementation="vwap - 2 * vwap_std",
+))
+_register(IndicatorDef(
+    indicator_id=generate_indicator_id("VWAP_DISTANCE", "ATR"), name="(Close - VWAP) / ATR", tier=2,
+    inputs=["close", "high", "low", "volume"], params={},
+    expression_type="value",
+    implementation="(close - vwap) / atr",
+))
+
 # Canon §1.6: Module-level uniqueness assertion — fail fast on ID collisions
 assert len(INDICATOR_REGISTRY) == len(set(d.indicator_id for d in INDICATOR_REGISTRY.values())), \
     "Indicator ID collision detected in INDICATOR_REGISTRY!"
@@ -302,6 +356,21 @@ class IndicatorSnapshot:
     # Tier 2 - MA Gap (for S2)
     ma_gap_atr: float  # abs(SMA50 - SMA200) / ATR
     
+    # Tier 2 - EMA Slopes (ATR-normalised, 5-bar delta)
+    ema20_slope_atr: float = 0.0
+    ema50_slope_atr: float = 0.0
+
+    # Tier 2 - Donchian Channels (20-bar)
+    donchian_high_20: float = 0.0
+    donchian_low_20: float = 0.0
+    donchian_mid_20: float = 0.0
+
+    # Tier 2 - VWAP (intraday, resets at 00:00 UTC)
+    vwap: Optional[float] = None
+    vwap_upper_2sd: Optional[float] = None
+    vwap_lower_2sd: Optional[float] = None
+    vwap_distance_atr: Optional[float] = None
+
     # HTF proxies (optional, for bias)
     htf_close: Optional[float] = None
     htf_sma50: Optional[float] = None
@@ -395,6 +464,27 @@ class FeatureFactory:
         
         # Tier 2 - MA Gap (for S2 Golden Cross)
         ma_gap_atr = abs(sma_50 - sma_200) / atr if atr > 0 else 0.0
+
+        # Tier 2 - EMA Slopes (5-bar delta, ATR-normalised) (for S6)
+        ema20_series = self._ema(closes, 20)
+        ema50_series = self._ema(closes, 50)
+        if atr > 0 and len(ema20_series) >= 6:
+            ema20_slope_atr = (ema20_series[-1] - ema20_series[-6]) / (5 * atr)
+            ema50_slope_atr = (ema50_series[-1] - ema50_series[-6]) / (5 * atr)
+        else:
+            ema20_slope_atr = 0.0
+            ema50_slope_atr = 0.0
+
+        # Tier 2 - Donchian Channels (20-bar) (for S7)
+        donchian_high_20 = float(np.max(highs[-20:])) if len(highs) >= 20 else float(np.max(highs))
+        donchian_low_20 = float(np.min(lows[-20:])) if len(lows) >= 20 else float(np.min(lows))
+        donchian_mid_20 = (donchian_high_20 + donchian_low_20) / 2.0
+
+        # Tier 2 - VWAP (intraday, resets at 00:00 UTC) (for S4)
+        vwap, vwap_upper_2sd, vwap_lower_2sd = self._compute_vwap(candles)
+        vwap_distance_atr = None
+        if vwap is not None and atr > 0:
+            vwap_distance_atr = (closes[-1] - vwap) / atr
         
         # HTF indicators (if provided)
         htf_close = None
@@ -430,6 +520,15 @@ class FeatureFactory:
             sma50_slope_atr=sma50_slope_atr,
             sma200_slope_atr=sma200_slope_atr,
             ma_gap_atr=ma_gap_atr,
+            ema20_slope_atr=ema20_slope_atr,
+            ema50_slope_atr=ema50_slope_atr,
+            donchian_high_20=donchian_high_20,
+            donchian_low_20=donchian_low_20,
+            donchian_mid_20=donchian_mid_20,
+            vwap=vwap,
+            vwap_upper_2sd=vwap_upper_2sd,
+            vwap_lower_2sd=vwap_lower_2sd,
+            vwap_distance_atr=vwap_distance_atr,
             htf_close=htf_close,
             htf_sma50=htf_sma50,
             htf_bb_mb=htf_bb_mb,
@@ -551,6 +650,56 @@ class FeatureFactory:
         
         return result
     
+    def _compute_vwap(self, candles: list) -> tuple[Optional[float], Optional[float], Optional[float]]:
+        """
+        Compute VWAP with ±2σ bands, resetting at 00:00 UTC daily.
+
+        Returns (vwap, vwap_upper_2sd, vwap_lower_2sd) or (None, None, None)
+        if insufficient data for the current session.
+        """
+        if not candles:
+            return None, None, None
+
+        # Find session start: walk backwards from the last candle to find
+        # the first candle at or after 00:00 UTC of the last candle's day
+        from datetime import datetime, timezone
+        last_ts_ms = candles[-1].timestamp
+        last_dt = datetime.fromtimestamp(last_ts_ms / 1000, tz=timezone.utc)
+        session_start = last_dt.replace(hour=0, minute=0, second=0, microsecond=0)
+        session_start_ms = int(session_start.timestamp() * 1000)
+
+        # Collect candles in the current session
+        session_candles = [c for c in candles if c.timestamp >= session_start_ms]
+        if len(session_candles) < 2:
+            return None, None, None
+
+        # Typical Price = (H + L + C) / 3
+        tp_arr = np.array([(c.high + c.low + c.close) / 3.0 for c in session_candles])
+        vol_arr = np.array([c.volume for c in session_candles])
+
+        cum_tp_vol = np.cumsum(tp_arr * vol_arr)
+        cum_vol = np.cumsum(vol_arr)
+
+        # Avoid division by zero
+        if cum_vol[-1] == 0:
+            return None, None, None
+
+        vwap_series = cum_tp_vol / cum_vol
+
+        vwap = float(vwap_series[-1])
+
+        # VWAP standard deviation: sqrt(cumulative((TP - VWAP)^2 * V) / cumV)
+        vwap_broadcast = cum_tp_vol / np.where(cum_vol > 0, cum_vol, 1)
+        sq_diff = (tp_arr - vwap_broadcast) ** 2
+        cum_sq_vol = np.cumsum(sq_diff * vol_arr)
+        vwap_var = cum_sq_vol[-1] / cum_vol[-1] if cum_vol[-1] > 0 else 0.0
+        vwap_std = float(np.sqrt(vwap_var))
+
+        vwap_upper_2sd = vwap + 2.0 * vwap_std
+        vwap_lower_2sd = vwap - 2.0 * vwap_std
+
+        return vwap, vwap_upper_2sd, vwap_lower_2sd
+
     def _std(self, data: np.ndarray, n: int) -> float:
         """Rolling standard deviation (last value only)."""
         if len(data) < n:
