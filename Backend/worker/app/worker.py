@@ -80,17 +80,28 @@ def heartbeat():
 
 
 def get_symbols() -> list[str]:
-    """Get symbol universe based on configuration.
+    """Get symbol universe from Redis monitored set (Canon §1.4C).
 
-    Fallback path — ingestor is the primary universe builder (Canon §1.4C).
-    Prefer reading `universe:monitored` or `universe:known` from Redis.
-    This function is used by the worker for legacy run execution paths.
+    Primary: read `universe:monitored` from Redis (populated by ingestor).
+    Fallback: legacy static/dynamic list if Redis is empty.
     """
+    # Primary: read dynamic monitored universe from Redis
+    try:
+        from cache_contract import get_universe
+        monitored = get_universe(r, key="universe:monitored")
+        if monitored:
+            logger.info(f"Using monitored universe from Redis: {len(monitored)} symbols")
+            return monitored
+    except Exception as e:
+        logger.warning(f"Failed to read universe:monitored from Redis: {e}")
+
+    # Fallback: legacy path
     if USE_DYNAMIC_SYMBOLS:
         symbols = fetch_top_symbols_by_volume(n=KNOWN_UNIVERSE_SIZE)
-        logger.info(f"Using dynamic symbols: top {len(symbols)} by volume")
+        logger.info(f"Fallback dynamic symbols: top {len(symbols)} by volume")
     else:
         symbols = get_default_symbols()[:KNOWN_UNIVERSE_SIZE]
+        logger.info(f"Fallback static symbols: {len(symbols)}")
     return symbols
 
 
@@ -542,10 +553,8 @@ def main():
                 create_periodic_scan(executor, symbols, timeframes)
                 last_scan_time = now
                 
-                # Refresh symbols periodically if using dynamic
-                if USE_DYNAMIC_SYMBOLS and runs_executed % 12 == 0:
-                    symbols = get_symbols()
-                    logger.info(f"Refreshed symbol universe: {len(symbols)} symbols")
+                # Refresh symbols from Redis monitored universe each scan cycle
+                symbols = get_symbols()
                 
                 # Immediately try to claim the scan we just created
                 continue
