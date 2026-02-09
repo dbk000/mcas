@@ -15,7 +15,8 @@ import {
   EmptyState,
   RefreshControl,
   Input,
-  Select
+  Select,
+  MultiSelect
 } from '../components/ui'
 import {
   formatPrice,
@@ -162,12 +163,12 @@ export default function Opportunities() {
   const [showSimModal, setShowSimModal] = useState(false)
   const [simulating, setSimulating] = useState(false)
   const [simConfig, setSimConfig] = useState({
-    position_size_usd: 1000,
+    position_size_usd: 100,
     limit: 500,
     min_score: 0,
-    setup_id: '',
-    timeframe: '',
-    direction: '',
+    setup_ids: [],
+    timeframes: [],
+    directions: [],
   })
 
   // Build API params — omit setup_id if empty
@@ -203,10 +204,10 @@ export default function Opportunities() {
       const response = await post('/v1/control/runs/simulation', {
         position_size_usd: simConfig.position_size_usd,
         limit: simConfig.limit,
-        setup_ids: simConfig.setup_id ? [simConfig.setup_id] : (filters.setup_id ? [filters.setup_id] : null),
+        setup_ids: simConfig.setup_ids.length ? simConfig.setup_ids : (filters.setup_id ? [filters.setup_id] : null),
         min_score: simConfig.min_score,
-        timeframes: simConfig.timeframe ? [simConfig.timeframe] : null,
-        direction: simConfig.direction || null,
+        timeframes: simConfig.timeframes.length ? simConfig.timeframes : null,
+        directions: simConfig.directions.length ? simConfig.directions : null,
       })
 
       if (response.run_id) {
@@ -389,18 +390,15 @@ export default function Opportunities() {
                   <label className="text-sm text-terminal-400 block mb-1">
                     Setup
                   </label>
-                  <Select
-                    value={simConfig.setup_id}
-                    onChange={(e) => setSimConfig({
-                      ...simConfig,
-                      setup_id: e.target.value
-                    })}
+                  <MultiSelect
+                    value={simConfig.setup_ids}
+                    onChange={(vals) => setSimConfig({ ...simConfig, setup_ids: vals })}
                     options={[
-                      { value: '', label: 'All' },
                       { value: 'S1', label: 'S1' },
                       { value: 'S2', label: 'S2' },
                       { value: 'U1', label: 'U1' },
                     ]}
+                    placeholder="All"
                   />
                 </div>
 
@@ -408,14 +406,10 @@ export default function Opportunities() {
                   <label className="text-sm text-terminal-400 block mb-1">
                     Timeframe
                   </label>
-                  <Select
-                    value={simConfig.timeframe}
-                    onChange={(e) => setSimConfig({
-                      ...simConfig,
-                      timeframe: e.target.value
-                    })}
+                  <MultiSelect
+                    value={simConfig.timeframes}
+                    onChange={(vals) => setSimConfig({ ...simConfig, timeframes: vals })}
                     options={[
-                      { value: '', label: 'All' },
                       { value: '1m', label: '1m' },
                       { value: '5m', label: '5m' },
                       { value: '15m', label: '15m' },
@@ -423,6 +417,7 @@ export default function Opportunities() {
                       { value: '4h', label: '4h' },
                       { value: '1d', label: '1d' },
                     ]}
+                    placeholder="All"
                   />
                 </div>
 
@@ -430,17 +425,14 @@ export default function Opportunities() {
                   <label className="text-sm text-terminal-400 block mb-1">
                     Direction
                   </label>
-                  <Select
-                    value={simConfig.direction}
-                    onChange={(e) => setSimConfig({
-                      ...simConfig,
-                      direction: e.target.value
-                    })}
+                  <MultiSelect
+                    value={simConfig.directions}
+                    onChange={(vals) => setSimConfig({ ...simConfig, directions: vals })}
                     options={[
-                      { value: '', label: 'All' },
                       { value: 'long', label: 'Long' },
                       { value: 'short', label: 'Short' },
                     ]}
+                    placeholder="All"
                   />
                 </div>
               </div>

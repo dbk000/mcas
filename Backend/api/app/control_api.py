@@ -131,7 +131,7 @@ class SimulationRunRequest(BaseModel):
     setup_version: Optional[str] = None  # Filter by setup version (e.g. 'S1_v2.2')
     batch_id: Optional[str] = None  # Filter by backfill batch ID
     timeframes: Optional[list[str]] = None  # Filter by 1m, 5m, 15m, etc.
-    direction: Optional[str] = None  # Filter by "long" or "short"
+    directions: Optional[list[str]] = None  # Filter by "long", "short"
 
 
 # =============================================================================
@@ -514,9 +514,9 @@ def create_simulation_run(request: SimulationRunRequest):
                 conditions.append("timeframe = ANY(%s)")
                 params.append(request.timeframes)
 
-            if request.direction:
-                conditions.append("decision = %s")
-                params.append(request.direction)
+            if request.directions:
+                conditions.append("decision = ANY(%s)")
+                params.append(request.directions)
 
             where_clause = " AND ".join(conditions)
 
@@ -563,7 +563,7 @@ def create_simulation_run(request: SimulationRunRequest):
             "setup_version": request.setup_version,
             "batch_id": request.batch_id,
             "timeframes": request.timeframes,
-            "direction": request.direction,
+            "directions": request.directions,
         },
     })
 

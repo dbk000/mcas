@@ -332,6 +332,59 @@ export function Toggle({ enabled, onChange, label }) {
   )
 }
 
+// MultiSelect — Excel-style checkbox dropdown for picking multiple values
+export function MultiSelect({ options, value = [], onChange, className = '', placeholder = 'All' }) {
+  const [open, setOpen] = useState(false)
+
+  const toggle = (val) => {
+    const next = value.includes(val) ? value.filter(v => v !== val) : [...value, val]
+    onChange(next)
+  }
+
+  const label = value.length === 0
+    ? placeholder
+    : value.length <= 2
+      ? value.join(', ')
+      : `${value.length} selected`
+
+  return (
+    <div className={`relative ${className}`}>
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="w-full bg-terminal-800 border border-terminal-500 rounded px-3 py-2 text-terminal-100 text-left flex items-center justify-between focus:border-amber-500 focus:ring-1 focus:ring-amber-500/20 focus:outline-none"
+      >
+        <span className="truncate">{label}</span>
+        {open
+          ? <ChevronUp className="w-4 h-4 text-terminal-400 flex-shrink-0" />
+          : <ChevronDown className="w-4 h-4 text-terminal-400 flex-shrink-0" />
+        }
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div className="absolute z-50 mt-1 w-full bg-terminal-800 border border-terminal-500 rounded shadow-lg max-h-48 overflow-y-auto">
+            {options.map((opt) => (
+              <label
+                key={opt.value}
+                className="flex items-center gap-2 px-3 py-1.5 hover:bg-terminal-700 cursor-pointer text-sm text-terminal-100"
+              >
+                <input
+                  type="checkbox"
+                  checked={value.includes(opt.value)}
+                  onChange={() => toggle(opt.value)}
+                  className="accent-amber-500"
+                />
+                {opt.label}
+              </label>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
 // Select
 export const Select = forwardRef(({ options, className = '', ...props }, ref) => {
   return (
