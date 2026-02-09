@@ -173,11 +173,11 @@ def create_scan_run(request: ScanRunRequest):
         "data_snapshot_ts": now.isoformat(),
     })
     
-    # Compute fingerprint
+    # Compute fingerprint (include run_id as nonce so same params can be re-run)
     import hashlib
-    fp_input = f"{universe_json}{strategy_json}{execution_json}"
+    fp_input = f"{universe_json}{strategy_json}{execution_json}{run_id}"
     fingerprint = hashlib.sha256(fp_input.encode()).hexdigest()[:16]
-    
+
     name = request.name or f"scan_{now.strftime('%Y%m%d_%H%M%S')}"
     
     with get_conn() as conn:
@@ -678,11 +678,11 @@ def start_paper_trading(request: PaperStartRequest):
         "data_snapshot_ts": now.isoformat(),
     })
     
-    # Compute fingerprint
+    # Compute fingerprint (include run_id as nonce so same params can be re-run)
     import hashlib
-    fp_input = f"{universe_json}{strategy_json}{execution_json}"
+    fp_input = f"{universe_json}{strategy_json}{execution_json}{run_id}"
     fingerprint = hashlib.sha256(fp_input.encode()).hexdigest()[:16]
-    
+
     name = request.name or f"paper_{now.strftime('%Y%m%d_%H%M%S')}"
     
     with get_conn() as conn:
