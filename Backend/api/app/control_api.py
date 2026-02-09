@@ -41,6 +41,19 @@ def get_conn():
     return psycopg.connect(DATABASE_URL)
 
 
+def _resolve_symbols(requested: list[str] | None) -> list[str]:
+    """Resolve symbol list: use requested symbols, else read universe:monitored from Redis."""
+    if requested:
+        return sorted(requested)
+    try:
+        members = r.smembers("universe:monitored")
+        if members:
+            return sorted(members)
+    except Exception:
+        pass
+    return []
+
+
 router = APIRouter(prefix="/control", tags=["control-plane"])
 
 
@@ -151,7 +164,7 @@ def create_scan_run(request: ScanRunRequest):
     
     # Build specs
     universe_json = json.dumps({
-        "assets": sorted(request.symbols) if request.symbols else [],
+        "assets": _resolve_symbols(request.symbols),
         "timeframes": sorted(request.timeframes) if request.timeframes else ["1h", "4h"],
         "venue": "binance",
     })
@@ -383,7 +396,7 @@ def create_backtest_run(request: BacktestRunRequest):
     
     # Build specs
     universe_json = json.dumps({
-        "assets": sorted(request.symbols),
+        "assets": _resolve_symbols(request.symbols),
         "timeframes": sorted(request.timeframes),
         "start_ts": start_ts.isoformat(),
         "end_ts": end_ts.isoformat(),
@@ -647,7 +660,7 @@ def start_paper_trading(request: PaperStartRequest):
     
     # Build specs
     universe_json = json.dumps({
-        "assets": sorted(request.symbols) if request.symbols else [],
+        "assets": _resolve_symbols(request.symbols),
         "timeframes": sorted(request.timeframes) if request.timeframes else ["1h", "4h"],
         "venue": "binance",
     })
