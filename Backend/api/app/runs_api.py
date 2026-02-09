@@ -205,7 +205,7 @@ def get_run_trades(
             
             # Get trades (Canon 5A: include signal_bar_ts; Canon 5E: since_ts, action_by_ts)
             cur.execute("""
-                SELECT id, asset, timeframe, side, setup_id,
+                SELECT id, symbol, timeframe, side, setup_id,
                        signal_bar_ts, since_ts, action_by_ts,
                        entry_ts, entry_price,
                        stop_price, tp1_price, tp2_price, r_value,
@@ -224,7 +224,7 @@ def get_run_trades(
         trace = json.loads(row[20]) if row[20] else {}
         trades.append({
             "id": str(row[0]),
-            "asset": row[1],
+            "symbol": row[1],
             "timeframe": row[2],
             "side": row[3],
             "setup_id": row[4],
