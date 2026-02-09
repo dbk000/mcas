@@ -528,7 +528,7 @@ def create_simulation_run(request: SimulationRunRequest):
                 params.append(request.timeframes)
 
             if request.directions:
-                conditions.append("decision = ANY(%s)")
+                conditions.append("payload_json::jsonb ->> 'direction' = ANY(%s)")
                 params.append(request.directions)
 
             where_clause = " AND ".join(conditions)

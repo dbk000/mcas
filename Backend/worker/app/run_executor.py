@@ -1425,7 +1425,7 @@ class RunExecutor:
                     params.append(timeframes)
 
                 if directions:
-                    conditions.append("decision = ANY(%s)")
+                    conditions.append("payload_json::jsonb ->> 'direction' = ANY(%s)")
                     params.append(directions)
 
                 where_clause = " AND ".join(conditions)
