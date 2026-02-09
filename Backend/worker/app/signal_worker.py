@@ -30,10 +30,21 @@ from cache_contract import (
     get_embryo_active_symbols, read_unicorn_state,
     unicorn_state_key, UNICORN_STATE_TTL_S,
 )
-from indicators import IndicatorSnapshot
-from setups import S1Evaluator, S1Signal, S2Evaluator, S2Signal
+import numpy as np
+from indicators import IndicatorSnapshot, FeatureFactory
+from setups import (
+    S1Evaluator, S1Signal, S2Evaluator, S2Signal,
+    S3Evaluator, S3Signal, S4Evaluator, S4Signal,
+    S5Evaluator, S5Signal, S6Evaluator, S6Signal,
+    S7Evaluator, S7Signal,
+)
 from setups.s1_bb_squeeze import S1State
 from setups.s2_golden_cross import S2State
+from setups.s3_rsi_divergence import S3State
+from setups.s4_vwap_reversion import S4State
+from setups.s5_sr_breakout import S5State
+from setups.s6_trend_pullback import S6State
+from setups.s7_momentum_breakout import S7State
 from setups.u1_unicorn_ignition import U1Evaluator, U1State, U1Phase, U1Config
 from setup_base import Direction
 
@@ -102,6 +113,12 @@ def _deserialize_s2_state(raw: str) -> S2State:
     return S2State(**d)
 
 
+def _deserialize_s6_state(raw: str) -> S6State:
+    """Deserialize S6State from JSON."""
+    d = json.loads(raw)
+    return S6State(**d)
+
+
 # ---------------------------------------------------------------------------
 # SignalWorker
 # ---------------------------------------------------------------------------
@@ -114,7 +131,13 @@ class SignalWorker:
         self.r = redis.Redis.from_url(REDIS_URL, decode_responses=True)
         self.s1_evaluator = S1Evaluator()
         self.s2_evaluator = S2Evaluator()
+        self.s3_evaluator = S3Evaluator()
+        self.s4_evaluator = S4Evaluator()
+        self.s5_evaluator = S5Evaluator()
+        self.s6_evaluator = S6Evaluator()
+        self.s7_evaluator = S7Evaluator()
         self.u1_evaluator = U1Evaluator()
+        self._ff = FeatureFactory()  # For RSI series computation (S3)
         self.last_reconcile = 0.0
         self.last_prune = 0.0
         # Per-worker consumer group: each worker instance gets ALL messages
@@ -124,6 +147,8 @@ class SignalWorker:
         # Cache of EMBRYO_ACTIVE symbols (refreshed periodically)
         self._embryo_active_cache: set[str] = set()
         self._embryo_active_cache_ts = 0.0
+        # S7 previous snapshot cache (for Donchian breakout comparison)
+        self._s7_prev_snap: dict[tuple[str, str], IndicatorSnapshot] = {}
         # Diagnostic counters (reset per logging cycle)
         self._diag = {
             "evaluated": 0, "snapshot_fail": 0, "candle_fail": 0,
@@ -131,6 +156,11 @@ class SignalWorker:
             "s1_age_fail": 0, "s1_ripe_fail": 0, "s1_trigger_fail": 0,
             "s1_signal": 0, "s2_not_converging": 0,
             "s2_trigger_fail": 0, "s2_signal": 0,
+            "s3_signal": 0, "s3_no_div": 0,
+            "s4_signal": 0, "s4_not_extended": 0,
+            "s5_signal": 0, "s5_no_break": 0,
+            "s6_signal": 0, "s6_no_trend": 0,
+            "s7_signal": 0, "s7_no_break": 0,
         }
         self._last_diag_log = 0.0
 
@@ -338,7 +368,95 @@ class SignalWorker:
             else:
                 self._diag["s2_trigger_fail"] += 1
 
-        # Step 7: Run U1 evaluator (only for EMBRYO_ACTIVE symbols)
+        # Step 7: Run S3 evaluator (RSI Divergence)
+        if len(snapshot.ohlcv) >= 201:
+            try:
+                closes = np.array([c.close for c in snapshot.ohlcv])
+                rsi_series = self._ff._rsi_series(closes, 14)
+                s3_state = self.s3_evaluator.compute_state(snapshot, rsi_series)
+                s3_signal = self.s3_evaluator.evaluate_trigger(
+                    snapshot, s3_state, symbol, tf,
+                )
+                if s3_signal:
+                    self._diag["s3_signal"] += 1
+                    self._store_signal_from_evaluator(s3_signal, "S3", symbol, tf, snap_ts)
+                else:
+                    if not s3_state.has_divergence:
+                        self._diag["s3_no_div"] += 1
+            except Exception as e:
+                logger.debug(f"S3 eval failed for {symbol}:{tf}: {e}")
+
+        # Step 8: Run S4 evaluator (VWAP Reversion — intraday only)
+        if snapshot.vwap is not None:
+            vwap_distance_history = [
+                b2f(x) for x in
+                self.r.lrange(ind_hist_key("vwap_dist", symbol, tf), 0, -1)
+            ]
+            s4_state = self.s4_evaluator.compute_state(snapshot, vwap_distance_history)
+            s4_signal = self.s4_evaluator.evaluate_trigger(
+                snapshot, s4_state, symbol, tf,
+            )
+            if s4_signal:
+                self._diag["s4_signal"] += 1
+                self._store_signal_from_evaluator(s4_signal, "S4", symbol, tf, snap_ts)
+            else:
+                if not (s4_state.extended_above or s4_state.extended_below):
+                    self._diag["s4_not_extended"] += 1
+
+        # Step 9: Run S5 evaluator (S/R Breakout)
+        if len(snapshot.ohlcv) >= 50:
+            s5_state = self.s5_evaluator.compute_state(snapshot)
+            s5_signal = self.s5_evaluator.evaluate_trigger(
+                snapshot, s5_state, symbol, tf,
+            )
+            if s5_signal:
+                self._diag["s5_signal"] += 1
+                self._store_signal_from_evaluator(s5_signal, "S5", symbol, tf, snap_ts)
+            else:
+                self._diag["s5_no_break"] += 1
+
+        # Step 10: Run S6 evaluator (Trend Continuation Pullback)
+        prev_s6_raw = self.r.get(setup_state_key("S6", symbol, tf))
+        prev_s6_state = None
+        if prev_s6_raw:
+            try:
+                prev_s6_state = _deserialize_s6_state(b2s(prev_s6_raw))
+            except Exception:
+                pass
+
+        s6_state = self.s6_evaluator.compute_state(snapshot, prev_s6_state)
+        self.r.set(
+            setup_state_key("S6", symbol, tf),
+            _serialize_state(s6_state),
+            ex=SETUP_STATE_TTL_S,
+        )
+        s6_signal = self.s6_evaluator.evaluate_trigger(
+            snapshot, s6_state, symbol, tf,
+        )
+        if s6_signal:
+            self._diag["s6_signal"] += 1
+            self._store_signal_from_evaluator(s6_signal, "S6", symbol, tf, snap_ts)
+        else:
+            if s6_state.trend_direction == "none":
+                self._diag["s6_no_trend"] += 1
+
+        # Step 11: Run S7 evaluator (Momentum Breakout Donchian)
+        key_s7 = (symbol, tf)
+        prev_snap_s7 = self._s7_prev_snap.get(key_s7)
+        s7_state = self.s7_evaluator.compute_state(snapshot, prev_snap_s7)
+        self._s7_prev_snap[key_s7] = snapshot  # Save for next bar
+
+        s7_signal = self.s7_evaluator.evaluate_trigger(
+            snapshot, s7_state, symbol, tf,
+        )
+        if s7_signal:
+            self._diag["s7_signal"] += 1
+            self._store_signal_from_evaluator(s7_signal, "S7", symbol, tf, snap_ts)
+        else:
+            if not (s7_state.long_breakout or s7_state.short_breakout):
+                self._diag["s7_no_break"] += 1
+
+        # Step 12: Run U1 evaluator (only for EMBRYO_ACTIVE symbols)
         self._evaluate_u1(symbol, tf, snapshot.ohlcv, snap_ts)
 
     def _refresh_embryo_active_cache(self):
@@ -438,7 +556,12 @@ class SignalWorker:
         )
 
     # Setup version mapping for live signals
-    SETUP_VERSIONS = {"S1": "S1_v2.1", "S2": "S2_v1.4", "U1": "U1_v1.0"}
+    SETUP_VERSIONS = {
+        "S1": "S1_v2.1", "S2": "S2_v1.4",
+        "S3": "S3_v1.0", "S4": "S4_v1.0", "S5": "S5_v1.0",
+        "S6": "S6_v1.0", "S7": "S7_v1.0",
+        "U1": "U1_v1.0",
+    }
 
     def _persist_signal_to_pg(self, symbol: str, tf: str, setup_id: str,
                                score: float, reason: str, payload: dict):
@@ -556,7 +679,7 @@ class SignalWorker:
                         continue
 
                     reeval_needed = False
-                    for setup_id in ["S1", "S2"]:
+                    for setup_id in ["S1", "S2", "S3", "S4", "S5", "S6", "S7"]:
                         sig_ts = b2f(self.r.hget(
                             sig_meta_key(symbol, tf, setup_id), "bar_start_ts"
                         ))
@@ -581,7 +704,7 @@ class SignalWorker:
         """Prune stale signals across all setups and timeframes."""
         try:
             timeframes = get_timeframes(self.r)
-            for setup_id in ["S1", "S2", "U1"]:
+            for setup_id in ["S1", "S2", "S3", "S4", "S5", "S6", "S7", "U1"]:
                 for tf in timeframes:
                     prune_stale_signals(self.r, setup_id, tf)
             # Also expire stale active records in Postgres

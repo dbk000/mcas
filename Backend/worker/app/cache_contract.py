@@ -244,6 +244,10 @@ SNAPSHOT_FIELDS = [
     "kc_mb", "kc_ub", "kc_lb",
     "sma50_slope_atr", "sma200_slope_atr", "ma_gap_atr",
     "htf_close", "htf_sma50", "htf_bb_mb",
+    # S3-S7 indicators
+    "ema20_slope_atr", "ema50_slope_atr",
+    "donchian_high_20", "donchian_low_20", "donchian_mid_20",
+    "vwap", "vwap_upper_2sd", "vwap_lower_2sd", "vwap_distance_atr",
 ]
 
 # Mapping from indicator_id to snapshot field name for per-indicator keys
@@ -273,6 +277,16 @@ INDICATOR_ID_TO_FIELD = {
     "HTF_CLOSE": "htf_close",
     "HTF_SMA50": "htf_sma50",
     "HTF_BB_MB": "htf_bb_mb",
+    # S3-S7 indicators
+    "EMA20_SLOPE_ATR": "ema20_slope_atr",
+    "EMA50_SLOPE_ATR": "ema50_slope_atr",
+    "DONCHIAN_HIGH_20": "donchian_high_20",
+    "DONCHIAN_LOW_20": "donchian_low_20",
+    "DONCHIAN_MID_20": "donchian_mid_20",
+    "VWAP": "vwap",
+    "VWAP_UPPER_2SD": "vwap_upper_2sd",
+    "VWAP_LOWER_2SD": "vwap_lower_2sd",
+    "VWAP_DISTANCE_ATR": "vwap_distance_atr",
 }
 
 
@@ -313,7 +327,9 @@ def read_indicator_snapshot(r, symbol: str, tf: str):
         if raw is not None:
             val = b2f(raw)
             kwargs[field_name] = val
-        elif field_name in ("htf_close", "htf_sma50", "htf_bb_mb"):
+        elif field_name in ("htf_close", "htf_sma50", "htf_bb_mb",
+                            "vwap", "vwap_upper_2sd", "vwap_lower_2sd",
+                            "vwap_distance_atr"):
             kwargs[field_name] = None
         else:
             kwargs[field_name] = 0.0
@@ -359,6 +375,12 @@ def store_indicators(r, symbol: str, tf: str, snapshot, bar_start_ts):
     ma_hist_k = ind_hist_key("ma_gap", symbol, tf)
     pipe.rpush(ma_hist_k, str(snapshot.ma_gap_atr))
     pipe.ltrim(ma_hist_k, -INDICATOR_HISTORY_SIZE, -1)
+
+    # VWAP distance history (for S4 extension percentile)
+    if snapshot.vwap_distance_atr is not None:
+        vwap_hist_k = ind_hist_key("vwap_dist", symbol, tf)
+        pipe.rpush(vwap_hist_k, str(abs(snapshot.vwap_distance_atr)))
+        pipe.ltrim(vwap_hist_k, -INDICATOR_HISTORY_SIZE, -1)
 
     # 4. COMMIT MARKER — written LAST (invariant #16)
     pipe.hset(ind_meta_key(symbol, tf), mapping={
