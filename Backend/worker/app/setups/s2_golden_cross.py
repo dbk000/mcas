@@ -92,7 +92,7 @@ class S2State:
     btc_shock_down: bool = False  # BTC dumping (skip longs)
     
     # For time stop
-    time_stop_bars: int = 24
+    time_stop_bars: int = 15
 
 
 @dataclass
@@ -123,7 +123,7 @@ class S2Signal:
     explain: ExplainPayload = None
 
     # Canon 7A: time-stop for action_by_ts derivation
-    time_stop_bars: int = 24
+    time_stop_bars: int = 15
 
     # Canon 5E: timing metadata (signal freshness + action deadline)
     since_ts: Optional[datetime] = None       # bar_start_ts of the trigger candle (UTC)
@@ -159,19 +159,19 @@ class S2Evaluator:
         slope200_min: float = 0.0,
 
         # Confirmation thresholds (canonical defaults: 0.65/1.0)
-        clv_th: float = _env_float("S2_CLV_TH", 0.65),
-        volume_z_min: float = _env_float("S2_VOLUME_Z_MIN", 1.0),
+        clv_th: float = _env_float("S2_CLV_TH", 0.70),
+        volume_z_min: float = _env_float("S2_VOLUME_Z_MIN", 2.0),
         
         # Stops
-        stop_atr_buffer: float = 0.5,
+        stop_atr_buffer: float = 1.0,
         fail_fast_buffer: float = 0.1,
         
-        # Time stop (24 hours - slower setup)
-        time_stop_bars: int = 24,
+        # Time stop (15 bars — tightened from 24 per sim analysis)
+        time_stop_bars: int = 15,
         
         # Targets
-        tp1_r: float = 1.0,
-        tp2_r: float = 2.0,
+        tp1_r: float = 0.5,
+        tp2_r: float = 1.0,
         trail_mult: float = 1.5,
         
         # Slippage

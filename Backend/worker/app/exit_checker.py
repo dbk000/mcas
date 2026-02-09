@@ -21,7 +21,7 @@ class ExitConfig:
 
     # Fail-fast threshold
     fail_fast_bars: int = 2
-    fail_fast_threshold: float = 0.005  # 0.5% below/above entry
+    fail_fast_threshold: float = 0.003  # 0.3% below/above entry (tightened from 0.5% per sim analysis)
 
 
 @dataclass

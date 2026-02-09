@@ -132,34 +132,34 @@ class S1Evaluator:
     def __init__(
         self,
         # BB Width percentile (canonical default: 10.0, override via S1_BB_WIDTH_PCTILE_TRIGGER)
-        bb_width_pctile_trigger: float = _env_float("S1_BB_WIDTH_PCTILE_TRIGGER", 10.0),
+        bb_width_pctile_trigger: float = _env_float("S1_BB_WIDTH_PCTILE_TRIGGER", 5.0),
         bb_width_pctile_window: int = 200,  # Rolling window for percentile (canon: ~120-2000, scaled by TF)
 
         # Squeeze age (canonical default: 5, override via S1_SQUEEZE_AGE_MIN)
         squeeze_age_min: int = _env_int("S1_SQUEEZE_AGE_MIN", 5),
 
         # Confirmation thresholds (canonical defaults: 0.70/0.30/1.5)
-        clv_th_long: float = _env_float("S1_CLV_TH_LONG", 0.70),
+        clv_th_long: float = _env_float("S1_CLV_TH_LONG", 0.75),
         clv_th_short: float = _env_float("S1_CLV_TH_SHORT", 0.30),
-        volume_z_min: float = _env_float("S1_VOLUME_Z_MIN", 1.5),
+        volume_z_min: float = _env_float("S1_VOLUME_Z_MIN", 2.0),
         
         # Bias scoring (BiasMode = trend_proxy)
         bias_long_threshold: float = 0.5,
         bias_short_threshold: float = -0.5,
         
         # Stops
-        stop_atr_buffer: float = 0.5,
+        stop_atr_buffer: float = 1.0,
         fail_fast_buffer: float = 0.1,
-        
+
         # Fail-fast exit (if price re-enters box within N bars)
-        fail_fast_bars: int = 3,
+        fail_fast_bars: int = 1,
         
         # Time stop (T_dead = 4 hours on 1h TF = 4 bars)
         time_stop_bars: int = 4,  # Scaled by timeframe
         
         # Targets
-        tp1_r: float = 1.0,
-        tp2_r: float = 2.0,
+        tp1_r: float = 0.5,
+        tp2_r: float = 1.0,
         trail_mult: float = 1.5,
         
         # Slippage (conservative)
