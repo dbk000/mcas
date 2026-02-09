@@ -24,7 +24,7 @@ END $$;
 
 -- Update index if it references old column name
 DROP INDEX IF EXISTS idx_run_trades_symbol;
-CREATE INDEX IF NOT EXISTS idx_run_trades_symbol ON run_trades(symbol, timeframe, status);
+CREATE INDEX IF NOT EXISTS idx_run_trades_symbol ON run_trades(symbol, timeframe);
 
 -- Track migration
 INSERT INTO schema_versions (filename, description, applied_at)
