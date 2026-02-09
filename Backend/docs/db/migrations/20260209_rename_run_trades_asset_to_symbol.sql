@@ -27,8 +27,8 @@ DROP INDEX IF EXISTS idx_run_trades_symbol;
 CREATE INDEX IF NOT EXISTS idx_run_trades_symbol ON run_trades(symbol, timeframe);
 
 -- Track migration
-INSERT INTO schema_versions (filename, description, applied_at)
-VALUES ('20260209_rename_run_trades_asset_to_symbol.sql', 'Rename run_trades.asset to symbol', NOW())
+INSERT INTO schema_versions (filename, applied_at)
+VALUES ('20260209_rename_run_trades_asset_to_symbol.sql', NOW())
 ON CONFLICT (filename) DO NOTHING;
 
 SELECT pg_advisory_unlock(hashtext('migration_20260209_rename_run_trades_asset'));
