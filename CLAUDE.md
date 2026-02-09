@@ -15,7 +15,12 @@ If anything conflicts with this canon, the code is wrong (or the canon must be e
 3) `docs/` module specs (contracts; must be updated with behavior changes).
 4) Code (implementation).
 
-**Rule:** If you change behavior/semantics, you must update the relevant canon/spec in the same PR.
+### Self-Correction Protocol (Meta-Rule)                                                                                                                                                    
+  Whenever the user corrects a course of action, pushes back on an approach, or expresses frustration with a mistake — even if minor — Claude MUST immediately draft a Corrections Log entry  
+  (following the format in Section 3) and print it to chat for the user to insert into CLAUDE.md. Do not wait to be asked. The goal is to capture every correctable pattern the first time it 
+  occurs, preventing repeated time loss. If unsure whether something qualifies, err on the side of logging it.
+
+**MCAS Functionality Rule:** If you change behavior/semantics, you must update the relevant canon/spec in the same PR.
 
 ---
 
@@ -220,16 +225,16 @@ MCAS (Market Cognition At Scale) v7 — a crypto trading analytics and paper tra
 
 ```bash
 # Local dev up (all services)
-cd Backend && docker-compose up -d
+cd Backend && docker compose up -d
 
 # Local dev down
-cd Backend && docker-compose down
+cd Backend && docker compose down
 
 # Rebuild after code changes
-cd Backend && docker-compose up -d --build
+cd Backend && docker compose up -d --build
 
 # Run API only (for dev)
-cd Backend && docker-compose up -d api postgres redis
+cd Backend && docker compose up -d api postgres redis
 
 # Run frontend dev server
 cd Frontend && npm install && npm run dev
@@ -238,8 +243,8 @@ cd Frontend && npm install && npm run dev
 cd Backend && pytest tests/ -v
 
 # DB reset (WARNING: drops all data)
-cd Backend && docker-compose exec postgres psql -U trading -d trading -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
-cd Backend && docker-compose exec postgres psql -U trading -d trading -f /docker-entrypoint-initdb.d/mcas_schema.sql
+cd Backend && docker compose exec postgres psql -U trading -d trading -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
+cd Backend && docker compose exec postgres psql -U trading -d trading -f /docker-entrypoint-initdb.d/mcas_schema.sql
 
 # Apply schema from scratch
 psql -U trading -d trading -f docs/db/schema/mcas_schema.sql
@@ -250,8 +255,8 @@ curl http://localhost:80/health
 curl -H "X-API-Key: <your-key>" http://localhost:80/v1/markets
 
 # View logs
-cd Backend && docker-compose logs -f worker
-cd Backend && docker-compose logs -f api
+cd Backend && docker compose logs -f worker
+cd Backend && docker compose logs -f api
 ```
 
 ## 2.3 Architecture (Repo Current State)
@@ -468,7 +473,37 @@ Rule: Always key and store OHLCV data by its exact market (exchange + trading pa
 Checklist: Is OHLCV time-series data stored per market (exchange/pair) with timeframe, rather than conflated under a single asset entry?
 Example: Bad: A single table of daily candles indexed only by asset_id (so BTC’s data intermixes all exchanges). Good: A schema where, say, BTC on Binance USDT market vs BTC on Coinbase USD market are separate series (e.g., identified by market_id or exchange+symbol), ensuring clarity of data provenance.
 
-2026-02-08 - when bringing containers back up, always ask user to execute the commands because the production containers are on the server, not the dev environment that Claude Code runs on. No containers on /home/darren/Desktop/MCAS/ should ever be left running except for dev tests, in which case they should be stopped again after test is complete.
+2026-02-09 — Dev Override Contaminating Production Deploys [RUNTIME]                                                                                                                    
+  **Symptom:**                                                                                     
+  - Claude suggested `docker compose up -d --build` without `-f docker compose.yml`, which auto-loaded `docker compose.override.yml` (project name `mcas-dev`, port conflicts).               
+  - This spun up a second set of dev-named containers alongside the running production stack, causing port 80 conflicts and confusion.
+
+  **Why it's wrong:** The production stack runs as project `backend` on the server at `/srv/mcas/Backend`. The override file (`docker compose.override.yml`) sets `name: mcas-dev` and is for
+  local dev only. Auto-loading it on the server creates a parallel dev stack that conflicts with production.
+
+  **Rule:** When suggesting container rebuild/restart commands for the production server, ALWAYS use:
+  ```bash
+  cd /srv/mcas/Backend && docker compose -f docker compose.yml build && docker compose -f docker compose.yml up -d --no-deps
+  - -f docker compose.yml — explicitly skips the dev override.
+  - --no-deps — avoids recreating infra services (postgres, redis, caddy).
+  - NEVER use bare docker compose up on the server.
+  - ALWAYS ask the user to execute deploy commands (Claude Code runs on the dev machine, not the server).
+
+  Checklist: Do deploy commands explicitly specify -f docker compose.yml and --no-deps?
+
+ 2026-02-09 — Migration Written Against Schema File Instead of Production DB [RUNTIME]                                                                                                   
+  **Symptom:**                                                                                                                                                                                
+  - Migration referenced columns (`status` on `run_trades`, `description` on `schema_versions`) that exist in `mcas_schema.sql` but not on the production database.
+  - Migration failed twice, requiring two fix-and-redeploy cycles.
+
+  **Why it's wrong:** The schema file represents the *intended* state, not necessarily what's actually deployed. Writing migrations that assume the schema file matches production causes
+  failures and wastes deploy cycles.
+
+  **Rule:** When writing migrations, reference only columns known to exist on production. If unsure, query `information_schema.columns` in the migration itself (via `DO $$ ... IF EXISTS`
+  blocks) rather than assuming the schema file is accurate. For index creation, use only columns confirmed to exist.
+
+  **Checklist:** Does the migration avoid assuming schema file matches production? Are column references verified or guarded with IF EXISTS?
+
 Top Recurring Checks:
 
 1. Are minimal snapshots/logs persisted to reproduce decisions? (Persist Audit Trail vs. Ephemeral Data)
