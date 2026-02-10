@@ -72,7 +72,7 @@ SETUP_SCORE_MULTIPLIERS = {
     "S3": float(os.getenv("S3_SCORE_MULT", "0.85")),
     "S4": float(os.getenv("S4_SCORE_MULT", "0.80")),
     "S5": float(os.getenv("S5_SCORE_MULT", "1.05")),
-    "S6": float(os.getenv("S6_SCORE_MULT", "1.10")),
+    "S6": float(os.getenv("S6_SCORE_MULT", "0.90")),
     "S7": float(os.getenv("S7_SCORE_MULT", "0.95")),
     "U1": float(os.getenv("U1_SCORE_MULT", "1.0")),
 }

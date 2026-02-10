@@ -131,11 +131,11 @@ class S6Evaluator:
     def __init__(
         self,
         # Slope thresholds (ATR-normalised)
-        slope_min: float = _env_float("S6_SLOPE_MIN", 0.01),
+        slope_min: float = _env_float("S6_SLOPE_MIN", 0.03),
 
         # Trigger thresholds
         clv_th: float = _env_float("S6_CLV_TH", 0.65),
-        volume_z_min: float = _env_float("S6_VOLUME_Z_MIN", 1.5),
+        volume_z_min: float = _env_float("S6_VOLUME_Z_MIN", 2.0),
 
         # Stops
         stop_atr_buffer: float = 0.5,
