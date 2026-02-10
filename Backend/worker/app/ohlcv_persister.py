@@ -195,8 +195,8 @@ class OHLCVPersister:
             self.r.xack(stream_name, GROUP_NAME, msg_id)
             return
 
-        # Convert bar_start_ts (epoch seconds) to datetime for Postgres
-        bar_start_dt = datetime.fromtimestamp(bar_start_ts_epoch, tz=timezone.utc)
+        # Convert bar_start_ts (epoch milliseconds — Binance convention) to datetime
+        bar_start_dt = datetime.fromtimestamp(bar_start_ts_epoch / 1000, tz=timezone.utc)
         now_dt = datetime.now(tz=timezone.utc)
 
         row = (
