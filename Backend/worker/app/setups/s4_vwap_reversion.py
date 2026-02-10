@@ -269,6 +269,9 @@ class S4Evaluator:
             logger.debug("S4 gate:forming_candle %s %s", symbol, timeframe)
             return None
 
+        # S4 disabled: PF 0.16 across all timeframes per simulation analysis
+        return None
+
         # Intraday only
         if timeframe not in _INTRADAY_TFS:
             return None

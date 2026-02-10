@@ -35,6 +35,8 @@ class SimulationConfig:
     fee_taker_bps: float = 4.0
     max_bars_forward: int = 100  # Max bars to simulate forward
     time_stop_bars: int = 50    # Default time stop if not specified
+    max_fee_r_ratio: float = 0.3    # Skip trades where fees > this fraction of risk
+    min_r_preservation: float = 0.5  # Skip trades where gap consumed > 50% of original R
 
 
 @dataclass
@@ -358,6 +360,25 @@ class OpportunitySimulator:
         if actual_r_value <= 0:
             result.data_available = False
             result.error_message = "R-value invalid after slippage"
+            return result
+
+        # Guard: reject uneconomic trades where fees dominate risk
+        fee_per_unit = 2 * entry_with_slip * self.config.fee_taker_bps / 10000
+        if fee_per_unit > self.config.max_fee_r_ratio * actual_r_value:
+            result.data_available = False
+            result.error_message = (
+                f"Uneconomic: fees/R={fee_per_unit / actual_r_value:.2f} "
+                f"> max {self.config.max_fee_r_ratio}"
+            )
+            return result
+
+        # Guard: reject trades where entry gap consumed too much of original R
+        if r_value > 0 and actual_r_value < self.config.min_r_preservation * r_value:
+            result.data_available = False
+            result.error_message = (
+                f"Adverse gap: R degraded {actual_r_value / r_value:.0%} "
+                f"(min {self.config.min_r_preservation:.0%})"
+            )
             return result
 
         # Guard 1: invalidate TP1/TP2 if on wrong side of actual entry
@@ -692,6 +713,13 @@ class OpportunitySimulator:
             reason = r.exit_reason or "UNKNOWN"
             exit_reasons[reason] = exit_reasons.get(reason, 0) + 1
 
+        # Error breakdown (filtered/skipped trades by category)
+        error_breakdown: dict[str, int] = {}
+        for r in results:
+            if not r.data_available and r.error_message:
+                category = r.error_message.split(":")[0]
+                error_breakdown[category] = error_breakdown.get(category, 0) + 1
+
         # TP invalidation count
         tp_invalidated_count = sum(1 for r in valid_results if r.tp_invalidated)
 
@@ -709,4 +737,5 @@ class OpportunitySimulator:
             "per_setup": per_setup,
             "exit_reasons": exit_reasons,
             "tp_invalidated_count": tp_invalidated_count,
+            "error_breakdown": error_breakdown,
         }
