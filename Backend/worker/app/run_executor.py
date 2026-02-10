@@ -394,6 +394,7 @@ class RunExecutor:
         closed_trades: list[dict] = []
         total_bars = 0
         signals_generated = 0
+        signals_per_setup = {s: 0 for s in ["S1", "S2", "S3", "S4", "S5", "S6", "S7"]}
         skip_counters = {"max_positions": 0, "one_per_asset": 0, "circuit_breaker": 0, "invalid_r_value": 0, "position_size_zero": 0}
 
         # Collect all unique timestamps and sort
@@ -684,6 +685,7 @@ class RunExecutor:
                     s1_signal = s1_evaluator.evaluate_trigger(snapshot, s1_state, symbol, timeframe)
                     if s1_signal:
                         signals_generated += 1
+                        signals_per_setup["S1"] += 1
                         time_stop = s1_signal.time_stop_bars
                         pending_entries.append({
                             "symbol": symbol,
@@ -727,6 +729,7 @@ class RunExecutor:
                     s2_signal = s2_evaluator.evaluate_trigger(snapshot, s2_state, symbol, timeframe)
                     if s2_signal:
                         signals_generated += 1
+                        signals_per_setup["S2"] += 1
                         time_stop = s2_signal.time_stop_bars
                         pending_entries.append({
                             "symbol": symbol,
@@ -761,15 +764,20 @@ class RunExecutor:
                         })
 
                 # ------ S3: RSI Divergence Reversal ------
-                if "S3" in active_setup_ids:
-                    import numpy as _np
-                    _rsi_series = feature_factory._rsi_series(
-                        _np.array([c.close for c in candle_history[key]]), 14
-                    )
-                    s3_state = s3_evaluator.compute_state(snapshot, _rsi_series)
-                    s3_signal = s3_evaluator.evaluate_trigger(snapshot, s3_state, symbol, timeframe)
+                if "S3" in active_setup_ids and len(candle_history[key]) >= 50:
+                    try:
+                        import numpy as _np
+                        _rsi_series = feature_factory._rsi_series(
+                            _np.array([c.close for c in candle_history[key]]), 14
+                        )
+                        s3_state = s3_evaluator.compute_state(snapshot, _rsi_series)
+                        s3_signal = s3_evaluator.evaluate_trigger(snapshot, s3_state, symbol, timeframe)
+                    except Exception as e:
+                        logger.debug(f"S3 backtest eval error {symbol}:{timeframe}: {e}")
+                        s3_signal = None
                     if s3_signal:
                         signals_generated += 1
+                        signals_per_setup["S3"] += 1
                         time_stop = s3_signal.time_stop_bars
                         div = s3_state.bullish_divergence or s3_state.bearish_divergence
                         pending_entries.append({
@@ -805,6 +813,7 @@ class RunExecutor:
                     s4_signal = s4_evaluator.evaluate_trigger(snapshot, s4_state, symbol, timeframe)
                     if s4_signal:
                         signals_generated += 1
+                        signals_per_setup["S4"] += 1
                         time_stop = s4_signal.time_stop_bars
                         pending_entries.append({
                             "symbol": symbol, "timeframe": timeframe,
@@ -834,11 +843,12 @@ class RunExecutor:
                         })
 
                 # ------ S5: S/R Breakout ------
-                if "S5" in active_setup_ids:
+                if "S5" in active_setup_ids and len(candle_history[key]) >= 50:
                     s5_state = s5_evaluator.compute_state(snapshot)
                     s5_signal = s5_evaluator.evaluate_trigger(snapshot, s5_state, symbol, timeframe)
                     if s5_signal:
                         signals_generated += 1
+                        signals_per_setup["S5"] += 1
                         time_stop = s5_signal.time_stop_bars
                         pending_entries.append({
                             "symbol": symbol, "timeframe": timeframe,
@@ -873,6 +883,7 @@ class RunExecutor:
                     s6_signal = s6_evaluator.evaluate_trigger(snapshot, s6_state, symbol, timeframe)
                     if s6_signal:
                         signals_generated += 1
+                        signals_per_setup["S6"] += 1
                         time_stop = s6_signal.time_stop_bars
                         pending_entries.append({
                             "symbol": symbol, "timeframe": timeframe,
@@ -908,6 +919,7 @@ class RunExecutor:
                     s7_signal = s7_evaluator.evaluate_trigger(snapshot, s7_state, symbol, timeframe)
                     if s7_signal:
                         signals_generated += 1
+                        signals_per_setup["S7"] += 1
                         time_stop = s7_signal.time_stop_bars
                         pending_entries.append({
                             "symbol": symbol, "timeframe": timeframe,
@@ -1001,7 +1013,8 @@ class RunExecutor:
                 f"{run.summary.win_rate:.1%} win rate, "
                 f"capital {starting_capital:.0f} -> {capital:.2f}, "
                 f"max DD {max_drawdown_pct:.1f}%, "
-                f"{signals_generated} signals generated"
+                f"{signals_generated} signals generated "
+                f"(per-setup: {signals_per_setup})"
             ),
         ))
 
