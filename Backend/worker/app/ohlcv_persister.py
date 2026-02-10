@@ -23,7 +23,7 @@ import redis
 import psycopg
 
 from cache_contract import (
-    get_candles, b2s, get_timeframes, is_cache_ready,
+    get_candles, b2s, get_timeframes, is_cache_ready, TF_SECONDS,
 )
 
 logger = logging.getLogger("ohlcv_persister")
@@ -80,6 +80,7 @@ class OHLCVPersister:
         self._counters = {
             "persisted": 0,
             "candle_miss": 0,
+            "backfill_skip": 0,
             "flush_count": 0,
             "flush_error": 0,
         }
@@ -142,9 +143,10 @@ class OHLCVPersister:
                 now = time.time()
                 if now - self._last_stats_log > 300:  # Every 5 min
                     logger.info(
-                        "stats persisted=%d candle_miss=%d flushes=%d flush_errors=%d buf=%d",
+                        "stats persisted=%d candle_miss=%d backfill_skip=%d flushes=%d flush_errors=%d buf=%d",
                         self._counters["persisted"],
                         self._counters["candle_miss"],
+                        self._counters["backfill_skip"],
                         self._counters["flush_count"],
                         self._counters["flush_error"],
                         len(self._buffer),
@@ -172,6 +174,15 @@ class OHLCVPersister:
             bar_start_ts_epoch = int(bar_start_ts_str)
         except (ValueError, TypeError):
             self.r.xack(stream_name, GROUP_NAME, msg_id)
+            return
+
+        # Skip historical backfill events (WS reconnect publishes old candle_closed
+        # events that can't match the ring buffer). Allow up to 10× timeframe age.
+        now_ms = int(time.time() * 1000)
+        max_age_ms = TF_SECONDS.get(tf, 60) * 1000 * 10
+        if now_ms - bar_start_ts_epoch > max_age_ms:
+            self.r.xack(stream_name, GROUP_NAME, msg_id)
+            self._counters["backfill_skip"] += 1
             return
 
         # Read recent candles from Redis ring buffer
