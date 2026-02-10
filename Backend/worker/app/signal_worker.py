@@ -26,7 +26,7 @@ from cache_contract import (
     b2s, b2f, symbol_partition, get_universe, get_timeframes,
     is_cache_ready, get_candles_as_ohlcv,
     SETUP_STATE_TTL_S, SIGNAL_MAX_AGE_S, RECONCILE_INTERVAL_S,
-    INDICATOR_HISTORY_SIZE,
+    INDICATOR_HISTORY_SIZE, TF_SECONDS,
     # Unicorn keys
     get_embryo_active_symbols, read_unicorn_state,
     unicorn_state_key, UNICORN_STATE_TTL_S,
@@ -505,9 +505,16 @@ class SignalWorker:
             snapshot, s6_state, symbol, tf,
         )
         if s6_signal:
-            if not self._btc_blocks_signal(btc_snapshot, s6_signal.direction, "S6", symbol, tf):
+            # Cooldown: suppress re-fire for same symbol/tf for time_stop_bars
+            s6_cd_key = f"cooldown:S6:{symbol}:{tf}"
+            if self.r.exists(s6_cd_key):
+                logger.debug("S6 cooldown active %s:%s", symbol, tf)
+            elif not self._btc_blocks_signal(btc_snapshot, s6_signal.direction, "S6", symbol, tf):
                 self._diag["s6_signal"] += 1
                 self._store_signal_from_evaluator(s6_signal, "S6", symbol, tf, snap_ts, snapshot)
+                # Set cooldown for 8 bars × timeframe seconds
+                cd_ttl = 8 * TF_SECONDS.get(tf, 3600)
+                self.r.set(s6_cd_key, "1", ex=cd_ttl)
         else:
             if s6_state.trend_direction == "none":
                 self._diag["s6_no_trend"] += 1

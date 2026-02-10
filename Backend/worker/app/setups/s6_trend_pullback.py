@@ -131,7 +131,7 @@ class S6Evaluator:
     def __init__(
         self,
         # Slope thresholds (ATR-normalised)
-        slope_min: float = _env_float("S6_SLOPE_MIN", 0.03),
+        slope_min: float = _env_float("S6_SLOPE_MIN", 0.05),
 
         # Trigger thresholds
         clv_th: float = _env_float("S6_CLV_TH", 0.65),
@@ -250,12 +250,9 @@ class S6Evaluator:
                 if c.high > snapshot.ema_50:
                     held_ema50 = False
 
-        # Also count inherited pullback from prev_state
-        if prev_state is not None and prev_state.pullback_detected:
-            touched_ema20 = True
-            if not prev_state.held_ema50:
-                held_ema50 = False
-
+        # Pullback must be fresh — detected within this lookback window only.
+        # No inheritance from prev_state (was causing S6 to re-fire every bar
+        # once a pullback was detected, flooding the signal list).
         pullback_detected = touched_ema20 and held_ema50
 
         # Reclaim: current bar closes back above/below EMA20
