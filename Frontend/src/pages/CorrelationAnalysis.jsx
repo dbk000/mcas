@@ -231,6 +231,12 @@ export default function CorrelationAnalysis() {
                   { value: '', label: 'All Setups' },
                   { value: 'S1', label: 'S1 (BB Squeeze)' },
                   { value: 'S2', label: 'S2 (Golden Cross)' },
+                  { value: 'S3', label: 'S3 (RSI Divergence)' },
+                  { value: 'S4', label: 'S4 (VWAP Reversion)' },
+                  { value: 'S5', label: 'S5 (S/R Breakout)' },
+                  { value: 'S6', label: 'S6 (Trend Pullback)' },
+                  { value: 'S7', label: 'S7 (Donchian Breakout)' },
+                  { value: 'U1', label: 'U1 (Unicorn Ignition)' },
                 ]}
                 className="w-40"
               />

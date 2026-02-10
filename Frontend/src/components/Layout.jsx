@@ -242,7 +242,7 @@ function QuickScanButton() {
     setLoading(true)
     try {
       const result = await post('/v1/control/runs/scan', {
-        setup_ids: ['S1', 'S2'],
+        setup_ids: ['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7'],
         top_n: 10,
         priority: 5,
       })
