@@ -365,6 +365,10 @@ class S1Evaluator:
             logger.debug("S1 gate:forming_candle %s %s (is_final=False)", symbol, timeframe)
             return None
 
+        # 5m disabled: insufficient win rate per simulation analysis
+        if timeframe == "5m":
+            return None
+
         # Preconditions (with diagnostic logging)
         if not state.squeeze_on:
             logger.debug("S1 gate:squeeze_off %s %s", symbol, timeframe)

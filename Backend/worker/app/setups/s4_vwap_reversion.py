@@ -60,7 +60,7 @@ _TF_SECONDS = {
 }
 
 # Intraday timeframes only
-_INTRADAY_TFS = {"1m", "5m", "15m", "1h"}
+_INTRADAY_TFS = {"1m", "15m", "1h"}
 
 
 @dataclass

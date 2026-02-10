@@ -79,6 +79,10 @@ class SimulationResult:
     # Audit trace (for correlation analysis)
     trace_json: Optional[dict] = None
 
+    # TP invalidation observability
+    tp_invalidated: bool = False
+    tp_invalidation_reason: Optional[str] = None
+
 
 class OpportunitySimulator:
     """
@@ -317,8 +321,6 @@ class OpportunitySimulator:
                 return result
 
         result.stop_price = stop_price
-        result.tp1_price = tp1_price
-        result.tp2_price = tp2_price
         result.r_value = r_value
 
         # Find the first bar after opportunity timestamp (NEXT_OPEN fill)
@@ -357,6 +359,31 @@ class OpportunitySimulator:
             result.data_available = False
             result.error_message = "R-value invalid after slippage"
             return result
+
+        # Guard: invalidate TP1/TP2 if on wrong side of actual entry
+        # (happens when next_bar_open gap pushes entry past signal's TP)
+        tp_invalidated = False
+        if direction == "long":
+            if tp1_price is not None and tp1_price <= entry_with_slip:
+                tp1_price = None
+                tp_invalidated = True
+            if tp2_price is not None and tp2_price <= entry_with_slip:
+                tp2_price = None
+                tp_invalidated = True
+        else:
+            if tp1_price is not None and tp1_price >= entry_with_slip:
+                tp1_price = None
+                tp_invalidated = True
+            if tp2_price is not None and tp2_price >= entry_with_slip:
+                tp2_price = None
+                tp_invalidated = True
+
+        if tp_invalidated:
+            result.tp_invalidated = True
+            result.tp_invalidation_reason = "WRONG_SIDE_AFTER_GAP"
+
+        result.tp1_price = tp1_price
+        result.tp2_price = tp2_price
 
         # Position sizing
         position_size = self.config.position_size_usd / entry_with_slip
@@ -458,6 +485,11 @@ class OpportunitySimulator:
 
         # Extract trace data from opportunity payload for correlation analysis
         result.trace_json = self._extract_trace_from_payload(payload, direction, exit_reason, bars_held)
+
+        # Merge TP invalidation into trace
+        if result.tp_invalidated and result.trace_json:
+            result.trace_json["tp_invalidated"] = True
+            result.trace_json["tp_invalidation_reason"] = result.tp_invalidation_reason
 
         return result
 
@@ -635,6 +667,9 @@ class OpportunitySimulator:
             reason = r.exit_reason or "UNKNOWN"
             exit_reasons[reason] = exit_reasons.get(reason, 0) + 1
 
+        # TP invalidation count
+        tp_invalidated_count = sum(1 for r in valid_results if r.tp_invalidated)
+
         return {
             "total_opportunities": len(results),
             "simulated_count": len(valid_results),
@@ -648,4 +683,5 @@ class OpportunitySimulator:
             "position_size_usd": position_size_usd,
             "per_setup": per_setup,
             "exit_reasons": exit_reasons,
+            "tp_invalidated_count": tp_invalidated_count,
         }

@@ -315,6 +315,10 @@ class S6Evaluator:
             logger.debug("S6 gate:forming_candle %s %s", symbol, timeframe)
             return None
 
+        # 5m disabled: insufficient win rate per simulation analysis
+        if timeframe == "5m":
+            return None
+
         if state.trend_direction == "none":
             logger.debug("S6 gate:no_trend %s %s", symbol, timeframe)
             return None
