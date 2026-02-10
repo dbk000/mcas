@@ -77,7 +77,7 @@ function QueueItem({ item, onCancel }) {
 // Scan form component
 function ScanForm({ onSubmit, loading, markets, timeframes }) {
   const [name, setName] = useState('')
-  const [setupIds, setSetupIds] = useState(['S1', 'S2'])
+  const [setupIds, setSetupIds] = useState(['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7'])
   const [topN, setTopN] = useState(10)
   const [priority, setPriority] = useState(0)
   
@@ -102,40 +102,32 @@ function ScanForm({ onSubmit, loading, markets, timeframes }) {
       </FormField>
       
       <FormField label="Setups">
-        <div className="flex gap-4">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={setupIds.includes('S1')}
-              onChange={(e) => {
-                if (e.target.checked) {
-                  setSetupIds([...setupIds, 'S1'])
-                } else {
-                  setSetupIds(setupIds.filter(s => s !== 'S1'))
-                }
-              }}
-              className="rounded border-terminal-600 bg-terminal-800 text-amber-500 focus:ring-amber-500"
-            />
-            <span className="text-sm">S1 (BB Squeeze)</span>
-          </label>
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={setupIds.includes('S2')}
-              onChange={(e) => {
-                if (e.target.checked) {
-                  setSetupIds([...setupIds, 'S2'])
-                } else {
-                  setSetupIds(setupIds.filter(s => s !== 'S2'))
-                }
-              }}
-              className="rounded border-terminal-600 bg-terminal-800 text-amber-500 focus:ring-amber-500"
-            />
-            <span className="text-sm">S2 (Golden Cross)</span>
-          </label>
+        <div className="flex flex-wrap gap-3">
+          {[
+            { id: 'S1', label: 'S1 (BB Squeeze)' },
+            { id: 'S2', label: 'S2 (Golden Cross)' },
+            { id: 'S3', label: 'S3 (RSI Divergence)' },
+            { id: 'S4', label: 'S4 (VWAP Reversion)' },
+            { id: 'S5', label: 'S5 (S/R Breakout)' },
+            { id: 'S6', label: 'S6 (Trend Pullback)' },
+            { id: 'S7', label: 'S7 (Donchian Breakout)' },
+          ].map(s => (
+            <label key={s.id} className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={setupIds.includes(s.id)}
+                onChange={(e) => {
+                  if (e.target.checked) setSetupIds([...setupIds, s.id])
+                  else setSetupIds(setupIds.filter(x => x !== s.id))
+                }}
+                className="rounded border-terminal-600 bg-terminal-800 text-amber-500 focus:ring-amber-500"
+              />
+              <span className="text-sm">{s.label}</span>
+            </label>
+          ))}
         </div>
       </FormField>
-      
+
       <div className="grid grid-cols-2 gap-4">
         <FormField label="Top N Signals" hint="Max signals to return">
           <Input
@@ -337,7 +329,7 @@ function BacktestForm({ onSubmit, loading, markets }) {
     d.setDate(d.getDate() - 1)
     return d.toISOString().slice(0, 10)
   })
-  const [setupIds, setSetupIds] = useState(['S1', 'S2'])
+  const [setupIds, setSetupIds] = useState(['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7'])
   const [slippageBps, setSlippageBps] = useState(5)
   const [feeBps, setFeeBps] = useState(10)
 
@@ -410,31 +402,21 @@ function BacktestForm({ onSubmit, loading, markets }) {
       />
 
       <FormField label="Setups">
-        <div className="flex gap-4">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={setupIds.includes('S1')}
-              onChange={(e) => {
-                if (e.target.checked) setSetupIds([...setupIds, 'S1'])
-                else setSetupIds(setupIds.filter(s => s !== 'S1'))
-              }}
-              className="rounded border-terminal-600 bg-terminal-800 text-amber-500 focus:ring-amber-500"
-            />
-            <span className="text-sm">S1</span>
-          </label>
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={setupIds.includes('S2')}
-              onChange={(e) => {
-                if (e.target.checked) setSetupIds([...setupIds, 'S2'])
-                else setSetupIds(setupIds.filter(s => s !== 'S2'))
-              }}
-              className="rounded border-terminal-600 bg-terminal-800 text-amber-500 focus:ring-amber-500"
-            />
-            <span className="text-sm">S2</span>
-          </label>
+        <div className="flex flex-wrap gap-3">
+          {['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7'].map(s => (
+            <label key={s} className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={setupIds.includes(s)}
+                onChange={(e) => {
+                  if (e.target.checked) setSetupIds([...setupIds, s])
+                  else setSetupIds(setupIds.filter(x => x !== s))
+                }}
+                className="rounded border-terminal-600 bg-terminal-800 text-amber-500 focus:ring-amber-500"
+              />
+              <span className="text-sm">{s}</span>
+            </label>
+          ))}
         </div>
       </FormField>
 
@@ -486,7 +468,7 @@ function BacktestForm({ onSubmit, loading, markets }) {
 // Paper trading form component
 function PaperForm({ onSubmit, onStop, loading, paperStatus }) {
   const [name, setName] = useState('')
-  const [setupIds, setSetupIds] = useState(['S1', 'S2'])
+  const [setupIds, setSetupIds] = useState(['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7'])
   const [initialCapital, setInitialCapital] = useState(10000)
   const [riskPerTrade, setRiskPerTrade] = useState(1.0)
   const [maxPositions, setMaxPositions] = useState(3)
@@ -556,34 +538,24 @@ function PaperForm({ onSubmit, onStop, loading, paperStatus }) {
       </FormField>
       
       <FormField label="Setups">
-        <div className="flex gap-4">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={setupIds.includes('S1')}
-              onChange={(e) => {
-                if (e.target.checked) setSetupIds([...setupIds, 'S1'])
-                else setSetupIds(setupIds.filter(s => s !== 'S1'))
-              }}
-              className="rounded border-terminal-600 bg-terminal-800 text-amber-500 focus:ring-amber-500"
-            />
-            <span className="text-sm">S1</span>
-          </label>
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={setupIds.includes('S2')}
-              onChange={(e) => {
-                if (e.target.checked) setSetupIds([...setupIds, 'S2'])
-                else setSetupIds(setupIds.filter(s => s !== 'S2'))
-              }}
-              className="rounded border-terminal-600 bg-terminal-800 text-amber-500 focus:ring-amber-500"
-            />
-            <span className="text-sm">S2</span>
-          </label>
+        <div className="flex flex-wrap gap-3">
+          {['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7'].map(s => (
+            <label key={s} className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={setupIds.includes(s)}
+                onChange={(e) => {
+                  if (e.target.checked) setSetupIds([...setupIds, s])
+                  else setSetupIds(setupIds.filter(x => x !== s))
+                }}
+                className="rounded border-terminal-600 bg-terminal-800 text-amber-500 focus:ring-amber-500"
+              />
+              <span className="text-sm">{s}</span>
+            </label>
+          ))}
         </div>
       </FormField>
-      
+
       <div className="grid grid-cols-3 gap-4">
         <FormField label="Initial Capital">
           <Input

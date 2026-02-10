@@ -261,6 +261,11 @@ export default function Opportunities() {
               { value: '', label: 'All Setups' },
               { value: 'S1', label: 'S1' },
               { value: 'S2', label: 'S2' },
+              { value: 'S3', label: 'S3' },
+              { value: 'S4', label: 'S4' },
+              { value: 'S5', label: 'S5' },
+              { value: 'S6', label: 'S6' },
+              { value: 'S7', label: 'S7' },
               { value: 'U1', label: 'U1' },
             ]}
             className="w-32"
@@ -396,6 +401,11 @@ export default function Opportunities() {
                     options={[
                       { value: 'S1', label: 'S1' },
                       { value: 'S2', label: 'S2' },
+                      { value: 'S3', label: 'S3' },
+                      { value: 'S4', label: 'S4' },
+                      { value: 'S5', label: 'S5' },
+                      { value: 'S6', label: 'S6' },
+                      { value: 'S7', label: 'S7' },
                       { value: 'U1', label: 'U1' },
                     ]}
                     placeholder="All"
