@@ -360,13 +360,15 @@ class OpportunitySimulator:
             result.error_message = "R-value invalid after slippage"
             return result
 
-        # Guard: invalidate TP1/TP2 if on wrong side of actual entry
+        # Guard 1: invalidate TP1/TP2 if on wrong side of actual entry
         # (happens when next_bar_open gap pushes entry past signal's TP)
         tp_invalidated = False
+        tp_reasons = []
         if direction == "long":
             if tp1_price is not None and tp1_price <= entry_with_slip:
                 tp1_price = None
                 tp_invalidated = True
+                tp_reasons.append("WRONG_SIDE")
             if tp2_price is not None and tp2_price <= entry_with_slip:
                 tp2_price = None
                 tp_invalidated = True
@@ -374,13 +376,36 @@ class OpportunitySimulator:
             if tp1_price is not None and tp1_price >= entry_with_slip:
                 tp1_price = None
                 tp_invalidated = True
+                tp_reasons.append("WRONG_SIDE")
             if tp2_price is not None and tp2_price >= entry_with_slip:
+                tp2_price = None
+                tp_invalidated = True
+
+        # Guard 2: invalidate TP1/TP2 if too close to entry to cover costs
+        # Minimum distance = exit slippage + round-trip fees (entry + exit)
+        min_tp_distance = entry_with_slip * (
+            self.config.slippage_exit_bps + 2 * self.config.fee_taker_bps
+        ) / 10000
+        if direction == "long":
+            if tp1_price is not None and (tp1_price - entry_with_slip) < min_tp_distance:
+                tp1_price = None
+                tp_invalidated = True
+                tp_reasons.append("BELOW_COST")
+            if tp2_price is not None and (tp2_price - entry_with_slip) < min_tp_distance:
+                tp2_price = None
+                tp_invalidated = True
+        else:
+            if tp1_price is not None and (entry_with_slip - tp1_price) < min_tp_distance:
+                tp1_price = None
+                tp_invalidated = True
+                tp_reasons.append("BELOW_COST")
+            if tp2_price is not None and (entry_with_slip - tp2_price) < min_tp_distance:
                 tp2_price = None
                 tp_invalidated = True
 
         if tp_invalidated:
             result.tp_invalidated = True
-            result.tp_invalidation_reason = "WRONG_SIDE_AFTER_GAP"
+            result.tp_invalidation_reason = "+".join(tp_reasons) if tp_reasons else "WRONG_SIDE"
 
         result.tp1_price = tp1_price
         result.tp2_price = tp2_price
