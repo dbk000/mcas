@@ -150,6 +150,19 @@ services:
     networks:
       - backend
 
+  ohlcv_persister:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      SERVICE_NAME: ohlcv_persister
+    command: ["python", "-u", "ohlcv_persister.py"]
+    networks:
+      - backend
+
 volumes:
   caddy_data:
   caddy_config:
