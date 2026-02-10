@@ -382,6 +382,11 @@ def store_indicators(r, symbol: str, tf: str, snapshot, bar_start_ts):
         pipe.rpush(vwap_hist_k, str(abs(snapshot.vwap_distance_atr)))
         pipe.ltrim(vwap_hist_k, -INDICATOR_HISTORY_SIZE, -1)
 
+    # RSI history (for S3 divergence pivot detection)
+    rsi_hist_k = ind_hist_key("rsi", symbol, tf)
+    pipe.rpush(rsi_hist_k, str(snapshot.rsi))
+    pipe.ltrim(rsi_hist_k, -INDICATOR_HISTORY_SIZE, -1)
+
     # 4. COMMIT MARKER — written LAST (invariant #16)
     pipe.hset(ind_meta_key(symbol, tf), mapping={
         "bar_start_ts": str(bar_start_ts),

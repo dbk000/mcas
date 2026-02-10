@@ -12,6 +12,7 @@ import os
 import sys
 import json
 import time
+import types
 import logging
 from dataclasses import dataclass, asdict
 
@@ -31,7 +32,7 @@ from cache_contract import (
     unicorn_state_key, UNICORN_STATE_TTL_S,
 )
 import numpy as np
-from indicators import IndicatorSnapshot, FeatureFactory
+from indicators import IndicatorSnapshot
 from setups import (
     S1Evaluator, S1Signal, S2Evaluator, S2Signal,
     S3Evaluator, S3Signal, S4Evaluator, S4Signal,
@@ -63,6 +64,18 @@ CONSUMER_NAME = f"sig-{WORKER_INDEX}"
 XREAD_BLOCK_MS = 5000
 XREAD_COUNT = 50
 PRUNE_INTERVAL_S = 300  # Prune stale signals every 5 min
+
+# Cross-setup score calibration (env-overridable)
+SETUP_SCORE_MULTIPLIERS = {
+    "S1": float(os.getenv("S1_SCORE_MULT", "1.0")),
+    "S2": float(os.getenv("S2_SCORE_MULT", "1.0")),
+    "S3": float(os.getenv("S3_SCORE_MULT", "0.85")),
+    "S4": float(os.getenv("S4_SCORE_MULT", "0.80")),
+    "S5": float(os.getenv("S5_SCORE_MULT", "1.05")),
+    "S6": float(os.getenv("S6_SCORE_MULT", "1.10")),
+    "S7": float(os.getenv("S7_SCORE_MULT", "0.95")),
+    "U1": float(os.getenv("U1_SCORE_MULT", "1.0")),
+}
 
 
 # ---------------------------------------------------------------------------
@@ -137,7 +150,6 @@ class SignalWorker:
         self.s6_evaluator = S6Evaluator()
         self.s7_evaluator = S7Evaluator()
         self.u1_evaluator = U1Evaluator()
-        self._ff = FeatureFactory()  # For RSI series computation (S3)
         self.last_reconcile = 0.0
         self.last_prune = 0.0
         # Per-worker consumer group: each worker instance gets ALL messages
@@ -147,8 +159,6 @@ class SignalWorker:
         # Cache of EMBRYO_ACTIVE symbols (refreshed periodically)
         self._embryo_active_cache: set[str] = set()
         self._embryo_active_cache_ts = 0.0
-        # S7 previous snapshot cache (for Donchian breakout comparison)
-        self._s7_prev_snap: dict[tuple[str, str], IndicatorSnapshot] = {}
         # Diagnostic counters (reset per logging cycle)
         self._diag = {
             "evaluated": 0, "snapshot_fail": 0, "candle_fail": 0,
@@ -161,8 +171,66 @@ class SignalWorker:
             "s5_signal": 0, "s5_no_break": 0,
             "s6_signal": 0, "s6_no_trend": 0,
             "s7_signal": 0, "s7_no_break": 0,
+            "btc_blocked": 0,
         }
         self._last_diag_log = 0.0
+
+    # ------------------------------------------------------------------
+    # BTC directional filter (S3-S7 only; S1/S2 have built-in BTC logic)
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _btc_bias(btc_snapshot) -> str:
+        """Classify BTC market bias from snapshot."""
+        if btc_snapshot is None:
+            return "neutral"
+        rsi = btc_snapshot.rsi if btc_snapshot.rsi else 50.0
+        slope = btc_snapshot.sma50_slope_atr if btc_snapshot.sma50_slope_atr else 0.0
+        if rsi < 35 and slope < -1.0:
+            return "bearish"
+        if rsi > 65 and slope > 1.0:
+            return "bullish"
+        return "neutral"
+
+    def _btc_blocks_signal(self, btc_snapshot, direction, setup_id: str,
+                           symbol: str, tf: str) -> bool:
+        """Return True if BTC bias contradicts the signal direction."""
+        bias = self._btc_bias(btc_snapshot)
+        if bias == "neutral":
+            return False
+        blocked = (
+            (bias == "bearish" and direction.value == "LONG") or
+            (bias == "bullish" and direction.value == "SHORT")
+        )
+        if blocked:
+            self._diag["btc_blocked"] += 1
+            logger.debug(
+                "BTC filter blocked %s %s %s:%s (btc_bias=%s)",
+                setup_id, direction.value, symbol, tf, bias,
+            )
+        return blocked
+
+    # ------------------------------------------------------------------
+    # Regime-aware score adjustment
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _regime_score_adjust(setup_id: str, snapshot) -> float:
+        """Return multiplier based on market regime (trending vs ranging)."""
+        slope = abs(snapshot.sma50_slope_atr) if snapshot.sma50_slope_atr else 0.0
+        if slope > 0.02:
+            # Trending regime: boost trend-following, penalize mean-reversion
+            if setup_id in ("S6", "S7"):
+                return 1.15
+            if setup_id == "S4":
+                return 0.75
+        elif slope < 0.005:
+            # Ranging regime: boost mean-reversion/breakout, penalize trend
+            if setup_id in ("S4", "S5"):
+                return 1.10
+            if setup_id == "S7":
+                return 0.80
+        return 1.0
 
     def run(self):
         """Main loop."""
@@ -368,18 +436,19 @@ class SignalWorker:
             else:
                 self._diag["s2_trigger_fail"] += 1
 
-        # Step 7: Run S3 evaluator (RSI Divergence)
-        if len(snapshot.ohlcv) >= 201:
+        # Step 7: Run S3 evaluator (RSI Divergence — reads RSI from Redis history)
+        rsi_history_raw = self.r.lrange(ind_hist_key("rsi", symbol, tf), 0, -1)
+        if len(rsi_history_raw) >= 50:  # S3 pivot_lookback minimum
             try:
-                closes = np.array([c.close for c in snapshot.ohlcv])
-                rsi_series = self._ff._rsi_series(closes, 14)
+                rsi_series = np.array([b2f(x) for x in rsi_history_raw])
                 s3_state = self.s3_evaluator.compute_state(snapshot, rsi_series)
                 s3_signal = self.s3_evaluator.evaluate_trigger(
                     snapshot, s3_state, symbol, tf,
                 )
                 if s3_signal:
-                    self._diag["s3_signal"] += 1
-                    self._store_signal_from_evaluator(s3_signal, "S3", symbol, tf, snap_ts)
+                    if not self._btc_blocks_signal(btc_snapshot, s3_signal.direction, "S3", symbol, tf):
+                        self._diag["s3_signal"] += 1
+                        self._store_signal_from_evaluator(s3_signal, "S3", symbol, tf, snap_ts, snapshot)
                 else:
                     if not s3_state.has_divergence:
                         self._diag["s3_no_div"] += 1
@@ -397,8 +466,9 @@ class SignalWorker:
                 snapshot, s4_state, symbol, tf,
             )
             if s4_signal:
-                self._diag["s4_signal"] += 1
-                self._store_signal_from_evaluator(s4_signal, "S4", symbol, tf, snap_ts)
+                if not self._btc_blocks_signal(btc_snapshot, s4_signal.direction, "S4", symbol, tf):
+                    self._diag["s4_signal"] += 1
+                    self._store_signal_from_evaluator(s4_signal, "S4", symbol, tf, snap_ts, snapshot)
             else:
                 if not (s4_state.extended_above or s4_state.extended_below):
                     self._diag["s4_not_extended"] += 1
@@ -410,8 +480,9 @@ class SignalWorker:
                 snapshot, s5_state, symbol, tf,
             )
             if s5_signal:
-                self._diag["s5_signal"] += 1
-                self._store_signal_from_evaluator(s5_signal, "S5", symbol, tf, snap_ts)
+                if not self._btc_blocks_signal(btc_snapshot, s5_signal.direction, "S5", symbol, tf):
+                    self._diag["s5_signal"] += 1
+                    self._store_signal_from_evaluator(s5_signal, "S5", symbol, tf, snap_ts, snapshot)
             else:
                 self._diag["s5_no_break"] += 1
 
@@ -434,24 +505,44 @@ class SignalWorker:
             snapshot, s6_state, symbol, tf,
         )
         if s6_signal:
-            self._diag["s6_signal"] += 1
-            self._store_signal_from_evaluator(s6_signal, "S6", symbol, tf, snap_ts)
+            if not self._btc_blocks_signal(btc_snapshot, s6_signal.direction, "S6", symbol, tf):
+                self._diag["s6_signal"] += 1
+                self._store_signal_from_evaluator(s6_signal, "S6", symbol, tf, snap_ts, snapshot)
         else:
             if s6_state.trend_direction == "none":
                 self._diag["s6_no_trend"] += 1
 
         # Step 11: Run S7 evaluator (Momentum Breakout Donchian)
-        key_s7 = (symbol, tf)
-        prev_snap_s7 = self._s7_prev_snap.get(key_s7)
+        # Read previous Donchian values from Redis (not in-memory — avoids
+        # ~1800 IndicatorSnapshot objects leaking RAM)
+        s7_state_k = setup_state_key("S7", symbol, tf)
+        prev_s7_raw = self.r.get(s7_state_k)
+        prev_snap_s7 = None
+        if prev_s7_raw:
+            try:
+                d = json.loads(b2s(prev_s7_raw))
+                prev_snap_s7 = types.SimpleNamespace(
+                    donchian_high_20=d.get("prev_don_high"),
+                    donchian_low_20=d.get("prev_don_low"),
+                )
+            except Exception:
+                pass
+
         s7_state = self.s7_evaluator.compute_state(snapshot, prev_snap_s7)
-        self._s7_prev_snap[key_s7] = snapshot  # Save for next bar
+
+        # Store current Donchian values for next bar
+        self.r.set(s7_state_k, json.dumps({
+            "prev_don_high": snapshot.donchian_high_20,
+            "prev_don_low": snapshot.donchian_low_20,
+        }), ex=SETUP_STATE_TTL_S)
 
         s7_signal = self.s7_evaluator.evaluate_trigger(
             snapshot, s7_state, symbol, tf,
         )
         if s7_signal:
-            self._diag["s7_signal"] += 1
-            self._store_signal_from_evaluator(s7_signal, "S7", symbol, tf, snap_ts)
+            if not self._btc_blocks_signal(btc_snapshot, s7_signal.direction, "S7", symbol, tf):
+                self._diag["s7_signal"] += 1
+                self._store_signal_from_evaluator(s7_signal, "S7", symbol, tf, snap_ts, snapshot)
         else:
             if not (s7_state.long_breakout or s7_state.short_breakout):
                 self._diag["s7_no_break"] += 1
@@ -623,14 +714,26 @@ class SignalWorker:
             logger.debug(f"Postgres expire stale signals failed: {e}")
 
     def _store_signal_from_evaluator(self, signal, setup_id: str,
-                                      symbol: str, tf: str, bar_start_ts: str):
-        """Convert evaluator signal to payload and store in Redis + Postgres."""
+                                      symbol: str, tf: str, bar_start_ts: str,
+                                      snapshot=None):
+        """Convert evaluator signal to payload and store in Redis + Postgres.
+
+        Applies cross-setup score calibration (SETUP_SCORE_MULTIPLIERS) and
+        regime-aware adjustment before storage, capped at 1.0.
+        """
+        # Score calibration: setup multiplier × regime multiplier, capped
+        raw_score = signal.setup_score
+        calib_mult = SETUP_SCORE_MULTIPLIERS.get(setup_id, 1.0)
+        regime_mult = self._regime_score_adjust(setup_id, snapshot) if snapshot else 1.0
+        calibrated_score = min(raw_score * calib_mult * regime_mult, 1.0)
+
         payload = {
             "setup_id": setup_id,
             "symbol": symbol,
             "timeframe": tf,
             "direction": signal.direction.value,
-            "setup_score": signal.setup_score,
+            "setup_score": calibrated_score,
+            "raw_score": raw_score,
             "entry_price": signal.entry_price,
             "stop_price": signal.stop_price,
             "tp1_price": signal.tp1_price,
@@ -647,17 +750,18 @@ class SignalWorker:
         store_signal(
             self.r, symbol, tf, setup_id,
             signal_payload=payload,
-            setup_score=signal.setup_score,
+            setup_score=calibrated_score,
             bar_start_ts=bar_start_ts,
         )
 
         # Persist to Postgres for durability (expired filter)
         reason = "; ".join(signal.explain.why_items) if signal.explain else None
-        self._persist_signal_to_pg(symbol, tf, setup_id, signal.setup_score, reason, payload)
+        self._persist_signal_to_pg(symbol, tf, setup_id, calibrated_score, reason, payload)
 
         logger.info(
             f"Signal: {setup_id} {signal.direction.value} {symbol}:{tf} "
-            f"score={signal.setup_score:.3f}"
+            f"score={calibrated_score:.3f} (raw={raw_score:.3f} "
+            f"calib={calib_mult:.2f} regime={regime_mult:.2f})"
         )
 
     def _reconcile(self):

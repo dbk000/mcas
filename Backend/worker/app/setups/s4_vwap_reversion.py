@@ -194,7 +194,24 @@ class S4Evaluator:
         extended_below = vwap_dist < -self.extension_threshold_atr
 
         # Extension percentile
-        extension_pctile = percentile_rank(abs_dist, vwap_distance_history) if vwap_distance_history else 50.0
+        if len(vwap_distance_history) >= 20:
+            extension_pctile = percentile_rank(abs_dist, vwap_distance_history)
+        elif vwap_distance_history:
+            # Warm-up phase: not enough history for reliable percentile,
+            # use ATR-based heuristic so S4 isn't dead on cold start
+            extension_pctile = percentile_rank(abs_dist, vwap_distance_history)
+        else:
+            # No history at all — ATR-based heuristic
+            if abs_dist >= 3.0:
+                extension_pctile = 95.0
+            elif abs_dist >= 2.5:
+                extension_pctile = 90.0
+            elif abs_dist >= 2.0:
+                extension_pctile = 80.0
+            elif abs_dist >= 1.5:
+                extension_pctile = 60.0
+            else:
+                extension_pctile = 40.0
 
         # Momentum fading: RSI slope reverting toward 50
         # If price is extended above (bullish), momentum fading = RSI slope < 0 (turning down)
