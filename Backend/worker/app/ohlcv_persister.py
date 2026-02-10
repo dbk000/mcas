@@ -105,7 +105,7 @@ class OHLCVPersister:
         for tf in timeframes:
             stream = f"stream:candle_closed:{tf}"
             try:
-                self.r.xgroup_create(stream, GROUP_NAME, id="0", mkstream=True)
+                self.r.xgroup_create(stream, GROUP_NAME, id="$", mkstream=True)
                 logger.info("Created consumer group %s on %s", GROUP_NAME, stream)
             except Exception as e:
                 if "BUSYGROUP" not in str(e):
