@@ -526,3 +526,28 @@ Top Recurring Checks:
 
 10. Is OHLCV data stored by market (exchange+pair) and timeframe (not just by asset)? (OHLCV Data Attributed to Assets Instead of Markets)
 
+2026-02-10 — Heredoc Piping to Docker Exec Hangs [RUNTIME]
+  **Symptom:**
+  - Commands using `<<'EOF'` heredocs piped into `docker compose exec` (for psql, redis-cli, etc.) hang indefinitely, showing a `>` prompt and never executing.
+  - Happened multiple times: once with psql for migrations, once with redis-cli for XGROUP commands.
+
+  **Why it's wrong:** `docker compose exec` does not reliably consume stdin from shell heredocs. The heredoc content is never delivered to the container process, causing it to block waiting for input. This wastes deploy cycles and requires Ctrl+C recovery.
+
+  **Rule:** NEVER use heredocs (`<<EOF`) with `docker compose exec`. Instead:
+  - For **single SQL/Redis commands**: use `docker compose exec -T <service> <cli> -c "COMMAND"` (one command per invocation).
+  - For **multi-line SQL**: pipe via `< file.sql` using `-T` flag, e.g., `docker compose exec -T postgres psql -U trading -d trading < file.sql`.
+  - For **multiple commands**: run each as a separate `docker compose exec -T ... -c "..."` invocation.
+
+  **Checklist:** Do all `docker compose exec` commands avoid heredocs and use `-c` flags or file piping with `-T` instead?
+
+2026-02-10 — Binance bar_start_ts is Milliseconds Not Seconds [DATA]
+  **Symptom:**
+  - `datetime.fromtimestamp(bar_start_ts)` threw `ValueError: year 57303 is out of range` because Binance timestamps are epoch milliseconds (e.g., `1739125800000`), not seconds.
+  - The error was uncaught in `_process_event()`, bubbling to the main loop, so affected messages were never ACKed — causing infinite retry loops.
+
+  **Why it's wrong:** Treating millisecond timestamps as seconds produces dates ~50,000 years in the future. The uncaught exception also prevented ACK, turning a data bug into a liveness issue.
+
+  **Rule:** All Binance `bar_start_ts` values are in **epoch milliseconds**. When converting to Python `datetime`, always divide by 1000: `datetime.fromtimestamp(ts / 1000, tz=timezone.utc)`. When comparing against Redis ring buffer candle dicts, compare raw values directly (both are ms). Add a guard comment `# Binance ms epoch` at conversion points.
+
+  **Checklist:** Are all Binance timestamp conversions to datetime dividing by 1000? Are comparison paths using consistent units (ms-to-ms)?
+
