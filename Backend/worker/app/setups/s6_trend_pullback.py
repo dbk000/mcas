@@ -223,18 +223,25 @@ class S6Evaluator:
         else:
             trend_strength = 0.0
 
-        # Pullback detection: check last N bars for touch of EMA20
+        # Pullback detection: need a real dip-then-reclaim pattern.
+        # Require at least one bar ABOVE EMA20 followed by a bar that
+        # touches/crosses EMA20 (actual pullback, not price hugging EMA).
         candles = snapshot.ohlcv
         n = min(self.pullback_lookback, len(candles) - 1)
         lookback_candles = candles[-(n + 1):-1]  # Exclude current bar
 
         touched_ema20 = False
+        had_separation = False  # Was price clearly away from EMA20 before touch?
         held_ema50 = True
         retrace_depth_atr = 0.0
         atr = snapshot.atr
+        min_retrace_atr = 0.3  # Minimum pullback depth to qualify
 
         if trend_direction == "long":
             for c in lookback_candles:
+                # Check if bar was clearly above EMA20 (separation before pullback)
+                if c.low > snapshot.ema_20 + 0.1 * atr:
+                    had_separation = True
                 if c.low <= snapshot.ema_20:
                     touched_ema20 = True
                     depth = (snapshot.ema_20 - c.low) / atr if atr > 0 else 0
@@ -243,6 +250,8 @@ class S6Evaluator:
                     held_ema50 = False
         elif trend_direction == "short":
             for c in lookback_candles:
+                if c.high < snapshot.ema_20 - 0.1 * atr:
+                    had_separation = True
                 if c.high >= snapshot.ema_20:
                     touched_ema20 = True
                     depth = (c.high - snapshot.ema_20) / atr if atr > 0 else 0
@@ -250,10 +259,12 @@ class S6Evaluator:
                 if c.high > snapshot.ema_50:
                     held_ema50 = False
 
-        # Pullback must be fresh — detected within this lookback window only.
-        # No inheritance from prev_state (was causing S6 to re-fire every bar
-        # once a pullback was detected, flooding the signal list).
-        pullback_detected = touched_ema20 and held_ema50
+        pullback_detected = (
+            touched_ema20
+            and held_ema50
+            and had_separation
+            and retrace_depth_atr >= min_retrace_atr
+        )
 
         # Reclaim: current bar closes back above/below EMA20
         current = candles[-1]
@@ -266,9 +277,9 @@ class S6Evaluator:
 
         htf_bias, htf_bias_score = self._htf_bias(snapshot)
         if trend_direction == "long":
-            htf_aligned = htf_bias in ("long", "neutral")
+            htf_aligned = htf_bias == "long"  # Must confirm, not just "not oppose"
         elif trend_direction == "short":
-            htf_aligned = htf_bias in ("short", "neutral")
+            htf_aligned = htf_bias == "short"
         else:
             htf_aligned = False
 
@@ -318,6 +329,11 @@ class S6Evaluator:
 
         if not state.htf_aligned:
             logger.debug("S6 gate:htf_oppose %s %s htf=%s", symbol, timeframe, state.htf_bias)
+            return None
+
+        if state.retrace_depth_atr < 0.3:
+            logger.debug("S6 gate:shallow_pullback %s %s depth=%.2f",
+                         symbol, timeframe, state.retrace_depth_atr)
             return None
 
         current = snapshot.ohlcv[-1]
