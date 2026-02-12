@@ -155,10 +155,11 @@ class RunExecutor:
         setup_ids: list[str] = None,
         name: Optional[str] = None,
         notes: Optional[str] = None,
+        top_n: int = 50,
     ) -> Run:
         """Create a new SCAN run."""
         setup_ids = setup_ids or ["S1", "S2", "S3", "S4", "S5", "S6", "S7"]
-        
+
         run = Run(
             run_type=RunType.SCAN,
             name=name or f"scan_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}",
@@ -171,7 +172,7 @@ class RunExecutor:
             strategy=StrategySpec(
                 setup_id=",".join(setup_ids),
                 setup_version="v2.0",
-                setup_params={"setup_ids": setup_ids, "top_n": 10},
+                setup_params={"setup_ids": setup_ids, "top_n": top_n},
             ),
             data=DataSpec(
                 data_source="binance_rest",
