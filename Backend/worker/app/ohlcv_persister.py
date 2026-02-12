@@ -17,6 +17,7 @@ import os
 import sys
 import time
 import logging
+import threading
 from datetime import datetime, timezone, date
 
 import redis
@@ -24,7 +25,9 @@ import psycopg
 
 from cache_contract import (
     get_candles, b2s, get_timeframes, is_cache_ready, TF_SECONDS,
+    get_known_universe,
 )
+from ohlcv_backfill import backfill_startup_recovery, backfill_recent_gaps
 
 logger = logging.getLogger("ohlcv_persister")
 
@@ -77,6 +80,7 @@ class OHLCVPersister:
         self._pending_acks = []    # List of (stream_name, msg_id)
         self._buffer_start = 0.0   # time.time() when first item was buffered
         self._last_prune_date = None
+        self._last_heal_time = 0.0  # time.time() of last hourly healing
         self._counters = {
             "persisted": 0,
             "candle_miss": 0,
@@ -96,6 +100,9 @@ class OHLCVPersister:
             time.sleep(5)
 
         logger.info("Cache ready, starting stream consumption")
+
+        # Launch startup recovery in a daemon thread (advisory-locked)
+        self._launch_startup_recovery()
 
         timeframes = get_timeframes(self.r)
         if not timeframes:
@@ -138,6 +145,9 @@ class OHLCVPersister:
 
                 # Daily retention prune
                 self._daily_retention()
+
+                # Hourly gap healing (advisory-locked, daemon thread)
+                self._maybe_heal_gaps()
 
                 # Periodic stats
                 now = time.time()
@@ -271,6 +281,52 @@ class OHLCVPersister:
         self._buffer.clear()
         self._pending_acks.clear()
         self._buffer_start = 0.0
+
+    def _get_backfill_symbols_and_timeframes(self):
+        """Get current known universe symbols and active timeframes."""
+        symbols = list(get_known_universe(self.r))
+        timeframes = get_timeframes(self.r)
+        if not timeframes:
+            timeframes = ["1m", "5m", "15m", "1h", "4h", "1d"]
+        return symbols, timeframes
+
+    def _launch_startup_recovery(self):
+        """Launch startup recovery in a daemon thread."""
+        def _run():
+            try:
+                symbols, timeframes = self._get_backfill_symbols_and_timeframes()
+                if not symbols:
+                    logger.warning("Startup recovery: no symbols in known universe, skipping")
+                    return
+                logger.info(
+                    "Startup recovery: checking %d symbols × %d timeframes",
+                    len(symbols), len(timeframes),
+                )
+                backfill_startup_recovery(DATABASE_URL, symbols, timeframes)
+            except Exception as e:
+                logger.error("Startup recovery failed: %s", e, exc_info=True)
+
+        t = threading.Thread(target=_run, name="backfill-startup", daemon=True)
+        t.start()
+
+    def _maybe_heal_gaps(self):
+        """Launch hourly gap healing in a daemon thread if due."""
+        now = time.time()
+        if now - self._last_heal_time < 3600:
+            return
+        self._last_heal_time = now
+
+        def _run():
+            try:
+                symbols, timeframes = self._get_backfill_symbols_and_timeframes()
+                if not symbols:
+                    return
+                backfill_recent_gaps(DATABASE_URL, symbols, timeframes)
+            except Exception as e:
+                logger.error("Hourly healing failed: %s", e, exc_info=True)
+
+        t = threading.Thread(target=_run, name="backfill-heal", daemon=True)
+        t.start()
 
     def _daily_retention(self):
         """Prune old WS candles once per calendar day."""

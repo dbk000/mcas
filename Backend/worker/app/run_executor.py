@@ -1058,12 +1058,18 @@ class RunExecutor:
                 for symbol in run.universe.assets:
                     for tf in run.universe.timeframes:
                         cur.execute("""
-                            SELECT bar_start_ts, open, high, low, close, volume
+                            SELECT DISTINCT ON (bar_start_ts)
+                                   bar_start_ts, open, high, low, close, volume
                             FROM ohlcv
                             WHERE symbol = %s AND timeframe = %s
-                            AND bar_start_ts >= %s AND bar_start_ts <= %s
-                            AND is_final = TRUE
-                            ORDER BY bar_start_ts;
+                              AND bar_start_ts >= %s AND bar_start_ts <= %s
+                              AND is_final = TRUE
+                            ORDER BY bar_start_ts,
+                                     CASE source
+                                         WHEN 'ws' THEN 0
+                                         WHEN 'binance' THEN 1
+                                         ELSE 2
+                                     END;
                         """, (symbol, tf, start_ts, end_ts))
 
                         rows = cur.fetchall()
@@ -1545,6 +1551,14 @@ class RunExecutor:
         )
 
         results = simulator.simulate_batch(opportunities, run.id)
+
+        # Log degraded run warning if pre-sim backfill failed
+        if getattr(simulator, '_backfill_degraded', False):
+            self.repo.add_event(RunEvent(
+                run_id=run.id,
+                event_type="WARNING",
+                message="Pre-sim OHLCV backfill failed — results may have gaps",
+            ))
 
         # Compute summary statistics
         summary_stats = simulator.compute_summary(results, position_size_usd)

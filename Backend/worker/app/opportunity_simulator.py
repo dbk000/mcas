@@ -13,6 +13,7 @@ Uses batch OHLCV loading to avoid rate limits and shared exit_checker
 module to ensure exit logic consistency with BACKTEST/PAPER runs.
 """
 
+import os
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime, timezone, timedelta
@@ -22,6 +23,7 @@ import uuid
 import psycopg
 
 from exit_checker import check_exit_simple
+from ohlcv_backfill import backfill_for_simulation
 
 logger = logging.getLogger(__name__)
 
@@ -124,6 +126,14 @@ class OpportunitySimulator:
         # Group by (symbol, timeframe) and compute OHLCV date ranges needed
         symbol_tf_ranges = self._compute_ohlcv_ranges(opportunities)
 
+        # Pre-sim backfill: fill any OHLCV gaps before loading
+        self._backfill_degraded = False
+        try:
+            backfill_for_simulation(self.database_url, symbol_tf_ranges)
+        except Exception as e:
+            logger.warning("Pre-sim backfill failed (continuing with existing data): %s", e)
+            self._backfill_degraded = True
+
         # Batch load OHLCV data
         ohlcv_cache = self._batch_load_ohlcv(symbol_tf_ranges)
 
@@ -208,12 +218,18 @@ class OpportunitySimulator:
                     symbol, tf = key.rsplit("_", 1)
 
                     cur.execute("""
-                        SELECT bar_start_ts, open, high, low, close, volume
+                        SELECT DISTINCT ON (bar_start_ts)
+                               bar_start_ts, open, high, low, close, volume
                         FROM ohlcv
                         WHERE symbol = %s AND timeframe = %s
-                        AND bar_start_ts >= %s AND bar_start_ts <= %s
-                        AND is_final = TRUE
-                        ORDER BY bar_start_ts;
+                          AND bar_start_ts >= %s AND bar_start_ts < %s
+                          AND is_final = TRUE
+                        ORDER BY bar_start_ts,
+                                 CASE source
+                                     WHEN 'ws' THEN 0
+                                     WHEN 'binance' THEN 1
+                                     ELSE 2
+                                 END;
                     """, (symbol, tf, start_ts, end_ts))
 
                     rows = cur.fetchall()
