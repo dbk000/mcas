@@ -1501,7 +1501,7 @@ class RunExecutor:
         setup_ids = setup_params.get("setup_ids")  # Optional filter
         min_score = setup_params.get("min_score", 0.0)
         max_age_hours = setup_params.get("max_age_hours")
-        limit = setup_params.get("limit", 500)
+        limit = setup_params.get("limit", 5000)
         setup_version = setup_params.get("setup_version")  # Backfill filter
         batch_id = setup_params.get("batch_id")  # Backfill batch filter
         timeframes = setup_params.get("timeframes")  # Timeframe filter
@@ -1653,31 +1653,16 @@ class RunExecutor:
                 where_clause = " AND ".join(conditions)
                 params.append(limit)
 
-                # When filtering by setup_version or batch_id (backfill mode),
-                # return all matching rows — each is a distinct triggered signal
-                # at a different point in time. Without these filters (live mode),
-                # dedup to one per (symbol, tf, setup_id) for Canon concurrency.
-                if setup_version or batch_id:
-                    cur.execute(f"""
-                        SELECT id, created_ts, symbol, timeframe, setup_id,
-                               decision, score, reason, payload_json
-                        FROM opportunities
-                        WHERE {where_clause}
-                        ORDER BY created_ts ASC
-                        LIMIT %s;
-                    """, params)
-                else:
-                    # Legacy dedup: one opportunity per (symbol, tf, setup_id).
-                    # Takes the highest-scored row for each combo.
-                    cur.execute(f"""
-                        SELECT DISTINCT ON (symbol, timeframe, setup_id)
-                               id, created_ts, symbol, timeframe, setup_id,
-                               decision, score, reason, payload_json
-                        FROM opportunities
-                        WHERE {where_clause}
-                        ORDER BY symbol, timeframe, setup_id, score DESC, created_ts DESC
-                        LIMIT %s;
-                    """, params)
+                # Every expired opportunity is a distinct historical event —
+                # simulation needs all of them for real expectancy stats.
+                cur.execute(f"""
+                    SELECT id, created_ts, symbol, timeframe, setup_id,
+                           decision, score, reason, payload_json
+                    FROM opportunities
+                    WHERE {where_clause}
+                    ORDER BY created_ts ASC
+                    LIMIT %s;
+                """, params)
 
                 rows = cur.fetchall()
                 for row in rows:

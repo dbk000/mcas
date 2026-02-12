@@ -139,7 +139,7 @@ class SimulationRunRequest(BaseModel):
     setup_ids: Optional[list[str]] = None  # Filter by S1, S2, U1
     min_score: float = Field(default=0.0, ge=0)
     max_age_hours: Optional[int] = Field(default=None, ge=1)  # How far back to look
-    limit: int = Field(default=500, ge=1, le=10000)
+    limit: int = Field(default=5000, ge=1, le=10000)
     slippage_bps: float = Field(default=5.0, ge=0, le=50)
     setup_version: Optional[str] = None  # Filter by setup version (e.g. 'S1_v2.2')
     batch_id: Optional[str] = None  # Filter by backfill batch ID
