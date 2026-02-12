@@ -97,7 +97,7 @@ def load_ohlcv_from_db(
     params = []
 
     if days:
-        conditions.append("bar_start_ts >= NOW() - INTERVAL '%s days'")
+        conditions.append("bar_start_ts >= NOW() - %s * INTERVAL '1 day'")
         params.append(days)
 
     if symbols:
@@ -109,6 +109,7 @@ def load_ohlcv_from_db(
         params.append(timeframes)
 
     where_clause = " AND ".join(conditions)
+    logger.info(f"OHLCV query: WHERE {where_clause} | params={params}")
 
     data = defaultdict(list)
 
