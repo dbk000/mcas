@@ -340,8 +340,30 @@ class OpportunitySimulator:
             result.error_message = "No bar found after opportunity timestamp"
             return result
 
-        # Entry at next bar's open (NEXT_OPEN fill model)
+        # Reject if first available bar is too far from signal creation.
+        # Max 3 bars of staleness — beyond that the setup thesis is stale.
+        tf_delta = {
+            "1m": timedelta(minutes=1), "5m": timedelta(minutes=5),
+            "15m": timedelta(minutes=15), "30m": timedelta(minutes=30),
+            "1h": timedelta(hours=1), "4h": timedelta(hours=4),
+            "1d": timedelta(days=1),
+        }
+        bar_duration = tf_delta.get(timeframe, timedelta(hours=1))
+        max_entry_delay = bar_duration * 3
         entry_bar = bars[entry_bar_idx]
+        entry_bar_ts = entry_bar["bar_start_ts"]
+        if entry_bar_ts.tzinfo is None:
+            entry_bar_ts = entry_bar_ts.replace(tzinfo=timezone.utc)
+        entry_delay = entry_bar_ts - opp_ts
+        if entry_delay > max_entry_delay:
+            result.data_available = False
+            result.error_message = (
+                f"No OHLCV data near signal time "
+                f"(first bar {entry_delay} after signal, max {max_entry_delay})"
+            )
+            return result
+
+        # Entry at next bar's open (NEXT_OPEN fill model)
         actual_entry_price = entry_bar["open"]
 
         # Apply entry slippage
