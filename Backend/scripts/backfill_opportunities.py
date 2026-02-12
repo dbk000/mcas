@@ -39,7 +39,11 @@ if os.path.exists(env_path):
                 os.environ.setdefault(key.strip(), val.strip())
 
 # Add worker/app to path for imports
+# In Docker: script at /scripts/, worker code at /app/
+# On host: script at Backend/scripts/, worker code at Backend/worker/app/
 worker_app_dir = os.path.join(os.path.dirname(__file__), '..', 'worker', 'app')
+if os.path.isdir('/app') and os.path.exists('/app/indicators.py'):
+    worker_app_dir = '/app'
 sys.path.insert(0, os.path.abspath(worker_app_dir))
 
 # Also add setups dir
