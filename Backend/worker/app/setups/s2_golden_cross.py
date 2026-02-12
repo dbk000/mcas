@@ -159,8 +159,8 @@ class S2Evaluator:
         slope200_min: float = 0.0,
 
         # Confirmation thresholds (canonical defaults: 0.65/1.0)
-        clv_th: float = _env_float("S2_CLV_TH", 0.70),
-        volume_z_min: float = _env_float("S2_VOLUME_Z_MIN", 2.0),
+        clv_th: float = _env_float("S2_CLV_TH", 0.65),
+        volume_z_min: float = _env_float("S2_VOLUME_Z_MIN", 1.0),
         
         # Stops
         stop_atr_buffer: float = 1.0,
