@@ -158,7 +158,7 @@ class RunExecutor:
         top_n: int = None,
     ) -> Run:
         """Create a new SCAN run."""
-        setup_ids = setup_ids or ["S1", "S2", "S3", "S4", "S5", "S6", "S7"]
+        setup_ids = setup_ids or ["S1", "S2", "S3", "S4", "S5", "S6", "S7", "U1"]
 
         run = Run(
             run_type=RunType.SCAN,
@@ -349,7 +349,7 @@ class RunExecutor:
 
         # Determine which setups to run
         setup_params = run.strategy.setup_params or {}
-        active_setup_ids = set(setup_params.get("setup_ids", ["S1", "S2", "S3", "S4", "S5", "S6", "S7"]))
+        active_setup_ids = set(setup_params.get("setup_ids", ["S1", "S2", "S3", "S4", "S5", "S6", "S7", "U1"]))
 
         # =====================================================================
         # P0-4: Virtual account
@@ -395,7 +395,7 @@ class RunExecutor:
         closed_trades: list[dict] = []
         total_bars = 0
         signals_generated = 0
-        signals_per_setup = {s: 0 for s in ["S1", "S2", "S3", "S4", "S5", "S6", "S7"]}
+        signals_per_setup = {s: 0 for s in ["S1", "S2", "S3", "S4", "S5", "S6", "S7", "U1"]}
         skip_counters = {"max_positions": 0, "one_per_asset": 0, "circuit_breaker": 0, "invalid_r_value": 0, "position_size_zero": 0}
 
         # Collect all unique timestamps and sort

@@ -790,7 +790,7 @@ class SignalWorker:
                         continue
 
                     reeval_needed = False
-                    for setup_id in ["S1", "S2", "S3", "S4", "S5", "S6", "S7"]:
+                    for setup_id in ["S1", "S2", "S3", "S4", "S5", "S6", "S7", "U1"]:
                         sig_ts = b2f(self.r.hget(
                             sig_meta_key(symbol, tf, setup_id), "bar_start_ts"
                         ))

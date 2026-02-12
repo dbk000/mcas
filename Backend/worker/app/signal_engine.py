@@ -814,7 +814,7 @@ class SignalEngine:
             if is_cache_ready(self.redis_client):
                 cached = get_top_signals(
                     self.redis_client,
-                    setup_ids=["S1", "S2", "S3", "S4", "S5", "S6", "S7"],
+                    setup_ids=["S1", "S2", "S3", "S4", "S5", "S6", "S7", "U1"],
                     timeframes=self.timeframes,
                     top_n=self.top_n or 9999,
                 )
