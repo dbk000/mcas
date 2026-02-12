@@ -244,7 +244,7 @@ class SignalEngine:
         self,
         symbols: list[str],
         timeframes: list[str],
-        top_n: int = 3,
+        top_n: int = None,
         source: str = "rest",
         redis_client=None,
         run_id: str = None,
@@ -816,7 +816,7 @@ class SignalEngine:
                     self.redis_client,
                     setup_ids=["S1", "S2", "S3", "S4", "S5", "S6", "S7"],
                     timeframes=self.timeframes,
-                    top_n=self.top_n,
+                    top_n=self.top_n or 9999,
                 )
                 if cached:
                     logger.info("Scan using pre-computed Redis signals", extra={
@@ -931,8 +931,8 @@ class SignalEngine:
                 deduplicated.append(sig)
                 seen_symbols.add(sig.symbol)
         
-        # Canon §1.9: log RANK_CHANGE for each signal in the top-N
-        top_n_signals = deduplicated[:self.top_n]
+        # Canon §1.9: log RANK_CHANGE for each signal
+        top_n_signals = deduplicated[:self.top_n] if self.top_n else deduplicated
         for rank_idx, sig in enumerate(top_n_signals, start=1):
             try:
                 bar_dt = datetime.fromtimestamp(sig.timestamp, tz=timezone.utc)

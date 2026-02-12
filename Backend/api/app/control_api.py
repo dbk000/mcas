@@ -84,7 +84,7 @@ class ScanRunRequest(BaseModel):
     symbols: Optional[list[str]] = None  # If None, use default universe
     timeframes: Optional[list[str]] = None  # If None, use default
     setup_ids: list[str] = Field(default=["S1", "S2", "S3", "S4", "S5", "S6", "S7"])
-    top_n: int = Field(default=50, ge=1)
+    top_n: Optional[int] = Field(default=None, ge=1)  # None = return all qualifying signals
     priority: int = Field(default=0, ge=0, le=10)
 
 

@@ -155,7 +155,7 @@ class RunExecutor:
         setup_ids: list[str] = None,
         name: Optional[str] = None,
         notes: Optional[str] = None,
-        top_n: int = 50,
+        top_n: int = None,
     ) -> Run:
         """Create a new SCAN run."""
         setup_ids = setup_ids or ["S1", "S2", "S3", "S4", "S5", "S6", "S7"]
@@ -172,7 +172,7 @@ class RunExecutor:
             strategy=StrategySpec(
                 setup_id=",".join(setup_ids),
                 setup_version="v2.0",
-                setup_params={"setup_ids": setup_ids, "top_n": top_n},
+                setup_params={"setup_ids": setup_ids},
             ),
             data=DataSpec(
                 data_source="binance_rest",
@@ -267,7 +267,7 @@ class RunExecutor:
         engine = SignalEngine(
             symbols=run.universe.assets,
             timeframes=run.universe.timeframes,
-            top_n=run.strategy.setup_params.get("top_n", 10),
+            top_n=run.strategy.setup_params.get("top_n"),
             source=source,
             redis_client=self.redis_client,
             run_id=run.id,
