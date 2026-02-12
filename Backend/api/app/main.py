@@ -21,6 +21,8 @@ Endpoints:
 """
 
 import os
+import csv
+import io
 import time
 import json
 import hmac
@@ -52,6 +54,7 @@ from fastapi import (
     APIRouter,
 )
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import Response
 from pydantic import BaseModel
 from middleware import RequestLoggingMiddleware
 
@@ -635,6 +638,80 @@ def list_opportunities(
         "count": len(items),
         "source": "postgres",
     }, t0)
+
+
+@router.get("/opportunities/csv")
+def export_opportunities_csv(
+    status: str = Query(default="active"),
+    setup_id: Optional[str] = Query(default=None),
+    min_score: float = Query(default=0.0, ge=0),
+    limit: int = Query(default=10000, ge=1, le=50000),
+):
+    """Export opportunities as CSV for offline analysis."""
+    if status not in ("active", "expired", "traded"):
+        raise HTTPException(status_code=400, detail=f"Invalid status: {status}. Must be active, expired, or traded.")
+
+    if not DATABASE_URL:
+        raise HTTPException(status_code=500, detail="Database not configured")
+
+    with psycopg.connect(DATABASE_URL) as conn:
+        with conn.cursor() as cur:
+            # direction is stored inside payload_json, not as a top-level column
+            payload_fields = """
+                           CASE WHEN payload_json IS NOT NULL THEN payload_json::jsonb ->> 'direction' END AS direction,
+                           CASE WHEN payload_json IS NOT NULL THEN payload_json::jsonb ->> 'entry_price' END AS entry_price,
+                           CASE WHEN payload_json IS NOT NULL THEN payload_json::jsonb ->> 'stop_price' END AS stop_price,
+                           CASE WHEN payload_json IS NOT NULL THEN payload_json::jsonb ->> 'tp1_price' END AS tp1_price,
+                           CASE WHEN payload_json IS NOT NULL THEN payload_json::jsonb ->> 'tp2_price' END AS tp2_price,
+                           CASE WHEN payload_json IS NOT NULL THEN payload_json::jsonb ->> 'r_value' END AS r_value
+            """
+            if status != "active":
+                query = f"""
+                    SELECT DISTINCT ON (symbol, timeframe, setup_id)
+                           id, created_ts, updated_ts, symbol, timeframe, setup_id, status, score, decision, reason,
+                           {payload_fields}
+                    FROM opportunities
+                    WHERE status = %s AND score >= %s
+                """
+            else:
+                query = f"""
+                    SELECT id, created_ts, updated_ts, symbol, timeframe, setup_id, status, score, decision, reason,
+                           {payload_fields}
+                    FROM opportunities
+                    WHERE status = %s AND score >= %s
+                """
+            params_list = [status, min_score]
+
+            if setup_id:
+                query += " AND setup_id = %s"
+                params_list.append(setup_id)
+
+            if status != "active":
+                query += " ORDER BY symbol, timeframe, setup_id, score DESC, updated_ts DESC LIMIT %s;"
+            else:
+                query += " ORDER BY score DESC, updated_ts DESC LIMIT %s;"
+            params_list.append(limit)
+
+            cur.execute(query, params_list)
+            rows = cur.fetchall()
+            columns = [desc[0] for desc in cur.description]
+
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+    writer.writerow(columns)
+    for row in rows:
+        writer.writerow([
+            v.isoformat() if hasattr(v, 'isoformat') else v
+            for v in row
+        ])
+
+    now_str = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    filename = f"opportunities_{status}_{now_str}.csv"
+    return Response(
+        content=buf.getvalue(),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
 
 
 @router.get("/opportunities/live/{setup_id}/{symbol}/{tf}")

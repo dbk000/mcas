@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Target, Filter, Copy, Check, Clock, RefreshCw, PlayCircle, ChevronDown, ChevronRight, X, Plus } from 'lucide-react'
+import { Target, Filter, Copy, Check, Clock, RefreshCw, PlayCircle, ChevronDown, ChevronRight, X, Plus, Download } from 'lucide-react'
 import { useOpportunities } from '../hooks/useData'
 import { useToast } from '../context/ToastContext'
 import { useApi } from '../context/ApiContext'
@@ -147,7 +147,7 @@ function sortOpportunities(opps, sortBy) {
 
 export default function Opportunities() {
   const { addToast } = useToast()
-  const { post } = useApi()
+  const { post, config } = useApi()
   const navigate = useNavigate()
 
   // Filters
@@ -203,6 +203,46 @@ export default function Opportunities() {
 
     await copyToClipboard(plan)
     addToast('Trade plan copied to clipboard', 'success')
+  }
+
+  const handleExportCsv = async () => {
+    try {
+      const params = new URLSearchParams({
+        status: filters.status,
+        min_score: String(filters.min_score),
+        limit: '10000',
+      })
+      if (filters.setup_id) params.set('setup_id', filters.setup_id)
+
+      const response = await fetch(`${config.baseUrl}/v1/opportunities/csv?${params}`, {
+        headers: { 'X-API-Key': config.apiKey },
+      })
+
+      if (!response.ok) {
+        const text = await response.text()
+        let detail = text
+        try { detail = JSON.parse(text).detail } catch {}
+        addToast(`CSV export failed: ${detail}`, 'error')
+        return
+      }
+
+      const blob = await response.blob()
+      const disposition = response.headers.get('Content-Disposition')
+      const filenameMatch = disposition?.match(/filename=(.+)/)
+      const filename = filenameMatch ? filenameMatch[1] : 'opportunities.csv'
+
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = filename
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+      addToast('CSV downloaded', 'success')
+    } catch (err) {
+      addToast(`CSV export failed: ${err.message}`, 'error')
+    }
   }
 
   const handleSimulateExpired = async () => {
@@ -326,6 +366,14 @@ export default function Opportunities() {
             <span className="text-sm text-terminal-400">
               {opportunities.length} opportunities
             </span>
+            <button
+              onClick={handleExportCsv}
+              className="btn btn-ghost btn-sm flex items-center gap-2"
+              title="Export opportunities as CSV"
+            >
+              <Download className="w-4 h-4" />
+              Export CSV
+            </button>
             {filters.status === 'expired' && (
               <button
                 onClick={() => setShowSimModal(true)}
