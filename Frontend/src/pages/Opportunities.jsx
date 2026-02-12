@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Target, Filter, Copy, Check, Clock, RefreshCw, PlayCircle } from 'lucide-react'
+import { Target, Filter, Copy, Check, Clock, RefreshCw, PlayCircle, ChevronDown, ChevronRight, X, Plus } from 'lucide-react'
 import { useOpportunities } from '../hooks/useData'
 import { useToast } from '../context/ToastContext'
 import { useApi } from '../context/ApiContext'
@@ -169,7 +169,14 @@ export default function Opportunities() {
     setup_ids: [],
     timeframes: [],
     directions: [],
+    from_date: '',
+    to_date: '',
+    exclude_dates: [],
+    include_dates: [],
   })
+  const [showDateFilters, setShowDateFilters] = useState(false)
+  const [excludeDateInput, setExcludeDateInput] = useState('')
+  const [includeDateInput, setIncludeDateInput] = useState('')
 
   // Build API params — omit setup_id if empty
   const apiParams = { status: filters.status, min_score: filters.min_score, limit: filters.limit }
@@ -201,14 +208,21 @@ export default function Opportunities() {
   const handleSimulateExpired = async () => {
     setSimulating(true)
     try {
-      const response = await post('/v1/control/runs/simulation', {
+      const hasIncludeDates = simConfig.include_dates.length > 0
+      const payload = {
         position_size_usd: simConfig.position_size_usd,
         limit: simConfig.limit,
         setup_ids: simConfig.setup_ids.length ? simConfig.setup_ids : (filters.setup_id ? [filters.setup_id] : null),
         min_score: simConfig.min_score,
         timeframes: simConfig.timeframes.length ? simConfig.timeframes : null,
         directions: simConfig.directions.length ? simConfig.directions : null,
-      })
+        // Date filters: include_dates overrides from/to
+        from_date: hasIncludeDates ? null : (simConfig.from_date || null),
+        to_date: hasIncludeDates ? null : (simConfig.to_date || null),
+        include_dates: hasIncludeDates ? simConfig.include_dates : null,
+        exclude_dates: simConfig.exclude_dates.length ? simConfig.exclude_dates : null,
+      }
+      const response = await post('/v1/control/runs/simulation', payload)
 
       if (response.run_id) {
         addToast(`Simulation started: ${response.message}`, 'success')
@@ -446,6 +460,149 @@ export default function Opportunities() {
                     ]}
                     placeholder="All"
                   />
+                </div>
+
+                {/* Collapsible Date Filters */}
+                <div className="border-t border-terminal-600 pt-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowDateFilters(!showDateFilters)}
+                    className="flex items-center gap-1 text-sm text-terminal-400 hover:text-terminal-200 transition-colors"
+                  >
+                    {showDateFilters ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                    Date Filters
+                    {(simConfig.from_date || simConfig.to_date || simConfig.include_dates.length > 0 || simConfig.exclude_dates.length > 0) && (
+                      <Badge variant="info" className="ml-1">active</Badge>
+                    )}
+                  </button>
+
+                  {showDateFilters && (
+                    <div className="space-y-3 mt-3">
+                      {/* From / To */}
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-sm text-terminal-400 block mb-1">From</label>
+                          <Input
+                            type="date"
+                            value={simConfig.from_date}
+                            onChange={(e) => setSimConfig({ ...simConfig, from_date: e.target.value })}
+                            disabled={simConfig.include_dates.length > 0}
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm text-terminal-400 block mb-1">To</label>
+                          <Input
+                            type="date"
+                            value={simConfig.to_date}
+                            onChange={(e) => setSimConfig({ ...simConfig, to_date: e.target.value })}
+                            disabled={simConfig.include_dates.length > 0}
+                          />
+                        </div>
+                      </div>
+                      {simConfig.include_dates.length > 0 && (
+                        <p className="text-xs text-terminal-500 -mt-1">From/To disabled — overridden by Include Dates</p>
+                      )}
+
+                      {/* Exclude Dates */}
+                      <div>
+                        <label className="text-sm text-terminal-400 block mb-1">Exclude Dates</label>
+                        <div className="flex gap-2">
+                          <Input
+                            type="date"
+                            value={excludeDateInput}
+                            onChange={(e) => setExcludeDateInput(e.target.value)}
+                            className="flex-1"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (excludeDateInput && !simConfig.exclude_dates.includes(excludeDateInput)) {
+                                setSimConfig({
+                                  ...simConfig,
+                                  exclude_dates: [...simConfig.exclude_dates, excludeDateInput].sort()
+                                })
+                              }
+                              setExcludeDateInput('')
+                            }}
+                            className="btn btn-ghost btn-sm"
+                            disabled={!excludeDateInput}
+                          >
+                            <Plus className="w-4 h-4" />
+                          </button>
+                        </div>
+                        {simConfig.exclude_dates.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {simConfig.exclude_dates.map(d => (
+                              <span key={d} className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-mono bg-terminal-700 text-terminal-300">
+                                {d}
+                                <button
+                                  type="button"
+                                  onClick={() => setSimConfig({
+                                    ...simConfig,
+                                    exclude_dates: simConfig.exclude_dates.filter(x => x !== d)
+                                  })}
+                                  className="hover:text-red-400"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Include Dates Only */}
+                      <div>
+                        <label className="text-sm text-terminal-400 block mb-1">
+                          Include Only
+                          <span className="text-terminal-500 ml-1">(overrides From/To)</span>
+                        </label>
+                        <div className="flex gap-2">
+                          <Input
+                            type="date"
+                            value={includeDateInput}
+                            onChange={(e) => setIncludeDateInput(e.target.value)}
+                            className="flex-1"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (includeDateInput && !simConfig.include_dates.includes(includeDateInput)) {
+                                setSimConfig({
+                                  ...simConfig,
+                                  include_dates: [...simConfig.include_dates, includeDateInput].sort()
+                                })
+                              }
+                              setIncludeDateInput('')
+                            }}
+                            className="btn btn-ghost btn-sm"
+                            disabled={!includeDateInput}
+                          >
+                            <Plus className="w-4 h-4" />
+                          </button>
+                        </div>
+                        {simConfig.include_dates.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {simConfig.include_dates.map(d => (
+                              <span key={d} className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-mono bg-terminal-700 text-terminal-300">
+                                {d}
+                                <button
+                                  type="button"
+                                  onClick={() => setSimConfig({
+                                    ...simConfig,
+                                    include_dates: simConfig.include_dates.filter(x => x !== d)
+                                  })}
+                                  className="hover:text-red-400"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 

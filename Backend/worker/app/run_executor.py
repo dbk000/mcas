@@ -1506,6 +1506,10 @@ class RunExecutor:
         batch_id = setup_params.get("batch_id")  # Backfill batch filter
         timeframes = setup_params.get("timeframes")  # Timeframe filter
         directions = setup_params.get("directions")  # Direction filter (long/short)
+        from_date = setup_params.get("from_date")  # Date range lower bound
+        to_date = setup_params.get("to_date")  # Date range upper bound
+        include_dates = setup_params.get("include_dates")  # Specific dates only
+        exclude_dates = setup_params.get("exclude_dates")  # Skip these dates
 
         # Build simulator config
         sim_config = SimulationConfig(
@@ -1526,6 +1530,10 @@ class RunExecutor:
             batch_id=batch_id,
             timeframes=timeframes,
             directions=directions,
+            from_date=from_date,
+            to_date=to_date,
+            include_dates=include_dates,
+            exclude_dates=exclude_dates,
         )
 
         if not opportunities:
@@ -1599,6 +1607,10 @@ class RunExecutor:
         batch_id: str = None,
         timeframes: list[str] = None,
         directions: list[str] = None,
+        from_date: str = None,
+        to_date: str = None,
+        include_dates: list[str] = None,
+        exclude_dates: list[str] = None,
     ) -> list[dict]:
         """
         Load expired opportunities from the database.
@@ -1610,6 +1622,10 @@ class RunExecutor:
             limit: Maximum number of opportunities
             setup_version: Optional filter by setup version (e.g. 'S1_v2.2')
             batch_id: Optional filter by batch ID (e.g. 'backfill_20260208_abc123')
+            from_date: Inclusive lower bound (YYYY-MM-DD)
+            to_date: Inclusive upper bound (YYYY-MM-DD)
+            include_dates: Only these specific dates (overrides from/to)
+            exclude_dates: Skip these dates
 
         Returns:
             List of opportunity dicts
@@ -1649,6 +1665,22 @@ class RunExecutor:
                 if directions:
                     conditions.append("payload_json::jsonb ->> 'direction' = ANY(%s)")
                     params.append(directions)
+
+                # Date filters — include_dates overrides from/to
+                if include_dates:
+                    conditions.append("created_ts::date = ANY(%s::date[])")
+                    params.append(include_dates)
+                else:
+                    if from_date:
+                        conditions.append("created_ts >= %s::date")
+                        params.append(from_date)
+                    if to_date:
+                        conditions.append("created_ts < (%s::date + INTERVAL '1 day')")
+                        params.append(to_date)
+
+                if exclude_dates:
+                    conditions.append("NOT (created_ts::date = ANY(%s::date[]))")
+                    params.append(exclude_dates)
 
                 where_clause = " AND ".join(conditions)
                 params.append(limit)

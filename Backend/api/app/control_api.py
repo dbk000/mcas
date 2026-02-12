@@ -16,6 +16,7 @@ This is the "command" side of the API (vs the "query" side in runs_api.py).
 """
 
 import os
+import re
 import json
 import time
 import uuid
@@ -25,7 +26,7 @@ from typing import Optional, Any
 import psycopg
 import redis
 from fastapi import APIRouter, Query, HTTPException, Body
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
@@ -145,6 +146,50 @@ class SimulationRunRequest(BaseModel):
     batch_id: Optional[str] = None  # Filter by backfill batch ID
     timeframes: Optional[list[str]] = None  # Filter by 1m, 5m, 15m, etc.
     directions: Optional[list[str]] = None  # Filter by "long", "short"
+
+    # Date filters
+    from_date: Optional[str] = None       # ISO date "YYYY-MM-DD" — inclusive lower bound
+    to_date: Optional[str] = None         # ISO date "YYYY-MM-DD" — inclusive upper bound
+    include_dates: Optional[list[str]] = None  # Only these dates (overrides from/to)
+    exclude_dates: Optional[list[str]] = None  # Skip these dates (applied after from/to)
+
+    @model_validator(mode="after")
+    def validate_date_filters(self):
+        _iso_re = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+
+        def _check_iso(val: str, field: str):
+            if not _iso_re.match(val):
+                raise ValueError(f"{field} dates must be YYYY-MM-DD, got '{val}'")
+
+        # Normalize empty lists to None
+        if self.include_dates is not None and len(self.include_dates) == 0:
+            self.include_dates = None
+        if self.exclude_dates is not None and len(self.exclude_dates) == 0:
+            self.exclude_dates = None
+
+        # Validate ISO format
+        if self.from_date:
+            _check_iso(self.from_date, "from_date")
+        if self.to_date:
+            _check_iso(self.to_date, "to_date")
+        if self.include_dates:
+            for d in self.include_dates:
+                _check_iso(d, "include_dates")
+        if self.exclude_dates:
+            for d in self.exclude_dates:
+                _check_iso(d, "exclude_dates")
+
+        # from_date <= to_date when both set
+        if self.from_date and self.to_date and self.from_date > self.to_date:
+            raise ValueError("from_date must be <= to_date")
+
+        # include_dates and exclude_dates must not overlap
+        if self.include_dates and self.exclude_dates:
+            overlap = set(self.include_dates) & set(self.exclude_dates)
+            if overlap:
+                raise ValueError(f"include_dates and exclude_dates overlap: {sorted(overlap)}")
+
+        return self
 
 
 # =============================================================================
@@ -531,6 +576,22 @@ def create_simulation_run(request: SimulationRunRequest):
                 conditions.append("payload_json::jsonb ->> 'direction' = ANY(%s)")
                 params.append(request.directions)
 
+            # Date filters — include_dates overrides from/to
+            if request.include_dates:
+                conditions.append("created_ts::date = ANY(%s::date[])")
+                params.append(request.include_dates)
+            else:
+                if request.from_date:
+                    conditions.append("created_ts >= %s::date")
+                    params.append(request.from_date)
+                if request.to_date:
+                    conditions.append("created_ts < (%s::date + INTERVAL '1 day')")
+                    params.append(request.to_date)
+
+            if request.exclude_dates:
+                conditions.append("NOT (created_ts::date = ANY(%s::date[]))")
+                params.append(request.exclude_dates)
+
             where_clause = " AND ".join(conditions)
 
             # When filtering by version/batch, count all rows (each is unique).
@@ -577,6 +638,10 @@ def create_simulation_run(request: SimulationRunRequest):
             "batch_id": request.batch_id,
             "timeframes": request.timeframes,
             "directions": request.directions,
+            "from_date": request.from_date,
+            "to_date": request.to_date,
+            "include_dates": request.include_dates,
+            "exclude_dates": request.exclude_dates,
         },
     })
 
