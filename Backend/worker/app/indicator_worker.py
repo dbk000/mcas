@@ -12,6 +12,8 @@ import os
 import sys
 import time
 import logging
+import threading
+from concurrent.futures import ThreadPoolExecutor
 
 import redis
 
@@ -34,8 +36,9 @@ WORKER_INDEX = int(os.getenv("WORKER_INDEX", "0"))
 N_WORKERS = int(os.getenv("N_WORKERS", "1"))
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 CONSUMER_NAME = f"ind-{WORKER_INDEX}"
-XREAD_BLOCK_MS = 5000  # 5s blocking read
-XREAD_COUNT = 50        # Max events per read
+COMPUTE_WORKERS = 4     # ThreadPool size for parallel indicator compute
+XREAD_BLOCK_MS = 5000   # 5s blocking read
+XREAD_COUNT = COMPUTE_WORKERS  # Cap to pool size — prevents unbounded future accumulation
 
 
 # ---------------------------------------------------------------------------
@@ -68,15 +71,22 @@ HTF_MAP = {"1m": "5m", "5m": "15m", "15m": "1h", "1h": "4h", "4h": "1d"}
 class IndicatorWorker:
     """Consumes candle_closed events, computes indicators, publishes indicators_ready."""
 
+    # Thread-local FeatureFactory — one per compute thread, avoids sharing
+    _thread_local = threading.local()
+
     def __init__(self):
         # Invariant #24: decode_responses=True mandatory
-        self.r = redis.Redis.from_url(REDIS_URL, decode_responses=True)
-        self.ff = FeatureFactory()
+        # Connection pool sized >= COMPUTE_WORKERS + main thread + headroom
+        self.r = redis.Redis.from_url(
+            REDIS_URL, decode_responses=True,
+            max_connections=COMPUTE_WORKERS + 4,
+        )
         self.last_reconcile = 0.0
         # Per-worker consumer group: each worker instance gets ALL messages
         # and filters by partition locally. Fixes the shared-group bug where
         # ACK-ing another worker's message silently drops it.
         self.group_name = f"indicator_group_{WORKER_INDEX}"
+        self._compute_pool = ThreadPoolExecutor(max_workers=COMPUTE_WORKERS)
 
     def run(self):
         """Main loop: wait for cache ready, then consume streams."""
@@ -111,6 +121,7 @@ class IndicatorWorker:
         while True:
             try:
                 # Blocking read from all candle_closed streams
+                # count=COMPUTE_WORKERS ensures at most pool-size futures outstanding
                 results = self.r.xreadgroup(
                     groupname=self.group_name,
                     consumername=CONSUMER_NAME,
@@ -120,12 +131,27 @@ class IndicatorWorker:
                 )
 
                 if results:
+                    # Collect batch of work items
+                    batch = []
                     for stream_name, messages in results:
-                        # Extract tf from stream name
-                        # stream_name = "stream:candle_closed:1h"
                         tf = b2s(stream_name).split(":")[-1]
                         for msg_id, fields in messages:
-                            self._process_event(tf, fields, msg_id, stream_name)
+                            batch.append((tf, fields, msg_id, stream_name))
+
+                    # Submit batch to thread pool, wait for ALL to complete
+                    # before reading next batch (bounded concurrency)
+                    futures = [
+                        self._compute_pool.submit(
+                            self._process_event_safe, tf, fields, msg_id, stream_name
+                        )
+                        for tf, fields, msg_id, stream_name in batch
+                    ]
+                    for future in futures:
+                        try:
+                            future.result()
+                        except Exception as e:
+                            # Message NOT acked — will be redelivered
+                            logger.error(f"Event processing failed: {e}")
 
                 # Periodic reconciliation
                 now = time.time()
@@ -140,8 +166,14 @@ class IndicatorWorker:
                 logger.error(f"Unexpected error: {e}", exc_info=True)
                 time.sleep(1)
 
-    def _process_event(self, tf: str, fields: dict, msg_id, stream_name):
-        """Process a single candle_closed event."""
+    def _get_factory(self):
+        """Get thread-local FeatureFactory instance."""
+        if not hasattr(self._thread_local, 'ff'):
+            self._thread_local.ff = FeatureFactory()
+        return self._thread_local.ff
+
+    def _process_event_safe(self, tf: str, fields: dict, msg_id, stream_name):
+        """Process event in thread pool. ACK only on success."""
         symbol = b2s(fields.get("symbol", ""))
         bar_start_ts = b2s(fields.get("bar_start_ts", ""))
 
@@ -154,12 +186,12 @@ class IndicatorWorker:
             self.r.xack(stream_name, self.group_name, msg_id)
             return
 
-        try:
-            self._compute_and_store(symbol, tf, bar_start_ts)
-        except Exception as e:
-            logger.error(f"Failed to compute indicators for {symbol}:{tf}: {e}")
-
-        # ACK the message
+        # 1. Compute + store + publish
+        # 2. ACK only on success — on failure, message will be redelivered
+        # NOTE: on redelivery, indicators_ready may fire again for the same
+        # (symbol, tf, bar_start_ts). Downstream signal_worker consumers
+        # MUST dedupe on (symbol, tf, bar_start_ts). See signal_worker.py.
+        self._compute_and_store(symbol, tf, bar_start_ts)
         self.r.xack(stream_name, self.group_name, msg_id)
 
     def _compute_and_store(self, symbol: str, tf: str, bar_start_ts: str):
@@ -179,8 +211,8 @@ class IndicatorWorker:
             if htf_candles and len(htf_candles) < 50:
                 htf_candles = None
 
-        # Compute indicators (reuses exact same FeatureFactory.compute())
-        snapshot = self.ff.compute(candles, htf_candles)
+        # Compute indicators — thread-local FeatureFactory (one per compute thread)
+        snapshot = self._get_factory().compute(candles, htf_candles)
 
         # Store with commit marker (invariant #16, #21)
         store_indicators(self.r, symbol, tf, snapshot, bar_start_ts)

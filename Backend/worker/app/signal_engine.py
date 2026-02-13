@@ -16,6 +16,7 @@ import time
 import json
 import random
 import logging
+import threading
 from datetime import datetime, timezone
 from dataclasses import dataclass, asdict
 from typing import Optional, Union
@@ -43,6 +44,7 @@ def _bar_start_dt(snapshot: IndicatorSnapshot) -> datetime:
 
 # Concurrency settings
 MAX_WORKERS = 10  # Parallel OHLCV fetches (reduced from 20 for rate limit compliance)
+COMPUTE_WORKERS = 4  # Parallel indicator compute threads (Phase 2A)
 BATCH_SIZE = 30   # Symbols per batch to avoid overwhelming Binance
 BATCH_DELAY_S = 1.0  # Delay between batches
 MAX_RETRIES = 3   # Retry attempts for rate-limited requests
@@ -271,6 +273,9 @@ class SignalEngine:
         self.s6_evaluator = S6Evaluator()
         self.s7_evaluator = S7Evaluator()
 
+        # Thread-safety: protects indicator_cache mutations during parallel compute
+        self._cache_lock = threading.Lock()
+
         # State tracking
         self._s1_prev_state: dict[tuple[str, str], any] = {}
         self._s6_prev_state: dict[tuple[str, str], any] = {}
@@ -314,12 +319,13 @@ class SignalEngine:
         
         try:
             snapshot = self.feature_factory.compute(candles, htf_candles)
-            
-            # Update indicator cache
-            self.indicator_cache.add_bb_width(symbol, tf, snapshot.bb_width)
-            self.indicator_cache.add_ma_gap(symbol, tf, snapshot.ma_gap_atr)
-            if snapshot.vwap_distance_atr is not None:
-                self.indicator_cache.add_vwap_distance(symbol, tf, snapshot.vwap_distance_atr)
+
+            # THREAD-SAFETY: only self.indicator_cache mutations here (protected by _cache_lock)
+            with self._cache_lock:
+                self.indicator_cache.add_bb_width(symbol, tf, snapshot.bb_width)
+                self.indicator_cache.add_ma_gap(symbol, tf, snapshot.ma_gap_atr)
+                if snapshot.vwap_distance_atr is not None:
+                    self.indicator_cache.add_vwap_distance(symbol, tf, snapshot.vwap_distance_atr)
 
             return snapshot
         except Exception as e:
@@ -889,35 +895,56 @@ class SignalEngine:
             "duration_s": fetch_time,
         })
         
-        # Phase 2: Compute indicators and evaluate setups (CPU-bound, sequential)
+        # Phase 2A: Parallel indicator computation (CPU-bound, stateless per pair)
         compute_start = time.time()
-        
+
+        def _compute_one(pair):
+            symbol, tf = pair
+            return (symbol, tf, self.compute_indicators(symbol, tf))
+
+        # Collect results — main thread builds dict from future results (no concurrent writes)
+        snapshots = {}
+        with ThreadPoolExecutor(max_workers=COMPUTE_WORKERS) as pool:
+            futures = [pool.submit(_compute_one, pair) for pair in successful_pairs]
+            for future in as_completed(futures):
+                try:
+                    symbol, tf, snapshot = future.result()
+                    if snapshot is not None:
+                        snapshots[(symbol, tf)] = snapshot
+                except Exception as e:
+                    logger.debug(f"Compute error: {e}")
+
+        compute_time = round(time.time() - compute_start, 1)
+        logger.info("Indicator compute complete", extra={
+            "event": "indicators_computed",
+            "snapshot_count": len(snapshots), "duration_s": compute_time,
+        })
+
+        # Phase 2B: Sequential setup evaluation — STABLE ORDER from successful_pairs
+        # Iterates successful_pairs (not snapshots.items()) to guarantee deterministic
+        # evaluation order for tie-breaking in ranking/scoring.
+        eval_start = time.time()
         for symbol, tf in successful_pairs:
+            snapshot = snapshots.get((symbol, tf))
+            if snapshot is None:
+                continue
             token = ctx_symbol.set(symbol)
             try:
-                # Compute indicators
-                snapshot = self.compute_indicators(symbol, tf)
-                if snapshot is None:
-                    continue
-
-                # Evaluate setups
                 signals = self.evaluate_setups(symbol, tf, snapshot)
-
-                # Convert to ranked signals
                 for sig in signals:
                     ranked = self.signal_to_ranked(sig)
                     all_signals.append(ranked)
             except Exception as e:
-                logger.debug("Compute error", extra={
+                logger.debug("Evaluate error", extra={
                     "symbol": symbol, "timeframe": tf, "error": str(e),
                 })
             finally:
                 ctx_symbol.reset(token)
-        
-        compute_time = round(time.time() - compute_start, 1)
-        logger.info("Indicator compute complete", extra={
-            "event": "indicators_computed",
-            "signal_count": len(all_signals), "duration_s": compute_time,
+
+        eval_time = round(time.time() - eval_start, 1)
+        logger.info("Setup evaluation complete", extra={
+            "event": "setups_evaluated",
+            "signal_count": len(all_signals), "duration_s": eval_time,
         })
         
         # Sort by score descending

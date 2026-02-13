@@ -25,8 +25,10 @@ import time
 import hashlib
 import logging
 import argparse
+import multiprocessing
 from datetime import datetime, timezone, timedelta
 from collections import defaultdict
+from concurrent.futures import ProcessPoolExecutor, as_completed
 
 # Load .env if available
 env_path = os.path.join(os.path.dirname(__file__), '..', '.env')
@@ -80,6 +82,37 @@ HTF_MAP = {
 MIN_BARS = 201
 # Warmup bars before we start evaluating triggers
 WARMUP_BARS = 500
+
+# ---------------------------------------------------------------------------
+# Module-level shared data — populated BEFORE pool creation, inherited via fork COW.
+# Children read these dicts but never write to them, so Linux COW keeps memory shared.
+# ---------------------------------------------------------------------------
+_shared_all_data = {}
+_shared_btc_data = {}
+_shared_setup_versions = {}
+_shared_batch_id = ""
+_shared_start_days = 0
+
+
+def _process_symbol_worker(symbol_tfs):
+    """Worker: process all TFs for one symbol. Fresh evaluators per call."""
+    symbol, tfs = symbol_tfs
+    factory = FeatureFactory()
+    s1_eval = S1Evaluator()
+    s2_eval = S2Evaluator()
+    results = []
+    for tf in tfs:
+        candles = _shared_all_data.get((symbol, tf), [])
+        htf_tf = HTF_MAP.get(tf)
+        htf_candles = _shared_all_data.get((symbol, htf_tf), []) if htf_tf else []
+        btc_candles = _shared_btc_data.get(tf, [])
+        opps = process_symbol_timeframe(
+            symbol, tf, candles, htf_candles, btc_candles,
+            _shared_setup_versions, _shared_batch_id,
+            factory, s1_eval, s2_eval, _shared_start_days,
+        )
+        results.extend(opps)
+    return symbol, results
 
 
 def load_ohlcv_from_db(
@@ -384,6 +417,10 @@ def main():
         "--extra-warmup-days", type=int, default=30,
         help="Extra days of OHLCV to load before --days window for warmup (default: 30)"
     )
+    parser.add_argument(
+        "--workers", type=int, default=6,
+        help="Parallel workers for ProcessPool (default: 6, use 1 for sequential)"
+    )
     args = parser.parse_args()
 
     if not DATABASE_URL:
@@ -446,11 +483,6 @@ def main():
 
     logger.info(f"Processing {len(symbols_seen)} symbols x {len(tfs_seen)} timeframes")
 
-    # Initialize evaluators (shared across all symbols)
-    factory = FeatureFactory()
-    s1_eval = S1Evaluator()
-    s2_eval = S2Evaluator()
-
     # Preload BTC data for each timeframe (needed for correlation filter)
     btc_data = {}
     for tf in tfs_seen:
@@ -460,51 +492,108 @@ def main():
         else:
             btc_data[tf] = []
 
+    # Group combos by symbol — each worker handles all TFs for its symbols
+    symbol_tfs_map = defaultdict(list)
+    for (sym, tf) in sorted(all_data.keys()):
+        symbol_tfs_map[sym].append(tf)
+    work_items = list(symbol_tfs_map.items())  # [(symbol, [tfs]), ...]
+
+    n_workers = args.workers
+
     t0 = time.time()
-    total_opps = 0
-    total_bars_evaluated = 0
     all_opportunities = []
-    processed = 0
-    total_combos = len(all_data)
 
-    for (symbol, tf), candles in sorted(all_data.items()):
-        processed += 1
+    if n_workers <= 1:
+        # Sequential path (for debugging / correctness verification)
+        logger.info(f"Running sequentially (--workers {n_workers})")
+        factory = FeatureFactory()
+        s1_eval = S1Evaluator()
+        s2_eval = S2Evaluator()
+        processed = 0
 
-        # Get HTF candles
-        htf_tf = HTF_MAP.get(tf)
-        htf_candles = []
-        if htf_tf:
-            htf_key = (symbol, htf_tf)
-            htf_candles = all_data.get(htf_key, [])
+        for symbol, tfs in work_items:
+            processed += 1
+            for tf in tfs:
+                candles = all_data.get((symbol, tf), [])
+                htf_tf = HTF_MAP.get(tf)
+                htf_candles = all_data.get((symbol, htf_tf), []) if htf_tf else []
+                btc_candles = btc_data.get(tf, [])
 
-        # Get BTC candles for this timeframe
-        btc_candles = btc_data.get(tf, [])
+                opps = process_symbol_timeframe(
+                    symbol=symbol, tf=tf, candles=candles,
+                    htf_candles=htf_candles, btc_candles=btc_candles,
+                    setup_versions=setup_versions, batch_id=batch_id,
+                    factory=factory, s1_eval=s1_eval, s2_eval=s2_eval,
+                    start_days=args.days,
+                )
+                all_opportunities.extend(opps)
 
-        opps = process_symbol_timeframe(
-            symbol=symbol,
-            tf=tf,
-            candles=candles,
-            htf_candles=htf_candles,
-            btc_candles=btc_candles,
-            setup_versions=setup_versions,
-            batch_id=batch_id,
-            factory=factory,
-            s1_eval=s1_eval,
-            s2_eval=s2_eval,
-            start_days=args.days,
-        )
+            if processed % 50 == 0 or processed == len(work_items):
+                elapsed = time.time() - t0
+                logger.info(
+                    f"  [{processed}/{len(work_items)}] "
+                    f"{len(all_opportunities)} signals found "
+                    f"({elapsed:.0f}s)"
+                )
+    else:
+        # Parallel path — ProcessPoolExecutor with fork COW
+        logger.info(f"Running with {n_workers} parallel workers (fork COW)")
 
-        all_opportunities.extend(opps)
-        total_bars_evaluated += max(0, len(candles) - MIN_BARS)
+        # Populate module-level globals BEFORE pool creation — fork COW inherits them
+        global _shared_all_data, _shared_btc_data, _shared_setup_versions
+        global _shared_batch_id, _shared_start_days
+        _shared_all_data = all_data
+        _shared_btc_data = btc_data
+        _shared_setup_versions = setup_versions
+        _shared_batch_id = batch_id
+        _shared_start_days = args.days
 
-        if processed % 50 == 0 or processed == total_combos:
-            elapsed = time.time() - t0
-            logger.info(
-                f"  [{processed}/{total_combos}] "
-                f"{total_bars_evaluated:,} bars evaluated, "
-                f"{len(all_opportunities)} signals found "
-                f"({elapsed:.0f}s)"
-            )
+        # Enforce fork start method (Linux) — abort if unavailable
+        try:
+            mp_ctx = multiprocessing.get_context("fork")
+        except ValueError:
+            logger.error("ProcessPool requires fork start method (Linux). "
+                         "Falling back to sequential with --workers 1.")
+            sys.exit(1)
+
+        failed_count = 0
+        fail_threshold = max(1, int(len(work_items) * 0.10))  # 10% failure = abort
+        processed = 0
+
+        # No initializer/initargs — zero pickling overhead
+        with ProcessPoolExecutor(max_workers=n_workers, mp_context=mp_ctx) as pool:
+            futures = {
+                pool.submit(_process_symbol_worker, item): item[0]
+                for item in work_items
+            }
+            for future in as_completed(futures):
+                symbol = futures[future]
+                processed += 1
+                try:
+                    sym, opps = future.result()
+                    all_opportunities.extend(opps)
+                except Exception as e:
+                    failed_count += 1
+                    logger.warning(f"Failed {symbol}: {e}")
+                    if failed_count >= fail_threshold:
+                        logger.error(
+                            f"Aborting: {failed_count} failures "
+                            f"(>10% of {len(work_items)} symbols)"
+                        )
+                        pool.shutdown(wait=False, cancel_futures=True)
+                        sys.exit(1)
+
+                if processed % 50 == 0 or processed == len(work_items):
+                    elapsed = time.time() - t0
+                    logger.info(
+                        f"  [{processed}/{len(work_items)}] "
+                        f"{len(all_opportunities)} signals found "
+                        f"({elapsed:.0f}s)"
+                    )
+
+    # Deterministic output: sort by (symbol, timeframe, created_ts)
+    # Guarantees identical DB order regardless of parallel completion order
+    all_opportunities.sort(key=lambda o: (o["symbol"], o["timeframe"], o["created_ts"]))
 
     # Insert all opportunities into database
     logger.info(f"\nInserting {len(all_opportunities)} opportunities into database...")
