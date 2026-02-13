@@ -152,6 +152,14 @@ class S6Evaluator:
 
         # Pullback lookback (bars to check for touch)
         pullback_lookback: int = _env_int("S6_PULLBACK_LOOKBACK", 5),
+
+        # Microcap / stop-width protection
+        # Assumes USDT-quoted pairs (quote ≈ USD). Adjust if used on non-USD quotes.
+        min_short_price: float = _env_float("S6_MIN_SHORT_PRICE", 0.01),
+        max_stop_pct: float = _env_float("S6_MAX_STOP_PCT", 0.10),
+
+        # Reclaim clearance — minimum ATR distance above/below EMA20 on reclaim
+        min_reclaim_atr: float = _env_float("S6_MIN_RECLAIM_ATR", 0.15),
     ):
         self.slope_min = slope_min
         self.clv_th = clv_th
@@ -162,12 +170,17 @@ class S6Evaluator:
         self.tp2_r = tp2_r
         self.slippage_bps = slippage_bps
         self.pullback_lookback = pullback_lookback
+        self.min_short_price = min_short_price
+        self.max_stop_pct = max_stop_pct
+        self.min_reclaim_atr = min_reclaim_atr
 
         logger.info(
             "S6 effective params: slope_min=%.3f clv=%.2f vol_z=%.1f "
-            "pullback_lookback=%d",
+            "pullback_lookback=%d min_short_price=%.4f max_stop_pct=%.2f "
+            "min_reclaim_atr=%.3f",
             self.slope_min, self.clv_th, self.volume_z_min,
-            self.pullback_lookback,
+            self.pullback_lookback, self.min_short_price,
+            self.max_stop_pct, self.min_reclaim_atr,
         )
 
     @staticmethod
@@ -331,6 +344,22 @@ class S6Evaluator:
             logger.debug("S6 gate:no_reclaim %s %s", symbol, timeframe)
             return None
 
+        # Reclaim clearance: close must clear EMA20 by min ATR distance.
+        # Prevents "barely reclaimed" entries that snap back → FAIL_FAST.
+        current = snapshot.ohlcv[-1]
+        atr = snapshot.atr
+        if atr is None or atr <= 0:
+            logger.debug("S6 gate:no_atr %s %s", symbol, timeframe)
+            return None
+        if state.trend_direction == "long":
+            reclaim_clearance = (current.close - snapshot.ema_20) / atr
+        else:
+            reclaim_clearance = (snapshot.ema_20 - current.close) / atr
+        if reclaim_clearance < self.min_reclaim_atr:
+            logger.debug("S6 gate:weak_reclaim %s %s clearance=%.3f min=%.3f",
+                         symbol, timeframe, reclaim_clearance, self.min_reclaim_atr)
+            return None
+
         if not state.htf_aligned:
             logger.debug("S6 gate:htf_oppose %s %s htf=%s", symbol, timeframe, state.htf_bias)
             return None
@@ -340,10 +369,13 @@ class S6Evaluator:
                          symbol, timeframe, state.retrace_depth_atr)
             return None
 
-        current = snapshot.ohlcv[-1]
-        atr = snapshot.atr
-
         direction = Direction.LONG if state.trend_direction == "long" else Direction.SHORT
+
+        # Microcap short protection (assumes USDT-quoted pairs ≈ USD)
+        if direction == Direction.SHORT and current.close < self.min_short_price:
+            logger.debug("S6 gate:sub_penny_short %s %s price=%.6f min=%.4f",
+                         symbol, timeframe, current.close, self.min_short_price)
+            return None
 
         # CLV check
         if direction == Direction.LONG and snapshot.clv < self.clv_th:
@@ -384,6 +416,14 @@ class S6Evaluator:
 
         min_r = 0.5 * atr
         if r_value < min_r:
+            return None
+
+        # Stop-width gate: reject if stop distance > max_stop_pct of entry price.
+        # Catches structurally wide stops on volatile/low-price assets.
+        stop_pct = abs(stop_price - entry_price) / entry_price if entry_price > 0 else 0
+        if stop_pct > self.max_stop_pct:
+            logger.debug("S6 gate:stop_pct_too_wide %s %s stop_pct=%.1f%% max=%.0f%%",
+                         symbol, timeframe, stop_pct * 100, self.max_stop_pct * 100)
             return None
 
         # Targets
