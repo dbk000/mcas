@@ -3,17 +3,23 @@
 Backfill opportunities from stored OHLCV data using current setup code.
 
 Reads OHLCV from Postgres ohlcv table (populated by backfill_ohlcv.py),
-walks forward bar-by-bar computing indicators and evaluating S1/S2 setups,
-and inserts triggered signals as expired opportunities with setup_version
-and batch_id for version tracking.
+walks forward bar-by-bar computing indicators and evaluating
+S1/S2/S3/S5/S6/S7 setups (S4 disabled), and inserts triggered signals
+as expired opportunities with setup_version and batch_id for version tracking.
+
+Writes to DB incrementally per-symbol (crash at hour 7 doesn't lose hours 1-6).
+Logs per-symbol progress with elapsed time and ETA.
 
 Uses the same evaluator code as production — guaranteed consistency.
 
 Usage:
     python Backend/scripts/backfill_opportunities.py --days 7 --setup-version "S1_v2.2,S2_v1.5"
 
+    # Clear stale expired backfill opps before regenerating:
+    python Backend/scripts/backfill_opportunities.py --days 7 --clear-expired
+
     # After code changes, re-run with new version tag:
-    python Backend/scripts/backfill_opportunities.py --days 7 --setup-version "S1_v2.3,S2_v1.6"
+    python Backend/scripts/backfill_opportunities.py --days 7 --setup-version "S1_v2.3,S2_v1.6,S3_v1.0"
 
 Requires DATABASE_URL env var (reads from .env if available).
 """
@@ -58,6 +64,10 @@ import numpy as np
 from indicators import OHLCV, FeatureFactory, IndicatorSnapshot
 from setups.s1_bb_squeeze import S1Evaluator, S1Signal
 from setups.s2_golden_cross import S2Evaluator, S2Signal
+from setups.s3_rsi_divergence import S3Evaluator, S3Signal
+from setups.s5_sr_breakout import S5Evaluator, S5Signal
+from setups.s6_trend_pullback import S6Evaluator, S6Signal
+from setups.s7_momentum_breakout import S7Evaluator, S7Signal
 
 logging.basicConfig(
     level=logging.INFO,
@@ -94,12 +104,23 @@ _shared_batch_id = ""
 _shared_start_days = 0
 
 
+def _build_evaluators() -> dict:
+    """Create a fresh evaluator dict for all active setups."""
+    return {
+        "S1": S1Evaluator(),
+        "S2": S2Evaluator(),
+        "S3": S3Evaluator(),
+        "S5": S5Evaluator(),
+        "S6": S6Evaluator(),
+        "S7": S7Evaluator(),
+    }
+
+
 def _process_symbol_worker(symbol_tfs):
     """Worker: process all TFs for one symbol. Fresh evaluators per call."""
     symbol, tfs = symbol_tfs
     factory = FeatureFactory()
-    s1_eval = S1Evaluator()
-    s2_eval = S2Evaluator()
+    evaluators = _build_evaluators()
     results = []
     for tf in tfs:
         candles = _shared_all_data.get((symbol, tf), [])
@@ -109,7 +130,7 @@ def _process_symbol_worker(symbol_tfs):
         opps = process_symbol_timeframe(
             symbol, tf, candles, htf_candles, btc_candles,
             _shared_setup_versions, _shared_batch_id,
-            factory, s1_eval, s2_eval, _shared_start_days,
+            factory, evaluators, _shared_start_days,
         )
         results.extend(opps)
     return symbol, results
@@ -235,6 +256,33 @@ def build_signal_payload(signal, setup_id: str, symbol: str, tf: str, bar_ts_ms:
     return payload
 
 
+def _make_opportunity(signal, setup_id: str, symbol: str, tf: str,
+                      bar_ts_ms: int, setup_versions: dict, batch_id: str) -> dict:
+    """Build an opportunity dict from a signal."""
+    bar_dt = datetime.fromtimestamp(bar_ts_ms / 1000, tz=timezone.utc)  # Binance ms epoch
+    reason = "; ".join(signal.explain.why_items) if signal.explain else None
+    payload = build_signal_payload(signal, setup_id, symbol, tf, bar_ts_ms)
+
+    # Default version per setup
+    default_versions = {
+        "S1": "S1_v2.1", "S2": "S2_v1.4", "S3": "S3_v1.0",
+        "S5": "S5_v1.0", "S6": "S6_v1.0", "S7": "S7_v1.0",
+    }
+
+    return {
+        "created_ts": bar_dt,
+        "symbol": symbol,
+        "timeframe": tf,
+        "setup_id": setup_id,
+        "decision": "SIGNAL",
+        "score": signal.setup_score,
+        "reason": reason,
+        "payload": payload,
+        "setup_version": setup_versions.get(setup_id, default_versions.get(setup_id, f"{setup_id}_v1.0")),
+        "batch_id": batch_id,
+    }
+
+
 def process_symbol_timeframe(
     symbol: str,
     tf: str,
@@ -244,11 +292,10 @@ def process_symbol_timeframe(
     setup_versions: dict[str, str],
     batch_id: str,
     factory: FeatureFactory,
-    s1_eval: S1Evaluator,
-    s2_eval: S2Evaluator,
+    evaluators: dict,
     start_days: int,
 ) -> list[dict]:
-    """Walk forward through candles, evaluating S1/S2 at each bar.
+    """Walk forward through candles, evaluating all active setups at each bar.
 
     Returns list of opportunity dicts for triggered signals.
     """
@@ -260,6 +307,8 @@ def process_symbol_timeframe(
     # State tracking
     s1_prev_state = None
     s2_prev_state = None
+    s6_prev_state = None   # Tracked per signal_engine.py line 544-546 pattern
+    prev_snapshot = None    # S7: handles None gracefully — falls back to candles[-21:-1]
     bb_width_history = []
     ma_gap_history = []
 
@@ -273,13 +322,17 @@ def process_symbol_timeframe(
         for c in htf_candles:
             htf_by_ts[c.timestamp] = c
 
-    # Determine evaluation start index (skip warmup)
-    # We need WARMUP_BARS of history, but start evaluating only within --days window
-    eval_start_idx = max(WARMUP_BARS, MIN_BARS)
-
     # Calculate the cutoff timestamp for the --days window
     now_ms = int(datetime.now(timezone.utc).timestamp() * 1000)
     cutoff_ms = now_ms - (start_days * 86400 * 1000)
+
+    # Get evaluator refs (may be None if setup not in dict)
+    s1_eval = evaluators.get("S1")
+    s2_eval = evaluators.get("S2")
+    s3_eval = evaluators.get("S3")
+    s5_eval = evaluators.get("S5")
+    s6_eval = evaluators.get("S6")
+    s7_eval = evaluators.get("S7")
 
     for i in range(MIN_BARS, len(candles)):
         # Build candle window (up to 500 bars of history)
@@ -310,19 +363,30 @@ def process_symbol_timeframe(
         bb_width_history.append(snapshot.bb_width)
         ma_gap_history.append(snapshot.ma_gap_atr)
 
-        # Only evaluate triggers within the requested date range
+        # --- Warmup phase: compute stateful setup state but don't evaluate triggers ---
         if current_bar.timestamp < cutoff_ms:
-            # Still compute state for warmup tracking
-            s1_state = s1_eval.compute_state(
-                snapshot, bb_width_history, s1_prev_state,
-            )
-            s1_prev_state = s1_state
+            if s1_eval:
+                s1_state = s1_eval.compute_state(
+                    snapshot, bb_width_history, s1_prev_state,
+                )
+                s1_prev_state = s1_state
 
-            s2_state = s2_eval.compute_state(
-                snapshot, ma_gap_history, s2_prev_state,
-            )
-            s2_prev_state = s2_state
+            if s2_eval:
+                s2_state = s2_eval.compute_state(
+                    snapshot, ma_gap_history, s2_prev_state,
+                )
+                s2_prev_state = s2_state
+
+            if s6_eval:
+                s6_prev_state = s6_eval.compute_state(snapshot, s6_prev_state)
+
+            # S7: stash snapshot for next bar's prev_snapshot
+            prev_snapshot = snapshot
+
+            # S3, S5: stateless — no warmup needed
             continue
+
+        # --- Evaluation phase ---
 
         # Compute BTC snapshot for correlation filter (altcoins only)
         btc_snapshot = None
@@ -338,56 +402,78 @@ def process_symbol_timeframe(
                 except Exception:
                     pass
 
+        bar_ts_ms = current_bar.timestamp
+
         # --- S1 Evaluation ---
-        s1_state = s1_eval.compute_state(
-            snapshot, bb_width_history, s1_prev_state,
-            btc_snapshot, btc_bb_hist,
-        )
-        s1_prev_state = s1_state
+        if s1_eval:
+            s1_state = s1_eval.compute_state(
+                snapshot, bb_width_history, s1_prev_state,
+                btc_snapshot, btc_bb_hist,
+            )
+            s1_prev_state = s1_state
 
-        s1_signal = s1_eval.evaluate_trigger(snapshot, s1_state, symbol, tf)
-        if s1_signal:
-            bar_dt = datetime.fromtimestamp(current_bar.timestamp / 1000, tz=timezone.utc)
-            reason = "; ".join(s1_signal.explain.why_items) if s1_signal.explain else None
-            payload = build_signal_payload(s1_signal, "S1", symbol, tf, current_bar.timestamp)
-
-            opportunities.append({
-                "created_ts": bar_dt,
-                "symbol": symbol,
-                "timeframe": tf,
-                "setup_id": "S1",
-                "decision": "SIGNAL",
-                "score": s1_signal.setup_score,
-                "reason": reason,
-                "payload": payload,
-                "setup_version": setup_versions.get("S1", "S1_v2.1"),
-                "batch_id": batch_id,
-            })
+            s1_signal = s1_eval.evaluate_trigger(snapshot, s1_state, symbol, tf)
+            if s1_signal:
+                opportunities.append(_make_opportunity(
+                    s1_signal, "S1", symbol, tf, bar_ts_ms, setup_versions, batch_id,
+                ))
 
         # --- S2 Evaluation ---
-        s2_state = s2_eval.compute_state(
-            snapshot, ma_gap_history, s2_prev_state, btc_snapshot,
-        )
-        s2_prev_state = s2_state
+        if s2_eval:
+            s2_state = s2_eval.compute_state(
+                snapshot, ma_gap_history, s2_prev_state, btc_snapshot,
+            )
+            s2_prev_state = s2_state
 
-        s2_signal = s2_eval.evaluate_trigger(snapshot, s2_state, symbol, tf)
-        if s2_signal:
-            bar_dt = datetime.fromtimestamp(current_bar.timestamp / 1000, tz=timezone.utc)
-            reason = "; ".join(s2_signal.explain.why_items) if s2_signal.explain else None
-            payload = build_signal_payload(s2_signal, "S2", symbol, tf, current_bar.timestamp)
+            s2_signal = s2_eval.evaluate_trigger(snapshot, s2_state, symbol, tf)
+            if s2_signal:
+                opportunities.append(_make_opportunity(
+                    s2_signal, "S2", symbol, tf, bar_ts_ms, setup_versions, batch_id,
+                ))
 
-            opportunities.append({
-                "created_ts": bar_dt,
-                "symbol": symbol,
-                "timeframe": tf,
-                "setup_id": "S2",
-                "decision": "SIGNAL",
-                "score": s2_signal.setup_score,
-                "reason": reason,
-                "payload": payload,
-                "setup_version": setup_versions.get("S2", "S2_v1.4"),
-                "batch_id": batch_id,
-            })
+        # --- S3 Evaluation (RSI Divergence) ---
+        if s3_eval:
+            # S3 needs RSI series — same pattern as signal_engine.py line 451-452
+            rsi_series = factory._rsi_series(
+                np.array([c.close for c in window]), 14
+            )
+            s3_state = s3_eval.compute_state(snapshot, rsi_series)
+            s3_signal = s3_eval.evaluate_trigger(snapshot, s3_state, symbol, tf)
+            if s3_signal:
+                opportunities.append(_make_opportunity(
+                    s3_signal, "S3", symbol, tf, bar_ts_ms, setup_versions, batch_id,
+                ))
+
+        # --- S5 Evaluation (S/R Breakout) ---
+        if s5_eval:
+            s5_state = s5_eval.compute_state(snapshot)
+            s5_signal = s5_eval.evaluate_trigger(snapshot, s5_state, symbol, tf)
+            if s5_signal:
+                opportunities.append(_make_opportunity(
+                    s5_signal, "S5", symbol, tf, bar_ts_ms, setup_versions, batch_id,
+                ))
+
+        # --- S6 Evaluation (Trend Continuation Pullback) ---
+        if s6_eval:
+            s6_state = s6_eval.compute_state(snapshot, s6_prev_state)
+            s6_prev_state = s6_state
+            s6_signal = s6_eval.evaluate_trigger(snapshot, s6_state, symbol, tf)
+            if s6_signal:
+                opportunities.append(_make_opportunity(
+                    s6_signal, "S6", symbol, tf, bar_ts_ms, setup_versions, batch_id,
+                ))
+
+        # --- S7 Evaluation (Momentum Breakout / Donchian) ---
+        if s7_eval:
+            s7_state = s7_eval.compute_state(snapshot, prev_snapshot)
+            s7_signal = s7_eval.evaluate_trigger(snapshot, s7_state, symbol, tf)
+            if s7_signal:
+                opportunities.append(_make_opportunity(
+                    s7_signal, "S7", symbol, tf, bar_ts_ms, setup_versions, batch_id,
+                ))
+
+        # Stash current snapshot for S7's next-bar prev_snapshot
+        prev_snapshot = snapshot
 
     return opportunities
 
@@ -402,7 +488,7 @@ def main():
     )
     parser.add_argument(
         "--setup-version", type=str, default=None,
-        help="Comma-separated setup versions (e.g. 'S1_v2.2,S2_v1.5'). "
+        help="Comma-separated setup versions (e.g. 'S1_v2.2,S2_v1.5,S3_v1.0'). "
              "Defaults to current code versions."
     )
     parser.add_argument(
@@ -421,21 +507,36 @@ def main():
         "--workers", type=int, default=6,
         help="Parallel workers for ProcessPool (default: 6, use 1 for sequential)"
     )
+    parser.add_argument(
+        "--clear-expired", action="store_true",
+        help="Delete stale backfill-generated expired opportunities before inserting new ones. "
+             "Scoped to matching batch_id prefix, setup_ids, timeframes, and --days window."
+    )
     args = parser.parse_args()
 
     if not DATABASE_URL:
         logger.error("DATABASE_URL not set. Set it in .env or environment.")
         sys.exit(1)
 
+    # Valid setup IDs (those with evaluators — S4 disabled)
+    valid_setup_ids = {"S1", "S2", "S3", "S5", "S6", "S7"}
+
     # Parse setup versions
-    setup_versions = {"S1": "S1_v2.1", "S2": "S2_v1.4"}
+    setup_versions = {
+        "S1": "S1_v2.1", "S2": "S2_v1.4", "S3": "S3_v1.0",
+        "S5": "S5_v1.0", "S6": "S6_v1.0", "S7": "S7_v1.0",
+    }
     if args.setup_version:
         for sv in args.setup_version.split(","):
             sv = sv.strip()
-            if sv.startswith("S1"):
-                setup_versions["S1"] = sv
-            elif sv.startswith("S2"):
-                setup_versions["S2"] = sv
+            prefix = sv.split("_")[0]
+            if prefix not in valid_setup_ids:
+                logger.error(
+                    "Unknown setup version prefix '%s' from '%s' — valid prefixes: %s",
+                    prefix, sv, sorted(valid_setup_ids),
+                )
+                sys.exit(1)
+            setup_versions[prefix] = sv
 
     # Generate batch ID
     batch_hash = hashlib.sha256(
@@ -460,6 +561,8 @@ def main():
     logger.info(f"  Batch ID:       {batch_id}")
     logger.info(f"  Symbol filter:  {symbol_filter or 'all'}")
     logger.info(f"  TF filter:      {tf_filter or 'all'}")
+    logger.info(f"  Clear expired:  {args.clear_expired}")
+    logger.info(f"  Active setups:  {sorted(valid_setup_ids)}")
     logger.info("=" * 60)
 
     # Load OHLCV data (include warmup period)
@@ -483,6 +586,36 @@ def main():
 
     logger.info(f"Processing {len(symbols_seen)} symbols x {len(tfs_seen)} timeframes")
 
+    # --- Clear stale expired backfill opportunities if requested ---
+    if args.clear_expired:
+        setup_ids_list = sorted(valid_setup_ids)
+        tf_list = sorted(tfs_seen) if not tf_filter else tf_filter
+        logger.info("=" * 60)
+        logger.info("--clear-expired: Deleting stale backfill opportunities")
+        logger.info(f"  Scope: status='expired' AND batch_id LIKE 'backfill_%%'")
+        logger.info(f"  Setup IDs:  {setup_ids_list}")
+        logger.info(f"  Timeframes: {tf_list}")
+        logger.info(f"  Window:     last {args.days} days")
+
+        with psycopg.connect(DATABASE_URL) as conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    DELETE FROM opportunities
+                    WHERE status = 'expired'
+                      AND batch_id LIKE 'backfill_%%'
+                      AND setup_id = ANY(%(setup_ids)s)
+                      AND timeframe = ANY(%(timeframes)s)
+                      AND created_ts >= NOW() - %(days)s * INTERVAL '1 day'
+                """, {
+                    "setup_ids": setup_ids_list,
+                    "timeframes": tf_list,
+                    "days": args.days,
+                })
+                deleted_count = cur.rowcount
+            conn.commit()
+        logger.info(f"  Deleted {deleted_count:,} stale expired opportunities")
+        logger.info("=" * 60)
+
     # Preload BTC data for each timeframe (needed for correlation filter)
     btc_data = {}
     for tf in tfs_seen:
@@ -501,18 +634,23 @@ def main():
     n_workers = args.workers
 
     t0 = time.time()
-    all_opportunities = []
+
+    # Running counters for incremental tracking
+    total_inserted = 0
+    total_found = 0
+    by_setup = defaultdict(int)
+    by_tf = defaultdict(int)
 
     if n_workers <= 1:
         # Sequential path (for debugging / correctness verification)
         logger.info(f"Running sequentially (--workers {n_workers})")
         factory = FeatureFactory()
-        s1_eval = S1Evaluator()
-        s2_eval = S2Evaluator()
+        evaluators = _build_evaluators()
         processed = 0
 
         for symbol, tfs in work_items:
             processed += 1
+            symbol_opps = []
             for tf in tfs:
                 candles = all_data.get((symbol, tf), [])
                 htf_tf = HTF_MAP.get(tf)
@@ -523,18 +661,36 @@ def main():
                     symbol=symbol, tf=tf, candles=candles,
                     htf_candles=htf_candles, btc_candles=btc_candles,
                     setup_versions=setup_versions, batch_id=batch_id,
-                    factory=factory, s1_eval=s1_eval, s2_eval=s2_eval,
+                    factory=factory, evaluators=evaluators,
                     start_days=args.days,
                 )
-                all_opportunities.extend(opps)
+                symbol_opps.extend(opps)
 
-            if processed % 50 == 0 or processed == len(work_items):
-                elapsed = time.time() - t0
-                logger.info(
-                    f"  [{processed}/{len(work_items)}] "
-                    f"{len(all_opportunities)} signals found "
-                    f"({elapsed:.0f}s)"
-                )
+            # Incremental write: insert this symbol's opps immediately
+            if symbol_opps:
+                symbol_opps.sort(key=lambda o: (o["timeframe"], o["created_ts"]))
+                n_ins = insert_opportunities(symbol_opps)
+                total_inserted += n_ins
+                total_found += len(symbol_opps)
+                for opp in symbol_opps:
+                    by_setup[opp["setup_id"]] += 1
+                    by_tf[opp["timeframe"]] += 1
+
+            # Per-symbol progress log
+            elapsed = time.time() - t0
+            eta = (elapsed / processed) * (len(work_items) - processed) if processed > 0 else 0
+            sym_setup_counts = defaultdict(int)
+            for opp in symbol_opps:
+                sym_setup_counts[opp["setup_id"]] += 1
+            setup_breakdown = " ".join(
+                f"{count} {sid}" for sid, count in sorted(sym_setup_counts.items())
+            ) if sym_setup_counts else "0"
+            logger.info(
+                "[%d/%d] %s: %d signals (%s) | %s inserted | %s elapsed | ~%s remaining",
+                processed, len(work_items), symbol, len(symbol_opps),
+                setup_breakdown, f"{total_inserted:,}",
+                _format_duration(elapsed), _format_duration(eta),
+            )
     else:
         # Parallel path — ProcessPoolExecutor with fork COW
         logger.info(f"Running with {n_workers} parallel workers (fork COW)")
@@ -571,7 +727,32 @@ def main():
                 processed += 1
                 try:
                     sym, opps = future.result()
-                    all_opportunities.extend(opps)
+
+                    # Incremental write: insert immediately on completion
+                    if opps:
+                        opps.sort(key=lambda o: (o["timeframe"], o["created_ts"]))
+                        n_ins = insert_opportunities(opps)
+                        total_inserted += n_ins
+                        total_found += len(opps)
+                        for opp in opps:
+                            by_setup[opp["setup_id"]] += 1
+                            by_tf[opp["timeframe"]] += 1
+
+                    # Per-symbol progress log
+                    elapsed = time.time() - t0
+                    eta = (elapsed / processed) * (len(work_items) - processed) if processed > 0 else 0
+                    sym_setup_counts = defaultdict(int)
+                    for opp in opps:
+                        sym_setup_counts[opp["setup_id"]] += 1
+                    setup_breakdown = " ".join(
+                        f"{count} {sid}" for sid, count in sorted(sym_setup_counts.items())
+                    ) if sym_setup_counts else "0"
+                    logger.info(
+                        "[%d/%d] %s: %d signals (%s) | %s inserted | %s elapsed | ~%s remaining",
+                        processed, len(work_items), sym, len(opps),
+                        setup_breakdown, f"{total_inserted:,}",
+                        _format_duration(elapsed), _format_duration(eta),
+                    )
                 except Exception as e:
                     failed_count += 1
                     logger.warning(f"Failed {symbol}: {e}")
@@ -583,47 +764,35 @@ def main():
                         pool.shutdown(wait=False, cancel_futures=True)
                         sys.exit(1)
 
-                if processed % 50 == 0 or processed == len(work_items):
-                    elapsed = time.time() - t0
-                    logger.info(
-                        f"  [{processed}/{len(work_items)}] "
-                        f"{len(all_opportunities)} signals found "
-                        f"({elapsed:.0f}s)"
-                    )
-
-    # Deterministic output: sort by (symbol, timeframe, created_ts)
-    # Guarantees identical DB order regardless of parallel completion order
-    all_opportunities.sort(key=lambda o: (o["symbol"], o["timeframe"], o["created_ts"]))
-
-    # Insert all opportunities into database
-    logger.info(f"\nInserting {len(all_opportunities)} opportunities into database...")
-    inserted = insert_opportunities(all_opportunities)
-
-    # Summary by setup
-    by_setup = defaultdict(int)
-    by_tf = defaultdict(int)
-    for opp in all_opportunities:
-        by_setup[opp["setup_id"]] += 1
-        by_tf[opp["timeframe"]] += 1
-
+    # Summary
     elapsed = time.time() - t0
     logger.info("=" * 60)
-    logger.info(f"Backfill complete in {elapsed:.1f}s")
-    logger.info(f"  Bars evaluated:       {total_bars_evaluated:,}")
-    logger.info(f"  Signals found:        {len(all_opportunities)}")
-    logger.info(f"  Opportunities stored: {inserted}")
+    logger.info(f"Backfill complete in {_format_duration(elapsed)}")
+    logger.info(f"  Signals found:        {total_found:,}")
+    logger.info(f"  Opportunities stored: {total_inserted:,}")
     logger.info(f"  Batch ID:             {batch_id}")
     logger.info(f"  Setup versions:       {setup_versions}")
     logger.info(f"\n  By setup:")
     for setup_id, count in sorted(by_setup.items()):
-        logger.info(f"    {setup_id}: {count}")
+        logger.info(f"    {setup_id}: {count:,}")
     logger.info(f"  By timeframe:")
     for tf, count in sorted(by_tf.items()):
-        logger.info(f"    {tf}: {count}")
+        logger.info(f"    {tf}: {count:,}")
     logger.info("=" * 60)
     logger.info(f"\nTo simulate these opportunities:")
     logger.info(f'  POST /v1/control/runs/simulation')
     logger.info(f'  {{"batch_id": "{batch_id}"}}')
+
+
+def _format_duration(seconds: float) -> str:
+    """Format seconds as human-readable duration (e.g. '2h13m45s')."""
+    if seconds < 60:
+        return f"{seconds:.0f}s"
+    m, s = divmod(int(seconds), 60)
+    h, m = divmod(m, 60)
+    if h > 0:
+        return f"{h}h{m:02d}m{s:02d}s"
+    return f"{m}m{s:02d}s"
 
 
 if __name__ == "__main__":
