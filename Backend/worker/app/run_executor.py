@@ -1710,7 +1710,67 @@ class RunExecutor:
                         "payload_json": row[8],
                     })
 
-        return opportunities
+        return self._dedup_opportunities(opportunities)
+
+    @staticmethod
+    def _dedup_opportunities(opportunities: list[dict]) -> list[dict]:
+        """
+        Collapse pre-dedup-fix duplicates while preserving distinct events.
+
+        Before 2026-02-08, the signal worker created a new row on every scan
+        cycle instead of updating in place, producing 5-15 identical rows per
+        signal event.  The old blanket DISTINCT ON was too aggressive (collapsed
+        legitimately different events).
+
+        Logic: two opportunities are duplicates if they share
+        (symbol, timeframe, setup_id, entry_price) and were created within
+        1 hour of each other.  Different entry_price or > 1h gap = distinct.
+        """
+        import json as _json
+
+        CLUSTER_GAP_S = 3600  # 1 hour
+
+        # Group by (symbol, timeframe, setup_id) — preserve overall order
+        # Track last-kept timestamp + entry_price per group
+        last_kept: dict[tuple, tuple] = {}   # key → (created_ts, entry_price)
+        deduped: list[dict] = []
+        skipped = 0
+
+        for opp in opportunities:
+            sym = opp.get("symbol", "")
+            tf = opp.get("timeframe", "")
+            sid = opp.get("setup_id", "")
+            created = opp.get("created_ts")
+
+            # Parse entry_price from payload
+            raw = opp.get("payload_json")
+            if isinstance(raw, str):
+                try:
+                    p = _json.loads(raw)
+                except Exception:
+                    p = {}
+            else:
+                p = raw or {}
+            ep = p.get("entry_price")
+            ep_rounded = round(ep, 8) if ep is not None else None
+
+            grp = (sym, tf, sid)
+            if grp in last_kept:
+                prev_ts, prev_ep = last_kept[grp]
+                gap = (created - prev_ts).total_seconds() if created and prev_ts else float("inf")
+                if gap < CLUSTER_GAP_S and ep_rounded == prev_ep:
+                    # Same cluster — update cluster tail and skip
+                    last_kept[grp] = (created, ep_rounded)
+                    skipped += 1
+                    continue
+
+            last_kept[grp] = (created, ep_rounded)
+            deduped.append(opp)
+
+        if skipped:
+            logger.info("Dedup: dropped %d same-signal duplicates, kept %d",
+                        skipped, len(deduped))
+        return deduped
 
     # =========================================================================
     # Helpers
