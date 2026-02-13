@@ -4,7 +4,7 @@ Backfill opportunities from stored OHLCV data using current setup code.
 
 Reads OHLCV from Postgres ohlcv table (populated by backfill_ohlcv.py),
 walks forward bar-by-bar computing indicators and evaluating
-S1/S2/S3/S5/S6/S7 setups (S4 disabled), and inserts triggered signals
+S1/S2/S3/S5/S6/S7/U1 setups (S4 disabled), and inserts triggered signals
 as expired opportunities with setup_version and batch_id for version tracking.
 
 Writes to DB incrementally per-symbol (crash at hour 7 doesn't lose hours 1-6).
@@ -68,6 +68,7 @@ from setups.s3_rsi_divergence import S3Evaluator, S3Signal
 from setups.s5_sr_breakout import S5Evaluator, S5Signal
 from setups.s6_trend_pullback import S6Evaluator, S6Signal
 from setups.s7_momentum_breakout import S7Evaluator, S7Signal
+from setups.u1_unicorn_ignition import U1Evaluator, U1Signal
 
 logging.basicConfig(
     level=logging.INFO,
@@ -105,7 +106,7 @@ _shared_start_days = 0
 
 
 def _build_evaluators() -> dict:
-    """Create a fresh evaluator dict for all active setups."""
+    """Create a fresh evaluator dict for all active setups (S4 disabled)."""
     return {
         "S1": S1Evaluator(),
         "S2": S2Evaluator(),
@@ -113,6 +114,7 @@ def _build_evaluators() -> dict:
         "S5": S5Evaluator(),
         "S6": S6Evaluator(),
         "S7": S7Evaluator(),
+        "U1": U1Evaluator(),
     }
 
 
@@ -267,6 +269,7 @@ def _make_opportunity(signal, setup_id: str, symbol: str, tf: str,
     default_versions = {
         "S1": "S1_v2.1", "S2": "S2_v1.4", "S3": "S3_v1.0",
         "S5": "S5_v1.0", "S6": "S6_v1.0", "S7": "S7_v1.0",
+        "U1": "U1_v1.0",
     }
 
     return {
@@ -309,6 +312,7 @@ def process_symbol_timeframe(
     s2_prev_state = None
     s6_prev_state = None   # Tracked per signal_engine.py line 544-546 pattern
     prev_snapshot = None    # S7: handles None gracefully — falls back to candles[-21:-1]
+    u1_prev_state = None   # U1: gate state machine (EMBRYO → EMBRYO_ACTIVE)
     bb_width_history = []
     ma_gap_history = []
 
@@ -333,6 +337,7 @@ def process_symbol_timeframe(
     s5_eval = evaluators.get("S5")
     s6_eval = evaluators.get("S6")
     s7_eval = evaluators.get("S7")
+    u1_eval = evaluators.get("U1")
 
     for i in range(MIN_BARS, len(candles)):
         # Build candle window (up to 500 bars of history)
@@ -382,6 +387,10 @@ def process_symbol_timeframe(
 
             # S7: stash snapshot for next bar's prev_snapshot
             prev_snapshot = snapshot
+
+            # U1: evaluate gates during warmup to build state machine
+            if u1_eval:
+                u1_prev_state = u1_eval.evaluate_gates(window, u1_prev_state)
 
             # S3, S5: stateless — no warmup needed
             continue
@@ -472,6 +481,17 @@ def process_symbol_timeframe(
                     s7_signal, "S7", symbol, tf, bar_ts_ms, setup_versions, batch_id,
                 ))
 
+        # --- U1 Evaluation (Unicorn Ignition) ---
+        # U1 uses raw candles, not IndicatorSnapshot. Gate eval builds state,
+        # trigger eval only fires for EMBRYO_ACTIVE phase.
+        if u1_eval:
+            u1_prev_state = u1_eval.evaluate_gates(window, u1_prev_state)
+            u1_signal = u1_eval.evaluate_trigger(window, u1_prev_state, symbol, tf)
+            if u1_signal:
+                opportunities.append(_make_opportunity(
+                    u1_signal, "U1", symbol, tf, bar_ts_ms, setup_versions, batch_id,
+                ))
+
         # Stash current snapshot for S7's next-bar prev_snapshot
         prev_snapshot = snapshot
 
@@ -519,12 +539,13 @@ def main():
         sys.exit(1)
 
     # Valid setup IDs (those with evaluators — S4 disabled)
-    valid_setup_ids = {"S1", "S2", "S3", "S5", "S6", "S7"}
+    valid_setup_ids = {"S1", "S2", "S3", "S5", "S6", "S7", "U1"}
 
     # Parse setup versions
     setup_versions = {
         "S1": "S1_v2.1", "S2": "S2_v1.4", "S3": "S3_v1.0",
         "S5": "S5_v1.0", "S6": "S6_v1.0", "S7": "S7_v1.0",
+        "U1": "U1_v1.0",
     }
     if args.setup_version:
         for sv in args.setup_version.split(","):
