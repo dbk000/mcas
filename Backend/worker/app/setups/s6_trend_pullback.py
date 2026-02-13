@@ -155,7 +155,7 @@ class S6Evaluator:
 
         # Microcap / stop-width protection
         # Assumes USDT-quoted pairs (quote ≈ USD). Adjust if used on non-USD quotes.
-        min_short_price: float = _env_float("S6_MIN_SHORT_PRICE", 0.01),
+        min_short_price: float = _env_float("S6_MIN_SHORT_PRICE", 1.00),
         max_stop_pct: float = _env_float("S6_MAX_STOP_PCT", 0.10),
 
         # Reclaim clearance — minimum ATR distance above/below EMA20 on reclaim

@@ -28,6 +28,11 @@ from ohlcv_backfill import backfill_for_simulation
 logger = logging.getLogger(__name__)
 
 
+def _env_float(name: str, default: float) -> float:
+    val = os.getenv(name)
+    return float(val) if val is not None else default
+
+
 @dataclass
 class SimulationConfig:
     """Configuration for opportunity simulation."""
@@ -39,6 +44,11 @@ class SimulationConfig:
     time_stop_bars: int = 50    # Default time stop if not specified
     max_fee_r_ratio: float = 0.3    # Skip trades where fees > this fraction of risk
     min_r_preservation: float = 0.5  # Skip trades where gap consumed > 50% of original R
+
+    # Entry-gate filters (applied during simulation to catch pre-filter opportunities)
+    # Matches S6 evaluator defaults — protects against microcap shorts & wide stops
+    min_short_price: float = _env_float("SIM_MIN_SHORT_PRICE", 1.00)
+    max_stop_pct: float = _env_float("SIM_MAX_STOP_PCT", 0.10)
 
 
 @dataclass
@@ -326,6 +336,27 @@ class OpportunitySimulator:
             result.data_available = False
             result.error_message = "Missing entry_price or stop_price in payload"
             return result
+
+        # ── Entry-gate filters (catch pre-filter opportunities) ──────────
+        # Microcap short protection: skip shorts on sub-threshold-price assets
+        if direction == "short" and entry_price < self.config.min_short_price:
+            result.data_available = False
+            result.error_message = (
+                f"Microcap short blocked: price={entry_price:.6f} "
+                f"< min={self.config.min_short_price}"
+            )
+            return result
+
+        # Stop-width gate: skip trades where stop distance is structurally too wide
+        if entry_price > 0:
+            stop_pct = abs(stop_price - entry_price) / entry_price
+            if stop_pct > self.config.max_stop_pct:
+                result.data_available = False
+                result.error_message = (
+                    f"Stop too wide: {stop_pct:.1%} "
+                    f"> max {self.config.max_stop_pct:.0%}"
+                )
+                return result
 
         # Calculate r_value if not present
         if r_value is None:
