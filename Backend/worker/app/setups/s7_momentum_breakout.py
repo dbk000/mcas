@@ -357,9 +357,10 @@ class S7Evaluator:
         )
 
         # Explain
+        prior_channel = state.prev_donchian_high if direction == Direction.LONG else state.prev_donchian_low
         why_items = [
             f"Donchian {'high' if direction == Direction.LONG else 'low'} breakout: "
-            f"close {current.close:.4g} vs prior channel {state.prev_donchian_high:.4g if direction == Direction.LONG else state.prev_donchian_low:.4g}",
+            f"close {current.close:.4g} vs prior channel {prior_channel:.4g}",
             f"Break strength: {break_strength:.0%} ({distance / atr:.2f} ATR beyond channel)",
             f"Volume Z-score: {snapshot.volume_z:.2f} (participation confirmed)",
             f"RSI bias: {state.rsi_bias} (RSI={snapshot.rsi:.1f})",
