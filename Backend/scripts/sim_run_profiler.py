@@ -239,6 +239,22 @@ def _flatten_trace(trace):
     if isinstance(fg, list) and fg:
         flat["meta.failed_gates"] = ",".join(str(g) for g in fg)
 
+    # Catch-all: any root-level keys not already handled
+    handled_keys = set(NAMESPACE_MAP.keys()) | set(root_keys.keys()) | {"failed_gates"}
+    for k, v in trace.items():
+        if k in handled_keys:
+            continue
+        col = f"meta.{k}"
+        if col in flat:
+            continue
+        if isinstance(v, bool):
+            flat[col] = "1" if v else "0"
+        elif isinstance(v, (int, float)):
+            flat[col] = str(v)
+        elif isinstance(v, str):
+            flat[col] = v
+        # Skip dicts/lists not in NAMESPACE_MAP (already handled above)
+
     return flat
 
 
@@ -510,7 +526,8 @@ def generate_profile(conn, run_id, trade_rows, feature_data, outdir):
         trades.append(t)
 
     # Separate valid trades from data-unavailable / errored
-    valid_trades = [t for t in trades if t["data_available"] and t["exit_reason"] is not None]
+    # Spec: "For successful trades only (data_available = True, pnl_net populated)"
+    valid_trades = [t for t in trades if t["data_available"] and t["pnl_net"] is not None]
     no_data = [t for t in trades if not t["data_available"]]
     errored = [t for t in trades if t["error_message"] and str(t["error_message"]).strip()]
 
