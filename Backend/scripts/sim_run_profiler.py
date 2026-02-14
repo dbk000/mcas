@@ -418,13 +418,71 @@ def _segment_table(title, groups):
     return "\n".join(lines)
 
 
-def generate_profile(conn, run_id, trade_rows, outdir):
+def _parse_ts(ts):
+    """Parse a timestamp value into a datetime, handling str and datetime."""
+    if isinstance(ts, datetime):
+        return ts
+    if isinstance(ts, str):
+        try:
+            return datetime.fromisoformat(ts.replace("Z", "+00:00"))
+        except (ValueError, TypeError):
+            return None
+    return None
+
+
+def _bars_held_stats(bars):
+    """Compute p25, median, p75, min, max from a list of int bars_held values."""
+    if not bars:
+        return {"p25": 0, "median": 0, "p75": 0, "min": 0, "max": 0, "count": 0}
+    b = sorted(bars)
+    n = len(b)
+
+    def _p(arr, pct):
+        idx = min(int(len(arr) * pct / 100), len(arr) - 1)
+        return arr[idx]
+
+    return {
+        "count": n,
+        "p25": _p(b, 25),
+        "median": _p(b, 50),
+        "p75": _p(b, 75),
+        "min": b[0],
+        "max": b[-1],
+    }
+
+
+def _classify_gate(error_message):
+    """Classify an error_message into a gate category for section C."""
+    if not error_message:
+        return None
+    em = str(error_message)
+    if "R-value invalid" in em:
+        return "R-value invalid after slippage"
+    if "Uneconomic" in em or "fees/R" in em:
+        return "Uneconomic (fees/R ratio)"
+    if "Microcap short" in em or "short blocked" in em:
+        return "Microcap short blocked"
+    if "stop too wide" in em.lower() or "max_stop" in em.lower():
+        return "Stop too wide"
+    if "adverse gap" in em.lower():
+        return "Adverse gap"
+    if "No OHLCV" in em or "insufficient" in em.lower() or "missing bars" in em.lower():
+        return "OHLCV data gap"
+    if "no bars" in em.lower() or "0 bars" in em.lower():
+        return "OHLCV data gap"
+    return em[:60]
+
+
+def generate_profile(conn, run_id, trade_rows, feature_data, outdir):
     """
     Phase C: Generate profile.md from trade data.
     trade_rows: list of tuples from Phase A query.
+    feature_data: (parsed, sorted_keys) from Phase B.
     """
     t0 = time.time()
     logger.info("Phase C: Generating profile...")
+
+    parsed_features, sorted_feature_keys = feature_data
 
     # Get run metadata
     with conn.cursor() as cur:
@@ -462,11 +520,11 @@ def generate_profile(conn, run_id, trade_rows, outdir):
     lines.append(f"# Simulation Profile: {run_id[:8]}\n")
     lines.append(f"Generated: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}\n")
 
-    # ── A. Run metadata ──────────────────────────────────────────────────
+    # ── A. Run Metadata ──────────────────────────────────────────────────
     lines.append("## A. Run Metadata\n")
     if run_row:
         (rid, rtype, rstatus, rname, rengine,
-         strategy_json, summary_json,
+         strategy_json_raw, summary_json_raw,
          created, started, completed, duration) = run_row
         lines.append(f"- **Run ID:** `{rid}`")
         lines.append(f"- **Type:** {rtype}")
@@ -475,31 +533,74 @@ def generate_profile(conn, run_id, trade_rows, outdir):
         lines.append(f"- **Engine:** {rengine or '—'}")
         lines.append(f"- **Created:** {created}")
         lines.append(f"- **Started:** {started}")
-        lines.append(f"- **Completed:** {completed}")
-        lines.append(f"- **Duration:** {_fmt(duration, 1)}s")
+        lines.append(f"- **Completed:** {completed or '—'}")
+        lines.append(f"- **Duration:** {_fmt(duration, 1) if duration else '—'}s")
 
-        # Parse summary_json if available
-        summary = None
-        if summary_json:
-            if isinstance(summary_json, str):
+        # Parse strategy_json for setup versions/timeframes
+        strategy = None
+        if strategy_json_raw:
+            if isinstance(strategy_json_raw, str):
                 try:
-                    summary = json.loads(summary_json)
+                    strategy = json.loads(strategy_json_raw)
                 except (json.JSONDecodeError, TypeError):
                     pass
-            elif isinstance(summary_json, dict):
-                summary = summary_json
-        if summary:
-            lines.append(f"- **Summary:** `{json.dumps(summary, indent=2)[:500]}`")
+            elif isinstance(strategy_json_raw, dict):
+                strategy = strategy_json_raw
+        if strategy:
+            sv = strategy.get("setup_versions") or strategy.get("setups") or strategy.get("setup_ids")
+            if sv:
+                lines.append(f"- **Setup versions:** {sv}")
+            tfs = strategy.get("timeframes")
+            if tfs:
+                lines.append(f"- **Timeframes:** {tfs}")
+
+        # Parse summary_json
+        summary = None
+        if summary_json_raw:
+            if isinstance(summary_json_raw, str):
+                try:
+                    summary = json.loads(summary_json_raw)
+                except (json.JSONDecodeError, TypeError):
+                    pass
+            elif isinstance(summary_json_raw, dict):
+                summary = summary_json_raw
     else:
+        summary = None
         lines.append("- Run metadata not found in DB")
+
+    # Derive stats from trade data
+    all_symbols = set(t.get("symbol") for t in trades if t.get("symbol"))
+    all_setups = sorted(set(t.get("setup_id", "?") for t in trades))
+    all_tfs = sorted(set(t.get("timeframe", "?") for t in trades))
+
+    # Date range from opportunity_created_ts
+    all_ts = [_parse_ts(t.get("opportunity_created_ts")) for t in trades]
+    all_ts = [ts for ts in all_ts if ts is not None]
+    date_min = min(all_ts).strftime("%Y-%m-%d %H:%M UTC") if all_ts else "—"
+    date_max = max(all_ts).strftime("%Y-%m-%d %H:%M UTC") if all_ts else "—"
+
+    lines.append(f"- **Setups:** {', '.join(all_setups)}")
+    lines.append(f"- **Timeframes:** {', '.join(all_tfs)}")
+    lines.append(f"- **Symbols:** {len(all_symbols)}")
+    lines.append(f"- **Date range:** {date_min} → {date_max}")
+    lines.append(f"- **Total opportunities (rows):** {len(trades)}")
+    lines.append(f"- **Simulated (data_available):** {len(valid_trades)}")
+    lines.append(f"- **Skipped (no data / error):** {len(trades) - len(valid_trades)}")
+
+    if summary:
+        lines.append("")
+        lines.append("**Run summary_json:**")
+        lines.append("```json")
+        lines.append(json.dumps(summary, indent=2))
+        lines.append("```")
     lines.append("")
 
     # ── B. Data Quality ──────────────────────────────────────────────────
     lines.append("## B. Data Quality\n")
     lines.append(f"- **Total rows:** {len(trades)}")
-    lines.append(f"- **Data available (valid):** {len(valid_trades)}")
-    lines.append(f"- **Data unavailable:** {len(no_data)}")
-    lines.append(f"- **With error messages:** {len(errored)}")
+    lines.append(f"- **Data available (valid):** {len(valid_trades)} ({_pct(len(valid_trades), len(trades))})")
+    lines.append(f"- **Data unavailable:** {len(no_data)} ({_pct(len(no_data), len(trades))})")
+    lines.append(f"- **With error messages:** {len(errored)} ({_pct(len(errored), len(trades))})")
     lines.append("")
 
     # data_available breakdown by setup
@@ -520,78 +621,115 @@ def generate_profile(conn, run_id, trade_rows, outdir):
         lines.append(f"| {sid:5s} | {a:>9d} | {u:>11d} | {_pct(a, a + u):>11s} |")
     lines.append("")
 
-    # Error taxonomy
+    # Error taxonomy with percentage and example symbol+TF
     if errored:
-        err_counts = Counter(t.get("error_message", "?") for t in errored)
+        # Group by normalized error message
+        err_groups = defaultdict(list)
+        for t in errored:
+            err_groups[str(t.get("error_message", "?"))].append(t)
+
         lines.append("### Error taxonomy\n")
-        lines.append("| Error | Count |")
-        lines.append("|:------|------:|")
-        for err, cnt in err_counts.most_common(20):
-            # Truncate long error messages
-            err_short = str(err)[:80]
-            lines.append(f"| {err_short} | {cnt:>5d} |")
+        lines.append("| Error | Count | % of Total | Example |")
+        lines.append("|:------|------:|-----------:|:--------|")
+        for err, group in sorted(err_groups.items(), key=lambda x: -len(x[1])):
+            cnt = len(group)
+            ex = group[0]
+            example = f"{ex.get('symbol', '?')}/{ex.get('timeframe', '?')}/{ex.get('setup_id', '?')}"
+            err_short = str(err)[:70]
+            lines.append(f"| {err_short} | {cnt:>5d} | {_pct(cnt, len(trades)):>10s} | {example} |")
         lines.append("")
+
+        # OHLCV gap signatures
+        ohlcv_gap_errors = [t for t in errored if any(
+            kw in str(t.get("error_message", "")).lower()
+            for kw in ["no ohlcv", "missing bars", "insufficient", "0 bars", "no bars"]
+        )]
+        if ohlcv_gap_errors:
+            lines.append(f"**OHLCV gap signatures:** {len(ohlcv_gap_errors)} errors reference missing/insufficient OHLCV data.\n")
 
     # ── C. Gate Impact ────────────────────────────────────────────────────
     lines.append("## C. Gate Impact\n")
+    lines.append("Gate rejections are identified from `error_message` on trades where `data_available = False`.\n")
 
-    # Parse payload_json to find rejection reasons / failed gates
-    rejected = []
-    for t in trades:
-        pj = t.get("opportunity_payload_json")
-        if not pj:
-            continue
-        payload = None
-        if isinstance(pj, str):
-            try:
-                payload = json.loads(pj)
-            except (json.JSONDecodeError, TypeError):
-                continue
-        elif isinstance(pj, dict):
-            payload = pj
-        if not payload:
-            continue
+    # Classify all errored trades by gate category
+    gate_groups = defaultdict(list)
+    for t in errored:
+        cat = _classify_gate(t.get("error_message"))
+        if cat:
+            gate_groups[cat].append(t)
 
-        rr = payload.get("rejection_reason")
-        fg = payload.get("failed_gates")
-        if rr or fg:
-            rejected.append({
-                "symbol": t["symbol"],
-                "setup_id": t["setup_id"],
-                "rejection_reason": rr,
-                "failed_gates": fg,
-                "r_multiple": t["r_multiple"],
-                "pnl_net": t["pnl_net"],
-            })
+    if gate_groups:
+        lines.append("### Gate rejection summary\n")
+        lines.append("| Gate | Count | % of Total | Hypothetical Avg R | Hypothetical Win Rate | Estimable? |")
+        lines.append("|:-----|------:|-----------:|-------------------:|----------------------:|:-----------|")
+        for gate, group in sorted(gate_groups.items(), key=lambda x: -len(x[1])):
+            cnt = len(group)
+            # Check if we can estimate hypothetical R
+            # These trades were rejected so they have no pnl_net/r_multiple from simulation
+            # But they DO have entry_price, stop_price, tp1_price from the opportunity
+            estimable = [t for t in group if t["entry_price"] is not None and t["stop_price"] is not None]
+            if estimable:
+                # We can't compute actual R because we don't know what the market did
+                # But we can note the fields exist
+                est_note = f"Yes ({len(estimable)} have entry+stop)"
+                # Cannot estimate avg R — these trades were never simulated
+                avg_r_str = "N/A (not simulated)"
+                wr_str = "N/A"
+            else:
+                est_note = "No (missing entry/stop)"
+                avg_r_str = "N/A"
+                wr_str = "N/A"
+            lines.append(f"| {gate} | {cnt:>5d} | {_pct(cnt, len(trades)):>10s} | {avg_r_str} | {wr_str} | {est_note} |")
+        lines.append("")
+        lines.append("*Note: Rejected trades were never forward-simulated, so actual R-multiple cannot be computed.*")
+        lines.append("*To estimate gate impact, re-run the simulation with gates disabled and compare.*\n")
+    else:
+        lines.append("No gate rejections identified in error messages.\n")
 
-    if rejected:
-        # Rejection reason breakdown
-        reason_counts = Counter(r.get("rejection_reason", "unknown") for r in rejected)
-        lines.append("### Rejection reasons\n")
-        lines.append("| Reason | Count |")
+    # TP invalidation as a gate (for trades that DID simulate)
+    tp_inv_count = 0
+    tp_inv_reasons = Counter()
+    tp_inv_trades = []
+    with conn.cursor() as cur:
+        cur.execute(
+            """SELECT sr.id, sr.trace_json, sr.r_multiple, sr.pnl_net
+               FROM simulation_results sr
+               WHERE sr.run_id = %s AND sr.data_available = TRUE""",
+            (run_id,),
+        )
+        for (tid, tj, r_mult, pnl) in cur.fetchall():
+            trace = None
+            if isinstance(tj, str):
+                try:
+                    trace = json.loads(tj)
+                except (json.JSONDecodeError, TypeError):
+                    pass
+            elif isinstance(tj, dict):
+                trace = tj
+            if trace and trace.get("tp_invalidated"):
+                tp_inv_count += 1
+                reason = trace.get("tp_invalidation_reason", "unknown")
+                tp_inv_reasons[reason] += 1
+                tp_inv_trades.append({"r_multiple": r_mult, "pnl_net": pnl})
+
+    if tp_inv_count:
+        lines.append(f"### TP Invalidation (post-entry gate)\n")
+        lines.append(f"- **TP invalidated:** {tp_inv_count} / {len(valid_trades)} ({_pct(tp_inv_count, len(valid_trades))})")
+        tp_r = [t["r_multiple"] for t in tp_inv_trades if t["r_multiple"] is not None]
+        if tp_r:
+            tp_wins = [r for r in tp_r if r >= 0]
+            lines.append(f"- **Avg R of TP-invalidated trades:** {_fmt(sum(tp_r) / len(tp_r), 2)}")
+            lines.append(f"- **Win rate of TP-invalidated trades:** {_pct(len(tp_wins), len(tp_r))}")
+        lines.append("\n| Reason | Count |")
         lines.append("|:-------|------:|")
-        for reason, cnt in reason_counts.most_common():
+        for reason, cnt in tp_inv_reasons.most_common():
             lines.append(f"| {reason} | {cnt:>5d} |")
         lines.append("")
-
-        # Hypothetical R from rejected trades
-        rejected_with_r = [r for r in rejected if r["r_multiple"] is not None]
-        if rejected_with_r:
-            hyp_r = [r["r_multiple"] for r in rejected_with_r]
-            lines.append("### Hypothetical R from rejected trades\n")
-            lines.append(f"- **Count:** {len(hyp_r)}")
-            lines.append(f"- **Avg R:** {_fmt(sum(hyp_r) / len(hyp_r), 2)}")
-            lines.append(f"- **Sum R:** {_fmt(sum(hyp_r), 2)}")
-            winners = [r for r in hyp_r if r >= 0]
-            lines.append(f"- **Win rate:** {_pct(len(winners), len(hyp_r))}")
-            lines.append("")
-    else:
-        lines.append("No rejection/gate data found in opportunity payloads.\n")
 
     # ── D. Segmentation ──────────────────────────────────────────────────
     lines.append("## D. Segmentation\n")
 
-    # Aggregate metrics for valid trades
+    # Overall
     all_m = _compute_metrics(valid_trades)
     lines.append("### Overall\n")
     lines.append(METRICS_HEADER)
@@ -637,28 +775,53 @@ def generate_profile(conn, run_id, trade_rows, outdir):
         by_setup_tf[key].append(t)
     lines.append(_segment_table("D6. By Setup × Timeframe", by_setup_tf))
 
-    # D7. By R-multiple bucket
-    by_r_bucket = defaultdict(list)
+    # D7. By date (daily buckets based on entry_ts)
+    by_date = defaultdict(list)
     for t in valid_trades:
-        r = t["r_multiple"]
-        if r is None:
-            bucket = "N/A"
-        elif r <= -1:
-            bucket = "R ≤ -1"
-        elif r < 0:
-            bucket = "-1 < R < 0"
-        elif r == 0:
-            bucket = "R = 0"
-        elif r <= 1:
-            bucket = "0 < R ≤ 1"
-        elif r <= 3:
-            bucket = "1 < R ≤ 3"
-        elif r <= 5:
-            bucket = "3 < R ≤ 5"
-        else:
-            bucket = "R > 5"
-        by_r_bucket[bucket].append(t)
-    lines.append(_segment_table("D7. By R-Multiple Bucket", by_r_bucket))
+        dt = _parse_ts(t.get("entry_ts"))
+        if dt:
+            by_date[dt.strftime("%Y-%m-%d")].append(t)
+    lines.append(_segment_table("D7. By Date (entry_ts)", by_date))
+
+    # D8. By hour-of-day (entry_ts UTC)
+    by_hour = defaultdict(list)
+    for t in valid_trades:
+        dt = _parse_ts(t.get("entry_ts"))
+        if dt:
+            by_hour[f"{dt.hour:02d}:00"].append(t)
+
+    lines.append("### D8. By Hour of Day (entry_ts UTC)\n")
+    lines.append("| Hour  | Trades | Win Rate | Avg PnL    |")
+    lines.append("|:------|-------:|---------:|-----------:|")
+    for h in range(24):
+        key = f"{h:02d}:00"
+        if key in by_hour:
+            hm = _compute_metrics(by_hour[key])
+            lines.append(
+                f"| {key:5s} | {hm['count']:>6d} | {_pct(hm['wins'], hm['count']):>8s} "
+                f"| {_fmt(hm['avg_pnl'], 2):>10s} |"
+            )
+    lines.append("")
+
+    # D9. By day-of-week (entry_ts)
+    DAY_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+    by_dow = defaultdict(list)
+    for t in valid_trades:
+        dt = _parse_ts(t.get("entry_ts"))
+        if dt:
+            by_dow[DAY_NAMES[dt.weekday()]].append(t)
+
+    lines.append("### D9. By Day of Week (entry_ts)\n")
+    lines.append("| Day | Trades | Win Rate | Avg PnL    |")
+    lines.append("|:----|-------:|---------:|-----------:|")
+    for day in DAY_NAMES:
+        if day in by_dow:
+            dm = _compute_metrics(by_dow[day])
+            lines.append(
+                f"| {day:3s} | {dm['count']:>6d} | {_pct(dm['wins'], dm['count']):>8s} "
+                f"| {_fmt(dm['avg_pnl'], 2):>10s} |"
+            )
+    lines.append("")
 
     # ── E. Exit Mechanics ────────────────────────────────────────────────
     lines.append("## E. Exit Mechanics\n")
@@ -672,7 +835,40 @@ def generate_profile(conn, run_id, trade_rows, outdir):
         lines.append(f"| {reason:12s} | {cnt:>5d} | {_pct(cnt, len(valid_trades)):>10s} |")
     lines.append("")
 
-    # E2. Bars held distribution (percentiles)
+    # E2. Exit Reason × Setup cross-tab
+    lines.append("### E2. Exit Reason × Setup\n")
+    exit_reasons_sorted = [r for r, _ in exit_counts.most_common()]
+    setups_sorted = sorted(by_setup.keys())
+    header = "| Exit Reason  | " + " | ".join(f"{s:>5s}" for s in setups_sorted) + " | Total |"
+    sep = "|:-------------|" + "|".join("------:" for _ in setups_sorted) + "|------:|"
+    lines.append(header)
+    lines.append(sep)
+    for reason in exit_reasons_sorted:
+        cells = []
+        for s in setups_sorted:
+            cnt = sum(1 for t in by_setup[s] if t.get("exit_reason") == reason)
+            cells.append(f"{cnt:>5d}")
+        total = exit_counts[reason]
+        lines.append(f"| {reason:12s} | " + " | ".join(cells) + f" | {total:>5d} |")
+    lines.append("")
+
+    # E3. Exit Reason × Timeframe cross-tab
+    lines.append("### E3. Exit Reason × Timeframe\n")
+    tfs_sorted = sorted(by_tf.keys())
+    header = "| Exit Reason  | " + " | ".join(f"{tf:>4s}" for tf in tfs_sorted) + " | Total |"
+    sep = "|:-------------|" + "|".join("-----:" for _ in tfs_sorted) + "|------:|"
+    lines.append(header)
+    lines.append(sep)
+    for reason in exit_reasons_sorted:
+        cells = []
+        for tf in tfs_sorted:
+            cnt = sum(1 for t in by_tf[tf] if t.get("exit_reason") == reason)
+            cells.append(f"{cnt:>4d}")
+        total = exit_counts[reason]
+        lines.append(f"| {reason:12s} | " + " | ".join(cells) + f" | {total:>5d} |")
+    lines.append("")
+
+    # E4. Bars held distribution (percentiles)
     bars_list = sorted([t["bars_held"] for t in valid_trades if t["bars_held"] is not None])
     if bars_list:
         def _percentile(arr, p):
@@ -680,7 +876,7 @@ def generate_profile(conn, run_id, trade_rows, outdir):
             idx = min(idx, len(arr) - 1)
             return arr[idx]
 
-        lines.append("### E2. Bars Held Distribution\n")
+        lines.append("### E4. Bars Held Distribution (all exits)\n")
         lines.append("| Percentile | Bars |")
         lines.append("|-----------:|-----:|")
         for p in [5, 10, 25, 50, 75, 90, 95]:
@@ -688,49 +884,43 @@ def generate_profile(conn, run_id, trade_rows, outdir):
         lines.append(f"| Mean | {_fmt(sum(bars_list) / len(bars_list), 1):>4s} |")
         lines.append("")
 
-    # E3. Bars held by exit reason
+    # E5. Bars held by exit reason (with p25/p75)
     bars_by_exit = defaultdict(list)
     for t in valid_trades:
         if t["bars_held"] is not None:
             bars_by_exit[t.get("exit_reason", "?")].append(t["bars_held"])
     if bars_by_exit:
-        lines.append("### E3. Bars Held by Exit Reason\n")
-        lines.append("| Exit Reason  | Count | Mean  | Median | Min | Max |")
-        lines.append("|:-------------|------:|------:|-------:|----:|----:|")
+        lines.append("### E5. Bars Held by Exit Reason\n")
+        lines.append("| Exit Reason  | Count | Mean  | P25 | Median | P75 | Max |")
+        lines.append("|:-------------|------:|------:|----:|-------:|----:|----:|")
         for reason in sorted(bars_by_exit.keys()):
-            b = sorted(bars_by_exit[reason])
-            n = len(b)
-            mean = sum(b) / n
-            med = b[n // 2] if n % 2 == 1 else (b[n // 2 - 1] + b[n // 2]) / 2
+            s = _bars_held_stats(bars_by_exit[reason])
+            mean = sum(bars_by_exit[reason]) / s["count"]
             lines.append(
-                f"| {reason:12s} | {n:>5d} | {mean:>5.1f} | {med:>6.1f} | {min(b):>3d} | {max(b):>3d} |"
+                f"| {reason:12s} | {s['count']:>5d} | {mean:>5.1f} "
+                f"| {s['p25']:>3d} | {s['median']:>6d} | {s['p75']:>3d} | {s['max']:>3d} |"
             )
         lines.append("")
 
-    # E4. TP invalidation
-    # Load trace_json for TP invalidation stats
-    tp_inv_count = 0
-    tp_inv_reasons = Counter()
-    with conn.cursor() as cur:
-        cur.execute(
-            "SELECT trace_json FROM simulation_results WHERE run_id = %s AND data_available = TRUE",
-            (run_id,),
-        )
-        for (tj,) in cur.fetchall():
-            trace = None
-            if isinstance(tj, str):
-                try:
-                    trace = json.loads(tj)
-                except (json.JSONDecodeError, TypeError):
-                    pass
-            elif isinstance(tj, dict):
-                trace = tj
-            if trace and trace.get("tp_invalidated"):
-                tp_inv_count += 1
-                reason = trace.get("tp_invalidation_reason", "unknown")
-                tp_inv_reasons[reason] += 1
+    # E6. STOP_LOSS bars_held detail
+    sl_bars = bars_by_exit.get("STOP_LOSS", [])
+    if sl_bars:
+        s = _bars_held_stats(sl_bars)
+        lines.append("### E6. STOP_LOSS Bars Held Detail\n")
+        lines.append(f"- Count: {s['count']}, P25: {s['p25']}, Median: {s['median']}, P75: {s['p75']}, Max: {s['max']}")
+        immediate_sl = sum(1 for b in sl_bars if b <= 1)
+        lines.append(f"- **Immediate stops (bars ≤ 1):** {immediate_sl} ({_pct(immediate_sl, s['count'])})\n")
 
-    lines.append("### E4. TP Invalidation\n")
+    # E7. TP1/TP2 bars_held detail
+    for tp_name in ["TP1", "TP2"]:
+        tp_bars = bars_by_exit.get(tp_name, [])
+        if tp_bars:
+            s = _bars_held_stats(tp_bars)
+            lines.append(f"### E7. {tp_name} Bars Held Detail\n")
+            lines.append(f"- Count: {s['count']}, P25: {s['p25']}, Median: {s['median']}, P75: {s['p75']}, Max: {s['max']}\n")
+
+    # E8. TP Invalidation
+    lines.append("### E8. TP Invalidation\n")
     lines.append(f"- **TP invalidated:** {tp_inv_count} / {len(valid_trades)} ({_pct(tp_inv_count, len(valid_trades))})")
     if tp_inv_reasons:
         lines.append("\n| Reason | Count |")
@@ -738,33 +928,6 @@ def generate_profile(conn, run_id, trade_rows, outdir):
         for reason, cnt in tp_inv_reasons.most_common():
             lines.append(f"| {reason} | {cnt:>5d} |")
     lines.append("")
-
-    # E5. Time-of-day analysis (by hour of opportunity_created_ts)
-    by_hour = defaultdict(list)
-    for t in valid_trades:
-        ts = t.get("opportunity_created_ts")
-        if ts:
-            if isinstance(ts, str):
-                # Parse ISO format
-                try:
-                    dt = datetime.fromisoformat(ts.replace("Z", "+00:00"))
-                    by_hour[dt.hour].append(t)
-                except (ValueError, TypeError):
-                    pass
-            elif isinstance(ts, datetime):
-                by_hour[ts.hour].append(t)
-    if by_hour:
-        lines.append("### E5. Performance by Hour (UTC)\n")
-        lines.append("| Hour | Trades | Win Rate | Avg R   | Total PnL   |")
-        lines.append("|-----:|-------:|---------:|--------:|------------:|")
-        for h in range(24):
-            if h in by_hour:
-                hm = _compute_metrics(by_hour[h])
-                lines.append(
-                    f"| {h:>4d} | {hm['count']:>6d} | {_pct(hm['wins'], hm['count']):>8s} "
-                    f"| {_fmt(hm['avg_r'], 2):>7s} | {_fmt(hm['total_pnl'], 2):>11s} |"
-                )
-        lines.append("")
 
     # ── F. Outlier Flags ─────────────────────────────────────────────────
     lines.append("## F. Outlier Flags\n")
@@ -775,26 +938,15 @@ def generate_profile(conn, run_id, trade_rows, outdir):
         key=lambda t: t["r_multiple"],
         reverse=True,
     )
-    lines.append("### F1. Top 10 Winners\n")
-    lines.append("| # | Symbol     | TF  | Setup | Dir   | R Multiple | PnL Net   | Exit Reason  | Bars |")
-    lines.append("|--:|:-----------|:----|:------|:------|----------:|----------:|:-------------|-----:|")
-    for i, t in enumerate(winners_sorted[:10], 1):
-        lines.append(
-            f"| {i} | {t['symbol']:10s} | {t['timeframe']:3s} | {t['setup_id']:5s} "
-            f"| {t['direction']:5s} | {_fmt(t['r_multiple'], 2):>9s} | {_fmt(t['pnl_net'], 2):>9s} "
-            f"| {t.get('exit_reason', '?'):12s} | {t.get('bars_held', 0):>4} |"
-        )
-    lines.append("")
-
-    # F2. Top 10 losers
-    losers_sorted = sorted(
-        [t for t in valid_trades if t["r_multiple"] is not None],
-        key=lambda t: t["r_multiple"],
+    lines.append("### F1. Top 10 Winners (by pnl_net)\n")
+    pnl_winners = sorted(
+        [t for t in valid_trades if t["pnl_net"] is not None],
+        key=lambda t: t["pnl_net"],
+        reverse=True,
     )
-    lines.append("### F2. Top 10 Losers\n")
     lines.append("| # | Symbol     | TF  | Setup | Dir   | R Multiple | PnL Net   | Exit Reason  | Bars |")
     lines.append("|--:|:-----------|:----|:------|:------|----------:|----------:|:-------------|-----:|")
-    for i, t in enumerate(losers_sorted[:10], 1):
+    for i, t in enumerate(pnl_winners[:10], 1):
         lines.append(
             f"| {i} | {t['symbol']:10s} | {t['timeframe']:3s} | {t['setup_id']:5s} "
             f"| {t['direction']:5s} | {_fmt(t['r_multiple'], 2):>9s} | {_fmt(t['pnl_net'], 2):>9s} "
@@ -802,13 +954,76 @@ def generate_profile(conn, run_id, trade_rows, outdir):
         )
     lines.append("")
 
-    # F3. Highest bars held
+    # F2. Top 10 losers (by pnl_net)
+    pnl_losers = sorted(
+        [t for t in valid_trades if t["pnl_net"] is not None],
+        key=lambda t: t["pnl_net"],
+    )
+    lines.append("### F2. Top 10 Losers (by pnl_net)\n")
+    lines.append("| # | Symbol     | TF  | Setup | Dir   | R Multiple | PnL Net   | Exit Reason  | Bars |")
+    lines.append("|--:|:-----------|:----|:------|:------|----------:|----------:|:-------------|-----:|")
+    for i, t in enumerate(pnl_losers[:10], 1):
+        lines.append(
+            f"| {i} | {t['symbol']:10s} | {t['timeframe']:3s} | {t['setup_id']:5s} "
+            f"| {t['direction']:5s} | {_fmt(t['r_multiple'], 2):>9s} | {_fmt(t['pnl_net'], 2):>9s} "
+            f"| {t.get('exit_reason', '?'):12s} | {t.get('bars_held', 0):>4} |"
+        )
+    lines.append("")
+
+    # F3. Instant exits (bars_held ≤ 1)
+    instant = [t for t in valid_trades if t["bars_held"] is not None and t["bars_held"] <= 1]
+    lines.append("### F3. Instant Exits (bars_held ≤ 1)\n")
+    lines.append(f"- **Count:** {len(instant)} / {len(valid_trades)} ({_pct(len(instant), len(valid_trades))})")
+    if instant:
+        inst_exit_counts = Counter(t.get("exit_reason", "?") for t in instant)
+        lines.append("\n| Exit Reason  | Count | % of Instant |")
+        lines.append("|:-------------|------:|-------------:|")
+        for reason, cnt in inst_exit_counts.most_common():
+            lines.append(f"| {reason:12s} | {cnt:>5d} | {_pct(cnt, len(instant)):>12s} |")
+
+        inst_setup_counts = Counter(t.get("setup_id", "?") for t in instant)
+        lines.append("\n| Setup | Count | % of Instant |")
+        lines.append("|:------|------:|-------------:|")
+        for sid, cnt in inst_setup_counts.most_common():
+            lines.append(f"| {sid:5s} | {cnt:>5d} | {_pct(cnt, len(instant)):>12s} |")
+    lines.append("")
+
+    # F4. PnL / exit_reason sign disagreement
+    sign_disagree = []
+    for t in valid_trades:
+        if t["pnl_net"] is None or t["exit_reason"] is None:
+            continue
+        er = t["exit_reason"]
+        pnl = t["pnl_net"]
+        # STOP_LOSS / FAIL_FAST should be negative
+        if er in ("STOP_LOSS", "FAIL_FAST") and pnl > 0:
+            sign_disagree.append(t)
+        # TP1 / TP2 should be positive
+        elif er in ("TP1", "TP2") and pnl < 0:
+            sign_disagree.append(t)
+
+    lines.append("### F4. PnL / Exit Reason Disagreement\n")
+    if sign_disagree:
+        lines.append(f"**{len(sign_disagree)} trades** where PnL sign disagrees with exit reason logic:\n")
+        lines.append("| Symbol     | TF  | Setup | Dir   | Exit Reason | PnL Net   | R Multiple |")
+        lines.append("|:-----------|:----|:------|:------|:------------|----------:|-----------:|")
+        for t in sign_disagree[:20]:
+            lines.append(
+                f"| {t['symbol']:10s} | {t['timeframe']:3s} | {t['setup_id']:5s} "
+                f"| {t['direction']:5s} | {t['exit_reason']:11s} | {_fmt(t['pnl_net'], 2):>9s} "
+                f"| {_fmt(t['r_multiple'], 2):>10s} |"
+            )
+    else:
+        lines.append("No disagreements found (all STOP_LOSS/FAIL_FAST have negative PnL, all TP1/TP2 have positive PnL).")
+    lines.append("")
+
+    # F5. Top 10 longest held
     long_holds = sorted(
         [t for t in valid_trades if t["bars_held"] is not None],
         key=lambda t: t["bars_held"],
         reverse=True,
     )
-    lines.append("### F3. Top 10 Longest Held\n")
+    lines.append("### F5. Top 10 Longest Held\n")
     lines.append("| # | Symbol     | TF  | Setup | Dir   | Bars | R Multiple | Exit Reason  |")
     lines.append("|--:|:-----------|:----|:------|:------|-----:|----------:|:-------------|")
     for i, t in enumerate(long_holds[:10], 1):
@@ -819,10 +1034,9 @@ def generate_profile(conn, run_id, trade_rows, outdir):
         )
     lines.append("")
 
-    # F4. Score vs outcome (high score losers / low score winners)
+    # F6. Score anomalies
     scored = [t for t in valid_trades if t["opportunity_score"] is not None and t["r_multiple"] is not None]
     if scored:
-        # High score (top quartile) losers
         scores = sorted([t["opportunity_score"] for t in scored])
         q75 = scores[int(len(scores) * 0.75)] if scores else 0
         q25 = scores[int(len(scores) * 0.25)] if scores else 0
@@ -837,7 +1051,7 @@ def generate_profile(conn, run_id, trade_rows, outdir):
             reverse=True,
         )
 
-        lines.append("### F4. Score Anomalies\n")
+        lines.append("### F6. Score Anomalies\n")
         lines.append(f"Score Q25={_fmt(q25, 3)}, Q75={_fmt(q75, 3)}\n")
 
         lines.append(f"**High-score losers (score ≥ Q75, R < 0): {len(high_score_losers)}**\n")
@@ -861,6 +1075,38 @@ def generate_profile(conn, run_id, trade_rows, outdir):
                     f"| {_fmt(t['r_multiple'], 2):>9s} | {t.get('exit_reason', '?'):12s} |"
                 )
             lines.append("")
+
+    # ── G. Feature Coverage ──────────────────────────────────────────────
+    lines.append("## G. Feature Coverage\n")
+    lines.append("Comparison of trace_json keys found vs what `FeatureExtractor` captures.\n")
+
+    # FeatureExtractor captures these namespaces
+    fe_namespaces = {"ind", "state", "score"}
+    fe_special = {"state.bars_held_at_exit"}
+
+    traces_total = sum(1 for _, flat in parsed_features if flat)
+    lines.append(f"- **Traces with data:** {traces_total} / {len(parsed_features)}")
+    lines.append(f"- **Total feature columns:** {len(sorted_feature_keys)}\n")
+
+    if sorted_feature_keys:
+        lines.append("| Feature Key | Coverage | In FeatureExtractor? | In features.csv? |")
+        lines.append("|:------------|--------:|:---------------------|:-----------------|")
+
+        key_coverage = Counter()
+        for _, flat in parsed_features:
+            for k in flat:
+                if flat[k] != "":
+                    key_coverage[k] += 1
+
+        for k in sorted_feature_keys:
+            count = key_coverage.get(k, 0)
+            pct = _pct(count, len(parsed_features))
+            ns = k.split(".")[0] if "." in k else ""
+            in_fe = "Yes" if (ns in fe_namespaces or k in fe_special) else "No"
+            lines.append(f"| {k:40s} | {pct:>7s} | {in_fe:20s} | Yes              |")
+        lines.append("")
+    else:
+        lines.append("No feature columns found (all trace_json empty or NULL).\n")
 
     # Write profile
     md_path = os.path.join(outdir, "profile.md")
@@ -915,10 +1161,10 @@ def main():
         trade_rows = extract_trades(conn, run_id, args.outdir)
 
         # Phase B: features.csv
-        extract_features(conn, run_id, args.outdir)
+        feature_data = extract_features(conn, run_id, args.outdir)
 
         # Phase C: profile.md
-        generate_profile(conn, run_id, trade_rows, args.outdir)
+        generate_profile(conn, run_id, trade_rows, feature_data, args.outdir)
 
     finally:
         conn.close()
