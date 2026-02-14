@@ -254,8 +254,8 @@ def extract_features(conn, run_id, outdir):
         cur.execute(TRACE_QUERY, (run_id,))
         raw_rows = cur.fetchall()
 
-    # Parse all trace_json
-    parsed = []  # list of (id, flat_dict)
+    # Parse all trace_json — only include rows where trace_json IS NOT NULL
+    parsed = []  # list of (id, flat_dict) — only rows with trace data
     all_keys = set()
     traces_found = 0
     traces_missing = 0
@@ -274,17 +274,15 @@ def extract_features(conn, run_id, outdir):
         if trace:
             traces_found += 1
             flat = _flatten_trace(trace)
+            all_keys.update(flat.keys())
+            parsed.append((str(row_id), flat))
         else:
             traces_missing += 1
-            flat = {}
-
-        all_keys.update(flat.keys())
-        parsed.append((str(row_id), flat))
 
     # Sort columns for deterministic output
     sorted_keys = sorted(all_keys)
 
-    # Write CSV
+    # Write CSV (only rows with trace_json)
     csv_path = os.path.join(outdir, "data", "features.csv")
     with open(csv_path, "w", newline="") as f:
         writer = csv.writer(f)
@@ -660,29 +658,50 @@ def generate_profile(conn, run_id, trade_rows, feature_data, outdir):
 
     if gate_groups:
         lines.append("### Gate rejection summary\n")
-        lines.append("| Gate | Count | % of Total | Hypothetical Avg R | Hypothetical Win Rate | Estimable? |")
-        lines.append("|:-----|------:|-----------:|-------------------:|----------------------:|:-----------|")
         for gate, group in sorted(gate_groups.items(), key=lambda x: -len(x[1])):
             cnt = len(group)
-            # Check if we can estimate hypothetical R
-            # These trades were rejected so they have no pnl_net/r_multiple from simulation
-            # But they DO have entry_price, stop_price, tp1_price from the opportunity
-            estimable = [t for t in group if t["entry_price"] is not None and t["stop_price"] is not None]
+            lines.append(f"**{gate}** — {cnt} trades ({_pct(cnt, len(trades))})\n")
+
+            # Check which fields are available for hypothetical R computation
+            has_entry = [t for t in group if t["entry_price"] is not None]
+            has_stop = [t for t in group if t["stop_price"] is not None]
+            has_tp1 = [t for t in group if t["tp1_price"] is not None]
+            has_r = [t for t in group if t["r_value"] is not None]
+
+            # Compute hypothetical R-multiples where entry + stop + r_value exist
+            estimable = [t for t in group
+                         if t["entry_price"] is not None
+                         and t["stop_price"] is not None
+                         and t["r_value"] is not None
+                         and t["r_value"] != 0]
             if estimable:
-                # We can't compute actual R because we don't know what the market did
-                # But we can note the fields exist
-                est_note = f"Yes ({len(estimable)} have entry+stop)"
-                # Cannot estimate avg R — these trades were never simulated
-                avg_r_str = "N/A (not simulated)"
-                wr_str = "N/A"
+                # Compute what TP1 R would be (reward:risk ratio)
+                tp1_rs = []
+                for t in estimable:
+                    if t["tp1_price"] is not None and t["r_value"] and t["r_value"] != 0:
+                        if t.get("direction") == "long":
+                            tp1_r = (t["tp1_price"] - t["entry_price"]) / abs(t["r_value"])
+                        else:
+                            tp1_r = (t["entry_price"] - t["tp1_price"]) / abs(t["r_value"])
+                        tp1_rs.append(tp1_r)
+
+                lines.append(f"- Fields available: {len(has_entry)} entry, {len(has_stop)} stop, {len(has_tp1)} TP1, {len(has_r)} r_value")
+                lines.append(f"- Estimable (entry+stop+r_value): {len(estimable)}")
+                if tp1_rs:
+                    lines.append(f"- Payoff structure if TP1 hit: avg {_fmt(sum(tp1_rs) / len(tp1_rs), 2)}R (stop = -1R by definition)")
+                lines.append(f"- **Cannot estimate actual outcome** — forward simulation was not run")
             else:
-                est_note = "No (missing entry/stop)"
-                avg_r_str = "N/A"
-                wr_str = "N/A"
-            lines.append(f"| {gate} | {cnt:>5d} | {_pct(cnt, len(trades)):>10s} | {avg_r_str} | {wr_str} | {est_note} |")
-        lines.append("")
-        lines.append("*Note: Rejected trades were never forward-simulated, so actual R-multiple cannot be computed.*")
-        lines.append("*To estimate gate impact, re-run the simulation with gates disabled and compare.*\n")
+                missing = []
+                if not has_entry:
+                    missing.append("entry_price")
+                if not has_stop:
+                    missing.append("stop_price")
+                if not has_r:
+                    missing.append("r_value")
+                lines.append(f"- Cannot estimate — payload missing: {', '.join(missing) if missing else 'r_value=0 or NULL'}")
+            lines.append("")
+
+        lines.append("*To quantify actual gate impact, re-run the simulation with each gate disabled and compare outcomes.*\n")
     else:
         lines.append("No gate rejections identified in error messages.\n")
 
@@ -1080,17 +1099,17 @@ def generate_profile(conn, run_id, trade_rows, feature_data, outdir):
     lines.append("## G. Feature Coverage\n")
     lines.append("Comparison of trace_json keys found vs what `FeatureExtractor` captures.\n")
 
-    # FeatureExtractor captures these namespaces
+    # FeatureExtractor captures these namespaces (ind.*, state.*, score.*)
+    # plus the special key state.bars_held_at_exit (from exit_conditions.bars_held)
     fe_namespaces = {"ind", "state", "score"}
     fe_special = {"state.bars_held_at_exit"}
 
-    traces_total = sum(1 for _, flat in parsed_features if flat)
-    lines.append(f"- **Traces with data:** {traces_total} / {len(parsed_features)}")
+    lines.append(f"- **Traces with data:** {len(parsed_features)} / {len(trade_rows)}")
     lines.append(f"- **Total feature columns:** {len(sorted_feature_keys)}\n")
 
     if sorted_feature_keys:
-        lines.append("| Feature Key | Coverage | In FeatureExtractor? | In features.csv? |")
-        lines.append("|:------------|--------:|:---------------------|:-----------------|")
+        lines.append("| trace_json key | In FeatureExtractor? | In features.csv? | Action taken |")
+        lines.append("|:---------------|:---------------------|:-----------------|:-------------|")
 
         key_coverage = Counter()
         for _, flat in parsed_features:
@@ -1100,10 +1119,14 @@ def generate_profile(conn, run_id, trade_rows, feature_data, outdir):
 
         for k in sorted_feature_keys:
             count = key_coverage.get(k, 0)
-            pct = _pct(count, len(parsed_features))
+            coverage = _pct(count, len(parsed_features))
             ns = k.split(".")[0] if "." in k else ""
             in_fe = "Yes" if (ns in fe_namespaces or k in fe_special) else "No"
-            lines.append(f"| {k:40s} | {pct:>7s} | {in_fe:20s} | Yes              |")
+            if in_fe == "Yes":
+                action = "Already captured"
+            else:
+                action = "Extracted by profiler"
+            lines.append(f"| {k:40s} ({coverage}) | {in_fe:20s} | Yes              | {action} |")
         lines.append("")
     else:
         lines.append("No feature columns found (all trace_json empty or NULL).\n")
