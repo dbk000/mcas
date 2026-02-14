@@ -124,7 +124,7 @@ TRADE_COLUMNS = [
     "tp1_price", "tp2_price", "r_value", "exit_ts", "exit_price",
     "exit_price_with_slippage", "exit_reason", "bars_held",
     "pnl_gross", "fees", "pnl_net", "r_multiple",
-    "data_available", "error_message",
+    "data_available", "error_message", "trace_json", "created_at",
     # From opportunities join
     "opportunity_score", "opportunity_payload_json",
 ]
@@ -138,7 +138,7 @@ TRADE_QUERY = """
         sr.r_value, sr.exit_ts, sr.exit_price, sr.exit_price_with_slippage,
         sr.exit_reason, sr.bars_held,
         sr.pnl_gross, sr.fees, sr.pnl_net, sr.r_multiple,
-        sr.data_available, sr.error_message,
+        sr.data_available, sr.error_message, sr.trace_json, sr.created_at,
         o.score AS opportunity_score,
         o.payload_json AS opportunity_payload_json
     FROM simulation_results sr
@@ -147,7 +147,7 @@ TRADE_QUERY = """
     ORDER BY sr.opportunity_created_ts, sr.symbol
 """
 
-# Separate query to get trace_json (not written to trades.csv, used for features)
+# Separate lightweight query for Phase B feature extraction (id + trace_json only)
 TRACE_QUERY = """
     SELECT sr.id, sr.trace_json
     FROM simulation_results sr
