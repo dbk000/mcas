@@ -31,7 +31,9 @@ import time
 import hashlib
 import logging
 import argparse
+import dataclasses
 import multiprocessing
+from enum import Enum
 from datetime import datetime, timezone, timedelta
 from collections import defaultdict
 from concurrent.futures import ProcessPoolExecutor, as_completed
@@ -234,7 +236,43 @@ def insert_opportunities(
     return inserted
 
 
-def build_signal_payload(signal, setup_id: str, symbol: str, tf: str, bar_ts_ms: int) -> dict:
+def _serialize_value(val):
+    """Recursively serialize dataclass/enum/datetime values to JSON-safe types."""
+    if val is None:
+        return None
+    if isinstance(val, bool):       # bool before int (bool is subclass of int)
+        return val
+    if isinstance(val, (int, float)):
+        if val != val:  # NaN check
+            return None
+        return val
+    if isinstance(val, str):
+        return val
+    if isinstance(val, Enum):       # Direction.LONG → "long"
+        return val.value
+    if isinstance(val, datetime):
+        return val.isoformat()
+    if dataclasses.is_dataclass(val):
+        return {f.name: _serialize_value(getattr(val, f.name))
+                for f in dataclasses.fields(val)}
+    if isinstance(val, list):
+        return [_serialize_value(v) for v in val]
+    if isinstance(val, dict):
+        return {str(k): _serialize_value(v) for k, v in val.items()}
+    return str(val)
+
+
+# Fields that are part of the base Signal contract (not score components)
+_BASE_SIGNAL_FIELDS = {
+    "symbol", "timeframe", "direction", "setup_score",
+    "entry_price", "stop_price", "tp1_price", "tp2_price",
+    "r_value", "state", "explain", "time_stop_bars",
+    "since_ts", "action_by_ts",
+}
+
+
+def build_signal_payload(signal, setup_id: str, symbol: str, tf: str,
+                         bar_ts_ms: int, snapshot=None) -> dict:
     """Convert evaluator signal into payload dict matching live signal format."""
     payload = {
         "setup_id": setup_id,
@@ -255,15 +293,48 @@ def build_signal_payload(signal, setup_id: str, symbol: str, tf: str, bar_ts_ms:
     if signal.explain:
         payload["why_items"] = signal.explain.why_items
 
+    # --- Score components (setup-specific fields beyond the base Signal contract) ---
+    if dataclasses.is_dataclass(signal):
+        score_components = {}
+        for field in dataclasses.fields(signal):
+            if field.name in _BASE_SIGNAL_FIELDS:
+                continue
+            val = getattr(signal, field.name)
+            serialized = _serialize_value(val)
+            if serialized is not None:
+                score_components[field.name] = serialized
+        if score_components:
+            payload["score_components"] = score_components
+
+    # --- State snapshot (Tier 3 state at signal time) ---
+    if hasattr(signal, "state") and signal.state is not None:
+        state_dict = _serialize_value(signal.state)
+        if isinstance(state_dict, dict):
+            payload["state_snapshot"] = state_dict
+
+    # --- Indicator values from IndicatorSnapshot ---
+    if snapshot is not None and dataclasses.is_dataclass(snapshot):
+        indicator_values = {}
+        for field in dataclasses.fields(snapshot):
+            if field.name == "ohlcv":  # Skip raw candle list
+                continue
+            val = getattr(snapshot, field.name)
+            serialized = _serialize_value(val)
+            if serialized is not None:
+                indicator_values[field.name] = serialized
+        if indicator_values:
+            payload["indicator_values"] = indicator_values
+
     return payload
 
 
 def _make_opportunity(signal, setup_id: str, symbol: str, tf: str,
-                      bar_ts_ms: int, setup_versions: dict, batch_id: str) -> dict:
+                      bar_ts_ms: int, setup_versions: dict, batch_id: str,
+                      snapshot=None) -> dict:
     """Build an opportunity dict from a signal."""
     bar_dt = datetime.fromtimestamp(bar_ts_ms / 1000, tz=timezone.utc)  # Binance ms epoch
     reason = "; ".join(signal.explain.why_items) if signal.explain else None
-    payload = build_signal_payload(signal, setup_id, symbol, tf, bar_ts_ms)
+    payload = build_signal_payload(signal, setup_id, symbol, tf, bar_ts_ms, snapshot)
 
     # Default version per setup
     default_versions = {
@@ -424,7 +495,7 @@ def process_symbol_timeframe(
             s1_signal = s1_eval.evaluate_trigger(snapshot, s1_state, symbol, tf)
             if s1_signal:
                 opportunities.append(_make_opportunity(
-                    s1_signal, "S1", symbol, tf, bar_ts_ms, setup_versions, batch_id,
+                    s1_signal, "S1", symbol, tf, bar_ts_ms, setup_versions, batch_id, snapshot,
                 ))
 
         # --- S2 Evaluation ---
@@ -437,7 +508,7 @@ def process_symbol_timeframe(
             s2_signal = s2_eval.evaluate_trigger(snapshot, s2_state, symbol, tf)
             if s2_signal:
                 opportunities.append(_make_opportunity(
-                    s2_signal, "S2", symbol, tf, bar_ts_ms, setup_versions, batch_id,
+                    s2_signal, "S2", symbol, tf, bar_ts_ms, setup_versions, batch_id, snapshot,
                 ))
 
         # --- S3 Evaluation (RSI Divergence) ---
@@ -450,7 +521,7 @@ def process_symbol_timeframe(
             s3_signal = s3_eval.evaluate_trigger(snapshot, s3_state, symbol, tf)
             if s3_signal:
                 opportunities.append(_make_opportunity(
-                    s3_signal, "S3", symbol, tf, bar_ts_ms, setup_versions, batch_id,
+                    s3_signal, "S3", symbol, tf, bar_ts_ms, setup_versions, batch_id, snapshot,
                 ))
 
         # --- S5 Evaluation (S/R Breakout) ---
@@ -459,7 +530,7 @@ def process_symbol_timeframe(
             s5_signal = s5_eval.evaluate_trigger(snapshot, s5_state, symbol, tf)
             if s5_signal:
                 opportunities.append(_make_opportunity(
-                    s5_signal, "S5", symbol, tf, bar_ts_ms, setup_versions, batch_id,
+                    s5_signal, "S5", symbol, tf, bar_ts_ms, setup_versions, batch_id, snapshot,
                 ))
 
         # --- S6 Evaluation (Trend Continuation Pullback) ---
@@ -469,7 +540,7 @@ def process_symbol_timeframe(
             s6_signal = s6_eval.evaluate_trigger(snapshot, s6_state, symbol, tf)
             if s6_signal:
                 opportunities.append(_make_opportunity(
-                    s6_signal, "S6", symbol, tf, bar_ts_ms, setup_versions, batch_id,
+                    s6_signal, "S6", symbol, tf, bar_ts_ms, setup_versions, batch_id, snapshot,
                 ))
 
         # --- S7 Evaluation (Momentum Breakout / Donchian) ---
@@ -478,7 +549,7 @@ def process_symbol_timeframe(
             s7_signal = s7_eval.evaluate_trigger(snapshot, s7_state, symbol, tf)
             if s7_signal:
                 opportunities.append(_make_opportunity(
-                    s7_signal, "S7", symbol, tf, bar_ts_ms, setup_versions, batch_id,
+                    s7_signal, "S7", symbol, tf, bar_ts_ms, setup_versions, batch_id, snapshot,
                 ))
 
         # --- U1 Evaluation (Unicorn Ignition) ---
@@ -489,7 +560,7 @@ def process_symbol_timeframe(
             u1_signal = u1_eval.evaluate_trigger(window, u1_prev_state, symbol, tf)
             if u1_signal:
                 opportunities.append(_make_opportunity(
-                    u1_signal, "U1", symbol, tf, bar_ts_ms, setup_versions, batch_id,
+                    u1_signal, "U1", symbol, tf, bar_ts_ms, setup_versions, batch_id, snapshot,
                 ))
 
         # Stash current snapshot for S7's next-bar prev_snapshot
