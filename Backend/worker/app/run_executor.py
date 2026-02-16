@@ -1510,6 +1510,8 @@ class RunExecutor:
         to_date = setup_params.get("to_date")  # Date range upper bound
         include_dates = setup_params.get("include_dates")  # Specific dates only
         exclude_dates = setup_params.get("exclude_dates")  # Skip these dates
+        stop_distance_factor = setup_params.get("stop_distance_factor", 1.0)
+        stop_distance_factors = setup_params.get("stop_distance_factors") or {}
 
         # Build simulator config
         sim_config = SimulationConfig(
@@ -1518,6 +1520,8 @@ class RunExecutor:
             slippage_exit_bps=slippage_bps,
             fee_taker_bps=run.execution.fee_taker_bps,
             max_bars_forward=100,
+            stop_distance_factor=stop_distance_factor,
+            stop_distance_factors=stop_distance_factors,
         )
 
         # Load expired opportunities from database

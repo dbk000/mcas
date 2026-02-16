@@ -45,6 +45,10 @@ class SimulationConfig:
     max_fee_r_ratio: float = 0.3    # Skip trades where fees > this fraction of risk
     min_r_preservation: float = 0.5  # Skip trades where gap consumed > 50% of original R
 
+    # Stop distance factor (Experiment B: tighter stops at simulation time)
+    stop_distance_factor: float = 1.0  # Global multiplier (1.0 = unchanged)
+    stop_distance_factors: dict = field(default_factory=dict)  # Per-setup overrides
+
     # Entry-gate filters (applied during simulation to catch pre-filter opportunities)
     # Matches S6 evaluator defaults — protects against microcap shorts & wide stops
     min_short_price: float = _env_float("SIM_MIN_SHORT_PRICE", 1.00)
@@ -336,6 +340,16 @@ class OpportunitySimulator:
             result.data_available = False
             result.error_message = "Missing entry_price or stop_price in payload"
             return result
+
+        # Apply stop distance factor (Experiment B: tighter stops at simulation time)
+        _sdf = self.config.stop_distance_factors.get(setup_id, self.config.stop_distance_factor)
+        if _sdf != 1.0 and stop_price is not None and entry_price is not None:
+            _orig_dist = abs(entry_price - stop_price)
+            _new_dist = _orig_dist * _sdf
+            if direction == "long":
+                stop_price = entry_price - _new_dist
+            else:
+                stop_price = entry_price + _new_dist
 
         # ── Entry-gate filters (catch pre-filter opportunities) ──────────
         # Microcap short protection: skip shorts on sub-threshold-price assets

@@ -128,7 +128,7 @@ def check_exit(
     if bars_held > max_bars and not progress_made:
         return ("TIME_STOP", bar_open)
 
-    # --- TRAILING STOP: activate after 1R profit ---
+    # --- TRAILING STOP: two-stage (breakeven at 0.5R, tight trail at 1R) ---
     hwm = state.high_water_mark
     if r_value > 0:
         if side == "long":
@@ -136,21 +136,47 @@ def check_exit(
             if hwm is None or high > hwm:
                 state.high_water_mark = high
                 hwm = high
-            # Activate trailing after 1R profit
+            # Stage 2: After 1R profit, trail 0.5R below HWM
             if hwm >= entry_price + r_value:
-                trail_stop = hwm - r_value  # Trail 1R below HWM
+                trail_stop = hwm - 0.5 * r_value
                 if low <= trail_stop:
-                    fill_price = bar_open if bar_open < trail_stop else trail_stop
-                    return ("TRAIL_STOP", fill_price)
+                    # Guard: prefer TP1 if it also triggers on this bar (better fill)
+                    if tp1_price and high >= tp1_price:
+                        pass  # TP1 will fire at priority 5
+                    else:
+                        fill_price = bar_open if bar_open < trail_stop else trail_stop
+                        return ("TRAIL_STOP", fill_price)
+            # Stage 1: After 0.5R profit, breakeven stop
+            elif hwm >= entry_price + 0.5 * r_value:
+                trail_stop = entry_price
+                if low <= trail_stop:
+                    if tp1_price and high >= tp1_price:
+                        pass  # TP1 will fire at priority 5
+                    else:
+                        fill_price = bar_open if bar_open < trail_stop else trail_stop
+                        return ("TRAIL_STOP", fill_price)
         else:
             if hwm is None or low < hwm:
                 state.high_water_mark = low
                 hwm = low
+            # Stage 2: After 1R profit, trail 0.5R above HWM
             if hwm <= entry_price - r_value:
-                trail_stop = hwm + r_value
+                trail_stop = hwm + 0.5 * r_value
                 if high >= trail_stop:
-                    fill_price = bar_open if bar_open > trail_stop else trail_stop
-                    return ("TRAIL_STOP", fill_price)
+                    if tp1_price and low <= tp1_price:
+                        pass  # TP1 will fire at priority 5
+                    else:
+                        fill_price = bar_open if bar_open > trail_stop else trail_stop
+                        return ("TRAIL_STOP", fill_price)
+            # Stage 1: After 0.5R profit, breakeven stop
+            elif hwm <= entry_price - 0.5 * r_value:
+                trail_stop = entry_price
+                if high >= trail_stop:
+                    if tp1_price and low <= tp1_price:
+                        pass  # TP1 will fire at priority 5
+                    else:
+                        fill_price = bar_open if bar_open > trail_stop else trail_stop
+                        return ("TRAIL_STOP", fill_price)
 
     # --- TP1 (partial close handled by caller) ---
     if tp1_price:

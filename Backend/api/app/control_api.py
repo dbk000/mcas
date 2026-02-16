@@ -147,6 +147,10 @@ class SimulationRunRequest(BaseModel):
     timeframes: Optional[list[str]] = None  # Filter by 1m, 5m, 15m, etc.
     directions: Optional[list[str]] = None  # Filter by "long", "short"
 
+    # Stop distance factor (Experiment B: tighter stops at simulation time)
+    stop_distance_factor: float = Field(default=1.0, ge=0.1, le=2.0)  # Global multiplier
+    stop_distance_factors: Optional[dict[str, float]] = None  # Per-setup overrides e.g. {"S7": 0.75}
+
     # Date filters
     from_date: Optional[str] = None       # ISO date "YYYY-MM-DD" — inclusive lower bound
     to_date: Optional[str] = None         # ISO date "YYYY-MM-DD" — inclusive upper bound
@@ -642,6 +646,8 @@ def create_simulation_run(request: SimulationRunRequest):
             "to_date": request.to_date,
             "include_dates": request.include_dates,
             "exclude_dates": request.exclude_dates,
+            "stop_distance_factor": request.stop_distance_factor,
+            "stop_distance_factors": request.stop_distance_factors,
         },
     })
 
