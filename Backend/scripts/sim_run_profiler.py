@@ -187,6 +187,7 @@ NAMESPACE_MAP = {
     "conditions_met": "cond",
     "exit_conditions": "exit",
     "exit_indicator_values": "exit_ind",
+    "mae_mfe": "mae_mfe",
 }
 
 # Outcome variables that leak future information into features.csv.
@@ -329,7 +330,7 @@ def extract_features(conn, run_id, outdir):
     # Print coverage gap table
     if sorted_keys:
         logger.info("Feature coverage:")
-        for ns in ["ind", "state", "score", "cond", "exit", "exit_ind", "meta"]:
+        for ns in ["ind", "state", "score", "cond", "exit", "exit_ind", "mae_mfe", "meta"]:
             ns_keys = [k for k in sorted_keys if k.startswith(f"{ns}.")]
             if ns_keys:
                 logger.info(f"  {ns}.*:")

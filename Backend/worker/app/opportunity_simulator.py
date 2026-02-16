@@ -520,6 +520,27 @@ class OpportunitySimulator:
         exit_ts = None
         bars_held = 0
 
+        # MAE/MFE tracking (using high/low, not close)
+        # Initialize from entry_with_slip, then immediately process entry bar (bar 0).
+        # The loop starts at entry_bar_idx + 1, so entry bar is NOT iterated —
+        # we must capture its high/low here or miss entry-bar excursions.
+        mae_price = entry_with_slip
+        mfe_price = entry_with_slip
+        mae_bar = 0
+        mfe_bar = 0
+
+        # Process entry bar as "bar 0" — price gaps against you on the entry bar itself
+        if direction == "long":
+            if entry_bar["low"] < mae_price:
+                mae_price = entry_bar["low"]
+            if entry_bar["high"] > mfe_price:
+                mfe_price = entry_bar["high"]
+        else:  # short
+            if entry_bar["high"] > mae_price:
+                mae_price = entry_bar["high"]
+            if entry_bar["low"] < mfe_price:
+                mfe_price = entry_bar["low"]
+
         max_bar_idx = min(
             entry_bar_idx + self.config.max_bars_forward,
             len(bars) - 1
@@ -528,6 +549,22 @@ class OpportunitySimulator:
         for i in range(entry_bar_idx + 1, max_bar_idx + 1):
             bar = bars[i]
             bars_held += 1
+
+            # Update MAE/MFE using high/low (captures intra-bar excursions)
+            if direction == "long":
+                if bar["low"] < mae_price:
+                    mae_price = bar["low"]
+                    mae_bar = bars_held
+                if bar["high"] > mfe_price:
+                    mfe_price = bar["high"]
+                    mfe_bar = bars_held
+            else:  # short
+                if bar["high"] > mae_price:
+                    mae_price = bar["high"]
+                    mae_bar = bars_held
+                if bar["low"] < mfe_price:
+                    mfe_price = bar["low"]
+                    mfe_bar = bars_held
 
             exit_result, new_hwm, new_half_r = check_exit_simple(
                 side=direction,
@@ -600,6 +637,23 @@ class OpportunitySimulator:
 
         # Extract trace data from opportunity payload for correlation analysis
         result.trace_json = self._extract_trace_from_payload(payload, direction, exit_reason, bars_held)
+
+        # Compute MAE/MFE R-multiples and store in trace_json
+        stop_distance = abs(entry_with_slip - stop_price) if stop_price else None
+        if result.trace_json and stop_distance and stop_distance > 0:
+            dir_mult = 1.0 if direction == "long" else -1.0
+            result.trace_json["mae_mfe"] = {
+                "mae_price": round(mae_price, 8),
+                "mfe_price": round(mfe_price, 8),
+                "mae_r": round((mae_price - entry_with_slip) * dir_mult / stop_distance, 4),
+                "mfe_r": round((mfe_price - entry_with_slip) * dir_mult / stop_distance, 4),
+                "mae_pct": round((mae_price - entry_with_slip) / entry_with_slip * dir_mult * 100, 4),
+                "mfe_pct": round((mfe_price - entry_with_slip) / entry_with_slip * dir_mult * 100, 4),
+                "mae_bar": mae_bar,
+                "mfe_bar": mfe_bar,
+                "bars_to_mae": mae_bar,
+                "bars_to_mfe": mfe_bar,
+            }
 
         # Merge TP invalidation into trace
         if result.tp_invalidated and result.trace_json:
