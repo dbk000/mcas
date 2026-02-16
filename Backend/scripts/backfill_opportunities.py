@@ -96,6 +96,13 @@ MIN_BARS = 201
 # Warmup bars before we start evaluating triggers
 WARMUP_BARS = 500
 
+# Day-of-week gate: skip bar evaluation on these weekdays.
+# Python weekday(): 0=Monday, 6=Sunday. Default "6" = block Sunday.
+# Set BLOCKED_WEEKDAYS="" to disable.
+# TODO(Phase 3 follow-up): Before live deployment, also add this gate to
+# signal_engine.py → evaluate_setups() so live signals match backtest behavior.
+BLOCKED_WEEKDAYS = {int(d) for d in os.environ.get("BLOCKED_WEEKDAYS", "6").split(",") if d.strip()}
+
 # ---------------------------------------------------------------------------
 # Module-level shared data — populated BEFORE pool creation, inherited via fork COW.
 # Children read these dicts but never write to them, so Linux COW keeps memory shared.
@@ -483,6 +490,13 @@ def process_symbol_timeframe(
                     pass
 
         bar_ts_ms = current_bar.timestamp
+
+        # Day-of-week gate: skip entire bar on blocked days (e.g., Sunday)
+        if BLOCKED_WEEKDAYS:
+            bar_dt = datetime.fromtimestamp(bar_ts_ms / 1000, tz=timezone.utc)  # Binance ms epoch
+            if bar_dt.weekday() in BLOCKED_WEEKDAYS:
+                prev_snapshot = snapshot  # preserve S7 state continuity
+                continue
 
         # --- S1 Evaluation ---
         if s1_eval:

@@ -57,6 +57,10 @@ _TF_SECONDS = {
     "1h": 3600, "4h": 14400, "1d": 86400,
 }
 
+# S7 is statistically unprofitable on 15m (Phase 2 analysis: 277 trades, 28.9% WR, -$725 PnL).
+# Gate to 1h+ only. Same pattern as S4's _INTRADAY_TFS check.
+_SUPPORTED_TFS = {"1h", "4h", "1d"}
+
 
 @dataclass
 class S7State:
@@ -243,6 +247,10 @@ class S7Evaluator:
         # Canon §1.8
         if not is_final:
             logger.debug("S7 gate:forming_candle %s %s", symbol, timeframe)
+            return None
+
+        if timeframe not in _SUPPORTED_TFS:
+            logger.debug("S7 gate:unsupported_timeframe %s %s", symbol, timeframe)
             return None
 
         current = snapshot.ohlcv[-1]

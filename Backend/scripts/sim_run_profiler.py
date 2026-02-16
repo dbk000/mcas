@@ -189,6 +189,15 @@ NAMESPACE_MAP = {
     "exit_indicator_values": "exit_ind",
 }
 
+# Outcome variables that leak future information into features.csv.
+# These are known AFTER the trade exits and must NOT appear as predictive features.
+OUTCOME_COLUMNS = {
+    'exit.bars_held',
+    'meta.exit_reason',
+    'meta.tp_invalidated',
+    'meta.tp_invalidation_reason',
+}
+
 
 def _flatten_trace(trace):
     """
@@ -295,8 +304,8 @@ def extract_features(conn, run_id, outdir):
         else:
             traces_missing += 1
 
-    # Sort columns for deterministic output
-    sorted_keys = sorted(all_keys)
+    # Sort columns for deterministic output; exclude outcome variables (data leakage)
+    sorted_keys = [k for k in sorted(all_keys) if k not in OUTCOME_COLUMNS]
 
     # Write CSV (only rows with trace_json)
     csv_path = os.path.join(outdir, "data", "features.csv")
