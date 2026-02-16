@@ -23,6 +23,11 @@ class ExitConfig:
     fail_fast_bars: int = 2
     fail_fast_threshold: float = 0.003  # 0.3% below/above entry (tightened from 0.5% per sim analysis)
 
+    # Trail parameters (sweepable via exit_sweep.py)
+    trail_breakeven_r: float = 0.75   # HWM threshold for breakeven trail (0 = disabled)
+    trail_activation_r: float = 1.0   # HWM threshold for tight trail
+    trail_distance_r: float = 0.5     # Distance from HWM for tight trail
+
 
 @dataclass
 class PositionState:
@@ -128,7 +133,7 @@ def check_exit(
     if bars_held > max_bars and not progress_made:
         return ("TIME_STOP", bar_open)
 
-    # --- TRAILING STOP: two-stage (breakeven at 0.75R, tight trail at 1R) ---
+    # --- TRAILING STOP: two-stage (breakeven + tight trail, thresholds from config) ---
     hwm = state.high_water_mark
     if r_value > 0:
         if side == "long":
@@ -136,9 +141,9 @@ def check_exit(
             if hwm is None or high > hwm:
                 state.high_water_mark = high
                 hwm = high
-            # Stage 2: After 1R profit, trail 0.5R below HWM
-            if hwm >= entry_price + r_value:
-                trail_stop = hwm - 0.5 * r_value
+            # Stage 2: tight trail after activation_r profit
+            if hwm >= entry_price + config.trail_activation_r * r_value:
+                trail_stop = hwm - config.trail_distance_r * r_value
                 if low <= trail_stop:
                     # Guard: prefer TP1 if it also triggers on this bar (better fill)
                     if tp1_price and high >= tp1_price:
@@ -146,8 +151,8 @@ def check_exit(
                     else:
                         fill_price = bar_open if bar_open < trail_stop else trail_stop
                         return ("TRAIL_STOP", fill_price)
-            # Stage 1: After 0.75R profit, breakeven stop
-            elif hwm >= entry_price + 0.75 * r_value:
+            # Stage 1: breakeven after breakeven_r profit (0 = disabled)
+            elif config.trail_breakeven_r > 0 and hwm >= entry_price + config.trail_breakeven_r * r_value:
                 trail_stop = entry_price
                 if low <= trail_stop:
                     if tp1_price and high >= tp1_price:
@@ -159,17 +164,17 @@ def check_exit(
             if hwm is None or low < hwm:
                 state.high_water_mark = low
                 hwm = low
-            # Stage 2: After 1R profit, trail 0.5R above HWM
-            if hwm <= entry_price - r_value:
-                trail_stop = hwm + 0.5 * r_value
+            # Stage 2: tight trail after activation_r profit
+            if hwm <= entry_price - config.trail_activation_r * r_value:
+                trail_stop = hwm + config.trail_distance_r * r_value
                 if high >= trail_stop:
                     if tp1_price and low <= tp1_price:
                         pass  # TP1 will fire at priority 5
                     else:
                         fill_price = bar_open if bar_open > trail_stop else trail_stop
                         return ("TRAIL_STOP", fill_price)
-            # Stage 1: After 0.75R profit, breakeven stop
-            elif hwm <= entry_price - 0.75 * r_value:
+            # Stage 1: breakeven after breakeven_r profit (0 = disabled)
+            elif config.trail_breakeven_r > 0 and hwm <= entry_price - config.trail_breakeven_r * r_value:
                 trail_stop = entry_price
                 if high >= trail_stop:
                     if tp1_price and low <= tp1_price:
@@ -215,6 +220,7 @@ def check_exit_simple(
     max_bars: int,
     high_water_mark: Optional[float] = None,
     half_r_touched: bool = False,
+    config: ExitConfig = None,
 ) -> tuple[Optional[tuple[str, float]], Optional[float], bool]:
     """
     Simplified exit check that doesn't require PositionState object.
@@ -239,6 +245,7 @@ def check_exit_simple(
         r_value=r_value,
         max_bars=max_bars,
         state=state,
+        config=config,
     )
 
     return result, state.high_water_mark, state.half_r_touched
