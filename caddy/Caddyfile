@@ -1,0 +1,27 @@
+{
+  log {
+    format json
+    level INFO
+    output stdout
+  }
+}
+
+:80 {
+  log {
+    format json
+    level INFO
+    output stdout
+  }
+
+  handle /health {
+    reverse_proxy api:8000
+  }
+
+  handle /v1/* {
+    reverse_proxy api:8000
+  }
+
+  handle {
+    respond "Trading API alive" 200
+  }
+}

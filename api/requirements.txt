@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+psycopg[binary]
+redis
+requests
+alembic
+SQLAlchemy
+python-json-logger

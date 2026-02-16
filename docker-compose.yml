@@ -1,0 +1,122 @@
+services:
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "8000:8000"
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - backend
+
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      SERVICE_NAME: api
+    networks:
+      - backend
+
+  worker:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      SERVICE_NAME: worker
+    networks:
+      - backend
+
+  ingestor:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      SERVICE_NAME: ingestor
+      # SYMBOL_COUNT from .env (default 200)
+      SEED_WORKERS: "20"
+      TRACKED_TIMEFRAMES: "1m,5m,15m,1h,4h,1d"
+      USE_DYNAMIC_SYMBOLS: "true"
+      UNIVERSE_REFRESH_INTERVAL_S: "3600"
+    command: ["python", "-u", "app/ingestor.py"]
+    networks:
+      - backend
+    depends_on:
+      - redis
+
+  indicator_worker:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      SERVICE_NAME: indicator_worker
+      WORKER_INDEX: "0"
+      N_WORKERS: "1"
+    command: ["python", "-u", "app/indicator_worker.py"]
+    networks:
+      - backend
+    depends_on:
+      - redis
+      - ingestor
+
+  signal_worker:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      SERVICE_NAME: signal_worker
+      WORKER_INDEX: "0"
+      N_WORKERS: "1"
+      SETUP_IDS: "S1,S2"
+    command: ["python", "-u", "app/signal_worker.py"]
+    networks:
+      - backend
+    depends_on:
+      - redis
+      - indicator_worker
+
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    networks:
+      - backend
+
+  redis:
+    image: redis:7
+    restart: unless-stopped
+    networks:
+      - backend
+
+volumes:
+  caddy_data:
+  caddy_config:
+  pg_data:
+
+networks:
+  backend:
