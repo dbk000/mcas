@@ -128,7 +128,7 @@ def check_exit(
     if bars_held > max_bars and not progress_made:
         return ("TIME_STOP", bar_open)
 
-    # --- TRAILING STOP: two-stage (breakeven at 0.5R, tight trail at 1R) ---
+    # --- TRAILING STOP: two-stage (breakeven at 0.75R, tight trail at 1R) ---
     hwm = state.high_water_mark
     if r_value > 0:
         if side == "long":
@@ -146,8 +146,8 @@ def check_exit(
                     else:
                         fill_price = bar_open if bar_open < trail_stop else trail_stop
                         return ("TRAIL_STOP", fill_price)
-            # Stage 1: After 0.5R profit, breakeven stop
-            elif hwm >= entry_price + 0.5 * r_value:
+            # Stage 1: After 0.75R profit, breakeven stop
+            elif hwm >= entry_price + 0.75 * r_value:
                 trail_stop = entry_price
                 if low <= trail_stop:
                     if tp1_price and high >= tp1_price:
@@ -168,8 +168,8 @@ def check_exit(
                     else:
                         fill_price = bar_open if bar_open > trail_stop else trail_stop
                         return ("TRAIL_STOP", fill_price)
-            # Stage 1: After 0.5R profit, breakeven stop
-            elif hwm <= entry_price - 0.5 * r_value:
+            # Stage 1: After 0.75R profit, breakeven stop
+            elif hwm <= entry_price - 0.75 * r_value:
                 trail_stop = entry_price
                 if high >= trail_stop:
                     if tp1_price and low <= tp1_price:
