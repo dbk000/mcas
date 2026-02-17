@@ -135,6 +135,9 @@ _shared_ohlcv = {}       # dict[(symbol, tf)] -> {ts, open, high, low, close, vo
 _shared_matrices = {}    # dict[tf] -> (close_mx, volume_mx, symbols, ts_grid)
 _shared_folds = []       # fold definitions
 _shared_holdout = ()     # (holdout_start_ts, holdout_end_ts)
+_shared_indicators = {}  # dict[(symbol, tf)] -> compute_indicators() result
+_shared_univ_temp = {}   # dict[tf] -> compute_universe_temperature() result
+_shared_u1_indicators = {}  # dict[(symbol, tf)] -> {vol_slope_5, bb_width_pctile, vol_sma_20, ema_20, returns_12, range_pct, clv, body_ratio}
 
 # ─── Data structures ─────────────────────────────────────────────────────────
 
@@ -545,13 +548,14 @@ def compute_indicators(data: dict) -> dict:
     returns_1 = np.zeros(len(closes))
     returns_1[1:] = (closes[1:] - closes[:-1]) / np.where(closes[:-1] != 0, closes[:-1], 1)
 
-    # Body ratio
+    # Body ratio (safe_range avoids RuntimeWarning from numpy evaluating both branches)
     bar_range = highs - lows
+    safe_range = np.where(bar_range > 0, bar_range, 1.0)
     body = np.abs(closes - opens)
-    body_ratio = np.where(bar_range > 0, body / bar_range, 0)
+    body_ratio = np.where(bar_range > 0, body / safe_range, 0)
 
     # CLV (Close Location Value)
-    clv = np.where(bar_range > 0, (closes - lows) / bar_range, 0.5)
+    clv = np.where(bar_range > 0, (closes - lows) / safe_range, 0.5)
 
     return {
         "atr": atr, "rsi": rsi, "vol_z": vol_z,
@@ -1359,9 +1363,6 @@ def gen_u1_ignition(indicators: dict, ohlcv_data: dict, symbols: list[str],
             continue
         data = ohlcv_data[key]
         closes = data["close"]
-        highs = data["high"]
-        lows = data["low"]
-        opens = data["open"]
         volumes = data["volume"]
         ts_arr = data["ts"]
         n = len(closes)
@@ -1371,35 +1372,19 @@ def gen_u1_ignition(indicators: dict, ohlcv_data: dict, symbols: list[str],
             continue
         atr = ind["atr"]
         vol_z = ind["vol_z"]
-        bb_width = ind["bb_width"]
 
-        # Compute additional indicators for this symbol
-        vol_slope_5 = rolling_linear_slope_v3(volumes, 5)
-        bb_width_pctile = rolling_percentile_v3(bb_width, min(200, n))
-
-        # Average daily volume filter — skip very high or very low volume coins
-        # Use 20-bar SMA of volume as proxy
-        vol_sma_20 = rolling_sma(volumes, 20)
-
-        # EMA20 for close_vs_ema20
-        ema_20 = np.full(n, np.nan)
-        if n >= 20:
-            alpha = 2.0 / 21
-            ema_20[19] = np.mean(closes[:20])
-            for ei in range(20, n):
-                ema_20[ei] = alpha * closes[ei] + (1 - alpha) * ema_20[ei - 1]
-
-        # 12-bar returns
-        returns_12 = np.zeros(n)
-        if n > 12:
-            returns_12[12:] = (closes[12:] - closes[:-12]) / np.where(
-                closes[:-12] != 0, closes[:-12], 1)
-
-        # CLV and range_pct
-        bar_range = highs - lows
-        clv = np.where(bar_range > 0, (closes - lows) / bar_range, 0.5)
-        range_pct = np.where(closes > 0, bar_range / closes, 0)
-        body_ratio = np.where(bar_range > 0, np.abs(closes - opens) / bar_range, 0)
+        # Use pre-computed U1-specific indicators
+        u1_ind = _shared_u1_indicators.get(key)
+        if u1_ind is None:
+            continue
+        vol_slope_5 = u1_ind["vol_slope_5"]
+        bb_width_pctile = u1_ind["bb_width_pctile"]
+        vol_sma_20 = u1_ind["vol_sma_20"]
+        ema_20 = u1_ind["ema_20"]
+        returns_12 = u1_ind["returns_12"]
+        clv = u1_ind["clv"]
+        range_pct = u1_ind["range_pct"]
+        body_ratio = u1_ind["body_ratio"]
 
         for i in range(WARMUP_BARS, n - 1):
             ts = ts_arr[i]
@@ -1612,20 +1597,14 @@ def pass1_worker(work_unit: dict) -> list[dict]:
     # Get symbols for this TF
     symbols = sorted(set(sym for (sym, tf_) in _shared_ohlcv if tf_ == tf))
 
-    # Compute indicators for all symbols at this TF
-    indicators = {}
-    for sym in symbols:
-        key = (sym, tf)
-        if key in _shared_ohlcv:
-            indicators[key] = compute_indicators(_shared_ohlcv[key])
+    # Use pre-computed indicators (read-only, shared via CoW from parent)
+    indicators = {k: v for k, v in _shared_indicators.items() if k[1] == tf}
 
     # Get matrix data if needed
     matrix_data = _shared_matrices.get(tf)
 
-    # Pre-compute universe temperature once per TF for U1 (avoids recomputing per fold × param)
-    u1_universe_temp = None
-    if strat_name == "U1_IGNITION":
-        u1_universe_temp = compute_universe_temperature(_shared_ohlcv, tf, symbols)
+    # Use pre-computed universe temperature for U1
+    u1_universe_temp = _shared_univ_temp.get(tf) if strat_name == "U1_IGNITION" else None
 
     results = []
 
@@ -1725,18 +1704,14 @@ def pass2_worker(work_unit: dict) -> list[dict]:
     needs_matrix = strat_reg.get("needs_matrix", False)
 
     symbols = sorted(set(sym for (sym, tf_) in _shared_ohlcv if tf_ == tf))
-    indicators = {}
-    for sym in symbols:
-        key = (sym, tf)
-        if key in _shared_ohlcv:
-            indicators[key] = compute_indicators(_shared_ohlcv[key])
+
+    # Use pre-computed indicators (read-only, shared via CoW from parent)
+    indicators = {k: v for k, v in _shared_indicators.items() if k[1] == tf}
 
     matrix_data = _shared_matrices.get(tf)
 
-    # Pre-compute universe temperature once for U1
-    u1_universe_temp = None
-    if strat_name == "U1_IGNITION":
-        u1_universe_temp = compute_universe_temperature(_shared_ohlcv, tf, symbols)
+    # Use pre-computed universe temperature for U1
+    u1_universe_temp = _shared_univ_temp.get(tf) if strat_name == "U1_IGNITION" else None
 
     results = []
     slippage_mults = [1.0, 1.5, 2.0]
@@ -1952,6 +1927,78 @@ def main():
             logger.info("  %s: %d symbols × %d bars (%.1f%% valid)",
                         tf, len(symbols), len(ts_grid), pct_valid)
 
+    # ── 2b. Pre-compute indicators (once in parent, shared via CoW) ─────
+    global _shared_indicators, _shared_univ_temp, _shared_u1_indicators
+
+    logger.info("Pre-computing indicators for %d symbol-tf combos...", len(_shared_ohlcv))
+    t_ind = time.time()
+    for key, data in _shared_ohlcv.items():
+        _shared_indicators[key] = compute_indicators(data)
+    logger.info("  Standard indicators: %.1fs", time.time() - t_ind)
+
+    # Pre-compute universe temperature for U1's timeframes
+    u1_timeframes = [tf for tf in ["15m", "1h"] if tf in _shared_matrices]
+    for tf in u1_timeframes:
+        symbols_tf = sorted(set(sym for (sym, t) in _shared_ohlcv if t == tf))
+        _shared_univ_temp[tf] = compute_universe_temperature(_shared_ohlcv, tf, symbols_tf)
+    logger.info("  Universe temperature: %.1fs (%d TFs)", time.time() - t_ind, len(u1_timeframes))
+
+    # Pre-compute U1-specific per-symbol indicators (the dominant cost)
+    t_u1 = time.time()
+    n_u1 = 0
+    for (sym, tf), data in _shared_ohlcv.items():
+        if tf not in ("15m", "1h"):
+            continue
+        if sym in U1_MAJOR_SYMBOLS:
+            continue
+        closes = data["close"]
+        highs = data["high"]
+        lows = data["low"]
+        opens = data["open"]
+        volumes = data["volume"]
+        n = len(closes)
+
+        ind = _shared_indicators.get((sym, tf))
+        if ind is None:
+            continue
+        bb_width = ind["bb_width"]
+
+        vol_slope_5 = rolling_linear_slope_v3(volumes, 5)
+        bb_width_pctile = rolling_percentile_v3(bb_width, min(200, n))
+        vol_sma_20 = rolling_sma(volumes, 20)
+
+        ema_20 = np.full(n, np.nan)
+        if n >= 20:
+            alpha = 2.0 / 21
+            ema_20[19] = np.mean(closes[:20])
+            for ei in range(20, n):
+                ema_20[ei] = alpha * closes[ei] + (1 - alpha) * ema_20[ei - 1]
+
+        returns_12 = np.zeros(n)
+        if n > 12:
+            returns_12[12:] = (closes[12:] - closes[:-12]) / np.where(
+                closes[:-12] != 0, closes[:-12], 1)
+
+        bar_range = highs - lows
+        safe_range = np.where(bar_range > 0, bar_range, 1.0)
+        clv = np.where(bar_range > 0, (closes - lows) / safe_range, 0.5)
+        range_pct = np.where(closes > 0, bar_range / closes, 0)
+        body_ratio = np.where(bar_range > 0, np.abs(closes - opens) / safe_range, 0)
+
+        _shared_u1_indicators[(sym, tf)] = {
+            "vol_slope_5": vol_slope_5,
+            "bb_width_pctile": bb_width_pctile,
+            "vol_sma_20": vol_sma_20,
+            "ema_20": ema_20,
+            "returns_12": returns_12,
+            "clv": clv,
+            "range_pct": range_pct,
+            "body_ratio": body_ratio,
+        }
+        n_u1 += 1
+    logger.info("  U1 per-symbol indicators: %.1fs (%d symbols)", time.time() - t_u1, n_u1)
+    logger.info("Total pre-compute: %.1fs", time.time() - t_ind)
+
     # ── 3. Compute folds + holdout ───────────────────────────────────────
     # Use the first available TF's ts_grid as reference
     ref_tf = timeframes[0]
@@ -1981,6 +2028,9 @@ def main():
         assert folds[i][3] <= folds[i+1][2], f"Test periods overlap: fold {i} and {i+1}"
 
     # ── 4. Build work units ──────────────────────────────────────────────
+    MAX_PARAMS_PER_CHUNK = 6  # split strategies with >6 params for better load balancing
+    COST_FACTORS = {"U1_IGNITION": 3.0}  # U1 is ~3x costlier per param than others
+
     work_units = []
     for strat_name, strat_cfg in STRATEGY_REGISTRY.items():
         if args.category and strat_cfg["category"] != args.category:
@@ -1990,13 +2040,17 @@ def main():
                 continue
             if tf not in _shared_matrices:
                 continue
-            work_units.append({
-                "strategy": strat_name,
-                "timeframe": tf,
-                "param_grid": strat_cfg["param_grid"],
-                "needs_matrix": strat_cfg.get("needs_matrix", False),
-                "extra_slippage": strat_cfg.get("extra_slippage", 0),
-            })
+            grid = strat_cfg["param_grid"]
+            # Split large param grids into chunks for parallelism
+            for chunk_start in range(0, len(grid), MAX_PARAMS_PER_CHUNK):
+                chunk = grid[chunk_start:chunk_start + MAX_PARAMS_PER_CHUNK]
+                work_units.append({
+                    "strategy": strat_name,
+                    "timeframe": tf,
+                    "param_grid": chunk,
+                    "needs_matrix": strat_cfg.get("needs_matrix", False),
+                    "extra_slippage": strat_cfg.get("extra_slippage", 0),
+                })
 
     total_configs = sum(
         len(wu["param_grid"]) * len(STOP_PRESETS) for wu in work_units
@@ -2011,8 +2065,11 @@ def main():
     p1_start = time.time()
     n_workers = min(args.workers, len(work_units))
 
-    # Sort work units by estimated size (largest first for better load balancing)
-    work_units.sort(key=lambda wu: len(wu["param_grid"]), reverse=True)
+    # Cost-aware sort: heaviest chunks first for better load balancing
+    work_units.sort(
+        key=lambda wu: len(wu["param_grid"]) * COST_FACTORS.get(wu["strategy"], 1.0),
+        reverse=True,
+    )
 
     if n_workers > 1:
         ctx = get_context("fork")
@@ -2164,11 +2221,9 @@ def main():
         needs_matrix = strat_reg.get("needs_matrix", False)
 
         symbols = sorted(set(sym for (sym, tf_) in _shared_ohlcv if tf_ == tf))
-        indicators = {}
-        for sym in symbols:
-            key = (sym, tf)
-            if key in _shared_ohlcv:
-                indicators[key] = compute_indicators(_shared_ohlcv[key])
+
+        # Use pre-computed indicators
+        indicators = {k: v for k, v in _shared_indicators.items() if k[1] == tf}
 
         matrix_data = _shared_matrices.get(tf)
 
@@ -2183,7 +2238,7 @@ def main():
         if needs_matrix and matrix_data:
             sig_kwargs["close_mx"] = matrix_data[0]
         if strat_name == "U1_IGNITION":
-            sig_kwargs["universe_temp"] = compute_universe_temperature(_shared_ohlcv, tf, symbols)
+            sig_kwargs["universe_temp"] = _shared_univ_temp.get(tf, {})
 
         # Use 1.5× slippage for holdout (conservative)
         slippage = base_slippage * 1.5
