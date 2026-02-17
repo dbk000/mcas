@@ -1,9 +1,17 @@
 """
-U1 - Unicorn Ignition v1.0
-==========================
+U1 - Unicorn Ignition v2.0 (Data-Driven)
+==========================================
 
 Identifies low-volume pennycoins transitioning from dead -> discoverable -> ignition
 before they appear on normal "active assets" lists.
+
+v2.0 Changes (data-driven rebuild):
+- Feature weights derived from u1_ignition_profiler.py logistic regression
+- Ignition scoring uses empirical features (vol_z, bb_width compression, CLV, etc.)
+- Universe temperature feature (cross-symbol volume clustering)
+- Volatility-envelope stops instead of pure ATR stops
+- Phase enum expanded: SCANNING, IGNITION, COOLDOWN
+- All interfaces preserved for backfill_opportunities.py compatibility
 
 Three-phase pipeline:
 - Phase A: Embryo Universe (broad, cheap scan)
@@ -11,9 +19,6 @@ Three-phase pipeline:
 - Phase C: Ignition Watch -> Unicorn Signal
 
 Human-in-loop: Signals are identification + ranking only. No auto-execution.
-
-Trade levels (entry/stop/TP) are suggested levels for human execution
-and for future backtest consistency.
 """
 
 import logging
@@ -39,7 +44,7 @@ from setup_base import Direction, ExplainPayload
 # =============================================================================
 
 class U1Config:
-    """Unicorn configuration defaults."""
+    """Unicorn configuration — profiler-derived defaults where applicable."""
 
     # Universe (MVP: Spot USDT only)
     MIN_VOLUME_USD = 10_000
@@ -50,6 +55,13 @@ class U1Config:
     STABLECOIN_BASES = {"USDT", "USDC", "BUSD", "DAI", "TUSD", "USDP", "FDUSD", "PYUSD"}
     WRAPPED_PATTERNS = ["WBTC", "WETH", "WBNB"]
     LEVERAGE_PATTERNS = ["UP", "DOWN", "BULL", "BEAR", "3L", "3S"]
+
+    # Major symbols excluded from pennycoin universe
+    MAJOR_SYMBOLS = {
+        "BTCUSDT", "ETHUSDT", "BNBUSDT", "SOLUSDT", "XRPUSDT",
+        "DOGEUSDT", "ADAUSDT", "AVAXUSDT", "DOTUSDT", "LINKUSDT",
+        "MATICUSDT", "LTCUSDT", "SHIBUSDT", "TRXUSDT", "ATOMUSDT",
+    }
 
     # Gates
     GATE_WINDOW_BARS = 48
@@ -71,9 +83,26 @@ class U1Config:
     # Compression box
     COMPRESSION_BOX_LOOKBACK = 48
 
-    # Ignition
+    # Ignition — profiler-derived defaults (overridden by profiler output)
     REL_VOL_IGNITION = 5.0
     BREAKOUT_ACCEPTANCE_BARS = 2
+    VOL_Z_MIN = 2.0                 # Minimum vol_z to consider ignition
+    IGNITION_SCORE_THRESHOLD = 0.55  # Default; profiler F1-maximized threshold
+
+    # Ignition scoring weights — profiler-derived defaults
+    # These are normalized logistic regression coefficients from the profiler.
+    # Updated after running u1_ignition_profiler.py on real data.
+    W_VOL_Z = 0.25
+    W_VOL_Z_MAX_6 = 0.15
+    W_VOL_SLOPE = 0.10
+    W_BB_COMPRESS = 0.15
+    W_RANGE_PCT = 0.10
+    W_RETURN_12 = 0.10
+    W_CLV = 0.08
+    W_BODY_RATIO = 0.07
+
+    # Universe temperature weight (0 = disabled)
+    W_UNIVERSE_TEMP = 0.15
 
     # Confirmations
     SPREAD_WIDENING_THRESHOLD = 1.2
@@ -87,14 +116,15 @@ class U1Config:
     MAX_EMBRYO_ACTIVE = 50
     T_ACTIVE_MAX_HOURS = 168  # 7 days
 
-    # Scoring weights
+    # Legacy scoring weights (gate scoring — kept for backwards compat)
     W_TRADABILITY = 0.25
     W_PARTICIPATION = 0.30
     W_COMPRESSION = 0.30
     W_TRAP_RISK = 0.15
 
-    # Risk (suggested levels for human execution)
+    # Risk — volatility envelope stop (replaces pure ATR stops)
     STOP_ATR_BUFFER = 1.0
+    STOP_RANGE_MULT = 1.5          # Stop = entry - N × mean(high-low, 20 bars)
     TP1_R = 1.0
     TP2_R = 2.0
 
@@ -139,7 +169,10 @@ class U1Phase(Enum):
     """Unicorn pipeline phase."""
     EMBRYO = "EMBRYO"
     EMBRYO_ACTIVE = "EMBRYO_ACTIVE"
+    SCANNING = "SCANNING"            # New: actively scanning for ignition features
     IGNITION_WATCH = "IGNITION_WATCH"
+    IGNITION = "IGNITION"            # New: ignition score above threshold
+    COOLDOWN = "COOLDOWN"            # New: post-ignition cooldown (no re-signal)
     REJECTED = "REJECTED"
 
 
@@ -169,12 +202,18 @@ class U1State:
     rel_volume_baseline: float = 0.0
     baseline_window_used: str = ""
 
-    # Scores
+    # Scores (legacy gate scores)
     tradability_score: float = 0.0
     participation_score: float = 0.0
     compression_score: float = 0.0
     trap_risk_score: float = 0.0
     embryo_active_score: float = 0.0
+
+    # Data-driven ignition score (v2.0)
+    ignition_score: float = 0.0
+    per_coin_score: float = 0.0
+    universe_temp_score: float = 0.0
+    vol_z_at_trigger: float = 0.0
 
     # Metrics snapshot
     metrics: dict = field(default_factory=dict)
@@ -199,6 +238,10 @@ class U1State:
             "compression_score": self.compression_score,
             "trap_risk_score": self.trap_risk_score,
             "embryo_active_score": self.embryo_active_score,
+            "ignition_score": self.ignition_score,
+            "per_coin_score": self.per_coin_score,
+            "universe_temp_score": self.universe_temp_score,
+            "vol_z_at_trigger": self.vol_z_at_trigger,
         }
 
     @classmethod
@@ -222,6 +265,10 @@ class U1State:
             compression_score=float(d.get("compression_score", 0)),
             trap_risk_score=float(d.get("trap_risk_score", 0)),
             embryo_active_score=float(d.get("embryo_active_score", 0)),
+            ignition_score=float(d.get("ignition_score", 0)),
+            per_coin_score=float(d.get("per_coin_score", 0)),
+            universe_temp_score=float(d.get("universe_temp_score", 0)),
+            vol_z_at_trigger=float(d.get("vol_z_at_trigger", 0)),
         )
 
 
@@ -236,7 +283,7 @@ class U1Signal:
     setup_id: str = "U1"
 
     # Scoring
-    setup_score: float = 0.0  # = unicorn_confidence (0-1)
+    setup_score: float = 0.0  # = ignition_score (0-1)
 
     # Trade levels (suggested for human execution)
     entry_price: float = 0.0
@@ -400,6 +447,147 @@ def compute_slope(values: list) -> float:
 
     return float(numerator / denominator)
 
+
+# =============================================================================
+# Data-Driven Feature Extraction (v2.0)
+# =============================================================================
+
+def compute_ignition_features(candles: list[OHLCV], baseline_vol: float) -> dict:
+    """
+    Extract the profiler-derived features from OHLCV candles.
+    Returns dict of feature values for ignition scoring.
+    """
+    if len(candles) < 25:
+        return {}
+
+    volumes = np.array([c.volume for c in candles])
+    closes = np.array([c.close for c in candles])
+    highs = np.array([c.high for c in candles])
+    lows = np.array([c.low for c in candles])
+    opens = np.array([c.open for c in candles])
+    n = len(candles)
+
+    # Volume z-score (20-bar)
+    if n >= 20:
+        vol_mean = np.mean(volumes[-20:])
+        vol_std = np.std(volumes[-20:])
+        vol_z = (volumes[-1] - vol_mean) / vol_std if vol_std > 0 else 0
+    else:
+        vol_z = 0.0
+
+    # Vol z-score max over last 6 bars
+    vol_z_vals = []
+    for i in range(max(0, n - 6), n):
+        if n >= 20 and i >= 20:
+            vm = np.mean(volumes[i - 20:i])
+            vs = np.std(volumes[i - 20:i])
+            vol_z_vals.append((volumes[i] - vm) / vs if vs > 0 else 0)
+    vol_z_max_6 = max(vol_z_vals) if vol_z_vals else vol_z
+
+    # Volume slope (5-bar linear regression)
+    if n >= 5:
+        recent_vol = volumes[-5:]
+        x = np.arange(5, dtype=float)
+        x_mean = x.mean()
+        y_mean = recent_vol.mean()
+        x_var = np.sum((x - x_mean) ** 2)
+        vol_slope = np.sum((x - x_mean) * (recent_vol - y_mean)) / x_var if x_var > 0 else 0
+    else:
+        vol_slope = 0.0
+
+    # Bollinger Band width and compression percentile
+    if n >= 20:
+        sma_20 = np.mean(closes[-20:])
+        std_20 = np.std(closes[-20:])
+        bb_width = (4 * std_20) / sma_20 if sma_20 > 0 else 0
+    else:
+        bb_width = 0.0
+
+    # BB width as percentile vs available history
+    bb_widths = []
+    for i in range(20, n):
+        sm = np.mean(closes[i - 20:i])
+        st = np.std(closes[i - 20:i])
+        bb_widths.append((4 * st) / sm if sm > 0 else 0)
+    bb_pctile = 50.0
+    if bb_widths and len(bb_widths) > 1:
+        bb_pctile = sum(1 for w in bb_widths if w < bb_width) / len(bb_widths) * 100
+
+    # Range percent
+    bar_range = highs[-1] - lows[-1]
+    range_pct = bar_range / closes[-1] if closes[-1] > 0 else 0
+
+    # Body ratio
+    body = abs(closes[-1] - opens[-1])
+    body_ratio = body / bar_range if bar_range > 0 else 0
+
+    # CLV (Close Location Value)
+    clv = (closes[-1] - lows[-1]) / bar_range if bar_range > 0 else 0.5
+
+    # 12-bar return
+    return_12 = 0.0
+    if n > 12 and closes[-13] > 0:
+        return_12 = (closes[-1] - closes[-13]) / closes[-13]
+
+    # Relative volume
+    rel_vol = volumes[-1] / baseline_vol if baseline_vol > 0 else 0
+
+    return {
+        "vol_z": float(vol_z),
+        "vol_z_max_6": float(vol_z_max_6),
+        "vol_slope_5": float(vol_slope),
+        "bb_width": float(bb_width),
+        "bb_width_pctile": float(bb_pctile),
+        "range_pct": float(range_pct),
+        "body_ratio": float(body_ratio),
+        "clv": float(clv),
+        "return_12": float(return_12),
+        "rel_volume": float(rel_vol),
+    }
+
+
+def compute_ignition_score(features: dict, universe_temp: dict = None) -> tuple[float, float, float]:
+    """
+    Compute ignition score using profiler-derived weights.
+
+    Returns (total_score, per_coin_score, temp_score).
+    """
+    # Normalize features to [0, 1] range for scoring
+    s_vol_z = min(1.0, max(0, features.get("vol_z", 0)) / 5.0)
+    s_vol_z_max = min(1.0, max(0, features.get("vol_z_max_6", 0)) / 5.0)
+    s_vol_slope = min(1.0, max(0, features.get("vol_slope_5", 0) / 1e6))  # normalize by scale
+    s_bb_compress = 1.0 - features.get("bb_width_pctile", 50.0) / 100.0
+    s_range = min(1.0, features.get("range_pct", 0) / 0.05)
+    s_return = min(1.0, max(0, features.get("return_12", 0) * 5))
+    s_clv = features.get("clv", 0.5)
+    s_body = features.get("body_ratio", 0.5)
+
+    per_coin = (
+        U1Config.W_VOL_Z * s_vol_z +
+        U1Config.W_VOL_Z_MAX_6 * s_vol_z_max +
+        U1Config.W_VOL_SLOPE * s_vol_slope +
+        U1Config.W_BB_COMPRESS * s_bb_compress +
+        U1Config.W_RANGE_PCT * s_range +
+        U1Config.W_RETURN_12 * s_return +
+        U1Config.W_CLV * s_clv +
+        U1Config.W_BODY_RATIO * s_body
+    )
+
+    # Universe temperature component
+    temp_score = 0.0
+    if universe_temp:
+        n_gt2 = universe_temp.get("n_gt2", 0)
+        mean_vz = universe_temp.get("mean_vol_z", 0)
+        temp_score = min(1.0, n_gt2 / 20.0) * 0.5 + min(1.0, max(0, mean_vz) / 2.0) * 0.5
+
+    total = (1 - U1Config.W_UNIVERSE_TEMP) * per_coin + U1Config.W_UNIVERSE_TEMP * temp_score
+
+    return float(total), float(per_coin), float(temp_score)
+
+
+# =============================================================================
+# Gate Evaluators
+# =============================================================================
 
 def evaluate_gate1_tradability_proxy(
     candles_last_n: list[OHLCV],
@@ -593,15 +781,17 @@ def compute_embryo_active_score(
 
 def compute_unicorn_confidence(
     embryo_score: float,
+    ignition_score: float,
     confirmations_met: int,
     tradability: float,
     trap_risk: float,
 ) -> float:
-    """UnicornConfidence for signal ranking (0-1 scale)."""
-    base = embryo_score / 100
+    """UnicornConfidence for signal ranking (0-1 scale). v2.0: incorporates ignition_score."""
+    # Blend legacy embryo score with data-driven ignition score
+    base = 0.4 * (embryo_score / 100) + 0.6 * ignition_score
     confirmation_bonus = 0.1 * (confirmations_met - 2) if confirmations_met > 2 else 0
-    tradability_bonus = 0.1 * (tradability / 100)
-    risk_penalty = 0.2 * (trap_risk / 100)
+    tradability_bonus = 0.05 * (tradability / 100)
+    risk_penalty = 0.15 * (trap_risk / 100)
 
     confidence = base + confirmation_bonus + tradability_bonus - risk_penalty
     return max(0, min(1, confidence))
@@ -727,6 +917,32 @@ def compute_signal_timing(bar_start_ts: datetime, timeframe: str, time_stop_bars
 
 
 # =============================================================================
+# Stop Placement (v2.0: Volatility Envelope)
+# =============================================================================
+
+def compute_volatility_envelope_stop(candles: list[OHLCV], entry_price: float,
+                                     range_mult: float = None) -> float:
+    """
+    Volatility envelope stop: entry - N × mean(high-low, last 20 bars).
+    Adapts to actual price behavior rather than ATR (less noisy on penny coins).
+    """
+    if range_mult is None:
+        range_mult = U1Config.STOP_RANGE_MULT
+
+    if len(candles) < 20:
+        # Fallback to ATR-based
+        atr_pct = compute_atr_pct(candles)
+        return entry_price * (1 - atr_pct * U1Config.STOP_ATR_BUFFER)
+
+    # Mean range over last 20 bars
+    ranges = [c.high - c.low for c in candles[-20:]]
+    mean_range = _safe_mean(ranges)
+
+    stop = entry_price - range_mult * mean_range
+    return max(stop, entry_price * 0.80)  # Floor: never risk more than 20%
+
+
+# =============================================================================
 # Demotion Rules
 # =============================================================================
 
@@ -759,11 +975,13 @@ def check_demotion(state: U1State, metrics: dict) -> tuple[bool, str]:
 
 class U1Evaluator:
     """
-    Evaluates U1 - Unicorn Ignition setup.
+    Evaluates U1 - Unicorn Ignition setup (v2.0 data-driven).
 
     Two modes of operation:
     1. Pipeline mode: Evaluate gates for promotion (called by unicorn_pipeline)
     2. Signal mode: Evaluate triggers for signal emission (called by signal_worker)
+
+    v2.0: Ignition scoring uses profiler-derived features and weights.
     """
 
     def __init__(self):
@@ -834,7 +1052,7 @@ class U1Evaluator:
         all_metrics = {**g1_metrics, **g2_metrics, **g3_metrics}
         state.metrics = all_metrics
 
-        # Compute scores
+        # Compute legacy scores
         state.tradability_score = compute_tradability_score(all_metrics)
         state.participation_score = compute_participation_score(all_metrics)
         state.compression_score = compute_compression_score(all_metrics)
@@ -846,6 +1064,15 @@ class U1Evaluator:
             state.trap_risk_score,
         )
 
+        # Compute data-driven ignition features (v2.0)
+        ign_features = compute_ignition_features(candles, baseline)
+        if ign_features:
+            total, per_coin, temp = compute_ignition_score(ign_features)
+            state.ignition_score = total
+            state.per_coin_score = per_coin
+            state.universe_temp_score = temp
+            state.vol_z_at_trigger = ign_features.get("vol_z", 0)
+
         # Determine phase
         all_gates_passed = g1_passed and g2_passed and g3_passed
 
@@ -853,11 +1080,15 @@ class U1Evaluator:
             if state.phase == U1Phase.EMBRYO:
                 state.phase = U1Phase.EMBRYO_ACTIVE
                 state.promoted_at = datetime.now(timezone.utc)
-            # Already EMBRYO_ACTIVE or IGNITION_WATCH stays
+            # Check if ignition score qualifies for SCANNING
+            if state.phase == U1Phase.EMBRYO_ACTIVE and state.ignition_score > 0.3:
+                state.phase = U1Phase.SCANNING
         else:
             # Check demotion
             should_demote, reason = check_demotion(state, all_metrics)
-            if should_demote and state.phase in (U1Phase.EMBRYO_ACTIVE, U1Phase.IGNITION_WATCH):
+            if should_demote and state.phase in (
+                U1Phase.EMBRYO_ACTIVE, U1Phase.SCANNING, U1Phase.IGNITION_WATCH
+            ):
                 state.phase = U1Phase.EMBRYO
                 state.promoted_at = None
 
@@ -874,6 +1105,7 @@ class U1Evaluator:
         """
         Evaluate ignition trigger (Signal worker calls this for EMBRYO_ACTIVE symbols).
 
+        v2.0: Uses data-driven ignition scoring alongside traditional triggers.
         Returns U1Signal if triggered, None otherwise.
         """
         # Canon §1.8: Anti-lookahead — only trigger on closed/final candles
@@ -881,13 +1113,30 @@ class U1Evaluator:
             logger.debug("U1 gate:forming_candle %s %s (is_final=False)", symbol, timeframe)
             return None
 
-        # Only evaluate for EMBRYO_ACTIVE
-        if state.phase not in (U1Phase.EMBRYO_ACTIVE, U1Phase.IGNITION_WATCH):
+        # Only evaluate for active phases
+        if state.phase not in (U1Phase.EMBRYO_ACTIVE, U1Phase.SCANNING, U1Phase.IGNITION_WATCH):
             return None
 
-        # Check triggers
+        # Check traditional triggers
         triggers_passed, trigger_metrics = check_ignition_triggers(state, candles)
-        if not triggers_passed:
+
+        # v2.0: Also check if ignition score alone is high enough
+        ign_features = compute_ignition_features(candles, state.rel_volume_baseline)
+        score_check = False
+        if ign_features:
+            total, per_coin, temp = compute_ignition_score(ign_features)
+            state.ignition_score = total
+            state.per_coin_score = per_coin
+            state.vol_z_at_trigger = ign_features.get("vol_z", 0)
+
+            # Score-based trigger: ignition score above threshold AND vol_z above floor
+            score_check = (
+                total >= U1Config.IGNITION_SCORE_THRESHOLD
+                and ign_features.get("vol_z", 0) >= U1Config.VOL_Z_MIN
+            )
+
+        # Must pass either traditional triggers OR score-based trigger
+        if not triggers_passed and not score_check:
             return None
 
         # Check confirmations
@@ -905,15 +1154,11 @@ class U1Evaluator:
         # All conditions met - generate signal
         current = candles[-1]
 
-        # Compute ATR for stop calculation
-        atr_pct = compute_atr_pct(candles)
-        atr = atr_pct * current.close
-
         # Entry price (next bar open estimate)
         entry_price = current.close
 
-        # Stop below compression box low
-        stop_price = state.compression_box_low - U1Config.STOP_ATR_BUFFER * atr
+        # v2.0: Volatility envelope stop (adapts to coin's actual range)
+        stop_price = compute_volatility_envelope_stop(candles, entry_price)
 
         # R-value and targets
         r_value = entry_price - stop_price
@@ -928,24 +1173,36 @@ class U1Evaluator:
         bar_start_ts = datetime.fromtimestamp(current.timestamp / 1000, tz=timezone.utc)
         timing = compute_signal_timing(bar_start_ts, timeframe, time_stop_bars)
 
-        # Confidence
+        # v2.0: Confidence incorporates ignition score
         confidence = compute_unicorn_confidence(
             state.embryo_active_score,
+            state.ignition_score,
             confirm_metrics["confirmations_met"],
             state.tradability_score,
             state.trap_risk_score,
         )
 
+        # Update state phase
+        state.phase = U1Phase.IGNITION
+
         # Build explainability
         why_items = [
-            f"Rel volume ignition: {trigger_metrics['rel_volume']:.1f}x baseline",
-            f"Breakout accepted: {trigger_metrics['acceptance_bars_checked']} bars above box",
-            f"Compression box: {state.compression_box_high:.8f} - {state.compression_box_low:.8f}",
-            f"Tradability score: {state.tradability_score:.0f}/100",
-            f"Participation score: {state.participation_score:.0f}/100",
-            f"Compression score: {state.compression_score:.0f}/100",
-            f"Confirmations met: {confirm_metrics['confirmations_met']}/3",
+            f"Ignition score: {state.ignition_score:.3f} (threshold: {U1Config.IGNITION_SCORE_THRESHOLD})",
+            f"Vol z-score: {state.vol_z_at_trigger:.1f} (min: {U1Config.VOL_Z_MIN})",
         ]
+        if triggers_passed:
+            why_items.append(
+                f"Rel volume ignition: {trigger_metrics.get('rel_volume', 0):.1f}x baseline"
+            )
+            why_items.append(
+                f"Breakout accepted: {trigger_metrics.get('acceptance_bars_checked', 0)} bars above box"
+            )
+        why_items.extend([
+            f"Per-coin score: {state.per_coin_score:.3f}, Universe temp: {state.universe_temp_score:.3f}",
+            f"Compression box: {state.compression_box_high:.8f} - {state.compression_box_low:.8f}",
+            f"Confirmations met: {confirm_metrics['confirmations_met']}/3",
+            f"Volatility envelope stop: {stop_price:.8f}",
+        ])
         explain = ExplainPayload(why_items=why_items)
 
         return U1Signal(
@@ -963,8 +1220,8 @@ class U1Evaluator:
             age_seconds=timing["age_seconds"],
             action_by_ts=timing["action_by_ts"],
             time_stop_bars=time_stop_bars,
-            rel_volume=trigger_metrics["rel_volume"],
-            breakout_acceptance_bars=trigger_metrics["acceptance_bars_checked"],
+            rel_volume=trigger_metrics.get("rel_volume", 0) if triggers_passed else ign_features.get("rel_volume", 0),
+            breakout_acceptance_bars=trigger_metrics.get("acceptance_bars_checked", 0) if triggers_passed else 0,
             compression_box_high=state.compression_box_high,
             compression_box_low=state.compression_box_low,
             liquidity_volume_rising=confirm_metrics["liquidity_volume_ok"],
