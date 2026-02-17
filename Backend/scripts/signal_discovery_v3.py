@@ -1363,7 +1363,6 @@ def gen_u1_ignition(indicators: dict, ohlcv_data: dict, symbols: list[str],
             continue
         data = ohlcv_data[key]
         closes = data["close"]
-        volumes = data["volume"]
         ts_arr = data["ts"]
         n = len(closes)
 
@@ -1379,80 +1378,67 @@ def gen_u1_ignition(indicators: dict, ohlcv_data: dict, symbols: list[str],
             continue
         vol_slope_5 = u1_ind["vol_slope_5"]
         bb_width_pctile = u1_ind["bb_width_pctile"]
-        vol_sma_20 = u1_ind["vol_sma_20"]
-        ema_20 = u1_ind["ema_20"]
         returns_12 = u1_ind["returns_12"]
         clv = u1_ind["clv"]
         range_pct = u1_ind["range_pct"]
         body_ratio = u1_ind["body_ratio"]
+        cum_vol_std = u1_ind["cum_vol_std"]
+        vol_z_max_6 = u1_ind["vol_z_max_6"]
+        temp_n_gt2 = u1_ind["temp_n_gt2"]
+        temp_mean_vz = u1_ind["temp_mean_vz"]
 
-        for i in range(WARMUP_BARS, n - 1):
-            ts = ts_arr[i]
-            if ts < min_ts or ts >= max_ts:
-                continue
-            if atr[i] <= 0 or closes[i] <= 0:
-                continue
+        # ── Vectorized scoring (replaces per-bar Python loop) ──
+        # Build valid-bar mask
+        valid = np.zeros(n, dtype=bool)
+        valid[WARMUP_BARS:n - 1] = True
+        valid &= (ts_arr >= min_ts) & (ts_arr < max_ts)
+        valid &= (atr > 0) & (closes > 0)
+        valid &= (vol_z >= vol_z_min)
 
-            # Volume z-score floor
-            if vol_z[i] < vol_z_min:
-                continue
+        if not np.any(valid):
+            continue
 
-            # Compute ignition score from empirical features
-            # Feature group 1: Volume (highest empirical weight)
-            vz_6 = vol_z[max(0, i - 5):i + 1]
-            vol_z_max_6 = float(np.max(vz_6)) if len(vz_6) > 0 else 0.0
-            vol_accel = vol_slope_5[i] - (vol_slope_5[i - 1] if i > 0 else 0)
+        # Vectorized score components
+        s_vol_z = np.minimum(1.0, vol_z / 5.0)
+        s_vol_z_max = np.minimum(1.0, vol_z_max_6 / 5.0)
+        s_vol_slope = np.minimum(1.0, np.maximum(0, vol_slope_5 / (cum_vol_std + 1e-10)))
+        bb_clean = np.where(np.isnan(bb_width_pctile), 50.0, bb_width_pctile)
+        s_bb_compress = 1.0 - bb_clean / 100.0
+        s_range = np.minimum(1.0, range_pct / 0.05)
+        s_return = np.minimum(1.0, np.maximum(0, returns_12 * 5))
 
-            # Feature group 2: Volatility compression
-            bb_pctile_val = bb_width_pctile[i] if not np.isnan(bb_width_pctile[i]) else 50.0
+        per_coin_score = (
+            0.25 * s_vol_z +
+            0.15 * s_vol_z_max +
+            0.10 * s_vol_slope +
+            0.15 * s_bb_compress +
+            0.10 * s_range +
+            0.10 * s_return +
+            0.08 * clv +
+            0.07 * body_ratio
+        )
 
-            # Feature group 3: Price structure
-            ema20_val = ema_20[i] if not np.isnan(ema_20[i]) else closes[i]
-            close_vs_ema20 = (closes[i] - ema20_val) / atr[i]
+        # Universe temperature component (vectorized from pre-built arrays)
+        temp_score = (np.minimum(1.0, temp_n_gt2 / 20.0) * 0.5 +
+                      np.minimum(1.0, np.maximum(0, temp_mean_vz) / 2.0) * 0.5)
 
-            # Scoring: sigmoid-normalized components → weighted sum
-            # Weights from profiler (defaults; will be overridden by profiler output)
-            s_vol_z = min(1.0, vol_z[i] / 5.0)  # vol_z → [0, 1]
-            s_vol_z_max = min(1.0, vol_z_max_6 / 5.0)
-            s_vol_slope = min(1.0, max(0, vol_slope_5[i] / (np.std(volumes[:i+1]) + 1e-10)))
-            s_bb_compress = 1.0 - bb_pctile_val / 100.0  # low bb_width = high compression
-            s_range = min(1.0, range_pct[i] / 0.05)  # range_pct spikiness
-            s_return = min(1.0, max(0, returns_12[i] * 5))  # recent momentum
-            s_clv = clv[i]  # close location value (high = bullish)
-            s_body = body_ratio[i]  # body quality
+        score = (1 - temp_weight) * per_coin_score + temp_weight * temp_score
 
-            # Per-coin score (0-1)
-            per_coin_score = (
-                0.25 * s_vol_z +
-                0.15 * s_vol_z_max +
-                0.10 * s_vol_slope +
-                0.15 * s_bb_compress +
-                0.10 * s_range +
-                0.10 * s_return +
-                0.08 * s_clv +
-                0.07 * s_body
-            )
+        # Apply threshold + valid mask, collect signals
+        signal_mask = valid & (score >= score_threshold)
+        signal_indices = np.where(signal_mask)[0]
 
-            # Universe temperature component
-            temp = universe_temp.get(float(ts), {})
-            n_gt2 = temp.get("n_gt2", 0)
-            mean_vz = temp.get("mean_vol_z", 0)
-            temp_score = min(1.0, n_gt2 / 20.0) * 0.5 + min(1.0, max(0, mean_vz) / 2.0) * 0.5
-
-            # Combined score
-            score = (1 - temp_weight) * per_coin_score + temp_weight * temp_score
-
-            if score >= score_threshold:
-                signals.append(Signal("U1_IGNITION", sym, "long", i,
-                    score=min(1.0, score),
-                    meta={
-                        "vol_z": round(float(vol_z[i]), 2),
-                        "vol_z_max_6": round(vol_z_max_6, 2),
-                        "bb_pctile": round(bb_pctile_val, 1),
-                        "temp_n_gt2": n_gt2,
-                        "per_coin_score": round(per_coin_score, 3),
-                        "temp_score": round(temp_score, 3),
-                    }))
+        for i in signal_indices:
+            signals.append(Signal("U1_IGNITION", sym, "long", int(i),
+                score=min(1.0, float(score[i])),
+                meta={
+                    "vol_z": round(float(vol_z[i]), 2),
+                    "vol_z_max_6": round(float(vol_z_max_6[i]), 2),
+                    "bb_pctile": round(float(bb_clean[i]), 1),
+                    "temp_n_gt2": int(temp_n_gt2[i]),
+                    "per_coin_score": round(float(per_coin_score[i]), 3),
+                    "temp_score": round(float(temp_score[i]), 3),
+                }))
 
     return signals
 
@@ -1985,6 +1971,34 @@ def main():
         range_pct = np.where(closes > 0, bar_range / closes, 0)
         body_ratio = np.where(bar_range > 0, np.abs(closes - opens) / safe_range, 0)
 
+        # Cumulative std of volumes (for s_vol_slope normalization)
+        cs = np.cumsum(volumes)
+        cs2 = np.cumsum(volumes ** 2)
+        counts = np.arange(1, n + 1, dtype=np.float64)
+        cum_var = cs2 / counts - (cs / counts) ** 2
+        cum_vol_std = np.sqrt(np.maximum(0, cum_var))
+
+        # Rolling max of vol_z over 6 bars
+        vol_z = ind["vol_z"]
+        vol_z_max_6 = np.full(n, 0.0)
+        if n >= 6:
+            from numpy.lib.stride_tricks import sliding_window_view
+            windows = sliding_window_view(vol_z, 6)
+            vol_z_max_6[5:] = np.max(windows, axis=1)
+        for j in range(min(6, n)):
+            vol_z_max_6[j] = np.max(vol_z[:j+1])
+
+        # Pre-build universe temp arrays aligned to this symbol's ts_arr
+        ts_arr = data["ts"]
+        temp_dict = _shared_univ_temp.get(tf, {})
+        temp_n_gt2 = np.zeros(n)
+        temp_mean_vz = np.zeros(n)
+        for j in range(n):
+            td = temp_dict.get(float(ts_arr[j]))
+            if td:
+                temp_n_gt2[j] = td["n_gt2"]
+                temp_mean_vz[j] = td["mean_vol_z"]
+
         _shared_u1_indicators[(sym, tf)] = {
             "vol_slope_5": vol_slope_5,
             "bb_width_pctile": bb_width_pctile,
@@ -1994,6 +2008,10 @@ def main():
             "clv": clv,
             "range_pct": range_pct,
             "body_ratio": body_ratio,
+            "cum_vol_std": cum_vol_std,
+            "vol_z_max_6": vol_z_max_6,
+            "temp_n_gt2": temp_n_gt2,
+            "temp_mean_vz": temp_mean_vz,
         }
         n_u1 += 1
     logger.info("  U1 per-symbol indicators: %.1fs (%d symbols)", time.time() - t_u1, n_u1)
@@ -2028,8 +2046,9 @@ def main():
         assert folds[i][3] <= folds[i+1][2], f"Test periods overlap: fold {i} and {i+1}"
 
     # ── 4. Build work units ──────────────────────────────────────────────
-    MAX_PARAMS_PER_CHUNK = 6  # split strategies with >6 params for better load balancing
-    COST_FACTORS = {"U1_IGNITION": 3.0}  # U1 is ~3x costlier per param than others
+    MAX_PARAMS_PER_CHUNK = 6  # default chunk size
+    CHUNK_OVERRIDES = {"U1_IGNITION": 3}  # U1 still heavier per param even after vectorization
+    COST_FACTORS = {"U1_IGNITION": 2.0}  # cost weight for sort ordering
 
     work_units = []
     for strat_name, strat_cfg in STRATEGY_REGISTRY.items():
@@ -2042,8 +2061,9 @@ def main():
                 continue
             grid = strat_cfg["param_grid"]
             # Split large param grids into chunks for parallelism
-            for chunk_start in range(0, len(grid), MAX_PARAMS_PER_CHUNK):
-                chunk = grid[chunk_start:chunk_start + MAX_PARAMS_PER_CHUNK]
+            chunk_sz = CHUNK_OVERRIDES.get(strat_name, MAX_PARAMS_PER_CHUNK)
+            for chunk_start in range(0, len(grid), chunk_sz):
+                chunk = grid[chunk_start:chunk_start + chunk_sz]
                 work_units.append({
                     "strategy": strat_name,
                     "timeframe": tf,
