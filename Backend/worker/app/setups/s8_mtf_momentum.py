@@ -11,8 +11,8 @@ Key differences from S6:
 2. Strong EMA slope: |slope| > 0.10 (2x S6's 0.05) (Filter D)
 3. Stop width capped at 4% of entry (Filter E4)
 4. TP disabled - trail handles all exits (no_TP: PF 1.47 vs 0.93 with TP)
-5. Loosened CLV (0.55 vs 0.65) and volume (1.0 vs 2.0) for trade frequency
-6. RSI alignment + HTF alignment as scoring factors (not hard gates)
+5. RSI alignment + HTF alignment as scoring factors (not hard gates)
+6. CLV and volume thresholds match S6 (0.65 / 2.0) — validated baseline
 
 Validated exit config: BE=0, Activation=1.5R, Distance=0.75R
 
@@ -153,11 +153,11 @@ class S8Evaluator:
         # Slope threshold (raised from S6's 0.05 to validated 0.10)
         slope_min: float = _env_float("S8_SLOPE_MIN", 0.10),
 
-        # CLV threshold (loosened from S6's 0.65 to maintain trade volume)
-        clv_th: float = _env_float("S8_CLV_TH", 0.55),
+        # CLV threshold (matching S6's validated threshold)
+        clv_th: float = _env_float("S8_CLV_TH", 0.65),
 
-        # Volume threshold (loosened from S6's 2.0)
-        volume_z_min: float = _env_float("S8_VOLUME_Z_MIN", 1.0),
+        # Volume threshold (matching S6's validated threshold)
+        volume_z_min: float = _env_float("S8_VOLUME_Z_MIN", 2.0),
 
         # Stop parameters
         stop_atr_buffer: float = 0.5,
