@@ -495,35 +495,60 @@ def rolling_volume_z(volumes, n=20):
 
 
 def rolling_donchian_high(highs, n):
-    """Rolling N-bar high."""
+    """Rolling N-bar high (vectorized via sliding_window_view)."""
     length = len(highs)
     result = np.full(length, np.nan)
-    for i in range(n-1, length):
-        result[i] = np.max(highs[i-n+1:i+1])
+    if length >= n:
+        from numpy.lib.stride_tricks import sliding_window_view
+        result[n-1:] = np.max(sliding_window_view(highs, n), axis=1)
     return result
 
 
 def rolling_donchian_low(lows, n):
-    """Rolling N-bar low."""
+    """Rolling N-bar low (vectorized via sliding_window_view)."""
     length = len(lows)
     result = np.full(length, np.nan)
-    for i in range(n-1, length):
-        result[i] = np.min(lows[i-n+1:i+1])
+    if length >= n:
+        from numpy.lib.stride_tricks import sliding_window_view
+        result[n-1:] = np.min(sliding_window_view(lows, n), axis=1)
     return result
 
 
 def rolling_autocorr(data, window, lag=1):
-    """Rolling autocorrelation of returns."""
+    """Rolling autocorrelation of returns (vectorized via cumsum)."""
     length = len(data)
     result = np.full(length, np.nan)
-    for i in range(window + lag - 1, length):
-        x = data[i-window-lag+1:i-lag+1]
-        y = data[i-window+1:i+1]
-        if len(x) == len(y) and len(x) > 2:
-            mx, my = np.mean(x), np.mean(y)
-            sx, sy = np.std(x), np.std(y)
-            if sx > 0 and sy > 0:
-                result[i] = np.mean((x - mx) * (y - my)) / (sx * sy)
+    if length < window + lag:
+        return result
+    # x = data shifted by lag, y = data; compute rolling correlation
+    x = data[:length - lag]   # x[i] = data[i]
+    y = data[lag:]            # y[i] = data[i + lag]
+    xy = x * y
+    # Rolling sums via cumsum (window-sized)
+    def _rolling_sum(arr, w):
+        cs = np.cumsum(arr)
+        rs = np.empty(len(arr))
+        rs[:w] = cs[:w]
+        rs[w:] = cs[w:] - cs[:-w]
+        return rs
+    n = window
+    sum_x = _rolling_sum(x, n)
+    sum_y = _rolling_sum(y, n)
+    sum_x2 = _rolling_sum(x * x, n)
+    sum_y2 = _rolling_sum(y * y, n)
+    sum_xy = _rolling_sum(xy, n)
+    # Pearson correlation: (n*sum_xy - sum_x*sum_y) / sqrt((n*sum_x2 - sum_x^2)(n*sum_y2 - sum_y^2))
+    numer = n * sum_xy - sum_x * sum_y
+    denom_x = n * sum_x2 - sum_x ** 2
+    denom_y = n * sum_y2 - sum_y ** 2
+    denom = np.sqrt(np.maximum(0, denom_x) * np.maximum(0, denom_y))
+    valid = denom > 0
+    corr = np.full(len(x), np.nan)
+    corr[valid] = numer[valid] / denom[valid]
+    # Align: corr[i] corresponds to window ending at x[i],y[i] = data[i],data[i+lag]
+    # Result index = i + lag, valid from i = window-1 onward
+    start = window - 1
+    result[start + lag:start + lag + len(corr) - start] = corr[start:]
     return result
 
 
@@ -705,9 +730,11 @@ def gen_a1_tsm(indicators: dict, ohlcv_data: dict, symbols: list[str],
                min_ts: float, max_ts: float) -> list[Signal]:
     """
     THESIS: Assets that have moved strongly in one direction tend to continue.
-    Vol-normalize to compare across assets.
+    Vol-normalize to compare across assets. (Vectorized)
     """
     signals = []
+    sqrt_lb = math.sqrt(lookback)
+    score_denom = 2 * threshold
     for sym in symbols:
         key = (sym, tf)
         if key not in ohlcv_data:
@@ -719,24 +746,40 @@ def gen_a1_tsm(indicators: dict, ohlcv_data: dict, symbols: list[str],
             continue
         atr = ind["atr"]
         n = len(closes)
+        start = max(WARMUP_BARS, lookback)
+        if start >= n - 1:
+            continue
 
-        for i in range(max(WARMUP_BARS, lookback), n - 1):
-            ts = data["ts"][i]
-            if ts < min_ts or ts >= max_ts:
-                continue
-            if atr[i] <= 0:
-                continue
-            norm_ret = (closes[i] - closes[i - lookback]) / (atr[i] * math.sqrt(lookback))
+        idx = np.arange(start, n - 1)
+        ts_vals = data["ts"][idx]
+        time_mask = (ts_vals >= min_ts) & (ts_vals < max_ts) & (atr[idx] > 0)
+        idx = idx[time_mask]
+        if len(idx) == 0:
+            continue
 
-            if norm_ret > threshold:
-                signals.append(Signal("A1_TSM", sym, "long", i,
-                    score=min(1.0, norm_ret / (2 * threshold)),
-                    meta={"lookback": lookback, "norm_ret": round(norm_ret, 4)}))
-            elif norm_ret < -threshold:
-                if closes[i] >= MIN_SHORT_PRICE:
-                    signals.append(Signal("A1_TSM", sym, "short", i,
-                        score=min(1.0, abs(norm_ret) / (2 * threshold)),
-                        meta={"lookback": lookback, "norm_ret": round(norm_ret, 4)}))
+        norm_ret = (closes[idx] - closes[idx - lookback]) / (atr[idx] * sqrt_lb)
+
+        # Long signals
+        long_mask = norm_ret > threshold
+        if long_mask.any():
+            li = idx[long_mask]
+            lnr = norm_ret[long_mask]
+            lscores = np.minimum(1.0, lnr / score_denom)
+            for j in range(len(li)):
+                signals.append(Signal("A1_TSM", sym, "long", int(li[j]),
+                    score=float(lscores[j]),
+                    meta={"lookback": lookback, "norm_ret": round(float(lnr[j]), 4)}))
+
+        # Short signals
+        short_mask = (norm_ret < -threshold) & (closes[idx] >= MIN_SHORT_PRICE)
+        if short_mask.any():
+            si = idx[short_mask]
+            snr = norm_ret[short_mask]
+            sscores = np.minimum(1.0, np.abs(snr) / score_denom)
+            for j in range(len(si)):
+                signals.append(Signal("A1_TSM", sym, "short", int(si[j]),
+                    score=float(sscores[j]),
+                    meta={"lookback": lookback, "norm_ret": round(float(snr[j]), 4)}))
     return signals
 
 
@@ -799,9 +842,10 @@ def gen_a3_breakout(indicators: dict, ohlcv_data: dict, symbols: list[str],
                     min_ts: float, max_ts: float) -> list[Signal]:
     """
     THESIS: Price breaking to N-bar high/low with volume confirmation signals
-    institutional participation.
+    institutional participation. (Vectorized)
     """
     signals = []
+    score_denom = 2 * vol_z_min
     for sym in symbols:
         key = (sym, tf)
         if key not in ohlcv_data:
@@ -819,24 +863,45 @@ def gen_a3_breakout(indicators: dict, ohlcv_data: dict, symbols: list[str],
         don_high = rolling_donchian_high(highs, lookback)
         don_low = rolling_donchian_low(lows, lookback)
 
-        for i in range(max(WARMUP_BARS, lookback), n - 1):
-            ts = data["ts"][i]
-            if ts < min_ts or ts >= max_ts:
-                continue
-            if np.isnan(don_high[i-1]) or np.isnan(don_low[i-1]):
-                continue
+        start = max(WARMUP_BARS, lookback)
+        if start >= n - 1:
+            continue
 
-            # Long breakout: close above previous donchian high + volume
-            if closes[i] > don_high[i-1] and vol_z[i] > vol_z_min:
-                signals.append(Signal("A3_BREAKOUT", sym, "long", i,
-                    score=min(1.0, vol_z[i] / (2 * vol_z_min)),
-                    meta={"lookback": lookback, "vol_z": round(float(vol_z[i]), 2)}))
-            # Short breakout
-            elif closes[i] < don_low[i-1] and vol_z[i] > vol_z_min:
-                if closes[i] >= MIN_SHORT_PRICE:
-                    signals.append(Signal("A3_BREAKOUT", sym, "short", i,
-                        score=min(1.0, vol_z[i] / (2 * vol_z_min)),
-                        meta={"lookback": lookback, "vol_z": round(float(vol_z[i]), 2)}))
+        idx = np.arange(start, n - 1)
+        ts_vals = data["ts"][idx]
+        base_mask = ((ts_vals >= min_ts) & (ts_vals < max_ts)
+                     & ~np.isnan(don_high[idx - 1]) & ~np.isnan(don_low[idx - 1]))
+        idx = idx[base_mask]
+        if len(idx) == 0:
+            continue
+
+        c = closes[idx]
+        dh_prev = don_high[idx - 1]
+        dl_prev = don_low[idx - 1]
+        vz = vol_z[idx]
+        vol_ok = vz > vol_z_min
+
+        # Long breakout
+        long_mask = (c > dh_prev) & vol_ok
+        if long_mask.any():
+            li = idx[long_mask]
+            lvz = vz[long_mask]
+            lscores = np.minimum(1.0, lvz / score_denom)
+            for j in range(len(li)):
+                signals.append(Signal("A3_BREAKOUT", sym, "long", int(li[j]),
+                    score=float(lscores[j]),
+                    meta={"lookback": lookback, "vol_z": round(float(lvz[j]), 2)}))
+
+        # Short breakout
+        short_mask = (c < dl_prev) & vol_ok & (c >= MIN_SHORT_PRICE)
+        if short_mask.any():
+            si = idx[short_mask]
+            svz = vz[short_mask]
+            sscores = np.minimum(1.0, svz / score_denom)
+            for j in range(len(si)):
+                signals.append(Signal("A3_BREAKOUT", sym, "short", int(si[j]),
+                    score=float(sscores[j]),
+                    meta={"lookback": lookback, "vol_z": round(float(svz[j]), 2)}))
     return signals
 
 
@@ -1120,9 +1185,10 @@ def gen_d1_autocorr(indicators: dict, ohlcv_data: dict, symbols: list[str],
     """
     THESIS: Rolling autocorrelation of returns reveals the current regime.
     Positive autocorr = trending (apply momentum). Negative = mean-reverting
-    (apply MR). Self-adapting.
+    (apply MR). Self-adapting. (Vectorized)
     """
     signals = []
+    sqrt_w = math.sqrt(window)
     for sym in symbols:
         key = (sym, tf)
         if key not in ohlcv_data:
@@ -1142,38 +1208,85 @@ def gen_d1_autocorr(indicators: dict, ohlcv_data: dict, symbols: list[str],
 
         ac = rolling_autocorr(returns_1, window, lag=1)
 
-        for i in range(max(WARMUP_BARS, window + 1), n - 1):
-            ts = data["ts"][i]
-            if ts < min_ts or ts >= max_ts:
-                continue
-            if np.isnan(ac[i]) or atr[i] <= 0:
-                continue
+        start = max(WARMUP_BARS, window + 1)
+        if start >= n - 1:
+            continue
 
-            # Trending regime: positive autocorr → momentum signal
-            if ac[i] > min_autocorr:
-                lookback = min(window, i)
-                if lookback > 0:
-                    norm_ret = (closes[i] - closes[i - lookback]) / (atr[i] * math.sqrt(lookback))
-                    if norm_ret > 0.10:
-                        signals.append(Signal("D1_AUTOCORR", sym, "long", i,
-                            score=min(1.0, ac[i] / 0.3),
-                            meta={"ac": round(float(ac[i]), 3), "mode": "momentum"}))
-                    elif norm_ret < -0.10 and closes[i] >= MIN_SHORT_PRICE:
-                        signals.append(Signal("D1_AUTOCORR", sym, "short", i,
-                            score=min(1.0, ac[i] / 0.3),
-                            meta={"ac": round(float(ac[i]), 3), "mode": "momentum"}))
+        idx = np.arange(start, n - 1)
+        ts_vals = data["ts"][idx]
+        base_mask = (ts_vals >= min_ts) & (ts_vals < max_ts) & ~np.isnan(ac[idx]) & (atr[idx] > 0)
+        idx = idx[base_mask]
+        if len(idx) == 0:
+            continue
 
-            # Mean-reverting regime: negative autocorr → MR signal
-            elif ac[i] < -min_autocorr:
-                if rsi[i] < 30 and closes[i] < bb_lower[i] and clv[i] > 0.45:
-                    signals.append(Signal("D1_AUTOCORR", sym, "long", i,
-                        score=min(1.0, abs(ac[i]) / 0.3),
-                        meta={"ac": round(float(ac[i]), 3), "mode": "mean_reversion"}))
-                elif rsi[i] > 70 and closes[i] > bb_upper[i] and clv[i] < 0.55:
-                    if closes[i] >= MIN_SHORT_PRICE:
-                        signals.append(Signal("D1_AUTOCORR", sym, "short", i,
-                            score=min(1.0, abs(ac[i]) / 0.3),
-                            meta={"ac": round(float(ac[i]), 3), "mode": "mean_reversion"}))
+        ac_vals = ac[idx]
+        c = closes[idx]
+        atr_vals = atr[idx]
+
+        # --- Trending regime: ac > min_autocorr ---
+        trend_mask = ac_vals > min_autocorr
+        if trend_mask.any():
+            ti = idx[trend_mask]
+            tac = ac_vals[trend_mask]
+            tc = c[trend_mask]
+            tatr = atr_vals[trend_mask]
+            # lookback = min(window, i) — since start >= window+1, lookback = window
+            norm_ret = (tc - closes[ti - window]) / (tatr * sqrt_w)
+            tscores = np.minimum(1.0, tac / 0.3)
+
+            long_m = norm_ret > 0.10
+            if long_m.any():
+                li = ti[long_m]
+                lac = tac[long_m]
+                ls = tscores[long_m]
+                for j in range(len(li)):
+                    signals.append(Signal("D1_AUTOCORR", sym, "long", int(li[j]),
+                        score=float(ls[j]),
+                        meta={"ac": round(float(lac[j]), 3), "mode": "momentum"}))
+
+            short_m = (norm_ret < -0.10) & (tc >= MIN_SHORT_PRICE)
+            if short_m.any():
+                si = ti[short_m]
+                sac = tac[short_m]
+                ss = tscores[short_m]
+                for j in range(len(si)):
+                    signals.append(Signal("D1_AUTOCORR", sym, "short", int(si[j]),
+                        score=float(ss[j]),
+                        meta={"ac": round(float(sac[j]), 3), "mode": "momentum"}))
+
+        # --- Mean-reverting regime: ac < -min_autocorr ---
+        mr_mask = ac_vals < -min_autocorr
+        if mr_mask.any():
+            mi = idx[mr_mask]
+            mac = ac_vals[mr_mask]
+            mc = c[mr_mask]
+            mrsi = rsi[mi]
+            mbbu = bb_upper[mi]
+            mbbl = bb_lower[mi]
+            mclv = clv[mi]
+            mscores = np.minimum(1.0, np.abs(mac) / 0.3)
+
+            # Long MR: RSI < 30 & close < bb_lower & clv > 0.45
+            long_mr = (mrsi < 30) & (mc < mbbl) & (mclv > 0.45)
+            if long_mr.any():
+                li = mi[long_mr]
+                lac = mac[long_mr]
+                ls = mscores[long_mr]
+                for j in range(len(li)):
+                    signals.append(Signal("D1_AUTOCORR", sym, "long", int(li[j]),
+                        score=float(ls[j]),
+                        meta={"ac": round(float(lac[j]), 3), "mode": "mean_reversion"}))
+
+            # Short MR: RSI > 70 & close > bb_upper & clv < 0.55
+            short_mr = (mrsi > 70) & (mc > mbbu) & (mclv < 0.55) & (mc >= MIN_SHORT_PRICE)
+            if short_mr.any():
+                si = mi[short_mr]
+                sac = mac[short_mr]
+                ss = mscores[short_mr]
+                for j in range(len(si)):
+                    signals.append(Signal("D1_AUTOCORR", sym, "short", int(si[j]),
+                        score=float(ss[j]),
+                        meta={"ac": round(float(sac[j]), 3), "mode": "mean_reversion"}))
     return signals
 
 
@@ -1184,13 +1297,14 @@ def gen_d2_orb(indicators: dict, ohlcv_data: dict, symbols: list[str],
     """
     THESIS: First N hours of UTC day establish support/resistance. Breakout
     from that range with volume = directional signal. Works because Asian session
-    sets range, London/NY provide the breakout.
+    sets range, London/NY provide the breakout. (Vectorized — O(n) via day grouping)
     """
     signals = []
 
-    # Determine bar duration in hours
-    tf_hours = {"15m": 0.25, "1h": 1, "4h": 4, "5m": 1/12}
-    bar_hours = tf_hours.get(tf, 1)
+    # Determine bar duration in seconds
+    tf_secs = {"15m": 900, "1h": 3600, "4h": 14400, "5m": 300}
+    bar_secs = tf_secs.get(tf, 3600)
+    range_secs = range_bars * bar_secs
 
     for sym in symbols:
         key = (sym, tf)
@@ -1207,45 +1321,74 @@ def gen_d2_orb(indicators: dict, ohlcv_data: dict, symbols: list[str],
         atr = ind["atr"]
         vol_z = ind["vol_z"]
         n = len(closes)
+        if n <= WARMUP_BARS + 1:
+            continue
 
-        # Group bars by UTC day
-        for i in range(WARMUP_BARS, n - 1):
-            ts = ts_arr[i]
-            if ts < min_ts or ts >= max_ts:
-                continue
-            if atr[i] <= 0:
-                continue
+        # Compute day boundaries and bar-of-day using integer arithmetic (no datetime)
+        day_ids = (ts_arr // 86400).astype(np.int64)
+        secs_into_day = ts_arr - day_ids * 86400.0
+        in_range = secs_into_day < range_secs
 
-            dt = datetime.fromtimestamp(ts, tz=timezone.utc)
-            # Check if current bar is past the opening range
-            bar_of_day = dt.hour / bar_hours + dt.minute / (60 * bar_hours)
-            if bar_of_day < range_bars:
-                continue  # Still in opening range
+        # Pre-compute opening range high/low per day (O(n) single pass)
+        unique_days = np.unique(day_ids[WARMUP_BARS:])
+        day_range_high = {}
+        day_range_low = {}
+        for day in unique_days:
+            day_range_mask = (day_ids == day) & in_range
+            count = day_range_mask.sum()
+            if count >= range_bars:
+                day_range_high[day] = np.max(highs[day_range_mask])
+                day_range_low[day] = np.min(lows[day_range_mask])
 
-            # Compute opening range: high and low of first range_bars bars of this UTC day
-            day_start_ts = datetime(dt.year, dt.month, dt.day, tzinfo=timezone.utc).timestamp()
-            range_end_ts = day_start_ts + range_bars * bar_hours * 3600
+        # Build arrays of range_high/range_low per bar
+        rh_arr = np.full(n, np.nan)
+        rl_arr = np.full(n, np.nan)
+        for day, rh in day_range_high.items():
+            mask = (day_ids == day) & ~in_range
+            rh_arr[mask] = rh
+            rl_arr[mask] = day_range_low[day]
 
-            # Find bars in opening range
-            mask = (ts_arr >= day_start_ts) & (ts_arr < range_end_ts)
-            if mask.sum() < range_bars:
-                continue
-            range_high = np.max(highs[mask])
-            range_low = np.min(lows[mask])
+        # Vectorized signal detection
+        idx = np.arange(WARMUP_BARS, n - 1)
+        ts_vals = ts_arr[idx]
+        base_mask = ((ts_vals >= min_ts) & (ts_vals < max_ts)
+                     & (atr[idx] > 0) & ~np.isnan(rh_arr[idx]))
+        idx = idx[base_mask]
+        if len(idx) == 0:
+            continue
 
-            margin = margin_atr * atr[i]
+        c = closes[idx]
+        rh = rh_arr[idx]
+        rl = rl_arr[idx]
+        a = atr[idx]
+        vz = vol_z[idx]
+        margin = margin_atr * a
 
-            # Long breakout
-            if closes[i] > range_high + margin and vol_z[i] > 1.0:
-                signals.append(Signal("D2_ORB", sym, "long", i,
-                    score=min(1.0, (closes[i] - range_high) / (atr[i] + 1e-10)),
-                    meta={"range_bars": range_bars, "range_high": round(float(range_high), 2)}))
-            # Short breakdown
-            elif closes[i] < range_low - margin and vol_z[i] > 1.0:
-                if closes[i] >= MIN_SHORT_PRICE:
-                    signals.append(Signal("D2_ORB", sym, "short", i,
-                        score=min(1.0, (range_low - closes[i]) / (atr[i] + 1e-10)),
-                        meta={"range_bars": range_bars, "range_low": round(float(range_low), 2)}))
+        # Long breakout
+        long_mask = (c > rh + margin) & (vz > 1.0)
+        if long_mask.any():
+            li = idx[long_mask]
+            lc = c[long_mask]
+            lrh = rh[long_mask]
+            la = a[long_mask]
+            lscores = np.minimum(1.0, (lc - lrh) / (la + 1e-10))
+            for j in range(len(li)):
+                signals.append(Signal("D2_ORB", sym, "long", int(li[j]),
+                    score=float(lscores[j]),
+                    meta={"range_bars": range_bars, "range_high": round(float(lrh[j]), 2)}))
+
+        # Short breakdown
+        short_mask = (c < rl - margin) & (vz > 1.0) & (c >= MIN_SHORT_PRICE)
+        if short_mask.any():
+            si = idx[short_mask]
+            sc = c[short_mask]
+            srl = rl[short_mask]
+            sa = a[short_mask]
+            sscores = np.minimum(1.0, (srl - sc) / (sa + 1e-10))
+            for j in range(len(si)):
+                signals.append(Signal("D2_ORB", sym, "short", int(si[j]),
+                    score=float(sscores[j]),
+                    meta={"range_bars": range_bars, "range_low": round(float(srl[j]), 2)}))
     return signals
 
 
@@ -2080,9 +2223,14 @@ def main():
     p1_start = time.time()
     n_workers = min(args.workers, len(work_units))
 
-    # Heaviest strategies first so they start early and overlap with fast ones
-    COST_FACTORS = {"U1_IGNITION": 3.0}
-    work_units.sort(key=lambda wu: COST_FACTORS.get(wu["strategy"], 1.0), reverse=True)
+    # Sort by estimated cost (strategy weight × TF bar count) so heaviest start first
+    TF_BAR_WEIGHT = {"15m": 11.0, "1h": 3.0, "4h": 0.75}
+    STRAT_WEIGHT = {"D1_AUTOCORR": 10.0, "A3_BREAKOUT": 5.0, "D2_ORB": 4.0,
+                    "A1_TSM": 2.0, "B1_VAMR": 1.5, "U1_IGNITION": 0.5}
+    work_units.sort(
+        key=lambda wu: STRAT_WEIGHT.get(wu["strategy"], 1.0) * TF_BAR_WEIGHT.get(wu["timeframe"], 1.0),
+        reverse=True,
+    )
 
     if n_workers > 1:
         ctx = get_context("fork")
