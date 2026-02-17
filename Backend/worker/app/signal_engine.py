@@ -30,7 +30,7 @@ from indicators import FeatureFactory, IndicatorSnapshot, OHLCV
 from setups import S1Evaluator, S1Signal, S2Evaluator, S2Signal
 from setups import S3Evaluator, S3Signal, S4Evaluator, S4Signal
 from setups import S5Evaluator, S5Signal, S6Evaluator, S6Signal
-from setups import S7Evaluator, S7Signal
+from setups import S7Evaluator, S7Signal, S8Evaluator, S8Signal
 from data_layer import log_signal_event
 
 logger = logging.getLogger(__name__)
@@ -272,6 +272,7 @@ class SignalEngine:
         self.s5_evaluator = S5Evaluator()
         self.s6_evaluator = S6Evaluator()
         self.s7_evaluator = S7Evaluator()
+        self.s8_evaluator = S8Evaluator()
 
         # Thread-safety: protects indicator_cache mutations during parallel compute
         self._cache_lock = threading.Lock()
@@ -280,6 +281,7 @@ class SignalEngine:
         self._s1_prev_state: dict[tuple[str, str], any] = {}
         self._s6_prev_state: dict[tuple[str, str], any] = {}
         self._s7_prev_snapshot: dict[tuple[str, str], IndicatorSnapshot] = {}
+        self._s8_prev_state: dict[tuple[str, str], any] = {}
     
     def refresh_ohlcv(self, symbol: str, tf: str) -> bool:
         """
@@ -604,6 +606,40 @@ class SignalEngine:
             except Exception:
                 logger.debug("S7 SETUP_FIRED log failed", exc_info=True)
 
+        # S8 - MTF Momentum Pullback (Phase 1 validated)
+        prev_s8_state = self._s8_prev_state.get((symbol, tf))
+        s8_state = self.s8_evaluator.compute_state(snapshot, prev_s8_state)
+        self._s8_prev_state[(symbol, tf)] = s8_state
+        s8_signal = self.s8_evaluator.evaluate_trigger(snapshot, s8_state, symbol, tf)
+        if s8_signal:
+            signals.append(s8_signal)
+            try:
+                log_signal_event(
+                    event_type="SETUP_FIRED",
+                    symbol=symbol, timeframe=tf, setup_id="S8",
+                    direction=s8_signal.direction.value,
+                    bar_start_ts=_bar_start_dt(snapshot),
+                    setup_score=s8_signal.setup_score,
+                    feature_snapshot={
+                        "ema20_slope_atr": snapshot.ema20_slope_atr,
+                        "ema50_slope_atr": snapshot.ema50_slope_atr,
+                        "rsi": snapshot.rsi, "rsi_slope": snapshot.rsi_slope,
+                        "clv": snapshot.clv, "volume_z": snapshot.volume_z,
+                    },
+                    score_components={
+                        "trend_strength": s8_signal.trend_strength,
+                        "pullback_quality": s8_signal.pullback_quality,
+                        "rsi_alignment": s8_signal.rsi_alignment,
+                        "htf_confluence": s8_signal.htf_confluence,
+                        "clean_close": s8_signal.clean_close,
+                        "participation": s8_signal.participation,
+                    },
+                    reason_codes=s8_signal.explain.why_items if s8_signal.explain else None,
+                    run_id=self.run_id,
+                )
+            except Exception:
+                logger.debug("S8 SETUP_FIRED log failed", exc_info=True)
+
         return signals
     
     # ── Setup ID + name mapping ──────────────────────────────────────
@@ -615,6 +651,7 @@ class SignalEngine:
         "S5": "S/R Breakout v1.0",
         "S6": "Trend Continuation Pullback v1.0",
         "S7": "Momentum Breakout (Donchian) v1.0",
+        "S8": "MTF Momentum Pullback v1.0",
     }
 
     def signal_to_ranked(self, signal) -> RankedSignal:
@@ -769,6 +806,31 @@ class SignalEngine:
                 },
                 "why_items": signal.explain.why_items if signal.explain else [],
                 "time_stop_bars": signal.time_stop_bars,
+            }
+        elif isinstance(signal, S8Signal):
+            setup_id = "S8"
+            payload = {
+                "setup_id": "S8",
+                "setup_name": self._SETUP_NAMES["S8"],
+                "state": {
+                    "trend_direction": signal.state.trend_direction,
+                    "ema20_slope_strong": signal.state.ema20_slope_strong,
+                    "pullback_detected": signal.state.pullback_detected,
+                    "reclaimed_ema20": signal.state.reclaimed_ema20,
+                    "htf_aligned": signal.state.htf_aligned,
+                    "rsi_aligned": signal.state.rsi_aligned,
+                },
+                "score_components": {
+                    "trend_strength": signal.trend_strength,
+                    "pullback_quality": signal.pullback_quality,
+                    "rsi_alignment": signal.rsi_alignment,
+                    "htf_confluence": signal.htf_confluence,
+                    "clean_close": signal.clean_close,
+                    "participation": signal.participation,
+                },
+                "why_items": signal.explain.why_items if signal.explain else [],
+                "time_stop_bars": signal.time_stop_bars,
+                "recommended_exit_config": signal.recommended_exit_config,
             }
         else:
             setup_id = "UNKNOWN"

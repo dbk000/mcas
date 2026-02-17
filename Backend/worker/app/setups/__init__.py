@@ -30,6 +30,7 @@ from setups.s4_vwap_reversion import S4Evaluator, S4State, S4Signal
 from setups.s5_sr_breakout import S5Evaluator, S5State, S5Signal
 from setups.s6_trend_pullback import S6Evaluator, S6State, S6Signal
 from setups.s7_momentum_breakout import S7Evaluator, S7State, S7Signal
+from setups.s8_mtf_momentum import S8Evaluator, S8State, S8Signal
 from setups.u1_unicorn_ignition import U1Evaluator, U1State, U1Signal, U1Phase, U1Config
 
 __all__ = [
@@ -40,6 +41,7 @@ __all__ = [
     "S5Evaluator", "S5State", "S5Signal",
     "S6Evaluator", "S6State", "S6Signal",
     "S7Evaluator", "S7State", "S7Signal",
+    "S8Evaluator", "S8State", "S8Signal",
     "U1Evaluator", "U1State", "U1Signal", "U1Phase", "U1Config",
     "Direction",
 ]

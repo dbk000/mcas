@@ -70,6 +70,7 @@ from setups.s3_rsi_divergence import S3Evaluator, S3Signal
 from setups.s5_sr_breakout import S5Evaluator, S5Signal
 from setups.s6_trend_pullback import S6Evaluator, S6Signal
 from setups.s7_momentum_breakout import S7Evaluator, S7Signal
+from setups.s8_mtf_momentum import S8Evaluator, S8Signal
 from setups.u1_unicorn_ignition import U1Evaluator, U1Signal
 
 logging.basicConfig(
@@ -123,6 +124,7 @@ def _build_evaluators() -> dict:
         "S5": S5Evaluator(),
         "S6": S6Evaluator(),
         "S7": S7Evaluator(),
+        "S8": S8Evaluator(),
         "U1": U1Evaluator(),
     }
 
@@ -347,6 +349,7 @@ def _make_opportunity(signal, setup_id: str, symbol: str, tf: str,
     default_versions = {
         "S1": "S1_v2.1", "S2": "S2_v1.4", "S3": "S3_v1.0",
         "S5": "S5_v1.0", "S6": "S6_v1.0", "S7": "S7_v1.0",
+        "S8": "S8_v1.0",
         "U1": "U1_v1.0",
     }
 
@@ -390,6 +393,7 @@ def process_symbol_timeframe(
     s2_prev_state = None
     s6_prev_state = None   # Tracked per signal_engine.py line 544-546 pattern
     prev_snapshot = None    # S7: handles None gracefully — falls back to candles[-21:-1]
+    s8_prev_state = None   # S8: same pattern as S6
     u1_prev_state = None   # U1: gate state machine (EMBRYO → EMBRYO_ACTIVE)
     bb_width_history = []
     ma_gap_history = []
@@ -415,6 +419,7 @@ def process_symbol_timeframe(
     s5_eval = evaluators.get("S5")
     s6_eval = evaluators.get("S6")
     s7_eval = evaluators.get("S7")
+    s8_eval = evaluators.get("S8")
     u1_eval = evaluators.get("U1")
 
     for i in range(MIN_BARS, len(candles)):
@@ -462,6 +467,9 @@ def process_symbol_timeframe(
 
             if s6_eval:
                 s6_prev_state = s6_eval.compute_state(snapshot, s6_prev_state)
+
+            if s8_eval:
+                s8_prev_state = s8_eval.compute_state(snapshot, s8_prev_state)
 
             # S7: stash snapshot for next bar's prev_snapshot
             prev_snapshot = snapshot
@@ -566,6 +574,16 @@ def process_symbol_timeframe(
                     s7_signal, "S7", symbol, tf, bar_ts_ms, setup_versions, batch_id, snapshot,
                 ))
 
+        # --- S8 Evaluation (MTF Momentum Pullback) ---
+        if s8_eval:
+            s8_state = s8_eval.compute_state(snapshot, s8_prev_state)
+            s8_prev_state = s8_state
+            s8_signal = s8_eval.evaluate_trigger(snapshot, s8_state, symbol, tf)
+            if s8_signal:
+                opportunities.append(_make_opportunity(
+                    s8_signal, "S8", symbol, tf, bar_ts_ms, setup_versions, batch_id, snapshot,
+                ))
+
         # --- U1 Evaluation (Unicorn Ignition) ---
         # U1 uses raw candles, not IndicatorSnapshot. Gate eval builds state,
         # trigger eval only fires for EMBRYO_ACTIVE phase.
@@ -624,12 +642,13 @@ def main():
         sys.exit(1)
 
     # Valid setup IDs (those with evaluators — S4 disabled)
-    valid_setup_ids = {"S1", "S2", "S3", "S5", "S6", "S7", "U1"}
+    valid_setup_ids = {"S1", "S2", "S3", "S5", "S6", "S7", "S8", "U1"}
 
     # Parse setup versions
     setup_versions = {
         "S1": "S1_v2.1", "S2": "S2_v1.4", "S3": "S3_v1.0",
         "S5": "S5_v1.0", "S6": "S6_v1.0", "S7": "S7_v1.0",
+        "S8": "S8_v1.0",
         "U1": "U1_v1.0",
     }
     if args.setup_version:
