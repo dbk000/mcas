@@ -137,7 +137,9 @@ _shared_folds = []       # fold definitions
 _shared_holdout = ()     # (holdout_start_ts, holdout_end_ts)
 _shared_indicators = {}  # dict[(symbol, tf)] -> compute_indicators() result
 _shared_univ_temp = {}   # dict[tf] -> compute_universe_temperature() result
-_shared_u1_indicators = {}  # dict[(symbol, tf)] -> {vol_slope_5, bb_width_pctile, vol_sma_20, ema_20, returns_12, range_pct, clv, body_ratio}
+_shared_u1_indicators = {}  # dict[(symbol, tf)] -> {vol_slope_5, bb_width_pctile, ...}
+_shared_tf_indicators = {}  # dict[tf] -> dict[(sym, tf)] -> indicators (pre-filtered per TF)
+_shared_tf_symbols = {}     # dict[tf] -> sorted list of symbols
 
 # ─── Data structures ─────────────────────────────────────────────────────────
 
@@ -1565,11 +1567,12 @@ STRATEGY_REGISTRY = {
 
 # ─── Worker function for Pass 1 ─────────────────────────────────────────────
 
-def pass1_worker(work_unit: dict) -> list[dict]:
+def pass1_worker(work_unit: dict) -> dict:
     """
-    One worker handles one (strategy, timeframe) combo across all param + stop combos.
-    Uses module-level shared data.
+    One worker handles one (strategy, timeframe, param) across stop presets × folds.
+    Returns dict with "results" list and "_meta" timing info.
     """
+    t_start = time.time()
     strat_name = work_unit["strategy"]
     tf = work_unit["timeframe"]
     param_grid = work_unit["param_grid"]
@@ -1580,16 +1583,10 @@ def pass1_worker(work_unit: dict) -> list[dict]:
 
     base_slippage = TF_SLIPPAGE.get(tf, 5.0) + extra_slip
 
-    # Get symbols for this TF
-    symbols = sorted(set(sym for (sym, tf_) in _shared_ohlcv if tf_ == tf))
-
-    # Use pre-computed indicators (read-only, shared via CoW from parent)
-    indicators = {k: v for k, v in _shared_indicators.items() if k[1] == tf}
-
-    # Get matrix data if needed
+    # Use pre-built per-TF data (avoids dict comprehension per work unit)
+    symbols = _shared_tf_symbols.get(tf, [])
+    indicators = _shared_tf_indicators.get(tf, {})
     matrix_data = _shared_matrices.get(tf)
-
-    # Use pre-computed universe temperature for U1
     u1_universe_temp = _shared_univ_temp.get(tf) if strat_name == "U1_IGNITION" else None
 
     results = []
@@ -1670,7 +1667,9 @@ def pass1_worker(work_unit: dict) -> list[dict]:
                 "ff_rate": float(avg_ff),
             })
 
-    return results
+    return {"results": results, "_meta": {
+        "strategy": strat_name, "tf": tf, "elapsed": time.time() - t_start,
+    }}
 
 
 # ─── Worker function for Pass 2 ─────────────────────────────────────────────
@@ -1689,14 +1688,10 @@ def pass2_worker(work_unit: dict) -> list[dict]:
     base_slippage = TF_SLIPPAGE.get(tf, 5.0) + extra_slip
     needs_matrix = strat_reg.get("needs_matrix", False)
 
-    symbols = sorted(set(sym for (sym, tf_) in _shared_ohlcv if tf_ == tf))
-
-    # Use pre-computed indicators (read-only, shared via CoW from parent)
-    indicators = {k: v for k, v in _shared_indicators.items() if k[1] == tf}
-
+    # Use pre-built per-TF data
+    symbols = _shared_tf_symbols.get(tf, [])
+    indicators = _shared_tf_indicators.get(tf, {})
     matrix_data = _shared_matrices.get(tf)
-
-    # Use pre-computed universe temperature for U1
     u1_universe_temp = _shared_univ_temp.get(tf) if strat_name == "U1_IGNITION" else None
 
     results = []
@@ -1914,13 +1909,19 @@ def main():
                         tf, len(symbols), len(ts_grid), pct_valid)
 
     # ── 2b. Pre-compute indicators (once in parent, shared via CoW) ─────
-    global _shared_indicators, _shared_univ_temp, _shared_u1_indicators
+    global _shared_indicators, _shared_univ_temp, _shared_u1_indicators, _shared_tf_indicators, _shared_tf_symbols
 
     logger.info("Pre-computing indicators for %d symbol-tf combos...", len(_shared_ohlcv))
     t_ind = time.time()
     for key, data in _shared_ohlcv.items():
         _shared_indicators[key] = compute_indicators(data)
     logger.info("  Standard indicators: %.1fs", time.time() - t_ind)
+
+    # Build per-TF indicator dicts + symbol lists (avoids dict comprehension in every worker)
+    for tf in timeframes:
+        _shared_tf_indicators[tf] = {k: v for k, v in _shared_indicators.items() if k[1] == tf}
+        _shared_tf_symbols[tf] = sorted(set(sym for (sym, t) in _shared_ohlcv if t == tf))
+    logger.info("  Per-TF index: %s", {tf: len(v) for tf, v in _shared_tf_indicators.items()})
 
     # Pre-compute universe temperature for U1's timeframes
     u1_timeframes = [tf for tf in ["15m", "1h"] if tf in _shared_matrices]
@@ -2046,10 +2047,8 @@ def main():
         assert folds[i][3] <= folds[i+1][2], f"Test periods overlap: fold {i} and {i+1}"
 
     # ── 4. Build work units ──────────────────────────────────────────────
-    MAX_PARAMS_PER_CHUNK = 6  # default chunk size
-    CHUNK_OVERRIDES = {"U1_IGNITION": 3}  # U1 still heavier per param even after vectorization
-    COST_FACTORS = {"U1_IGNITION": 2.0}  # cost weight for sort ordering
-
+    # One param per work unit — eliminates load imbalance from cost variance
+    # (see Pathfinding: 2026-02-17 Parallel Pool Load Imbalance)
     work_units = []
     for strat_name, strat_cfg in STRATEGY_REGISTRY.items():
         if args.category and strat_cfg["category"] != args.category:
@@ -2059,15 +2058,11 @@ def main():
                 continue
             if tf not in _shared_matrices:
                 continue
-            grid = strat_cfg["param_grid"]
-            # Split large param grids into chunks for parallelism
-            chunk_sz = CHUNK_OVERRIDES.get(strat_name, MAX_PARAMS_PER_CHUNK)
-            for chunk_start in range(0, len(grid), chunk_sz):
-                chunk = grid[chunk_start:chunk_start + chunk_sz]
+            for params in strat_cfg["param_grid"]:
                 work_units.append({
                     "strategy": strat_name,
                     "timeframe": tf,
-                    "param_grid": chunk,
+                    "param_grid": [params],  # exactly one param combo
                     "needs_matrix": strat_cfg.get("needs_matrix", False),
                     "extra_slippage": strat_cfg.get("extra_slippage", 0),
                 })
@@ -2085,30 +2080,31 @@ def main():
     p1_start = time.time()
     n_workers = min(args.workers, len(work_units))
 
-    # Cost-aware sort: heaviest chunks first for better load balancing
-    work_units.sort(
-        key=lambda wu: len(wu["param_grid"]) * COST_FACTORS.get(wu["strategy"], 1.0),
-        reverse=True,
-    )
+    # Heaviest strategies first so they start early and overlap with fast ones
+    COST_FACTORS = {"U1_IGNITION": 3.0}
+    work_units.sort(key=lambda wu: COST_FACTORS.get(wu["strategy"], 1.0), reverse=True)
 
     if n_workers > 1:
         ctx = get_context("fork")
         with ctx.Pool(n_workers) as pool:
             all_results_nested = []
-            for i, result in enumerate(pool.imap_unordered(pass1_worker, work_units)):
-                all_results_nested.append(result)
-                wu = work_units[min(i, len(work_units)-1)]
+            for i, batch in enumerate(pool.imap_unordered(pass1_worker, work_units)):
+                all_results_nested.append(batch["results"])
+                meta = batch["_meta"]
                 elapsed = time.time() - p1_start
-                logger.info("  Pass 1: %d/%d work units done (%.1fs elapsed)",
-                            i+1, len(work_units), elapsed)
+                logger.info("  Pass 1: %d/%d done [%s/%s %.1fs] (%.1fs elapsed)",
+                            i+1, len(work_units), meta["strategy"], meta["tf"],
+                            meta["elapsed"], elapsed)
     else:
         all_results_nested = []
         for i, wu in enumerate(work_units):
-            result = pass1_worker(wu)
-            all_results_nested.append(result)
+            batch = pass1_worker(wu)
+            all_results_nested.append(batch["results"])
+            meta = batch["_meta"]
             elapsed = time.time() - p1_start
-            logger.info("  Pass 1: %d/%d work units done (%.1fs elapsed)",
-                        i+1, len(work_units), elapsed)
+            logger.info("  Pass 1: %d/%d done [%s/%s %.1fs] (%.1fs elapsed)",
+                        i+1, len(work_units), meta["strategy"], meta["tf"],
+                        meta["elapsed"], elapsed)
 
     all_pass1 = [r for batch in all_results_nested for r in batch]
     logger.info("Pass 1 complete: %d configs evaluated in %.1fs", len(all_pass1), time.time() - p1_start)
@@ -2240,11 +2236,9 @@ def main():
         base_slippage = TF_SLIPPAGE.get(tf, 5.0) + extra_slip
         needs_matrix = strat_reg.get("needs_matrix", False)
 
-        symbols = sorted(set(sym for (sym, tf_) in _shared_ohlcv if tf_ == tf))
-
-        # Use pre-computed indicators
-        indicators = {k: v for k, v in _shared_indicators.items() if k[1] == tf}
-
+        # Use pre-built per-TF data
+        symbols = _shared_tf_symbols.get(tf, [])
+        indicators = _shared_tf_indicators.get(tf, {})
         matrix_data = _shared_matrices.get(tf)
 
         sig_kwargs = {
