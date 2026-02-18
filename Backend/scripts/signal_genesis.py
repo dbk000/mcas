@@ -92,6 +92,159 @@ MIN_TRADES_TOTAL = 25
 MIN_FOLD_CONSISTENCY = 0.75  # 3/4 folds
 
 
+# ─── Binance API ──────────────────────────────────────────────────────────────
+
+BINANCE_BASE = "https://api.binance.com/api/v3"
+
+# Timeframe → milliseconds per bar
+TF_MS = {
+    "5m":  5 * 60 * 1000,
+    "15m": 15 * 60 * 1000,
+    "1h":  60 * 60 * 1000,
+    "4h":  4 * 60 * 60 * 1000,
+}
+
+
+def backfill_ohlcv(database_url, days, timeframes, n_symbols=600):
+    """Fetch historical OHLCV from Binance REST API and insert into Postgres.
+
+    Fetches top n_symbols USDT pairs by 24h quote volume, then for each
+    symbol × timeframe, paginates through klines API (1000 bars/request).
+    Uses ON CONFLICT DO NOTHING to avoid overwriting existing data.
+    """
+    import requests
+
+    t0 = time.time()
+    now_ms = int(time.time() * 1000)
+
+    # ── Step 1: Get top USDT symbols by volume ──
+    logger.info("Backfill: fetching top %d USDT symbols by volume...", n_symbols)
+    try:
+        resp = requests.get(f"{BINANCE_BASE}/ticker/24hr", timeout=15)
+        resp.raise_for_status()
+        tickers = resp.json()
+    except Exception as e:
+        logger.error("Failed to fetch ticker data: %s", e)
+        return False
+
+    usdt_pairs = [
+        (t["symbol"], float(t["quoteVolume"]))
+        for t in tickers
+        if t["symbol"].endswith("USDT") and float(t["quoteVolume"]) > 0
+    ]
+    usdt_pairs.sort(key=lambda x: -x[1])
+    symbols = [s for s, _ in usdt_pairs[:n_symbols]]
+
+    # Always include BTC
+    if BTC_SYMBOL not in symbols:
+        symbols.append(BTC_SYMBOL)
+
+    logger.info("  %d symbols selected (top volume: %s ... %s)",
+                len(symbols), symbols[0], symbols[min(9, len(symbols)-1)])
+
+    # ── Step 2: For each timeframe, fetch and insert ──
+    batch_id = f"genesis_backfill_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}"
+
+    with psycopg.connect(database_url) as conn:
+        for tf in timeframes:
+            ms_per_bar = TF_MS.get(tf)
+            if not ms_per_bar:
+                logger.warning("  Unknown timeframe %s, skipping", tf)
+                continue
+
+            # How far back: days + 15 extra for warmup
+            fetch_days = days + 15
+            start_ms = now_ms - fetch_days * 24 * 60 * 60 * 1000
+            bars_needed = int(fetch_days * 24 * 60 * 60 * 1000 / ms_per_bar)
+
+            logger.info("  Timeframe %s: %d symbols × %d bars (~%d requests)",
+                        tf, len(symbols), bars_needed,
+                        len(symbols) * max(1, bars_needed // 1000))
+
+            total_inserted = 0
+            tf_t0 = time.time()
+
+            for s_idx, symbol in enumerate(symbols):
+                # Paginate: Binance returns max 1000 bars per request
+                cursor_ms = start_ms
+                sym_bars = []
+
+                while cursor_ms < now_ms:
+                    params = {
+                        "symbol": symbol,
+                        "interval": tf,
+                        "startTime": cursor_ms,
+                        "endTime": now_ms,
+                        "limit": 1000,
+                    }
+
+                    try:
+                        resp = requests.get(f"{BINANCE_BASE}/klines", params=params, timeout=30)
+                        if resp.status_code in (418, 429):
+                            # Rate limited — back off
+                            retry_after = int(resp.headers.get("Retry-After", 10))
+                            logger.warning("  Rate limited, sleeping %ds...", retry_after)
+                            time.sleep(retry_after)
+                            continue
+                        resp.raise_for_status()
+                        data = resp.json()
+                    except requests.exceptions.RequestException as e:
+                        logger.warning("  Failed %s %s: %s", symbol, tf, e)
+                        time.sleep(1)
+                        break
+
+                    if not data:
+                        break
+
+                    for k in data:
+                        bar_ts = datetime.fromtimestamp(k[0] / 1000, tz=timezone.utc)
+                        sym_bars.append((
+                            symbol, tf, bar_ts,
+                            float(k[1]), float(k[2]), float(k[3]), float(k[4]), float(k[5]),
+                            datetime.now(timezone.utc), True, "binance", batch_id,
+                        ))
+
+                    # Advance cursor past the last bar
+                    last_ts_ms = int(data[-1][0])
+                    if last_ts_ms <= cursor_ms:
+                        break  # no progress
+                    cursor_ms = last_ts_ms + ms_per_bar
+
+                    # Small rate limit safety
+                    if len(data) == 1000:
+                        time.sleep(0.05)
+
+                # Batch insert for this symbol
+                if sym_bars:
+                    with conn.cursor() as cur:
+                        cur.executemany("""
+                            INSERT INTO ohlcv (
+                                symbol, timeframe, bar_start_ts,
+                                open, high, low, close, volume,
+                                as_of_ts, is_final, source, batch_id
+                            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                            ON CONFLICT (symbol, timeframe, bar_start_ts, source)
+                            DO NOTHING
+                        """, sym_bars)
+                    conn.commit()
+                    total_inserted += len(sym_bars)
+
+                # Progress log every 25 symbols
+                if (s_idx + 1) % 25 == 0 or s_idx == len(symbols) - 1:
+                    elapsed = time.time() - tf_t0
+                    rate = (s_idx + 1) / elapsed if elapsed > 0 else 0
+                    eta = (len(symbols) - s_idx - 1) / rate if rate > 0 else 0
+                    logger.info("    %s: %d/%d symbols (%.1f/s), %d bars inserted, ETA %.0fs",
+                                tf, s_idx + 1, len(symbols), rate, total_inserted, eta)
+
+            logger.info("  %s complete: %d total bars in %.1fs",
+                        tf, total_inserted, time.time() - tf_t0)
+
+    elapsed = time.time() - t0
+    logger.info("Backfill complete in %.1f min", elapsed / 60)
+    return True
+
+
 # ─── Data structures ─────────────────────────────────────────────────────────
 
 @dataclass
@@ -2275,6 +2428,14 @@ def main():
     parser.add_argument("--quick", action="store_true", help="Quick mode: fewer features, 2 folds")
     parser.add_argument("--holdout-days", type=int, default=HOLDOUT_DAYS, help="Days reserved for holdout")
     parser.add_argument("--horizons", type=str, default="4,8,24", help="Comma-separated horizons")
+    parser.add_argument("--backfill", action="store_true",
+                        help="Backfill OHLCV from Binance before running pipeline")
+    parser.add_argument("--backfill-only", action="store_true",
+                        help="Only backfill, don't run the pipeline")
+    parser.add_argument("--backfill-symbols", type=int, default=600,
+                        help="Number of top USDT symbols to backfill (default 600)")
+    parser.add_argument("--backfill-timeframes", type=str, default="1h",
+                        help="Comma-separated timeframes to backfill (default '1h')")
     args = parser.parse_args()
 
     t_start = time.time()
@@ -2282,6 +2443,21 @@ def main():
     if not database_url:
         logger.error("DATABASE_URL not set")
         sys.exit(1)
+
+    # ── Backfill if requested ──
+    if args.backfill or args.backfill_only:
+        bf_timeframes = [t.strip() for t in args.backfill_timeframes.split(",")]
+        logger.info("=" * 70)
+        logger.info("BACKFILL: %d days, %d symbols, timeframes=%s",
+                    args.days, args.backfill_symbols, bf_timeframes)
+        logger.info("=" * 70)
+        ok = backfill_ohlcv(database_url, args.days, bf_timeframes, args.backfill_symbols)
+        if not ok:
+            logger.error("Backfill failed")
+            sys.exit(1)
+        if args.backfill_only:
+            logger.info("Backfill complete. Exiting (--backfill-only).")
+            return
 
     horizons = [int(h) for h in args.horizons.split(",")]
     n_folds = 2 if args.quick else N_FOLDS
