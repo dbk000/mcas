@@ -23,6 +23,7 @@ import json
 import math
 import argparse
 import logging
+import multiprocessing as mp
 from dataclasses import dataclass, field, asdict
 from datetime import datetime, timezone, timedelta
 from collections import defaultdict
@@ -99,6 +100,14 @@ EMBARGO_DAYS = 1
 HOLDOUT_DAYS = 18
 MIN_TRADES_TOTAL = 25
 MIN_FOLD_CONSISTENCY = 0.75  # 3/4 folds
+
+# ─── Module-level shared data (populated before fork, read-only in workers) ──
+
+_shared_features = {}    # dict[name] -> (n_bars, n_symbols) float32 array
+_shared_fwd_ret = {}     # dict[horizon] -> (n_bars, n_symbols) float32 array
+_shared_ohlcv_data = {}  # dict[(symbol, '1h')] -> {ts, open, high, low, close, volume}
+_shared_symbols = []     # list of symbol names
+_shared_folds = []       # list of (train_mask, test_mask)
 
 
 # ─── Binance API ──────────────────────────────────────────────────────────────
@@ -1326,181 +1335,184 @@ def engineer_features(close, open_, high, low, volume, ts_grid, btc_idx, quick=F
 # PHASE 3: FEATURE SELECTION PIPELINE
 # ═══════════════════════════════════════════════════════════════════════════════
 
-def _spearman_rank(x):
-    """Rank array (handles NaN by leaving them out). Returns ranks as float."""
-    out = np.empty_like(x, dtype=np.float64)
-    out[:] = np.nan
-    valid = ~np.isnan(x)
-    if valid.sum() < 2:
-        return out
-    vals = x[valid]
-    ranks = np.argsort(np.argsort(vals)).astype(np.float64)
-    out[valid] = ranks
-    return out
-
-
-def fama_macbeth_ic(feature, fwd_ret, bar_mask):
-    """Compute Fama-MacBeth IC (cross-sectional Spearman at each bar, then average).
-
-    Args:
-        feature: (n_bars, n_symbols) array
-        fwd_ret: (n_bars, n_symbols) array
-        bar_mask: (n_bars,) bool array — which bars to include
-
-    Returns: (mean_ic, t_stat, n_cross_sections)
-    """
-    ics = []
-    bar_indices = np.where(bar_mask)[0]
-
-    for t in bar_indices:
-        f_row = feature[t]
-        r_row = fwd_ret[t]
-        valid = ~np.isnan(f_row) & ~np.isnan(r_row)
-        n_valid = valid.sum()
-        if n_valid < 20:
-            continue
-
-        f_ranks = _spearman_rank(f_row)
-        r_ranks = _spearman_rank(r_row)
-        valid2 = ~np.isnan(f_ranks) & ~np.isnan(r_ranks)
-        if valid2.sum() < 20:
-            continue
-
-        fr = f_ranks[valid2]
-        rr = r_ranks[valid2]
-        n = len(fr)
-        mean_f = fr.mean()
-        mean_r = rr.mean()
-        cov = np.mean((fr - mean_f) * (rr - mean_r))
-        std_f = np.std(fr)
-        std_r = np.std(rr)
-        if std_f > 0 and std_r > 0:
-            ic = cov / (std_f * std_r)
-            ics.append(ic)
-
-    if len(ics) < 5:
-        return 0.0, 0.0, len(ics)
-
-    ics = np.array(ics)
-    mean_ic = np.mean(ics)
-    std_ic = np.std(ics, ddof=1)
-    if std_ic > 0:
-        t_stat = mean_ic / (std_ic / np.sqrt(len(ics)))
-    else:
-        t_stat = 0.0
-
-    return float(mean_ic), float(t_stat), len(ics)
-
-
-def binned_mutual_information(feature, target, bar_mask, n_bins=10):
-    """Compute binned MI between feature and target using cross-sectional stacking.
-
-    Uses chi-squared approximation for significance.
-    Returns: (mi, is_significant, n_samples)
-    """
-    # Stack all valid cross-sectional observations
-    bar_indices = np.where(bar_mask)[0]
-    f_vals = []
-    t_vals = []
-
-    for t in bar_indices:
-        valid = ~np.isnan(feature[t]) & ~np.isnan(target[t])
-        if valid.sum() < 20:
-            continue
-        f_vals.append(feature[t, valid])
-        t_vals.append(target[t, valid])
-
-    if len(f_vals) == 0:
-        return 0.0, False, 0
-
-    f_all = np.concatenate(f_vals)
-    t_all = np.concatenate(t_vals)
-    n = len(f_all)
-
-    if n < 100:
-        return 0.0, False, n
-
-    # Quantile-bin both
-    f_bins = np.clip(
-        np.searchsorted(np.percentile(f_all, np.linspace(0, 100, n_bins + 1)[1:-1]), f_all),
-        0, n_bins - 1
-    )
-    t_bins = np.clip(
-        np.searchsorted(np.percentile(t_all, np.linspace(0, 100, n_bins + 1)[1:-1]), t_all),
-        0, n_bins - 1
-    )
-
-    # Contingency table
-    contingency = np.zeros((n_bins, n_bins), dtype=np.float64)
-    for i in range(n):
-        contingency[f_bins[i], t_bins[i]] += 1
-
-    # MI = sum p(i,j) * log(p(i,j) / (p(i)*p(j)))
+def _compute_mi_from_contingency(contingency, n):
+    """Compute MI from contingency table. Fully vectorized."""
     p_joint = contingency / n
     p_f = p_joint.sum(axis=1)
     p_t = p_joint.sum(axis=0)
+    outer = p_f[:, None] * p_t[None, :]
+    valid = (p_joint > 0) & (outer > 0)
+    if not valid.any():
+        return 0.0
+    return float(np.sum(p_joint[valid] * np.log(p_joint[valid] / outer[valid])))
 
-    mi = 0.0
-    for i in range(n_bins):
-        for j in range(n_bins):
-            if p_joint[i, j] > 0 and p_f[i] > 0 and p_t[j] > 0:
-                mi += p_joint[i, j] * np.log(p_joint[i, j] / (p_f[i] * p_t[j]))
 
-    # Chi-squared significance: 2*N*MI ~ chi2(df=(n_bins-1)^2)
+def _stack_observations(feature, target, bar_mask):
+    """Stack cross-sectional observations for MI computation. Vectorized."""
+    bar_indices = np.where(bar_mask)[0]
+    # Extract all bars at once: (n_bars_masked, n_symbols)
+    f_sub = feature[bar_indices]
+    t_sub = target[bar_indices]
+    # Valid = not NaN in both feature and target
+    valid = ~np.isnan(f_sub) & ~np.isnan(t_sub)
+    # Count valid per bar, filter bars with <20 valid symbols
+    counts = valid.sum(axis=1)
+    good_bars = counts >= 20
+    if not good_bars.any():
+        return None, None, 0
+    # Mask out bad bars entirely
+    valid[~good_bars] = False
+    # Flatten valid entries
+    f_all = f_sub[valid]
+    t_all = t_sub[valid]
+    return f_all, t_all, len(f_all)
+
+
+def _quantile_bin(arr, n_bins=10):
+    """Quantile-bin an array. Returns integer bin indices."""
+    pctiles = np.percentile(arr, np.linspace(0, 100, n_bins + 1)[1:-1])
+    return np.clip(np.searchsorted(pctiles, arr), 0, n_bins - 1)
+
+
+def batch_fama_macbeth_ic(features_dict, fwd_ret, bar_mask):
+    """Compute Fama-MacBeth IC for ALL features at once. Vectorized across features.
+
+    At each bar, ranks all features and target simultaneously using matrix operations.
+    Returns: dict[name] -> (mean_ic, t_stat, n_cross_sections)
+    """
+    names = sorted(features_dict.keys())
+    n_features = len(names)
+    bar_indices = np.where(bar_mask)[0]
+
+    # Collect ICs: (n_bars_valid, n_features)
+    all_ics = []
+
+    for t in bar_indices:
+        target = fwd_ret[t]
+        t_valid = ~np.isnan(target)
+        n_valid = t_valid.sum()
+        if n_valid < 20:
+            continue
+
+        t_sub = target[t_valid]
+        t_ranks = np.argsort(np.argsort(t_sub)).astype(np.float64)
+        t_mean = t_ranks.mean()
+        t_std = t_ranks.std()
+        if t_std == 0:
+            continue
+
+        # Build (n_features, n_valid) matrix
+        f_matrix = np.empty((n_features, n_valid), dtype=np.float64)
+        for fi, name in enumerate(names):
+            f_matrix[fi] = features_dict[name][t, t_valid]
+
+        # Mask features with NaN
+        has_nan = np.isnan(f_matrix).any(axis=1)
+
+        ics_at_t = np.full(n_features, np.nan)
+
+        # Batch-process features with no NaN (majority)
+        clean = ~has_nan
+        if clean.sum() > 0:
+            f_clean = f_matrix[clean]
+            f_ranks = np.argsort(np.argsort(f_clean, axis=1), axis=1).astype(np.float64)
+            f_mean = f_ranks.mean(axis=1, keepdims=True)
+            f_std = f_ranks.std(axis=1)
+            cov = ((f_ranks - f_mean) * (t_ranks[np.newaxis, :] - t_mean)).mean(axis=1)
+            valid_std = f_std > 0
+            ics_clean = np.zeros(clean.sum())
+            ics_clean[valid_std] = cov[valid_std] / (f_std[valid_std] * t_std)
+            ics_at_t[clean] = ics_clean
+
+        # Handle NaN features individually (rare after warmup)
+        nan_idxs = np.where(has_nan)[0]
+        for fi in nan_idxs:
+            f_row = f_matrix[fi]
+            ok = ~np.isnan(f_row)
+            if ok.sum() < 20:
+                continue
+            fs = f_row[ok]
+            ts = t_sub[ok]
+            fr = np.argsort(np.argsort(fs)).astype(np.float64)
+            tr = np.argsort(np.argsort(ts)).astype(np.float64)
+            fm, tm = fr.mean(), tr.mean()
+            fsd, tsd = fr.std(), tr.std()
+            if fsd > 0 and tsd > 0:
+                ics_at_t[fi] = np.mean((fr - fm) * (tr - tm)) / (fsd * tsd)
+
+        all_ics.append(ics_at_t)
+
+    if not all_ics:
+        return {name: (0.0, 0.0, 0) for name in names}
+
+    ics_matrix = np.array(all_ics)  # (n_valid_bars, n_features)
+
+    results = {}
+    for fi, name in enumerate(names):
+        col = ics_matrix[:, fi]
+        valid = ~np.isnan(col)
+        n_cs = int(valid.sum())
+        if n_cs < 5:
+            results[name] = (0.0, 0.0, n_cs)
+            continue
+        ic_vals = col[valid]
+        mean_ic = float(np.mean(ic_vals))
+        std_ic = float(np.std(ic_vals, ddof=1))
+        t_stat = mean_ic / (std_ic / np.sqrt(n_cs)) if std_ic > 0 else 0.0
+        results[name] = (mean_ic, t_stat, n_cs)
+
+    return results
+
+
+def fama_macbeth_ic(feature, fwd_ret, bar_mask):
+    """Single-feature IC (used for interaction features and stability checks)."""
+    result = batch_fama_macbeth_ic({"_f": feature}, fwd_ret, bar_mask)
+    return result["_f"]
+
+
+def binned_mutual_information(feature, target, bar_mask, n_bins=10):
+    """Compute binned MI. Vectorized contingency table via np.bincount.
+
+    Returns: (mi, is_significant, n_samples)
+    """
+    f_all, t_all, n = _stack_observations(feature, target, bar_mask)
+    if f_all is None or n < 100:
+        return 0.0, False, (n if f_all is not None else 0)
+
+    f_bins = _quantile_bin(f_all, n_bins)
+    t_bins = _quantile_bin(t_all, n_bins)
+
+    # Vectorized contingency table
+    flat = f_bins * n_bins + t_bins
+    contingency = np.bincount(flat, minlength=n_bins * n_bins).reshape(n_bins, n_bins).astype(np.float64)
+
+    mi = _compute_mi_from_contingency(contingency, n)
+
+    # Chi-squared significance
     df = (n_bins - 1) ** 2
     chi2_stat = 2 * n * mi
-
-    # Chi-squared CDF approximation (Wilson-Hilferty)
-    # P(X > x) where X ~ chi2(df)
     z = ((chi2_stat / df) ** (1/3) - (1 - 2/(9*df))) / np.sqrt(2/(9*df))
-    # z > 1.645 means p < 0.05
     is_significant = z > 1.645
 
     return float(mi), bool(is_significant), n
 
 
 def permutation_mi_test(feature, target, bar_mask, observed_mi, n_perms=100, n_bins=10):
-    """Permutation test for MI significance. Returns p-value."""
-    count_above = 0
-    bar_indices = np.where(bar_mask)[0]
-
-    # Stack observations once
-    f_vals, t_vals = [], []
-    for t in bar_indices:
-        valid = ~np.isnan(feature[t]) & ~np.isnan(target[t])
-        if valid.sum() < 20:
-            continue
-        f_vals.append(feature[t, valid])
-        t_vals.append(target[t, valid])
-
-    if len(f_vals) == 0:
+    """Permutation test for MI significance. Vectorized inner loops."""
+    f_all, t_all, n = _stack_observations(feature, target, bar_mask)
+    if f_all is None or n < 100:
         return 1.0
 
-    f_all = np.concatenate(f_vals)
-    t_all = np.concatenate(t_vals)
-    n = len(f_all)
-
-    f_pctiles = np.percentile(f_all, np.linspace(0, 100, n_bins + 1)[1:-1])
-    t_pctiles = np.percentile(t_all, np.linspace(0, 100, n_bins + 1)[1:-1])
-    f_bins = np.clip(np.searchsorted(f_pctiles, f_all), 0, n_bins - 1)
-    t_bins = np.clip(np.searchsorted(t_pctiles, t_all), 0, n_bins - 1)
+    f_bins = _quantile_bin(f_all, n_bins)
+    t_bins = _quantile_bin(t_all, n_bins)
 
     rng = np.random.default_rng(42)
+    count_above = 0
     for _ in range(n_perms):
-        # Shuffle target bins
         t_shuf = rng.permutation(t_bins)
-        contingency = np.zeros((n_bins, n_bins), dtype=np.float64)
-        for i in range(n):
-            contingency[f_bins[i], t_shuf[i]] += 1
-
-        p_joint = contingency / n
-        p_f = p_joint.sum(axis=1)
-        p_t = p_joint.sum(axis=0)
-        mi = 0.0
-        for i in range(n_bins):
-            for j in range(n_bins):
-                if p_joint[i, j] > 0 and p_f[i] > 0 and p_t[j] > 0:
-                    mi += p_joint[i, j] * np.log(p_joint[i, j] / (p_f[i] * p_t[j]))
+        flat = f_bins * n_bins + t_shuf
+        contingency = np.bincount(flat, minlength=n_bins * n_bins).reshape(n_bins, n_bins).astype(np.float64)
+        mi = _compute_mi_from_contingency(contingency, n)
         if mi >= observed_mi:
             count_above += 1
 
@@ -1508,10 +1520,7 @@ def permutation_mi_test(feature, target, bar_mask, observed_mi, n_perms=100, n_b
 
 
 def temporal_stability_check(feature, fwd_ret, bar_mask, n_windows=4):
-    """Check if feature IC is stable across sub-windows of training period.
-
-    Returns: (n_stable_windows, total_windows)
-    """
+    """Check if feature IC is stable across sub-windows of training period."""
     bar_indices = np.where(bar_mask)[0]
     if len(bar_indices) < n_windows * 10:
         return 0, n_windows
@@ -1535,7 +1544,7 @@ def temporal_stability_check(feature, fwd_ret, bar_mask, n_windows=4):
 def select_features(features, fwd_ret, bar_mask, horizon, fold_idx):
     """Full feature selection pipeline for one fold/horizon.
 
-    Returns: list of (feature_name, ic, mi, ic_sign) tuples for selected features.
+    Returns: (selected_list, interactions_list) or []
     """
     t0 = time.time()
     feature_names = sorted(features.keys())
@@ -1543,21 +1552,18 @@ def select_features(features, fwd_ret, bar_mask, horizon, fold_idx):
     logger.info("    [Fold %d, h=%d] Feature selection: %d candidates",
                 fold_idx, horizon, n_features)
 
-    # Step 1: Fama-MacBeth IC gate
-    ic_results = {}
-    for name in feature_names:
-        mean_ic, t_stat, n_cs = fama_macbeth_ic(features[name], fwd_ret, bar_mask)
-        if abs(t_stat) > IC_TSTAT_THRESHOLD:
-            ic_results[name] = (mean_ic, t_stat, n_cs)
+    # Step 1: Batch Fama-MacBeth IC for ALL features at once
+    all_ic = batch_fama_macbeth_ic(features, fwd_ret, bar_mask)
+    ic_results = {name: vals for name, vals in all_ic.items() if abs(vals[1]) > IC_TSTAT_THRESHOLD}
 
     logger.info("      IC gate: %d / %d pass (|t| > %.1f)",
                 len(ic_results), n_features, IC_TSTAT_THRESHOLD)
 
-    # Step 2: MI gate (catches non-linear relationships IC misses)
+    # Step 2: MI gate for features that didn't pass IC
     mi_results = {}
     for name in feature_names:
         if name in ic_results:
-            continue  # already passed IC
+            continue
         mi, sig, n_samp = binned_mutual_information(features[name], fwd_ret, bar_mask)
         if sig:
             mi_results[name] = (mi, n_samp)
@@ -1572,7 +1578,7 @@ def select_features(features, fwd_ret, bar_mask, horizon, fold_idx):
         candidates[name] = {"ic": ic, "t_stat": t, "mi": mi}
 
     for name, (mi, n_samp) in mi_results.items():
-        ic, t, n_cs = fama_macbeth_ic(features[name], fwd_ret, bar_mask)
+        ic, t, n_cs = all_ic[name]
         candidates[name] = {"ic": ic, "t_stat": t, "mi": mi}
 
     if not candidates:
@@ -1587,25 +1593,40 @@ def select_features(features, fwd_ret, bar_mask, horizon, fold_idx):
             p_val = permutation_mi_test(features[name], fwd_ret, bar_mask, info["mi"])
             if p_val > MI_SIGNIFICANCE_LEVEL:
                 to_remove.append(name)
-                candidates[name]["mi_pval"] = p_val
     for name in to_remove:
-        # Only remove if it didn't also pass IC gate
         if name not in ic_results:
             del candidates[name]
 
     logger.info("      After permutation validation: %d candidates", len(candidates))
 
-    # Step 4: Temporal stability
-    stable_candidates = {}
-    for name, info in candidates.items():
-        n_stable, n_total = temporal_stability_check(features[name], fwd_ret, bar_mask)
-        if n_stable >= STABILITY_MIN_WINDOWS:
-            info["stability"] = n_stable
-            stable_candidates[name] = info
+    # Step 4: Temporal stability — batch IC per sub-window
+    bar_indices = np.where(bar_mask)[0]
+    n_windows = 4
+    if len(bar_indices) >= n_windows * 10:
+        chunk_size = len(bar_indices) // n_windows
+        sub_masks = []
+        for w in range(n_windows):
+            s = w * chunk_size
+            e = s + chunk_size if w < n_windows - 1 else len(bar_indices)
+            sm = np.zeros(fwd_ret.shape[0], dtype=bool)
+            sm[bar_indices[s:e]] = True
+            sub_masks.append(sm)
+
+        # Batch IC for all candidates in each sub-window
+        cand_features = {name: features[name] for name in candidates}
+        window_ics = [batch_fama_macbeth_ic(cand_features, fwd_ret, sm) for sm in sub_masks]
+
+        stable_candidates = {}
+        for name, info in candidates.items():
+            n_stable = sum(1 for wic in window_ics if abs(wic[name][1]) > STABILITY_TSTAT_THRESHOLD)
+            if n_stable >= STABILITY_MIN_WINDOWS:
+                info["stability"] = n_stable
+                stable_candidates[name] = info
+    else:
+        stable_candidates = dict(candidates)
 
     logger.info("      Temporal stability: %d / %d pass (%d/%d windows)",
-                len(stable_candidates), len(candidates),
-                STABILITY_MIN_WINDOWS, 4)
+                len(stable_candidates), len(candidates), STABILITY_MIN_WINDOWS, 4)
 
     if not stable_candidates:
         return []
@@ -1614,14 +1635,8 @@ def select_features(features, fwd_ret, bar_mask, horizon, fold_idx):
     names = sorted(stable_candidates.keys())
     n_cand = len(names)
     if n_cand > 1:
-        # Compute pairwise correlation matrix
-        # Stack cross-sectional means for correlation
-        stacked = np.column_stack([
-            np.nanmean(features[name], axis=1) for name in names
-        ])
-        # Pearson correlation on temporal profiles
+        stacked = np.column_stack([np.nanmean(features[name], axis=1) for name in names])
         corr_mat = np.corrcoef(stacked.T)
-
         removed = set()
         for i in range(n_cand):
             if names[i] in removed:
@@ -1630,12 +1645,10 @@ def select_features(features, fwd_ret, bar_mask, horizon, fold_idx):
                 if names[j] in removed:
                     continue
                 if abs(corr_mat[i, j]) > REDUNDANCY_CORR_THRESHOLD:
-                    # Keep the one with higher MI
                     mi_i = stable_candidates[names[i]]["mi"]
                     mi_j = stable_candidates[names[j]]["mi"]
                     loser = names[j] if mi_i >= mi_j else names[i]
                     removed.add(loser)
-
         for name in removed:
             del stable_candidates[name]
 
@@ -1650,27 +1663,16 @@ def select_features(features, fwd_ret, bar_mask, horizon, fold_idx):
             for j in range(i + 1, len(top_features)):
                 name_i, info_i = top_features[i]
                 name_j, info_j = top_features[j]
-
-                # Conditional MI: MI(fi; target | fj) via 3D contingency
-                # Simplified: compute MI of fi*fj with target
                 f_product = features[name_i] * features[name_j]
                 mi_product, sig_product, _ = binned_mutual_information(
-                    f_product, fwd_ret, bar_mask, n_bins=8
-                )
-
+                    f_product, fwd_ret, bar_mask, n_bins=8)
                 if sig_product and mi_product > max(info_i["mi"], info_j["mi"]) * 0.8:
-                    inter_name = f"{name_i}__x__{name_j}"
-                    interactions.append((inter_name, f_product, mi_product))
-
-                    # Also try sign interaction
+                    interactions.append((f"{name_i}__x__{name_j}", f_product, mi_product))
                     f_sign = features[name_i] * np.sign(features[name_j])
                     mi_sign, sig_sign, _ = binned_mutual_information(
-                        f_sign, fwd_ret, bar_mask, n_bins=8
-                    )
+                        f_sign, fwd_ret, bar_mask, n_bins=8)
                     if sig_sign and mi_sign > info_i["mi"] * 0.8:
-                        inter_name2 = f"{name_i}__xsign__{name_j}"
-                        interactions.append((inter_name2, f_sign, mi_sign))
-
+                        interactions.append((f"{name_i}__xsign__{name_j}", f_sign, mi_sign))
                 if len(interactions) >= 30:
                     break
             if len(interactions) >= 30:
@@ -2092,80 +2094,174 @@ def _make_exit_config(cfg):
     return ec
 
 
-def run_walk_forward(features, fwd_ret, folds, horizon, symbols, ohlcv_data):
-    """Run walk-forward validation for one horizon.
+def _process_fold_horizon(args):
+    """Worker function for parallel walk-forward. Reads from _shared_* globals.
 
-    Returns: list of FoldResult, list of per-fold feature sets
+    Args: (fold_idx, horizon) tuple
+    Returns: (fold_idx, horizon, FoldResult, feature_set)
     """
+    import warnings
+    warnings.filterwarnings("ignore", category=RuntimeWarning)
+
+    fold_idx, horizon = args
+    t0 = time.time()
+
+    features = _shared_features
+    fwd_ret = _shared_fwd_ret[horizon]
+    train_mask, test_mask = _shared_folds[fold_idx]
+    symbols = _shared_symbols
+    ohlcv_data = _shared_ohlcv_data
+
     cfg = HORIZON_CONFIGS[horizon]
     exit_cfg = _make_exit_config(cfg)
 
-    fold_results = []
-    fold_features_list = []
+    logger.info("  [h=%d] Fold %d: selecting features...", horizon, fold_idx)
 
-    for fold_idx, (train_mask, test_mask) in enumerate(folds):
-        logger.info("  [h=%d] Fold %d: selecting features...", horizon, fold_idx)
-        t0 = time.time()
+    # Feature selection on training data
+    selection_result = select_features(features, fwd_ret, train_mask, horizon, fold_idx)
+    if not selection_result or (isinstance(selection_result, tuple) and not selection_result[0]):
+        logger.info("    [h=%d] Fold %d: no features selected, skipping", horizon, fold_idx)
+        return (fold_idx, horizon, FoldResult(
+            fold_idx=fold_idx, horizon=horizon, n_features=0,
+            feature_names=[], n_trades=0, avg_daily_pf=0.0,
+            aggregate_pf=0.0, win_rate=0.0, total_pnl=0.0, best_k=10,
+        ), set())
 
-        # Feature selection on training data
-        selection_result = select_features(features, fwd_ret[horizon], train_mask, horizon, fold_idx)
-        if not selection_result or (isinstance(selection_result, tuple) and not selection_result[0]):
-            logger.info("    Fold %d: no features selected, skipping", fold_idx)
-            fold_results.append(FoldResult(
-                fold_idx=fold_idx, horizon=horizon, n_features=0,
-                feature_names=[], n_trades=0, avg_daily_pf=0.0,
-                aggregate_pf=0.0, win_rate=0.0, total_pnl=0.0, best_k=10,
-            ))
-            fold_features_list.append(set())
-            continue
+    selected, interactions = selection_result
+    feature_names = [s[0] for s in selected]
 
-        selected, interactions = selection_result
-        feature_names = [s[0] for s in selected]
-        fold_features_list.append(set(feature_names))
+    # Build composite model on training data
+    composite = build_composite_model(features, selected, interactions, train_mask)
 
-        # Build composite model on training data
-        composite = build_composite_model(features, selected, interactions, train_mask)
+    # Optimize K on training data
+    best_k = optimize_k(composite, fwd_ret, train_mask, symbols, ohlcv_data, horizon)
 
-        # Optimize K on training data
-        best_k = optimize_k(composite, fwd_ret[horizon], train_mask, symbols, ohlcv_data, horizon)
+    # Generate signals on TEST data
+    test_signals = generate_signals(composite, test_mask, best_k, symbols)
+    logger.info("    [h=%d] Fold %d: %d signals on test period", horizon, fold_idx, len(test_signals))
 
-        # Generate signals on TEST data
-        test_signals = generate_signals(composite, test_mask, best_k, symbols)
-        logger.info("    Fold %d: %d signals on test period", fold_idx, len(test_signals))
+    # Simulate trades
+    trades = simulate_genesis_trades(
+        test_signals, ohlcv_data, cfg["stop_atr_mult"],
+        cfg["time_stop_bars"], BASE_SLIPPAGE_1H, exit_cfg,
+    )
 
-        # Simulate trades
-        trades = simulate_genesis_trades(
-            test_signals, ohlcv_data, cfg["stop_atr_mult"],
-            cfg["time_stop_bars"], BASE_SLIPPAGE_1H, exit_cfg,
-        )
+    # Compute metrics
+    if trades:
+        avg_pf = compute_avg_daily_pf(trades, ohlcv_data, symbols)
+        total_pnl = sum(t.pnl for t in trades)
+        wins = sum(1 for t in trades if t.pnl > 0)
+        win_rate = wins / len(trades)
+        gross_wins = sum(t.pnl for t in trades if t.pnl > 0)
+        gross_losses = sum(abs(t.pnl) for t in trades if t.pnl < 0)
+        agg_pf = gross_wins / gross_losses if gross_losses > 0 else 10.0
+    else:
+        avg_pf = 0.0
+        total_pnl = 0.0
+        win_rate = 0.0
+        agg_pf = 0.0
 
-        # Compute metrics
-        if trades:
-            avg_pf = compute_avg_daily_pf(trades, ohlcv_data, symbols)
-            total_pnl = sum(t.pnl for t in trades)
-            wins = sum(1 for t in trades if t.pnl > 0)
-            win_rate = wins / len(trades)
-            gross_wins = sum(t.pnl for t in trades if t.pnl > 0)
-            gross_losses = sum(abs(t.pnl) for t in trades if t.pnl < 0)
-            agg_pf = gross_wins / gross_losses if gross_losses > 0 else 10.0
+    elapsed = time.time() - t0
+    logger.info("    [h=%d] Fold %d: %d trades, avg daily PF=%.3f, agg PF=%.3f, WR=%.1f%%, PnL=$%.2f (%.1fs)",
+                horizon, fold_idx, len(trades), avg_pf, agg_pf, win_rate * 100, total_pnl, elapsed)
+
+    fold_result = FoldResult(
+        fold_idx=fold_idx, horizon=horizon, n_features=len(selected),
+        feature_names=feature_names, n_trades=len(trades),
+        avg_daily_pf=avg_pf, aggregate_pf=agg_pf, win_rate=win_rate,
+        total_pnl=total_pnl, best_k=best_k,
+    )
+
+    return (fold_idx, horizon, fold_result, set(feature_names))
+
+
+def run_walk_forward_parallel(horizons, folds, jsonl_path):
+    """Run walk-forward for ALL horizons in parallel via multiprocessing Pool.
+
+    Dispatches n_folds × n_horizons tasks across available CPUs.
+    Returns: list of HorizonResult, dict of regime_reports
+    """
+    # Build work units: (fold_idx, horizon) for all combos
+    work_units = []
+    for h in horizons:
+        for fold_idx in range(len(folds)):
+            work_units.append((fold_idx, h))
+
+    n_workers = min(len(work_units), max(1, mp.cpu_count() - 1))
+    logger.info("  Dispatching %d fold×horizon tasks across %d workers", len(work_units), n_workers)
+
+    # Sort: heaviest first (larger folds = more training data = slower)
+    # Later folds have more training data in expanding window; longer horizons have larger time_stop_bars
+    work_units.sort(key=lambda x: -(x[0] * 10 + {4: 1, 8: 2, 24: 3}.get(x[1], 2)))
+
+    with mp.Pool(n_workers) as pool:
+        results = list(pool.imap_unordered(_process_fold_horizon, work_units))
+
+    # Organize results by horizon
+    horizon_fold_results = defaultdict(list)    # h -> [FoldResult]
+    horizon_fold_features = defaultdict(list)   # h -> [set of feature names]
+
+    for fold_idx, h, fold_result, feature_set in results:
+        horizon_fold_results[h].append(fold_result)
+        horizon_fold_features[h].append((fold_idx, feature_set))
+
+    # Sort by fold_idx within each horizon and build HorizonResult
+    horizon_results = []
+    regime_reports = {}
+
+    for h in horizons:
+        fold_results = sorted(horizon_fold_results[h], key=lambda fr: fr.fold_idx)
+        fold_features_ordered = [fs for _, fs in sorted(horizon_fold_features[h], key=lambda x: x[0])]
+
+        # Compute aggregate metrics
+        valid_folds = [fr for fr in fold_results if fr.n_trades > 0]
+        if valid_folds:
+            avg_pf = float(np.mean([fr.avg_daily_pf for fr in valid_folds]))
+            consistency = sum(1 for fr in valid_folds if fr.avg_daily_pf > 1.0) / len(valid_folds)
+            total_trades = sum(fr.n_trades for fr in valid_folds)
         else:
             avg_pf = 0.0
-            total_pnl = 0.0
-            win_rate = 0.0
-            agg_pf = 0.0
+            consistency = 0.0
+            total_trades = 0
 
-        elapsed = time.time() - t0
-        logger.info("    Fold %d: %d trades, avg daily PF=%.3f, agg PF=%.3f, WR=%.1f%%, PnL=$%.2f (%.1fs)",
-                    fold_idx, len(trades), avg_pf, agg_pf, win_rate * 100, total_pnl, elapsed)
+        hr = HorizonResult(
+            horizon=h,
+            fold_results=fold_results,
+            avg_daily_pf=avg_pf,
+            consistency=consistency,
+            total_trades=total_trades,
+        )
 
-        fold_results.append(FoldResult(
-            fold_idx=fold_idx, horizon=horizon, n_features=len(selected),
-            feature_names=feature_names, n_trades=len(trades),
-            avg_daily_pf=avg_pf, aggregate_pf=agg_pf, win_rate=win_rate,
-            total_pnl=total_pnl, best_k=best_k,
-        ))
+        # Regime shift diagnostic
+        pairwise, in_all, in_one = regime_shift_diagnostic(fold_features_ordered)
+        regime_reports[h] = (pairwise, in_all, in_one)
 
-    return fold_results, fold_features_list
+        avg_jaccard = float(np.mean([p["jaccard"] for p in pairwise])) if pairwise else 0.0
+        logger.info("\n  [h=%d] Regime diagnostic: avg Jaccard=%.3f", h, avg_jaccard)
+        if in_all:
+            logger.info("  Features in ALL folds: %s", sorted(in_all))
+        if avg_jaccard < 0.3:
+            logger.info("  ⚠ Low Jaccard (<0.3) — significant regime shift detected")
+
+        logger.info("\n  Walk-forward summary h=%d: avg daily PF=%.3f, consistency=%.1f%%, trades=%d",
+                    h, avg_pf, consistency * 100, total_trades)
+
+        # Write incremental result
+        with open(jsonl_path, "a") as f:
+            fold_data = {
+                "type": "walk_forward",
+                "horizon": h,
+                "avg_daily_pf": avg_pf,
+                "consistency": consistency,
+                "total_trades": total_trades,
+                "folds": [asdict(fr) for fr in fold_results],
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            }
+            f.write(json.dumps(fold_data, default=str) + "\n")
+
+        horizon_results.append(hr)
+
+    return horizon_results, regime_reports
 
 
 def regime_shift_diagnostic(fold_features_list):
@@ -2503,9 +2599,9 @@ def main():
 
     features = engineer_features(close, open_, high, low, volume, ts_grid, btc_idx, quick=args.quick)
 
-    # ── Phase 3-5: Walk-Forward per Horizon ──
+    # ── Phase 3-5: Walk-Forward (Parallel) ──
     logger.info("\n" + "─" * 50)
-    logger.info("PHASE 3-5: Walk-Forward Validation")
+    logger.info("PHASE 3-5: Walk-Forward Validation (Parallel)")
     logger.info("─" * 50)
 
     folds, holdout_mask = build_folds(ts_grid, n_folds=n_folds, holdout_days=args.holdout_days)
@@ -2514,68 +2610,17 @@ def main():
         logger.error("No folds could be constructed. Need more data (try --days 110).")
         sys.exit(1)
 
-    horizon_results = []
-    regime_reports = {}
+    # Populate module-level shared data for fork-based COW sharing
+    global _shared_features, _shared_fwd_ret, _shared_ohlcv_data, _shared_symbols, _shared_folds
+    _shared_features = features
+    _shared_fwd_ret = fwd_ret
+    _shared_ohlcv_data = ohlcv_data
+    _shared_symbols = symbols
+    _shared_folds = folds
 
-    # Write incremental results as JSONL
     jsonl_path = os.path.join(os.path.dirname(__file__), "signal_genesis_incremental.jsonl")
 
-    for h in horizons:
-        logger.info("\n" + "━" * 40)
-        logger.info("HORIZON: %d bars", h)
-        logger.info("━" * 40)
-
-        fold_results, fold_features_list = run_walk_forward(
-            features, fwd_ret, folds, h, symbols, ohlcv_data
-        )
-
-        # Compute aggregate metrics
-        valid_folds = [fr for fr in fold_results if fr.n_trades > 0]
-        if valid_folds:
-            avg_pf = float(np.mean([fr.avg_daily_pf for fr in valid_folds]))
-            consistency = sum(1 for fr in valid_folds if fr.avg_daily_pf > 1.0) / len(valid_folds)
-            total_trades = sum(fr.n_trades for fr in valid_folds)
-        else:
-            avg_pf = 0.0
-            consistency = 0.0
-            total_trades = 0
-
-        hr = HorizonResult(
-            horizon=h,
-            fold_results=fold_results,
-            avg_daily_pf=avg_pf,
-            consistency=consistency,
-            total_trades=total_trades,
-        )
-
-        # Regime shift diagnostic
-        pairwise, in_all, in_one = regime_shift_diagnostic(fold_features_list)
-        regime_reports[h] = (pairwise, in_all, in_one)
-
-        avg_jaccard = float(np.mean([p["jaccard"] for p in pairwise])) if pairwise else 0.0
-        logger.info("\n  Regime diagnostic: avg Jaccard=%.3f", avg_jaccard)
-        if in_all:
-            logger.info("  Features in ALL folds: %s", sorted(in_all))
-        if avg_jaccard < 0.3:
-            logger.info("  ⚠ Low Jaccard (<0.3) — significant regime shift detected")
-
-        logger.info("\n  Walk-forward summary h=%d: avg daily PF=%.3f, consistency=%.1f%%, trades=%d",
-                    h, avg_pf, consistency * 100, total_trades)
-
-        # Write incremental result
-        with open(jsonl_path, "a") as f:
-            fold_data = {
-                "type": "walk_forward",
-                "horizon": h,
-                "avg_daily_pf": avg_pf,
-                "consistency": consistency,
-                "total_trades": total_trades,
-                "folds": [asdict(fr) for fr in fold_results],
-                "timestamp": datetime.now(timezone.utc).isoformat(),
-            }
-            f.write(json.dumps(fold_data, default=str) + "\n")
-
-        horizon_results.append(hr)
+    horizon_results, regime_reports = run_walk_forward_parallel(horizons, folds, jsonl_path)
 
     # ── Phase 6: Holdout ──
     logger.info("\n" + "─" * 50)
