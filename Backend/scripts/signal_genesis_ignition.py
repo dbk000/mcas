@@ -60,10 +60,12 @@ if os.path.isdir('/app') and os.path.exists('/app/exit_checker.py'):
 sys.path.insert(0, os.path.abspath(worker_app_dir))
 
 # ─── BLAS thread control (before numpy import) ───────────────────────────────
-# Single-process phases: 4 BLAS threads. Pool phases: reset to 1 per worker.
+# Single-process phases: 8 BLAS threads. Pool phases: 2 per worker.
 _BLAS_KEYS = ('OMP_NUM_THREADS', 'OPENBLAS_NUM_THREADS', 'MKL_NUM_THREADS')
+_BLAS_SINGLE = 8   # for serial phases (discovery loop, model building)
+_BLAS_POOL = 2     # per Pool worker
 for _k in _BLAS_KEYS:
-    os.environ.setdefault(_k, '4')
+    os.environ.setdefault(_k, str(_BLAS_SINGLE))
 
 # ─── Third-party ──────────────────────────────────────────────────────────────
 
@@ -151,9 +153,9 @@ def _set_blas_threads(n):
 
 
 def _pool_init():
-    """Initializer for Pool workers: set BLAS to 1 thread."""
+    """Initializer for Pool workers: set BLAS to _BLAS_POOL threads."""
     for k in _BLAS_KEYS:
-        os.environ[k] = '1'
+        os.environ[k] = str(_BLAS_POOL)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -668,10 +670,10 @@ def generate_features_round1(close, open_, high, low, volume, parallel=True):
 
     all_features = {}
     if parallel:
-        _set_blas_threads(1)
-        with mp.Pool(5, initializer=_pool_init) as pool:
+        _set_blas_threads(_BLAS_POOL)
+        with mp.Pool(10, initializer=_pool_init) as pool:
             results = pool.map(_compute_rolling_stats_for_stream, pool_args)
-        _set_blas_threads(4)
+        _set_blas_threads(_BLAS_SINGLE)
     else:
         results = [_compute_rolling_stats_for_stream(a) for a in pool_args]
 
@@ -884,10 +886,10 @@ def screen_features(features, events, controls, parallel=True):
     logger.info("  %d features have sufficient event/control values", len(screen_args))
 
     if parallel:
-        _set_blas_threads(1)
-        with mp.Pool(8, initializer=_pool_init) as pool:
+        _set_blas_threads(_BLAS_POOL)
+        with mp.Pool(16, initializer=_pool_init) as pool:
             results = pool.map(_screen_one_feature, screen_args)
-        _set_blas_threads(4)
+        _set_blas_threads(_BLAS_SINGLE)
     else:
         results = [_screen_one_feature(a) for a in screen_args]
 
@@ -1808,10 +1810,10 @@ def run_walk_forward(folds, exit_configs, ts_grid, jsonl_path):
 
     logger.info("  Dispatching %d work units to Pool(12)...", len(work_units))
 
-    _set_blas_threads(1)
-    with mp.Pool(min(12, len(work_units)), initializer=_pool_init) as pool:
+    _set_blas_threads(_BLAS_POOL)
+    with mp.Pool(min(14, len(work_units)), initializer=_pool_init) as pool:
         results = pool.map(_process_fold, work_units)
-    _set_blas_threads(4)
+    _set_blas_threads(_BLAS_SINGLE)
 
     # Aggregate by exit config
     by_exit = defaultdict(list)
