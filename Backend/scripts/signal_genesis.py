@@ -45,6 +45,12 @@ if os.path.isdir('/app') and os.path.exists('/app/exit_checker.py'):
     worker_app_dir = '/app'
 sys.path.insert(0, os.path.abspath(worker_app_dir))
 
+# ─── BLAS thread control (must be before numpy import) ────────────────────────
+# Each Pool worker gets its own BLAS threads; 2 per worker × 8 workers = 16 cores
+os.environ.setdefault('OMP_NUM_THREADS', '2')
+os.environ.setdefault('OPENBLAS_NUM_THREADS', '2')
+os.environ.setdefault('MKL_NUM_THREADS', '2')
+
 # ─── Third-party ──────────────────────────────────────────────────────────────
 
 import numpy as np
@@ -103,11 +109,15 @@ MIN_FOLD_CONSISTENCY = 0.75  # 3/4 folds
 
 # ─── Module-level shared data (populated before fork, read-only in workers) ──
 
+# Walk-forward shared data
 _shared_features = {}    # dict[name] -> (n_bars, n_symbols) float32 array
 _shared_fwd_ret = {}     # dict[horizon] -> (n_bars, n_symbols) float32 array
 _shared_ohlcv_data = {}  # dict[(symbol, '1h')] -> {ts, open, high, low, close, volume}
 _shared_symbols = []     # list of symbol names
 _shared_folds = []       # list of (train_mask, test_mask)
+
+# Feature engineering shared data (populated before category worker fork)
+_eng = {}                # raw arrays, intermediates, and A-G features
 
 
 # ─── Binance API ──────────────────────────────────────────────────────────────
@@ -591,6 +601,447 @@ def _atr_2d(high, low, close, n=14):
     return _rolling_mean_2d(tr, n)
 
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# CATEGORY WORKER FUNCTIONS (H-M) — Read from _eng global, return feature dicts
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def _eng_store(result, name, arr):
+    """Store feature into result dict, converting to float32 and clamping infinities."""
+    a = np.array(arr, dtype=np.float32, copy=True)
+    a[~np.isfinite(a)] = np.nan
+    result[name] = a
+
+
+def _cat_H():
+    """Category H: Temporal (8 features)."""
+    import warnings
+    warnings.filterwarnings("ignore", category=RuntimeWarning)
+    e = _eng
+    ts_grid = e['ts_grid']
+    volume_z = e['volume_z']
+    bar_range = e['bar_range']
+    safe_close = e['safe_close']
+    n_bars, n_symbols = e['n_bars'], e['n_symbols']
+    quick = e['quick']
+    result = {}
+
+    hours = ((ts_grid % 86400) / 3600).astype(np.float64)
+    dow = (((ts_grid / 86400) + 4) % 7).astype(np.float64)
+
+    _eng_store(result, "hour_sin", np.sin(2 * np.pi * hours / 24)[:, np.newaxis] * np.ones((1, n_symbols)))
+    _eng_store(result, "hour_cos", np.cos(2 * np.pi * hours / 24)[:, np.newaxis] * np.ones((1, n_symbols)))
+    _eng_store(result, "dow_sin", np.sin(2 * np.pi * dow / 7)[:, np.newaxis] * np.ones((1, n_symbols)))
+    _eng_store(result, "dow_cos", np.cos(2 * np.pi * dow / 7)[:, np.newaxis] * np.ones((1, n_symbols)))
+
+    vol_spike = (volume_z > 3.0).astype(np.float64)
+    bars_since_vs = np.zeros((n_bars, n_symbols))
+    for t in range(1, n_bars):
+        bars_since_vs[t] = np.where(vol_spike[t] > 0, 0, bars_since_vs[t - 1] + 1)
+    _eng_store(result, "bars_since_vol_spike", bars_since_vs)
+
+    if not quick:
+        rp = bar_range / safe_close
+        rp_thresh = _rolling_max_2d(rp, 55) * 0.95
+        range_spike = (rp > rp_thresh).astype(np.float64)
+        bars_since_rs = np.zeros((n_bars, n_symbols))
+        for t in range(1, n_bars):
+            bars_since_rs[t] = np.where(range_spike[t] > 0, 0, bars_since_rs[t - 1] + 1)
+        _eng_store(result, "bars_since_range_spike", bars_since_rs)
+
+    session = hours / 8.0
+    _eng_store(result, "session_sin", np.sin(2 * np.pi * session / 3)[:, np.newaxis] * np.ones((1, n_symbols)))
+    _eng_store(result, "session_cos", np.cos(2 * np.pi * session / 3)[:, np.newaxis] * np.ones((1, n_symbols)))
+
+    return result
+
+
+def _cat_I():
+    """Category I: Variance Ratio (7 features)."""
+    import warnings
+    warnings.filterwarnings("ignore", category=RuntimeWarning)
+    e = _eng
+    ret_1 = e['ret_1']
+    close = e['close']
+    features = e['features']
+    n_bars, n_symbols = e['n_bars'], e['n_symbols']
+    quick = e['quick']
+    result = {}
+
+    var_1 = _rolling_mean_2d(ret_1**2, 21)
+    for q in ([2, 5, 8, 13] if not quick else [2, 5]):
+        if q <= 1:
+            continue
+        ret_q = np.full((n_bars, n_symbols), np.nan)
+        ret_q[q:] = (close[q:] - close[:-q]) / np.where(close[:-q] > 0, close[:-q], 1e-10)
+        var_q = _rolling_mean_2d(ret_q**2, 21)
+        safe_v1 = np.where(var_1 > 0, var_1, 1e-10)
+        _eng_store(result, f"vr_{q}", var_q / (q * safe_v1))
+
+    vr5 = result.get("vr_5")
+    if vr5 is not None:
+        _eng_store(result, "vr_trend", _rolling_slope_2d(vr5, 13))
+        log_vr5 = np.log(np.where(vr5 > 0, vr5, 1e-10))
+        _eng_store(result, "hurst_proxy", log_vr5 / (2 * np.log(5)))
+
+    ac1 = features.get("autocorr_lag1_21")
+    vr5_f = result.get("vr_5")
+    vr_8_21 = features.get("vol_ratio_8_21")
+    if ac1 is not None and vr5_f is not None and vr_8_21 is not None:
+        _eng_store(result, "regime_composite", 0.4 * vr5_f + 0.3 * ac1 + 0.3 * vr_8_21)
+
+    return result
+
+
+def _cat_J():
+    """Category J: Market-Level Dispersion (4 features)."""
+    e = _eng
+    ret_1 = e['ret_1']
+    volume_z = e['volume_z']
+    n_bars, n_symbols = e['n_bars'], e['n_symbols']
+    result = {}
+
+    mkt_ret_mean = np.nanmean(ret_1, axis=1, keepdims=True)
+    mkt_ret_std = np.nanstd(ret_1, axis=1, keepdims=True)
+    mkt_breadth = np.nanmean((ret_1 > 0).astype(np.float64), axis=1, keepdims=True)
+    mkt_vol_breadth = np.nanmean((volume_z > 1.5).astype(np.float64), axis=1, keepdims=True)
+
+    _eng_store(result, "market_ret_mean", np.broadcast_to(mkt_ret_mean, (n_bars, n_symbols)))
+    _eng_store(result, "market_ret_std", np.broadcast_to(mkt_ret_std, (n_bars, n_symbols)))
+    _eng_store(result, "market_breadth", np.broadcast_to(mkt_breadth, (n_bars, n_symbols)))
+    _eng_store(result, "market_vol_breadth", np.broadcast_to(mkt_vol_breadth, (n_bars, n_symbols)))
+
+    return result
+
+
+def _cat_K():
+    """Category K: Unnamed — Ratios of Ratios (18 features)."""
+    import warnings
+    warnings.filterwarnings("ignore", category=RuntimeWarning)
+    e = _eng
+    features = e['features']
+    ret_1 = e['ret_1']
+    ret_cache = e['ret_cache']
+    volume_z = e['volume_z']
+    bar_range = e['bar_range']
+    safe_range = e['safe_range']
+    safe_close = e['safe_close']
+    body = e['body']
+    abs_ret_1 = e['abs_ret_1']
+    close = e['close']
+    open_ = e['open_']
+    n_bars, n_symbols = e['n_bars'], e['n_symbols']
+    quick = e['quick']
+    result = {}
+
+    vr_8_21 = features.get("vol_ratio_8_21")
+    vr_21_55 = features.get("vol_ratio_21_55")
+    if vr_8_21 is not None and vr_21_55 is not None:
+        safe_vr2155 = np.where(np.abs(vr_21_55) > 1e-10, vr_21_55, 1e-10)
+        _eng_store(result, "vol_acceleration_ratio", vr_8_21 / safe_vr2155)
+
+    rn5 = features.get("ret_norm_5")
+    rn21 = features.get("ret_norm_21")
+    if rn5 is not None and rn21 is not None:
+        _eng_store(result, "momentum_quality_divergence", rn5 - rn21)
+
+    br = features.get("body_ratio")
+    if br is not None:
+        br_mean8 = _rolling_mean_2d(br, 8)
+        safe_brm = np.where(br_mean8 > 0, br_mean8, 1e-10)
+        _eng_store(result, "range_body_evolution", br / safe_brm)
+
+    wick_diff = features.get("upper_wick_ratio", np.zeros((n_bars, n_symbols))) - features.get("lower_wick_ratio", np.zeros((n_bars, n_symbols)))
+    _eng_store(result, "wick_trend_8", _rolling_slope_2d(wick_diff, 8))
+
+    vpc21 = features.get("vol_price_corr_21")
+    if vpc21 is not None:
+        d1 = np.full_like(vpc21, np.nan)
+        d1[1:] = vpc21[1:] - vpc21[:-1]
+        d2 = np.full_like(d1, np.nan)
+        d2[1:] = d1[1:] - d1[:-1]
+        _eng_store(result, "volume_price_jerk", d2)
+
+    _eng_store(result, "ret_cubed_mean_21", _rolling_mean_2d(ret_1**3, 21))
+
+    gp = features.get("gap_pct")
+    if gp is not None:
+        _eng_store(result, "gap_vol_interaction", gp * volume_z)
+
+    range_sum_5 = _rolling_sum_2d(bar_range, 5)
+    safe_rs5 = np.where(range_sum_5 > 0, range_sum_5, 1e-10)
+    ret5 = ret_cache.get(5)
+    if ret5 is not None:
+        _eng_store(result, "range_ret_efficiency", np.abs(ret5) * safe_close / safe_rs5)
+
+    vpc55 = features.get("vol_price_corr_55")
+    if vpc21 is not None and vpc55 is not None:
+        safe_vpc55 = np.where(np.abs(vpc55) > 1e-10, vpc55, 1e-10)
+        _eng_store(result, "vol_price_asymmetry_ratio", vpc21 / safe_vpc55)
+
+    acc13 = features.get("acc_13")
+    if acc13 is not None:
+        aa = np.full_like(acc13, np.nan)
+        aa[5:] = acc13[5:] - acc13[:-5]
+        _eng_store(result, "acceleration_acceleration", aa)
+
+    _eng_store(result, "body_volume_coupling", _rolling_corr_2d(body / safe_range, volume_z, 21))
+
+    rv_product = (bar_range / safe_close) * volume_z
+    rv_mean = _rolling_mean_2d(rv_product, 21)
+    _eng_store(result, "range_volume_decoupling", rv_product - rv_mean)
+
+    rn21 = features.get("ret_norm_21")
+    if rn21 is not None:
+        k = _rolling_corr_2d(rn21, volume_z, 55) * _rolling_std_2d(rn21, 55) / np.where(_rolling_std_2d(volume_z, 55) > 0, _rolling_std_2d(volume_z, 55), 1e-10)
+        _eng_store(result, "norm_ret_vs_vol_z_residual", rn21 - k * volume_z)
+
+    co_ratio = (close - open_) / safe_range
+    _eng_store(result, "close_open_range_ratio_diff", co_ratio - _rolling_mean_2d(co_ratio, 21))
+
+    if not quick:
+        wick_asym = features.get("upper_wick_ratio", np.zeros((n_bars, n_symbols))) - features.get("lower_wick_ratio", np.zeros((n_bars, n_symbols)))
+        _eng_store(result, "high_low_asymmetry_of_asymmetry", _rolling_std_2d(wick_asym, 13))
+
+    _eng_store(result, "vol_z_curvature", volume_z - 2 * np.roll(volume_z, 1, axis=0) + np.roll(volume_z, 2, axis=0))
+    _eng_store(result, "ret_vol_cross_moment_21", _rolling_mean_2d(ret_1 * volume_z, 21))
+
+    abs_ret_sum_8 = _rolling_sum_2d(abs_ret_1, 8)
+    safe_ars = np.where(abs_ret_sum_8 > 0, abs_ret_sum_8, 1e-10)
+    if 8 in ret_cache:
+        _eng_store(result, "efficiency_ratio_8", np.abs(ret_cache[8]) / safe_ars)
+
+    return result
+
+
+def _cat_L():
+    """Category L: Rank Distribution Dynamics (15 features)."""
+    import warnings
+    warnings.filterwarnings("ignore", category=RuntimeWarning)
+    e = _eng
+    features = e['features']
+    ret_1 = e['ret_1']
+    ret_cache = e['ret_cache']
+    volume = e['volume']
+    n_bars, n_symbols = e['n_bars'], e['n_symbols']
+    quick = e['quick']
+    result = {}
+
+    abs_ret_5 = np.abs(ret_cache.get(5, ret_1))
+    abs_sum = np.nansum(abs_ret_5, axis=1, keepdims=True)
+    safe_as = np.where(abs_sum > 0, abs_sum, 1e-10)
+    shares = abs_ret_5 / safe_as
+    hhi = np.nansum(shares**2, axis=1, keepdims=True)
+    _eng_store(result, "xs_ret_concentration", np.broadcast_to(hhi, (n_bars, n_symbols)))
+
+    if 5 in ret_cache:
+        p95 = np.nanpercentile(ret_cache[5], 95, axis=1, keepdims=True)
+        p50 = np.nanpercentile(ret_cache[5], 50, axis=1, keepdims=True)
+        p05 = np.nanpercentile(ret_cache[5], 5, axis=1, keepdims=True)
+        wg = p95 - p50
+        lg = p50 - p05
+        _eng_store(result, "xs_winner_gap", np.broadcast_to(wg, (n_bars, n_symbols)))
+        _eng_store(result, "xs_loser_gap", np.broadcast_to(lg, (n_bars, n_symbols)))
+        _eng_store(result, "xs_winner_loser_asymmetry", np.broadcast_to(wg - lg, (n_bars, n_symbols)))
+
+    xr5 = features.get("xs_ret_rank_5")
+    if xr5 is not None:
+        _eng_store(result, "rank_volatility_21", _rolling_std_2d(xr5, 21))
+        xr5_lag = np.full_like(xr5, np.nan)
+        xr5_lag[1:] = xr5[:-1]
+        _eng_store(result, "rank_persistence", _rolling_corr_2d(xr5, xr5_lag, 13))
+        xr5_lag8 = np.full_like(xr5, np.nan)
+        xr5_lag8[8:] = xr5[:-8]
+        _eng_store(result, "rank_mean_reversion_score", xr5 * xr5_lag8)
+        rv5 = features.get("xs_rank_velocity_5")
+        if rv5 is not None:
+            ra = np.full_like(rv5, np.nan)
+            ra[5:] = rv5[5:] - rv5[:-5]
+            _eng_store(result, "rank_acceleration", ra)
+
+    if not quick and 5 in ret_cache:
+        peer_mom = np.full((n_bars, n_symbols), np.nan, dtype=np.float64)
+        vol_ranks = _xs_rank_2d(volume)
+        decile_all = np.clip((vol_ranks * 10).astype(int), 0, 9)
+        for t in range(n_bars):
+            valid = ~np.isnan(vol_ranks[t]) & ~np.isnan(ret_cache[5][t])
+            if valid.sum() < 10:
+                continue
+            d = decile_all[t, valid]
+            r = ret_cache[5][t, valid]
+            sums = np.bincount(d, weights=r, minlength=10)
+            counts = np.bincount(d, minlength=10)
+            means = np.where(counts > 0, sums / counts, np.nan)
+            peer_mom[t, valid] = means[d]
+        _eng_store(result, "peer_momentum", peer_mom)
+
+    btc_c21 = features.get("btc_corr_21")
+    if btc_c21 is not None:
+        cd = np.nanstd(btc_c21, axis=1, keepdims=True)
+        _eng_store(result, "xs_correlation_dispersion", np.broadcast_to(cd, (n_bars, n_symbols)))
+        dc = np.nanmean((np.abs(btc_c21) < 0.3).astype(np.float64), axis=1, keepdims=True)
+        _eng_store(result, "xs_decoupling_rate", np.broadcast_to(dc, (n_bars, n_symbols)))
+
+    if not quick:
+        ent = np.full((n_bars, 1), np.nan)
+        for t in range(n_bars):
+            vals = ret_1[t]
+            valid = ~np.isnan(vals)
+            if valid.sum() < 20:
+                continue
+            hist, _ = np.histogram(vals[valid], bins=10)
+            p = hist / hist.sum()
+            p = p[p > 0]
+            ent[t, 0] = -np.sum(p * np.log(p))
+        _eng_store(result, "xs_return_entropy_21", np.broadcast_to(ent, (n_bars, n_symbols)))
+
+    xvr = features.get("xs_volume_rank")
+    xrr5 = features.get("xs_ret_rank_5")
+    if xvr is not None and xrr5 is not None:
+        _eng_store(result, "xs_volume_return_mismatch", np.abs(xvr - xrr5))
+
+    xr21_f = features.get("xs_ret_rank_21")
+    xr55 = features.get("xs_ret_rank_55")
+    if xr21_f is not None and xr55 is not None:
+        _eng_store(result, "sector_rotation_proxy", np.abs(xr21_f - xr55))
+
+    if not quick:
+        mkt_mean = np.nanmean(ret_1, axis=1)
+        mkt_mean_lag = np.full(n_bars, np.nan)
+        mkt_mean_lag[1:] = mkt_mean[:-1]
+        mkt_lag_broad = mkt_mean_lag[:, np.newaxis] * np.ones((1, n_symbols))
+        _eng_store(result, "xs_lead_lag_asymmetry", _rolling_corr_2d(ret_1, mkt_lag_broad, 21))
+
+    return result
+
+
+def _cat_M():
+    """Category M: Multi-Bar Microstructure Sequences (16 features)."""
+    import warnings
+    warnings.filterwarnings("ignore", category=RuntimeWarning)
+    e = _eng
+    features = e['features']
+    close = e['close']
+    open_ = e['open_']
+    high = e['high']
+    low = e['low']
+    volume_z = e['volume_z']
+    bar_range = e['bar_range']
+    safe_range = e['safe_range']
+    body = e['body']
+    abs_ret_1 = e['abs_ret_1']
+    ret_1 = e['ret_1']
+    ret_cache = e['ret_cache']
+    volume = e['volume']
+    n_bars, n_symbols = e['n_bars'], e['n_symbols']
+    quick = e['quick']
+    result = {}
+
+    upper_wick = features.get("upper_wick_ratio", (high - np.maximum(open_, close)) / safe_range)
+    lower_wick = features.get("lower_wick_ratio", (np.minimum(open_, close) - low) / safe_range)
+    _eng_store(result, "consecutive_rejection_count_up", _rolling_sum_2d((upper_wick > 0.3).astype(np.float64), 8))
+    _eng_store(result, "consecutive_rejection_count_down", _rolling_sum_2d((lower_wick > 0.3).astype(np.float64), 8))
+
+    bar_dir = np.sign(close - open_)
+    _eng_store(result, "body_direction_streak", _rolling_sum_2d(bar_dir, 8))
+
+    range_expanding = np.zeros((n_bars, n_symbols))
+    range_expanding[1:] = (bar_range[1:] > bar_range[:-1]).astype(np.float64)
+    _eng_store(result, "range_expansion_streak", _rolling_sum_2d(range_expanding, 8))
+
+    if not quick and n_bars >= 56:
+        from numpy.lib.stride_tricks import sliding_window_view
+        vz_win = sliding_window_view(volume_z, 56, axis=0)
+        max_idx = np.argmax(vz_win, axis=-1)
+        vol_climax = np.zeros((n_bars, n_symbols))
+        vol_climax[55:] = 55 - max_idx
+        _eng_store(result, "volume_climax_distance", vol_climax)
+
+    ret_diff = np.full((n_bars, n_symbols), np.nan)
+    ret_diff[1:] = np.abs(ret_1[1:] - ret_1[:-1])
+    roughness_num = _rolling_sum_2d(ret_diff, 21)
+    ret21 = ret_cache.get(21)
+    if ret21 is not None:
+        safe_r21v = np.where(np.abs(ret21) > 1e-10, np.abs(ret21), 1e-10)
+        _eng_store(result, "return_roughness_21", roughness_num / safe_r21v)
+
+    if not quick and n_bars >= 21:
+        is_up = (close > open_).astype(int)
+        body_big = (body / safe_range > 0.5).astype(int)
+        wick_dom = (1 - body / safe_range > 0.5).astype(int)
+        candle_type = is_up * 4 + body_big * 2 + wick_dom
+        from numpy.lib.stride_tricks import sliding_window_view
+        ct_win = sliding_window_view(candle_type, 21, axis=0)
+        n_win = ct_win.shape[0]
+        counts = np.zeros((n_win, n_symbols, 8), dtype=np.float64)
+        for bin_val in range(8):
+            counts[:, :, bin_val] = np.sum(ct_win == bin_val, axis=-1)
+        p = counts / 21.0
+        log_p = np.where(p > 0, np.log(np.maximum(p, 1e-30)), 0.0)
+        entropy = -np.sum(p * log_p, axis=-1)
+        ent_arr = np.full((n_bars, n_symbols), np.nan)
+        ent_arr[20:20 + n_win] = entropy
+        _eng_store(result, "candle_type_entropy_21", ent_arr)
+
+    ret4 = ret_cache.get(4, np.full((n_bars, n_symbols), np.nan))
+    ret8 = ret_cache.get(8, np.full((n_bars, n_symbols), np.nan))
+    _eng_store(result, "price_path_convexity_8", ret8 - 2 * ret4)
+
+    vz_lag5 = np.roll(volume_z, 5, axis=0)
+    vz_lag2 = np.roll(volume_z, 2, axis=0)
+    vz_lag7 = np.roll(volume_z, 7, axis=0)
+    _eng_store(result, "volume_wave_phase", np.arctan2(volume_z - vz_lag5, vz_lag2 - vz_lag7))
+
+    bar_activity = abs_ret_1 * volume_z
+    ba_mean = _rolling_mean_2d(bar_activity, 21)
+    safe_bam = np.where(ba_mean > 0, ba_mean, 1e-10)
+    _eng_store(result, "vol_surprise", bar_activity / safe_bam)
+
+    gp = features.get("gap_pct")
+    if gp is not None:
+        _eng_store(result, "gap_reversal_signal", gp * (-ret_1))
+
+    dir_change = np.zeros((n_bars, n_symbols))
+    bar_dir_local = np.sign(close - open_)
+    dir_change[1:] = (bar_dir_local[1:] != bar_dir_local[:-1]).astype(np.float64)
+    _eng_store(result, "body_alternation_score", _rolling_mean_2d(dir_change, 8))
+
+    if not quick:
+        wno = np.full((n_bars, n_symbols), np.nan)
+        wno[:-1] = (open_[1:] - close[:-1]) / safe_range[:-1]
+        _eng_store(result, "wick_to_next_open", wno)
+
+    if not quick:
+        in_upper_q = (close > open_ + 0.75 * bar_range).astype(np.float64)
+        in_lower_q = (close < open_ - 0.75 * bar_range + low).astype(np.float64)
+        trapped = np.zeros((n_bars, n_symbols))
+        for lag in [1, 2, 3]:
+            if lag < n_bars:
+                upper_then_lower = np.zeros((n_bars, n_symbols))
+                upper_then_lower[lag:] = in_upper_q[:-lag] * in_lower_q[lag:]
+                lower_then_upper = np.zeros((n_bars, n_symbols))
+                lower_then_upper[lag:] = in_lower_q[:-lag] * in_upper_q[lag:]
+                trapped += upper_then_lower + lower_then_upper
+        _eng_store(result, "trapped_trader_score", _rolling_sum_2d(trapped, 13))
+
+    gp = features.get("gap_pct")
+    if gp is not None:
+        _eng_store(result, "overnight_momentum", gp * volume_z)
+
+    bv = body / safe_range * volume
+    _eng_store(result, "multi_bar_absorption", _rolling_sum_2d(bv, 5) / np.where(_rolling_sum_2d(volume, 5) > 0, _rolling_sum_2d(volume, 5), 1e-10))
+
+    return result
+
+
+def _dispatch_eng_category(cat_name):
+    """Dispatch a single category computation. Called by Pool workers."""
+    _CAT_FN = {'H': _cat_H, 'I': _cat_I, 'J': _cat_J, 'K': _cat_K, 'L': _cat_L, 'M': _cat_M}
+    t0 = time.time()
+    result = _CAT_FN[cat_name]()
+    logger.info("    Category %s: %d features in %.1fs", cat_name, len(result), time.time() - t0)
+    return (cat_name, result)
+
+
 def engineer_features(close, open_, high, low, volume, ts_grid, btc_idx, quick=False):
     """Engineer all features. Returns dict[name] -> (n_bars, n_symbols) float32 array."""
     import warnings
@@ -930,398 +1381,30 @@ def engineer_features(close, open_, high, low, volume, ts_grid, btc_idx, quick=F
         _store("xs_dispersion_21", _rolling_mean_2d(disp_broad, 21))
         _store("xs_dispersion_trend", _rolling_slope_2d(disp_broad, 13))
 
-    # ── Category H: Temporal (8) ──
-    logger.info("  Category H: Temporal (8 features)...")
-    hours = ((ts_grid % 86400) / 3600).astype(np.float64)
-    dow = (((ts_grid / 86400) + 4) % 7).astype(np.float64)  # Unix epoch was Thursday
+    # ── Categories H-M: Parallel dispatch ──
+    logger.info("  Categories H-M: dispatching to %d parallel workers...", 6)
 
-    hour_sin = np.sin(2 * np.pi * hours / 24)[:, np.newaxis] * np.ones((1, n_symbols))
-    hour_cos = np.cos(2 * np.pi * hours / 24)[:, np.newaxis] * np.ones((1, n_symbols))
-    _store("hour_sin", hour_sin)
-    _store("hour_cos", hour_cos)
-    dow_sin = np.sin(2 * np.pi * dow / 7)[:, np.newaxis] * np.ones((1, n_symbols))
-    dow_cos = np.cos(2 * np.pi * dow / 7)[:, np.newaxis] * np.ones((1, n_symbols))
-    _store("dow_sin", dow_sin)
-    _store("dow_cos", dow_cos)
+    # Populate module-level context for forked workers (COW sharing)
+    global _eng
+    _eng = {
+        'close': close, 'open_': open_, 'high': high, 'low': low,
+        'volume': volume, 'ts_grid': ts_grid, 'btc_idx': btc_idx,
+        'n_bars': n_bars, 'n_symbols': n_symbols, 'quick': quick,
+        'bar_range': bar_range, 'safe_range': safe_range, 'body': body,
+        'ret_1': ret_1, 'sign_ret_1': sign_ret_1, 'abs_ret_1': abs_ret_1,
+        'atr_14': atr_14, 'safe_close': safe_close, 'safe_atr': safe_atr,
+        'ret_cache': ret_cache, 'volume_z': volume_z,
+        'features': features,  # A-G features, read-only in workers
+    }
 
-    # Bars since vol spike (volume_z > 3)
-    vol_spike = (volume_z > 3.0).astype(np.float64)
-    bars_since_vs = np.zeros((n_bars, n_symbols))
-    for t in range(1, n_bars):
-        bars_since_vs[t] = np.where(vol_spike[t] > 0, 0, bars_since_vs[t-1] + 1)
-    _store("bars_since_vol_spike", bars_since_vs)
+    cats = ['H', 'I', 'J', 'K', 'L', 'M']
+    with mp.Pool(len(cats)) as pool:
+        cat_results = list(pool.imap_unordered(_dispatch_eng_category, cats))
 
-    # Bars since range spike (range_pct > 95th percentile of trailing 55)
-    if not quick:
-        rp = bar_range / safe_close
-        bars_since_rs = np.zeros((n_bars, n_symbols))
-        rp_thresh = _rolling_max_2d(rp, 55) * 0.95  # approximate 95th pctile
-        range_spike = (rp > rp_thresh).astype(np.float64)
-        for t in range(1, n_bars):
-            bars_since_rs[t] = np.where(range_spike[t] > 0, 0, bars_since_rs[t-1] + 1)
-        _store("bars_since_range_spike", bars_since_rs)
+    for cat_name, cat_features in cat_results:
+        features.update(cat_features)
 
-    # Session encoding (Asia=0-8 UTC, Europe=8-16, US=16-24)
-    session = hours / 8.0  # 0-3 range
-    sess_sin = np.sin(2 * np.pi * session / 3)[:, np.newaxis] * np.ones((1, n_symbols))
-    sess_cos = np.cos(2 * np.pi * session / 3)[:, np.newaxis] * np.ones((1, n_symbols))
-    _store("session_sin", sess_sin)
-    _store("session_cos", sess_cos)
-
-    # ── Category I: Variance Ratio (7) ──
-    logger.info("  Category I: Variance ratio (7 features)...")
-    var_1 = _rolling_mean_2d(ret_1**2, 21)  # variance of 1-bar returns
-    for q in ([2, 5, 8, 13] if not quick else [2, 5]):
-        # VR(q) = Var(q-bar returns) / (q * Var(1-bar returns))
-        ret_q = np.full((n_bars, n_symbols), np.nan)
-        if q <= 1:
-            continue
-        ret_q[q:] = (close[q:] - close[:-q]) / np.where(close[:-q] > 0, close[:-q], 1e-10)
-        var_q = _rolling_mean_2d(ret_q**2, 21)
-        safe_v1 = np.where(var_1 > 0, var_1, 1e-10)
-        _store(f"vr_{q}", var_q / (q * safe_v1))
-
-    # VR trend
-    vr5 = features.get("vr_5")
-    if vr5 is not None:
-        _store("vr_trend", _rolling_slope_2d(vr5, 13))
-
-    # Hurst proxy
-    if vr5 is not None:
-        log_vr5 = np.log(np.where(vr5 > 0, vr5, 1e-10))
-        _store("hurst_proxy", log_vr5 / (2 * np.log(5)))
-
-    # Regime composite
-    ac1 = features.get("autocorr_lag1_21")
-    vr5_f = features.get("vr_5")
-    vr_8_21 = features.get("vol_ratio_8_21")
-    if ac1 is not None and vr5_f is not None and vr_8_21 is not None:
-        _store("regime_composite", 0.4 * vr5_f + 0.3 * ac1 + 0.3 * vr_8_21)
-
-    # ── Category J: Market-Level Dispersion (4) ──
-    logger.info("  Category J: Market-level dispersion (4 features)...")
-    mkt_ret_mean = np.nanmean(ret_1, axis=1, keepdims=True)
-    mkt_ret_std = np.nanstd(ret_1, axis=1, keepdims=True)
-    mkt_breadth = np.nanmean((ret_1 > 0).astype(np.float64), axis=1, keepdims=True)
-    mkt_vol_breadth = np.nanmean((volume_z > 1.5).astype(np.float64), axis=1, keepdims=True)
-
-    _store("market_ret_mean", np.broadcast_to(mkt_ret_mean, (n_bars, n_symbols)))
-    _store("market_ret_std", np.broadcast_to(mkt_ret_std, (n_bars, n_symbols)))
-    _store("market_breadth", np.broadcast_to(mkt_breadth, (n_bars, n_symbols)))
-    _store("market_vol_breadth", np.broadcast_to(mkt_vol_breadth, (n_bars, n_symbols)))
-
-    # ── Category K: Unnamed — Ratios of Ratios (18) ──
-    logger.info("  Category K: Ratios of ratios (18 features)...")
-    vr_8_21 = features.get("vol_ratio_8_21")
-    vr_21_55 = features.get("vol_ratio_21_55")
-    if vr_8_21 is not None and vr_21_55 is not None:
-        safe_vr2155 = np.where(np.abs(vr_21_55) > 1e-10, vr_21_55, 1e-10)
-        _store("vol_acceleration_ratio", vr_8_21 / safe_vr2155)
-
-    # Momentum quality divergence
-    rn5 = features.get("ret_norm_5")
-    rn21 = features.get("ret_norm_21")
-    if rn5 is not None and rn21 is not None:
-        _store("momentum_quality_divergence", rn5 - rn21)
-
-    # Range-body evolution
-    br = features.get("body_ratio")
-    if br is not None:
-        br_mean8 = _rolling_mean_2d(br, 8)
-        safe_brm = np.where(br_mean8 > 0, br_mean8, 1e-10)
-        _store("range_body_evolution", br / safe_brm)
-
-    # Wick trend
-    wick_diff = features.get("upper_wick_ratio", np.zeros((n_bars, n_symbols))) - features.get("lower_wick_ratio", np.zeros((n_bars, n_symbols)))
-    _store("wick_trend_8", _rolling_slope_2d(wick_diff, 8))
-
-    # Volume-price jerk (3rd derivative of vol_price_corr)
-    vpc21 = features.get("vol_price_corr_21")
-    if vpc21 is not None:
-        d1 = np.full_like(vpc21, np.nan)
-        d1[1:] = vpc21[1:] - vpc21[:-1]
-        d2 = np.full_like(d1, np.nan)
-        d2[1:] = d1[1:] - d1[:-1]
-        _store("volume_price_jerk", d2)
-
-    # ret cubed mean
-    _store("ret_cubed_mean_21", _rolling_mean_2d(ret_1**3, 21))
-
-    # Gap-vol interaction
-    gp = features.get("gap_pct")
-    if gp is not None:
-        _store("gap_vol_interaction", gp * volume_z)
-
-    # Range-return efficiency
-    range_sum_5 = _rolling_sum_2d(bar_range, 5)
-    safe_rs5 = np.where(range_sum_5 > 0, range_sum_5, 1e-10)
-    ret5 = ret_cache.get(5)
-    if ret5 is not None:
-        _store("range_ret_efficiency", np.abs(ret5) * safe_close / safe_rs5)
-
-    # Vol-price asymmetry ratio
-    vpc55 = features.get("vol_price_corr_55")
-    if vpc21 is not None and vpc55 is not None:
-        safe_vpc55 = np.where(np.abs(vpc55) > 1e-10, vpc55, 1e-10)
-        _store("vol_price_asymmetry_ratio", vpc21 / safe_vpc55)
-
-    # Acceleration of acceleration (jerk)
-    acc13 = features.get("acc_13")
-    if acc13 is not None:
-        aa = np.full_like(acc13, np.nan)
-        aa[5:] = acc13[5:] - acc13[:-5]
-        _store("acceleration_acceleration", aa)
-
-    # Body-volume coupling
-    _store("body_volume_coupling", _rolling_corr_2d(body / safe_range, volume_z, 21))
-
-    # Range-volume decoupling
-    rv_product = (bar_range / safe_close) * volume_z
-    rv_mean = _rolling_mean_2d(rv_product, 21)
-    _store("range_volume_decoupling", rv_product - rv_mean)
-
-    # Norm ret vs vol_z residual (simplified: ret_norm_21 - k*vol_z, k from trailing 55)
-    rn21 = features.get("ret_norm_21")
-    if rn21 is not None:
-        k = _rolling_corr_2d(rn21, volume_z, 55) * _rolling_std_2d(rn21, 55) / np.where(_rolling_std_2d(volume_z, 55) > 0, _rolling_std_2d(volume_z, 55), 1e-10)
-        _store("norm_ret_vs_vol_z_residual", rn21 - k * volume_z)
-
-    # Close-open range ratio diff
-    co_ratio = (close - open_) / safe_range
-    _store("close_open_range_ratio_diff", co_ratio - _rolling_mean_2d(co_ratio, 21))
-
-    # Wick asymmetry of asymmetry
-    if not quick:
-        wick_asym = features.get("upper_wick_ratio", np.zeros((n_bars, n_symbols))) - features.get("lower_wick_ratio", np.zeros((n_bars, n_symbols)))
-        _store("high_low_asymmetry_of_asymmetry", _rolling_std_2d(wick_asym, 13))
-
-    # Vol z curvature
-    _store("vol_z_curvature", volume_z - 2 * np.roll(volume_z, 1, axis=0) + np.roll(volume_z, 2, axis=0))
-
-    # Ret-vol cross moment
-    _store("ret_vol_cross_moment_21", _rolling_mean_2d(ret_1 * volume_z, 21))
-
-    # Efficiency ratio 8
-    abs_ret_sum_8 = _rolling_sum_2d(abs_ret_1, 8)
-    safe_ars = np.where(abs_ret_sum_8 > 0, abs_ret_sum_8, 1e-10)
-    if 8 in ret_cache:
-        _store("efficiency_ratio_8", np.abs(ret_cache[8]) / safe_ars)
-
-    # ── Category L: Rank Distribution Dynamics (15) ──
-    logger.info("  Category L: Rank distribution dynamics (15 features)...")
-
-    # XS return concentration (Herfindahl)
-    abs_ret_5 = np.abs(ret_cache.get(5, ret_1))
-    abs_sum = np.nansum(abs_ret_5, axis=1, keepdims=True)
-    safe_as = np.where(abs_sum > 0, abs_sum, 1e-10)
-    shares = abs_ret_5 / safe_as
-    hhi = np.nansum(shares**2, axis=1, keepdims=True)
-    _store("xs_ret_concentration", np.broadcast_to(hhi, (n_bars, n_symbols)))
-
-    # Winner/loser gaps
-    if 5 in ret_cache:
-        p95 = np.nanpercentile(ret_cache[5], 95, axis=1, keepdims=True)
-        p50 = np.nanpercentile(ret_cache[5], 50, axis=1, keepdims=True)
-        p05 = np.nanpercentile(ret_cache[5], 5, axis=1, keepdims=True)
-        wg = p95 - p50
-        lg = p50 - p05
-        _store("xs_winner_gap", np.broadcast_to(wg, (n_bars, n_symbols)))
-        _store("xs_loser_gap", np.broadcast_to(lg, (n_bars, n_symbols)))
-        _store("xs_winner_loser_asymmetry", np.broadcast_to(wg - lg, (n_bars, n_symbols)))
-
-    # Rank volatility & persistence
-    xr5 = features.get("xs_ret_rank_5")
-    if xr5 is not None:
-        _store("rank_volatility_21", _rolling_std_2d(xr5, 21))
-        # Rank persistence (autocorr of rank)
-        xr5_lag = np.full_like(xr5, np.nan)
-        xr5_lag[1:] = xr5[:-1]
-        _store("rank_persistence", _rolling_corr_2d(xr5, xr5_lag, 13))
-
-        # Rank mean reversion score
-        xr5_lag8 = np.full_like(xr5, np.nan)
-        xr5_lag8[8:] = xr5[:-8]
-        _store("rank_mean_reversion_score", xr5 * xr5_lag8)
-
-        # Rank acceleration
-        rv5 = features.get("xs_rank_velocity_5")
-        if rv5 is not None:
-            ra = np.full_like(rv5, np.nan)
-            ra[5:] = rv5[5:] - rv5[:-5]
-            _store("rank_acceleration", ra)
-
-    # Peer momentum (mean ret_5 of same volume decile)
-    if not quick and 5 in ret_cache:
-        peer_mom = np.full((n_bars, n_symbols), np.nan, dtype=np.float64)
-        vol_ranks = _xs_rank_2d(volume)
-        for t in range(n_bars):
-            valid = ~np.isnan(vol_ranks[t]) & ~np.isnan(ret_cache[5][t])
-            if valid.sum() < 10:
-                continue
-            decile = (vol_ranks[t] * 10).astype(int)
-            decile = np.clip(decile, 0, 9)
-            for d in range(10):
-                mask = (decile == d) & valid
-                if mask.sum() > 0:
-                    peer_mom[t, mask] = np.nanmean(ret_cache[5][t, mask])
-        _store("peer_momentum", peer_mom)
-
-    # XS correlation dispersion
-    btc_c21 = features.get("btc_corr_21")
-    if btc_c21 is not None:
-        cd = np.nanstd(btc_c21, axis=1, keepdims=True)
-        _store("xs_correlation_dispersion", np.broadcast_to(cd, (n_bars, n_symbols)))
-        # Decoupling rate
-        dc = np.nanmean((np.abs(btc_c21) < 0.3).astype(np.float64), axis=1, keepdims=True)
-        _store("xs_decoupling_rate", np.broadcast_to(dc, (n_bars, n_symbols)))
-
-    # XS return entropy (binned)
-    if not quick:
-        ent = np.full((n_bars, 1), np.nan)
-        for t in range(n_bars):
-            vals = ret_1[t]
-            valid = ~np.isnan(vals)
-            if valid.sum() < 20:
-                continue
-            hist, _ = np.histogram(vals[valid], bins=10)
-            p = hist / hist.sum()
-            p = p[p > 0]
-            ent[t, 0] = -np.sum(p * np.log(p))
-        _store("xs_return_entropy_21", np.broadcast_to(ent, (n_bars, n_symbols)))
-
-    # Volume-return mismatch
-    xvr = features.get("xs_volume_rank")
-    xrr5 = features.get("xs_ret_rank_5")
-    if xvr is not None and xrr5 is not None:
-        _store("xs_volume_return_mismatch", np.abs(xvr - xrr5))
-
-    # Sector rotation proxy
-    xr21_f = features.get("xs_ret_rank_21")
-    xr55 = features.get("xs_ret_rank_55")
-    if xr21_f is not None and xr55 is not None:
-        _store("sector_rotation_proxy", np.abs(xr21_f - xr55))
-
-    # XS lead-lag asymmetry
-    if not quick:
-        mkt_ret_lag1 = np.full((n_bars, n_symbols), np.nan)
-        mkt_mean = np.nanmean(ret_1, axis=1)
-        mkt_mean_lag = np.full(n_bars, np.nan)
-        mkt_mean_lag[1:] = mkt_mean[:-1]
-        mkt_lag_broad = mkt_mean_lag[:, np.newaxis] * np.ones((1, n_symbols))
-        _store("xs_lead_lag_asymmetry", _rolling_corr_2d(ret_1, mkt_lag_broad, 21))
-
-    # ── Category M: Multi-Bar Microstructure Sequences (16) ──
-    logger.info("  Category M: Multi-bar sequences (16 features)...")
-
-    # Consecutive rejection counts
-    upper_wick = features.get("upper_wick_ratio", (high - np.maximum(open_, close)) / safe_range)
-    lower_wick = features.get("lower_wick_ratio", (np.minimum(open_, close) - low) / safe_range)
-    _store("consecutive_rejection_count_up", _rolling_sum_2d((upper_wick > 0.3).astype(np.float64), 8))
-    _store("consecutive_rejection_count_down", _rolling_sum_2d((lower_wick > 0.3).astype(np.float64), 8))
-
-    # Body direction streak
-    bar_dir = np.sign(close - open_)
-    _store("body_direction_streak", _rolling_sum_2d(bar_dir, 8))
-
-    # Range expansion streak
-    range_expanding = np.zeros((n_bars, n_symbols))
-    range_expanding[1:] = (bar_range[1:] > bar_range[:-1]).astype(np.float64)
-    _store("range_expansion_streak", _rolling_sum_2d(range_expanding, 8))
-
-    # Volume climax distance
-    if not quick:
-        vol_climax = np.zeros((n_bars, n_symbols))
-        for t in range(55, n_bars):
-            window = volume_z[max(0, t-55):t+1]
-            max_idx = np.argmax(window, axis=0)
-            vol_climax[t] = window.shape[0] - 1 - max_idx
-        _store("volume_climax_distance", vol_climax)
-
-    # Return roughness
-    ret_diff = np.full((n_bars, n_symbols), np.nan)
-    ret_diff[1:] = np.abs(ret_1[1:] - ret_1[:-1])
-    roughness_num = _rolling_sum_2d(ret_diff, 21)
-    ret21 = ret_cache.get(21)
-    if ret21 is not None:
-        safe_r21v = np.where(np.abs(ret21) > 1e-10, np.abs(ret21), 1e-10)
-        _store("return_roughness_21", roughness_num / safe_r21v)
-
-    # Candle type entropy
-    if not quick:
-        # Encode: up/down (2) × big/small body (2) × wick/body dominated (2) = 8 types
-        is_up = (close > open_).astype(int)
-        body_big = (body / safe_range > 0.5).astype(int)
-        wick_dom = (1 - body / safe_range > 0.5).astype(int)
-        candle_type = is_up * 4 + body_big * 2 + wick_dom  # 0-7
-        # Rolling entropy over 21 bars
-        if n_bars >= 21:
-            from numpy.lib.stride_tricks import sliding_window_view
-            ct_win = sliding_window_view(candle_type, 21, axis=0)
-            ent_arr = np.full((n_bars, n_symbols), np.nan)
-            for t in range(ct_win.shape[0]):
-                for s in range(n_symbols):
-                    counts = np.bincount(ct_win[t, s], minlength=8)
-                    p = counts / 21.0
-                    p = p[p > 0]
-                    ent_arr[t + 20, s] = -np.sum(p * np.log(p))
-            _store("candle_type_entropy_21", ent_arr)
-
-    # Price path convexity
-    ret4 = ret_cache.get(4, np.full((n_bars, n_symbols), np.nan))
-    ret8 = ret_cache.get(8, np.full((n_bars, n_symbols), np.nan))
-    _store("price_path_convexity_8", ret8 - 2 * ret4)
-
-    # Volume wave phase
-    vz_lag5 = np.roll(volume_z, 5, axis=0)
-    vz_lag2 = np.roll(volume_z, 2, axis=0)
-    vz_lag7 = np.roll(volume_z, 7, axis=0)
-    _store("volume_wave_phase", np.arctan2(volume_z - vz_lag5, vz_lag2 - vz_lag7))
-
-    # Vol surprise
-    bar_activity = abs_ret_1 * volume_z
-    ba_mean = _rolling_mean_2d(bar_activity, 21)
-    safe_bam = np.where(ba_mean > 0, ba_mean, 1e-10)
-    _store("vol_surprise", bar_activity / safe_bam)
-
-    # Gap reversal signal
-    gp = features.get("gap_pct")
-    if gp is not None:
-        _store("gap_reversal_signal", gp * (-ret_1))
-
-    # Body alternation score
-    dir_change = np.zeros((n_bars, n_symbols))
-    dir_change[1:] = (bar_dir[1:] != bar_dir[:-1]).astype(np.float64)
-    _store("body_alternation_score", _rolling_mean_2d(dir_change, 8))
-
-    # Wick to next open
-    if not quick:
-        wno = np.full((n_bars, n_symbols), np.nan)
-        wno[:-1] = (open_[1:] - close[:-1]) / safe_range[:-1]
-        _store("wick_to_next_open", wno)
-
-    # Trapped trader score (simplified: close reversal within 3 bars)
-    if not quick:
-        in_upper_q = (close > open_ + 0.75 * bar_range).astype(np.float64)
-        in_lower_q = (close < open_ - 0.75 * bar_range + low).astype(np.float64)
-        # Rough: count bars where close was in upper quartile followed by close in lower within 3
-        trapped = np.zeros((n_bars, n_symbols))
-        for lag in [1, 2, 3]:
-            if lag < n_bars:
-                upper_then_lower = np.zeros((n_bars, n_symbols))
-                upper_then_lower[lag:] = in_upper_q[:-lag] * in_lower_q[lag:]
-                lower_then_upper = np.zeros((n_bars, n_symbols))
-                lower_then_upper[lag:] = in_lower_q[:-lag] * in_upper_q[lag:]
-                trapped += upper_then_lower + lower_then_upper
-        _store("trapped_trader_score", _rolling_sum_2d(trapped, 13))
-
-    # Overnight momentum
-    gp = features.get("gap_pct")
-    if gp is not None:
-        _store("overnight_momentum", gp * volume_z)
-
-    # Multi-bar absorption
-    bv = body / safe_range * volume
-    _store("multi_bar_absorption", _rolling_sum_2d(bv, 5) / np.where(_rolling_sum_2d(volume, 5) > 0, _rolling_sum_2d(volume, 5), 1e-10))
+    _eng = {}  # free reference to large arrays
 
     elapsed = time.time() - t0
     logger.info("Feature engineering complete: %d features in %.1fs (%.1f MB)",
