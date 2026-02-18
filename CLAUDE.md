@@ -77,6 +77,17 @@ Every plan that creates or modifies a script must address:
 4. **Execution context** — detects Docker vs host, resolves paths (`os.path.isdir('/app')`)
 5. **Detached execution** — run instructions specify `tmux`/`screen`
 6. **Plan approval gate** — user sees and approves FINAL version before execution
+7. **Parallelism design** — before any script is approved for execution, answer these five questions in the plan:
+
+   **a) What is the compute profile?** List every phase of the script with estimated wall-clock time and whether it's single-threaded, multi-threaded (BLAS), or multi-process. Example: "Phase 2: 8 min, categories A-G single-threaded, H-M 6-worker Pool."
+
+   **b) What percentage of total compute is parallelised?** If <50% of estimated wall time runs on multiple cores, redesign before running. Amdahl's law: 16 cores can't help if 60% of the work is serial.
+
+   **c) Are work units balanced by cost?** If the heaviest work unit takes >3× the lightest, it will create a tail. Either split heavy units into smaller chunks, or sort heaviest-first so the tail is composed of cheap units. Report: "heaviest unit: ~X seconds, lightest: ~Y seconds, ratio: Z×."
+
+   **d) Does utilisation drop below 50% before the script is 90% complete?** If workers finish and go idle with significant work remaining on other workers, the work distribution needs rebalancing. Design for flat CPU utilisation, not a triangle that peaks early and tapers.
+
+   **e) What is the expected CPU utilisation curve?** Describe in one sentence: "~80% for first 15 min, tapering to ~50% for final 5 min" is acceptable. "~90% for 5 min then ~20% for 25 min" is not — that's a serial script with a parallel preamble.
 
 ## Architecture / Data
 - NEVER compute indicators in frontend code
@@ -258,18 +269,3 @@ Hard-won lessons from past failures. Entries are append-only.
 ### 2026-02-13 — Monitoring a Backgrounded Long-Running Script [PATHFINDING]
 **Winning path:** `ps -p PID -o pid,cputime,rss --no-headers` run twice 30s apart.
 **Key insight:** A process at 99% CPU with zero output is indistinguishable from hung.
-
-### 2026-02-17 — Multiprocessing Pool Tail Idle Time [PATHFINDING]
-**Goal:** Keep 16 vCPUs saturated until signal_discovery_v3.py finishes (was dropping to ~400% CPU with 13/16 workers idle in the tail).
-**Dead ends:**
-- Pre-computing shared indicators in parent (eliminated redundant compute but didn't fix idle tail)
-- Chunking work units to 6 then 3 params per chunk (reduced variance but still had stragglers)
-- Vectorizing only U1_IGNITION (made U1 fast but exposed other strategies as bottlenecks)
-**Winning path:** Three changes together:
-1. Per-config work units (1 param each, ~264 units) — max single-unit cost bounded
-2. Cost-aware sort: `TF_BAR_WEIGHT × STRAT_WEIGHT` dispatches heaviest first (D1_AUTOCORR/15m before U1/4h)
-3. Vectorize the 4 slowest generators (gen_d2_orb O(n²)→O(n), gen_d1_autocorr, gen_a3_breakout, gen_a1_tsm) — shrinks max unit cost from ~3000s to <60s
-**Key insight:** Pool load imbalance is a variance problem, not a total-cost problem. Even with pre-computation eliminating redundant work, a single 3000s work unit will idle 15 workers for 50 minutes. The fix is making the WORST unit fast (vectorize) AND making units granular (1 param each) AND dispatching heaviest first. All three are needed — any two alone still leave a tail.
-
-### 2026-02-17 — Rule: Multiprocessing Pool Sort Must Weight by Estimated Wall-Clock
-**Rule:** When using `imap_unordered` with heterogeneous work units, sort by estimated wall-clock cost descending. Cost = f(strategy_complexity, timeframe_bar_count, param_count). Dispatch heaviest first so tail units are light.

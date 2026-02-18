@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository. This document is superseded by the main CLAUDE.md in repo root at /home/darren/Desktop/MCAS/CLAUDE.md
 
 ## Project Overview
 
