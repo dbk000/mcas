@@ -429,55 +429,86 @@ def build_control_group(event_mask, n_bars, n_symbols, events,
                         min_sep=CONTROL_MIN_SEP, rng=None):
     """Build control group: non-event bars from same symbols and same times.
 
-    For each event (t, s):
-      - Sample from same symbol at different times (time-separated by >=min_sep from ANY event)
-      - Sample from different symbols at same time
+    Vectorized: pre-computes per-symbol exclusion masks and eligible bar arrays,
+    then samples via numpy indexing instead of Python loops over all bars.
     """
     if rng is None:
         rng = np.random.RandomState(42)
 
-    # Build per-symbol event bar sets for fast lookup
-    sym_event_bars = defaultdict(set)
-    for t, s in events:
-        sym_event_bars[s].add(t)
-
-    # All event bars per symbol (for exclusion zones)
-    all_event_bars = set()
-    for t, s in events:
-        for dt in range(-min_sep, min_sep + 1):
-            all_event_bars.add((t + dt, s))
-
-    control_indices = []  # (bar_idx, symbol_idx)
+    t0 = time.time()
     n_same_sym = controls_per_event // 2
     n_same_time = controls_per_event - n_same_sym
 
+    # Build per-symbol exclusion zones (vectorized)
+    # For each symbol, mark bars within min_sep of any event on that symbol
+    sym_exclusion = np.copy(event_mask)  # start with event bars excluded
+    # Dilate event_mask by min_sep bars along time axis
+    for dt in range(1, min_sep + 1):
+        if dt < n_bars:
+            sym_exclusion[dt:] |= event_mask[:-dt]
+            sym_exclusion[:-dt] |= event_mask[dt:]
+
+    # Valid bar range: [WARMUP_BARS, n_bars - HORIZON)
+    bar_valid = np.zeros(n_bars, dtype=bool)
+    bar_valid[WARMUP_BARS:max(WARMUP_BARS, n_bars - HORIZON)] = True
+
+    # Pre-compute eligible bars per symbol: not in exclusion zone, in valid range
+    # sym_eligible[s] = array of eligible bar indices
+    sym_eligible = {}
+    for s in range(n_symbols):
+        eligible = bar_valid & ~sym_exclusion[:, s]
+        sym_eligible[s] = np.where(eligible)[0]
+
+    # Pre-compute eligible symbols per bar (for same-time controls)
+    # non-event symbols at each bar
+    non_event = ~event_mask  # (n_bars, n_symbols)
+
+    # Group events by symbol and by bar for batch sampling
+    events_arr = np.array(events, dtype=np.int64)  # (n_events, 2)
+    if len(events_arr) == 0:
+        return []
+
+    control_set = set()
+
+    # Same-symbol controls: for each unique symbol with events, batch sample
+    events_by_sym = defaultdict(list)
     for t, s in events:
-        # Same symbol, different time
-        candidates_same_sym = []
-        for tt in range(WARMUP_BARS, n_bars - HORIZON):
-            if (tt, s) not in all_event_bars and not event_mask[tt, s]:
-                candidates_same_sym.append(tt)
-        if candidates_same_sym:
-            n_pick = min(n_same_sym, len(candidates_same_sym))
-            picked = rng.choice(candidates_same_sym, size=n_pick, replace=False)
-            for tt in picked:
-                control_indices.append((tt, s))
+        events_by_sym[s].append(t)
 
-        # Different symbol, same time
-        candidates_same_time = []
-        for ss in range(n_symbols):
-            if ss != s and not event_mask[t, ss] and not np.isnan(_shared_close[t, ss] if _shared_close is not None else 0):
-                candidates_same_time.append(ss)
-        if candidates_same_time:
-            n_pick = min(n_same_time, len(candidates_same_time))
-            picked = rng.choice(candidates_same_time, size=n_pick, replace=False)
-            for ss in picked:
-                control_indices.append((t, ss))
+    for s, event_bars in events_by_sym.items():
+        eligible = sym_eligible.get(s, np.array([], dtype=np.int64))
+        if len(eligible) == 0:
+            continue
+        # Total controls needed for this symbol
+        total_needed = len(event_bars) * n_same_sym
+        # Sample with replacement if needed, then assign round-robin
+        n_pick = min(total_needed, len(eligible))
+        picked = rng.choice(eligible, size=n_pick, replace=False)
+        for i, tt in enumerate(picked):
+            control_set.add((int(tt), int(s)))
 
-    # Deduplicate
-    control_set = set(control_indices)
+    # Same-time controls: for each unique bar with events, batch sample other symbols
+    events_by_bar = defaultdict(list)
+    for t, s in events:
+        events_by_bar[t].append(s)
+
+    for t, event_syms in events_by_bar.items():
+        event_sym_set = set(event_syms)
+        eligible_syms = np.where(non_event[t])[0]
+        eligible_syms = eligible_syms[~np.isin(eligible_syms, list(event_sym_set))]
+        if len(eligible_syms) == 0:
+            continue
+        total_needed = len(event_syms) * n_same_time
+        n_pick = min(total_needed, len(eligible_syms))
+        picked = rng.choice(eligible_syms, size=n_pick, replace=False)
+        for ss in picked:
+            control_set.add((int(t), int(ss)))
+
     # Remove any that are actually events
     control_set -= set(events)
+
+    elapsed = time.time() - t0
+    logger.info("  Control group: %d controls built in %.1fs", len(control_set), elapsed)
     return list(control_set)
 
 
@@ -707,15 +738,27 @@ def generate_features_round1(close, open_, high, low, volume, parallel=True):
 # PHASE 3: FEATURE SCREENING — EVENT VS CONTROL
 # ═══════════════════════════════════════════════════════════════════════════════
 
-def _extract_event_control_values(feature_arr, events, controls):
-    """Extract feature values at event and control locations.
+def _extract_event_control_values(feature_arr, events, controls,
+                                   _ev_idx=None, _cv_idx=None):
+    """Extract feature values at event and control locations via fancy indexing.
     Returns: event_vals (1d), control_vals (1d) — both filtered for non-NaN.
+
+    Pass pre-computed _ev_idx/_cv_idx (tuple of t_array, s_array) to avoid
+    rebuilding index arrays on every call.
     """
-    ev = np.array([feature_arr[t, s] for t, s in events], dtype=np.float64)
-    cv = np.array([feature_arr[t, s] for t, s in controls], dtype=np.float64)
-    ev_valid = ev[~np.isnan(ev)]
-    cv_valid = cv[~np.isnan(cv)]
-    return ev_valid, cv_valid
+    if _ev_idx is not None:
+        ev = feature_arr[_ev_idx[0], _ev_idx[1]].astype(np.float64)
+    else:
+        ev_arr = np.array(events, dtype=np.int64)
+        ev = feature_arr[ev_arr[:, 0], ev_arr[:, 1]].astype(np.float64) if len(ev_arr) > 0 else np.array([], dtype=np.float64)
+
+    if _cv_idx is not None:
+        cv = feature_arr[_cv_idx[0], _cv_idx[1]].astype(np.float64)
+    else:
+        cv_arr = np.array(controls, dtype=np.int64)
+        cv = feature_arr[cv_arr[:, 0], cv_arr[:, 1]].astype(np.float64) if len(cv_arr) > 0 else np.array([], dtype=np.float64)
+
+    return ev[~np.isnan(ev)], cv[~np.isnan(cv)]
 
 
 def _mann_whitney_u(x, y):
@@ -876,10 +919,17 @@ def screen_features(features, events, controls, parallel=True):
     t0 = time.time()
     logger.info("Phase 3: Screening %d features...", len(features))
 
-    # Pre-extract values for all features (serial, I/O bound)
+    # Pre-compute index arrays once for fancy indexing (avoid rebuilding per feature)
+    ev_arr = np.array(events, dtype=np.int64) if events else np.empty((0, 2), dtype=np.int64)
+    cv_arr = np.array(controls, dtype=np.int64) if controls else np.empty((0, 2), dtype=np.int64)
+    ev_idx = (ev_arr[:, 0], ev_arr[:, 1]) if len(ev_arr) > 0 else (np.array([], dtype=np.int64), np.array([], dtype=np.int64))
+    cv_idx = (cv_arr[:, 0], cv_arr[:, 1]) if len(cv_arr) > 0 else (np.array([], dtype=np.int64), np.array([], dtype=np.int64))
+
+    # Pre-extract values for all features via fancy indexing
     screen_args = []
     for fname, farr in features.items():
-        ev, cv = _extract_event_control_values(farr, events, controls)
+        ev, cv = _extract_event_control_values(farr, events, controls,
+                                                _ev_idx=ev_idx, _cv_idx=cv_idx)
         if len(ev) >= 10 and len(cv) >= 10:
             screen_args.append((fname, ev, cv))
 
@@ -1241,34 +1291,34 @@ def build_conditional_model(surviving_features, all_features, events, controls, 
 
     logger.info("  Interactions found: %d", len(model["interactions"]))
 
-    # Threshold tuning: sweep on training data, maximize expected value
-    # Score every event and control bar, find optimal threshold
-    all_scores = []
-    all_labels = []
-    all_points = list(events) + list(controls)
-    point_labels = [1] * len(events) + [0] * len(controls)
+    # Threshold tuning: vectorized scoring of event+control points
+    all_points = np.array(list(events) + list(controls), dtype=np.int64)
+    point_labels = np.concatenate([np.ones(len(events)), np.zeros(len(controls))])
 
-    for idx, (t, s) in enumerate(all_points):
-        score = 0.0
-        valid = True
-        for fname in model["features"]:
-            if fname not in all_features:
-                valid = False
-                break
-            val = all_features[fname][t, s]
-            if np.isnan(val):
-                valid = False
-                break
-            edges = model["bin_edges"][fname]
-            b = np.searchsorted(edges, val) - 1
-            b = max(0, min(b, n_bins - 1))
-            score += model["log_lifts"][fname][b]
-        if valid:
-            all_scores.append(score)
-            all_labels.append(point_labels[idx])
+    # Score all points via vectorized bin lookup
+    point_scores = np.zeros(len(all_points), dtype=np.float64)
+    point_valid = np.ones(len(all_points), dtype=bool)
 
-    all_scores = np.array(all_scores)
-    all_labels = np.array(all_labels)
+    for fname in model["features"]:
+        if fname not in all_features:
+            point_valid[:] = False
+            break
+        farr = all_features[fname]
+        edges = np.array(model["bin_edges"][fname])
+        log_lifts_arr = np.array(model["log_lifts"][fname])
+
+        # Fancy-index: extract values at all (t, s) points
+        vals = farr[all_points[:, 0], all_points[:, 1]]
+        nan_m = np.isnan(vals)
+        point_valid &= ~nan_m
+
+        bins = np.digitize(vals, edges) - 1
+        bins = np.clip(bins, 0, n_bins - 1)
+        bins[nan_m] = 0
+        point_scores += log_lifts_arr[bins]
+
+    all_scores = point_scores[point_valid]
+    all_labels = point_labels[point_valid]
 
     if len(all_scores) < 20:
         logger.warning("  Too few scored points for threshold tuning")
@@ -1277,21 +1327,26 @@ def build_conditional_model(surviving_features, all_features, events, controls, 
         logger.info("  Model built in %.1fs", elapsed)
         return model
 
-    # Sweep thresholds
-    percentiles = np.percentile(all_scores, np.arange(50, 99, 2))
+    # Sweep thresholds: maximize precision subject to minimum signal count
+    # Use percentiles from 70th to 99th (we want selective thresholds)
+    percentiles = np.percentile(all_scores, np.arange(70, 99.5, 1))
     best_ev = -1e9
-    best_thresh = float(np.median(all_scores))
+    best_thresh = float(np.percentile(all_scores, 90))  # default to 90th pctile
+    min_signals = max(20, len(all_scores) // 200)  # at least 20, or 0.5% of data
 
     for thresh in percentiles:
         fired = all_scores >= thresh
-        if fired.sum() < 5:
+        n_fired = fired.sum()
+        if n_fired < min_signals:
             continue
         precision = all_labels[fired].mean()
-        n_signals = fired.sum()
 
-        # Expected value: precision * avg_gain - (1-precision) * avg_loss
-        # Approximate: precision > 0.5 is good for ignition events
-        ev = precision * n_signals  # simple: maximize precision × volume
+        # EV metric: precision lift above base_rate, weighted by log(volume)
+        # This rewards selectivity (high precision) while giving mild credit for volume
+        lift_above_base = precision - base_rate
+        if lift_above_base <= 0:
+            continue
+        ev = lift_above_base * math.log(max(n_fired, 2))
         if ev > best_ev:
             best_ev = ev
             best_thresh = float(thresh)
@@ -1300,8 +1355,9 @@ def build_conditional_model(surviving_features, all_features, events, controls, 
     fired = all_scores >= best_thresh
     if fired.sum() > 0:
         precision = all_labels[fired].mean()
-        logger.info("  Threshold=%.3f: %d signals, precision=%.3f (training)",
-                    best_thresh, fired.sum(), precision)
+        logger.info("  Threshold=%.3f: %d/%d signals (%.1f%%), precision=%.3f, base_rate=%.3f (training)",
+                    best_thresh, fired.sum(), len(all_scores),
+                    fired.sum() / len(all_scores) * 100, precision, base_rate)
 
     elapsed = time.time() - t0
     logger.info("  Model built in %.1fs", elapsed)
@@ -1333,50 +1389,69 @@ class TradeResult:
     bars_held: int
 
 
-def score_bar(model, all_features, t, s, n_bins=5):
-    """Score a single (bar, symbol) slot. Returns log-score or NaN."""
-    score = 0.0
+def score_matrix(model, all_features, n_bins=5):
+    """Score ALL (bar, symbol) slots at once via vectorized numpy ops.
+
+    Returns: (n_bars, n_symbols) score array, (n_bars, n_symbols) valid mask.
+    """
+    shape = next(iter(all_features.values())).shape
+    total_score = np.zeros(shape, dtype=np.float64)
+    valid_mask = np.ones(shape, dtype=bool)
+
     for fname in model["features"]:
         if fname not in all_features:
-            return np.nan
-        val = all_features[fname][t, s]
-        if np.isnan(val):
-            return np.nan
-        edges = model["bin_edges"][fname]
-        b = np.searchsorted(edges, val) - 1
-        b = max(0, min(b, n_bins - 1))
-        score += model["log_lifts"][fname][b]
+            valid_mask[:] = False
+            break
+        farr = all_features[fname]
+        edges = np.array(model["bin_edges"][fname])
+        log_lifts = np.array(model["log_lifts"][fname])
 
-    # Add interaction bonuses
+        nan_mask = np.isnan(farr)
+        valid_mask &= ~nan_mask
+
+        # Bin assignments for entire matrix
+        bins = np.digitize(farr, edges) - 1
+        bins = np.clip(bins, 0, n_bins - 1)
+        # Zero out NaN positions (will be filtered by valid_mask)
+        bins[nan_mask] = 0
+
+        # Vectorized log-lift lookup
+        total_score += log_lifts[bins]
+
+    # Interaction bonuses (vectorized)
     for inter in model["interactions"]:
         f1, f2 = inter["f1"], inter["f2"]
         if f1 not in all_features or f2 not in all_features:
             continue
-        v1 = all_features[f1][t, s]
-        v2 = all_features[f2][t, s]
-        if np.isnan(v1) or np.isnan(v2):
-            continue
-        b1 = np.clip(np.searchsorted(inter["edges1"], v1) - 1, 0, 2)
-        b2 = np.clip(np.searchsorted(inter["edges2"], v2) - 1, 0, 2)
-        if b1 == inter["best_bins"][0] and b2 == inter["best_bins"][1]:
-            score += math.log(max(inter["synergy"], 1.01))
+        farr1, farr2 = all_features[f1], all_features[f2]
+        edges1 = np.array(inter["edges1"])
+        edges2 = np.array(inter["edges2"])
+        b1 = np.clip(np.digitize(farr1, edges1) - 1, 0, 2)
+        b2 = np.clip(np.digitize(farr2, edges2) - 1, 0, 2)
+        match = ((b1 == inter["best_bins"][0]) & (b2 == inter["best_bins"][1])
+                 & ~np.isnan(farr1) & ~np.isnan(farr2))
+        total_score[match] += math.log(max(inter["synergy"], 1.01))
 
-    return score
+    return total_score, valid_mask
 
 
 def generate_signals(model, all_features, bar_mask, symbols):
-    """Generate signals: for each bar in mask, for each symbol independently,
-    fire if score > threshold. At some bars 0 signals, at others 1-3.
+    """Generate signals via vectorized scoring.
+
+    Scores ALL (bar, symbol) slots in one pass, then filters by threshold + mask.
     """
     threshold = model["threshold"]
-    bar_indices = np.where(bar_mask)[0]
-    signals = []
+    total_score, valid_mask = score_matrix(model, all_features)
 
-    for t in bar_indices:
-        for s_idx, sym in enumerate(symbols):
-            sc = score_bar(model, all_features, t, s_idx)
-            if not np.isnan(sc) and sc >= threshold:
-                signals.append(Signal(symbol=sym, direction="long", ts_idx=t, score=sc))
+    # Fire where valid, in bar_mask, and above threshold
+    fire = valid_mask & bar_mask[:, np.newaxis] & (total_score >= threshold)
+    fire_t, fire_s = np.where(fire)
+
+    signals = []
+    for i in range(len(fire_t)):
+        t, s = int(fire_t[i]), int(fire_s[i])
+        signals.append(Signal(symbol=symbols[s], direction="long",
+                              ts_idx=t, score=float(total_score[t, s])))
 
     return signals
 
