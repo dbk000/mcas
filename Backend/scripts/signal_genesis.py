@@ -146,6 +146,15 @@ def backfill_ohlcv(database_url, days, timeframes, n_symbols=600):
     batch_id = f"genesis_backfill_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}"
 
     with psycopg.connect(database_url) as conn:
+        # Ensure unique index exists for ON CONFLICT
+        with conn.cursor() as cur:
+            cur.execute("""
+                CREATE UNIQUE INDEX IF NOT EXISTS idx_ohlcv_unique_bar
+                ON ohlcv(symbol, timeframe, bar_start_ts, source)
+            """)
+        conn.commit()
+        logger.info("  Unique index ensured")
+
         for tf in timeframes:
             ms_per_bar = TF_MS.get(tf)
             if not ms_per_bar:
