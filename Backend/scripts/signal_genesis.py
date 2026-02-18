@@ -2434,8 +2434,8 @@ def main():
                         help="Only backfill, don't run the pipeline")
     parser.add_argument("--backfill-symbols", type=int, default=600,
                         help="Number of top USDT symbols to backfill (default 600)")
-    parser.add_argument("--backfill-timeframes", type=str, default="1h",
-                        help="Comma-separated timeframes to backfill (default '1h')")
+    parser.add_argument("--backfill-timeframes", type=str, default="5m,15m,1h,4h",
+                        help="Comma-separated timeframes to backfill (default '5m,15m,1h,4h')")
     args = parser.parse_args()
 
     t_start = time.time()
