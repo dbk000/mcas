@@ -649,10 +649,11 @@ def _compute_absolute_state(close, open_, high, low, volume):
     return features
 
 
-def generate_features_round1(close, open_, high, low, volume):
+def generate_features_round1(close, open_, high, low, volume, parallel=True):
     """Generate Round 1 features: 5 streams × 4 windows × 9 stats + cross-dim + absolute.
 
-    Uses Pool(5) to parallelize across data streams.
+    Uses Pool(5) to parallelize across data streams (unless parallel=False,
+    for use inside Pool workers where nested Pools are forbidden).
     Returns: dict[feature_name] -> (n_bars, n_symbols) float32 array
     """
     t0 = time.time()
@@ -663,14 +664,16 @@ def generate_features_round1(close, open_, high, low, volume):
     for sname in STREAMS:
         streams_dict[sname] = _compute_stream(close, open_, high, low, volume, sname)
 
-    # Parallelize rolling stats across 5 streams
-    _set_blas_threads(1)
     pool_args = [(sname, streams_dict[sname], WINDOWS) for sname in STREAMS]
 
     all_features = {}
-    with mp.Pool(5, initializer=_pool_init) as pool:
-        results = pool.map(_compute_rolling_stats_for_stream, pool_args)
-    _set_blas_threads(4)
+    if parallel:
+        _set_blas_threads(1)
+        with mp.Pool(5, initializer=_pool_init) as pool:
+            results = pool.map(_compute_rolling_stats_for_stream, pool_args)
+        _set_blas_threads(4)
+    else:
+        results = [_compute_rolling_stats_for_stream(a) for a in pool_args]
 
     for feat_dict in results:
         all_features.update(feat_dict)
@@ -861,10 +864,11 @@ def _screen_one_feature(args):
     return (fname, passed, float(r), float(lift), float(mi), float(p))
 
 
-def screen_features(features, events, controls):
+def screen_features(features, events, controls, parallel=True):
     """Screen all features using event-vs-control tests.
 
-    Uses Pool(8) for parallelism.
+    Uses Pool(8) for parallelism (unless parallel=False,
+    for use inside Pool workers where nested Pools are forbidden).
     Returns: list of (name, effect_size, lift, mi, p) for features that pass.
     """
     t0 = time.time()
@@ -879,11 +883,13 @@ def screen_features(features, events, controls):
 
     logger.info("  %d features have sufficient event/control values", len(screen_args))
 
-    # Parallel screening
-    _set_blas_threads(1)
-    with mp.Pool(8, initializer=_pool_init) as pool:
-        results = pool.map(_screen_one_feature, screen_args)
-    _set_blas_threads(4)
+    if parallel:
+        _set_blas_threads(1)
+        with mp.Pool(8, initializer=_pool_init) as pool:
+            results = pool.map(_screen_one_feature, screen_args)
+        _set_blas_threads(4)
+    else:
+        results = [_screen_one_feature(a) for a in screen_args]
 
     survivors = []
     for fname, passed, r, lift, mi, p in results:
@@ -1711,10 +1717,11 @@ def _process_fold(args):
     )
 
     # 4. Generate features (Round 1 only in fold — full discovery already done)
-    features = generate_features_round1(close, open_, high_, low_, volume_)
+    # parallel=False: we're inside a Pool worker, can't nest Pools
+    features = generate_features_round1(close, open_, high_, low_, volume_, parallel=False)
 
-    # 5. Screen features
-    survivors = screen_features(features, events_train, controls_train)
+    # 5. Screen features (serial for same reason)
+    survivors = screen_features(features, events_train, controls_train, parallel=False)
 
     if not survivors:
         return {
