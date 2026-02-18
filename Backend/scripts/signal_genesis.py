@@ -48,7 +48,16 @@ sys.path.insert(0, os.path.abspath(worker_app_dir))
 
 import numpy as np
 import psycopg
-from exit_checker import ExitConfig, check_exit_simple
+from exit_checker import ExitConfig, check_exit_simple as _check_exit_simple_orig
+import inspect
+
+# Compatibility wrapper: old exit_checker.py may not have 'config' param
+_exit_simple_params = inspect.signature(_check_exit_simple_orig).parameters
+
+def check_exit_simple(**kwargs):
+    if 'config' in kwargs and 'config' not in _exit_simple_params:
+        kwargs.pop('config')
+    return _check_exit_simple_orig(**kwargs)
 
 # ─── Logging ──────────────────────────────────────────────────────────────────
 
