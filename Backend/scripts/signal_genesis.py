@@ -1648,11 +1648,7 @@ def optimize_k(composite, fwd_ret, bar_mask, symbols, ohlcv_data, horizon, k_can
     val_mask[mini_val_bars] = True
 
     cfg = HORIZON_CONFIGS[horizon]
-    exit_cfg = ExitConfig(
-        trail_breakeven_r=cfg["trail_breakeven_r"],
-        trail_activation_r=cfg["trail_activation_r"],
-        trail_distance_r=cfg["trail_distance_r"],
-    )
+    exit_cfg = _make_exit_config(cfg)
 
     best_k = k_candidates[len(k_candidates) // 2]  # default middle
     best_pf = 0.0
@@ -1851,8 +1847,15 @@ def build_folds(ts_grid, n_folds=N_FOLDS, holdout_days=HOLDOUT_DAYS, embargo_day
 
     logger.info("  Total span: %d days (%s to %s)",
                 total_days,
-                datetime.utcfromtimestamp(ts_grid[0]).strftime("%Y-%m-%d"),
-                datetime.utcfromtimestamp(ts_grid[-1]).strftime("%Y-%m-%d"))
+                datetime.fromtimestamp(ts_grid[0], tz=timezone.utc).strftime("%Y-%m-%d"),
+                datetime.fromtimestamp(ts_grid[-1], tz=timezone.utc).strftime("%Y-%m-%d"))
+
+    # Guard: need enough days for at least 1 fold + holdout
+    min_required = holdout_days + 2 * 5 + embargo_days  # holdout + train + test + embargo
+    if total_days < min_required:
+        logger.error("  Insufficient data: %d days available, need >= %d (holdout=%d + folds). "
+                     "Increase --days or check DB has 1h OHLCV data.", total_days, min_required, holdout_days)
+        return [], np.zeros(len(ts_grid), dtype=bool)
 
     # Reserve holdout at the end
     holdout_start_day = total_days - holdout_days
@@ -1910,17 +1913,22 @@ def build_folds(ts_grid, n_folds=N_FOLDS, holdout_days=HOLDOUT_DAYS, embargo_day
     return folds, holdout_mask
 
 
+def _make_exit_config(cfg):
+    """Build ExitConfig from horizon config dict, compatible with any ExitConfig version."""
+    ec = ExitConfig()
+    for key in ("trail_breakeven_r", "trail_activation_r", "trail_distance_r"):
+        if hasattr(ec, key):
+            setattr(ec, key, cfg[key])
+    return ec
+
+
 def run_walk_forward(features, fwd_ret, folds, horizon, symbols, ohlcv_data):
     """Run walk-forward validation for one horizon.
 
     Returns: list of FoldResult, list of per-fold feature sets
     """
     cfg = HORIZON_CONFIGS[horizon]
-    exit_cfg = ExitConfig(
-        trail_breakeven_r=cfg["trail_breakeven_r"],
-        trail_activation_r=cfg["trail_activation_r"],
-        trail_distance_r=cfg["trail_distance_r"],
-    )
+    exit_cfg = _make_exit_config(cfg)
 
     fold_results = []
     fold_features_list = []
@@ -2059,11 +2067,7 @@ def run_holdout(features, fwd_ret, folds, holdout_mask, horizon, symbols, ohlcv_
     Uses all pre-holdout data for feature selection + model, tests on holdout.
     """
     cfg = HORIZON_CONFIGS[horizon]
-    exit_cfg = ExitConfig(
-        trail_breakeven_r=cfg["trail_breakeven_r"],
-        trail_activation_r=cfg["trail_activation_r"],
-        trail_distance_r=cfg["trail_distance_r"],
-    )
+    exit_cfg = _make_exit_config(cfg)
 
     # Full training mask = everything before holdout
     full_train_mask = ~holdout_mask & np.any(
@@ -2313,6 +2317,10 @@ def main():
 
     folds, holdout_mask = build_folds(ts_grid, n_folds=n_folds, holdout_days=args.holdout_days)
 
+    if not folds:
+        logger.error("No folds could be constructed. Need more data (try --days 110).")
+        sys.exit(1)
+
     horizon_results = []
     regime_reports = {}
 
@@ -2408,11 +2416,7 @@ def main():
 
             # Slippage sensitivity at 2.0x
             cfg = HORIZON_CONFIGS[h]
-            exit_cfg = ExitConfig(
-                trail_breakeven_r=cfg["trail_breakeven_r"],
-                trail_activation_r=cfg["trail_activation_r"],
-                trail_distance_r=cfg["trail_distance_r"],
-            )
+            exit_cfg = _make_exit_config(cfg)
 
             # Re-generate holdout signals for 2x test
             full_train_mask = np.zeros(len(holdout_mask), dtype=bool)
