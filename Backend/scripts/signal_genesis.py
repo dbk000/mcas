@@ -414,13 +414,16 @@ def _atr_2d(high, low, close, n=14):
 
 def engineer_features(close, open_, high, low, volume, ts_grid, btc_idx, quick=False):
     """Engineer all features. Returns dict[name] -> (n_bars, n_symbols) float32 array."""
+    import warnings
+    warnings.filterwarnings("ignore", category=RuntimeWarning)
+
     t0 = time.time()
     n_bars, n_symbols = close.shape
     features = {}
 
     def _store(name, arr):
         """Store feature, converting to float32 and clamping infinities."""
-        a = np.asarray(arr, dtype=np.float32)
+        a = np.array(arr, dtype=np.float32, copy=True)
         a[~np.isfinite(a)] = np.nan
         features[name] = a
 
