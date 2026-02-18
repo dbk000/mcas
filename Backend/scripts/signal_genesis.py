@@ -232,8 +232,7 @@ def backfill_ohlcv(database_url, days, timeframes, n_symbols=600):
                                 open, high, low, close, volume,
                                 as_of_ts, is_final, source, batch_id
                             ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                            ON CONFLICT (symbol, timeframe, bar_start_ts, source)
-                            DO NOTHING
+                            ON CONFLICT DO NOTHING
                         """, sym_bars)
                     conn.commit()
                     total_inserted += len(sym_bars)
