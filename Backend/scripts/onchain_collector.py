@@ -5,9 +5,10 @@ On-Chain Data Collector — Unified Multi-Source Pipeline
 
 Collects on-chain and market data from multiple sources:
   Phase 1 (FREE):  DefiLlama (TVL, DEX, stablecoins), CoinGecko (market metadata),
-                   Etherscan/BSCScan (holder stats)
+                   Etherscan/BSCScan (holder stats), DexScreener (DEX pair snapshots)
   Phase 2 (PAID):  Coinglass (liquidations, extended OI), Santiment (exchange flows,
                    whale txns, holder distribution, network activity, social)
+  Phase 3 (FREE):  Dune Analytics (historical DEX volume, large transfers)
 
 Architecture (mirrors derivatives_collector.py):
   1. ThreadPoolExecutor(20) per source for parallel HTTP fetches
@@ -23,11 +24,12 @@ API keys (in .env):
   ETHERSCAN_API_KEY=xxx       # Optional (free key, higher rate limit)
   BSCSCAN_API_KEY=xxx         # Optional (free key, higher rate limit)
   COINGECKO_API_KEY=xxx       # Optional (free key for higher rate limit)
+  DUNE_API_KEY=xxx            # Required for Phase 3 Dune Analytics
 
 Modes:
   --backfill         Fetch max history (365d where available), then enter live mode
   --backfill-only    Backfill and exit
-  --source X         Only collect from source X (defillama|coingecko|etherscan|coinglass|santiment)
+  --source X         Only collect from source X (defillama|coingecko|etherscan|coinglass|santiment|dexscreener|dune)
   --symbols N        Limit to first N symbols (for testing)
   --materialize-only Only run feature materialization (no collection)
 
@@ -91,6 +93,7 @@ SANTIMENT_API_KEY = os.environ.get("SANTIMENT_API_KEY", "")
 ETHERSCAN_API_KEY = os.environ.get("ETHERSCAN_API_KEY", "")
 BSCSCAN_API_KEY = os.environ.get("BSCSCAN_API_KEY", "")
 COINGECKO_API_KEY = os.environ.get("COINGECKO_API_KEY", "")
+DUNE_API_KEY = os.environ.get("DUNE_API_KEY", "")
 
 # Feature materialization lookback
 FEATURE_LOOKBACK_HOURS = 800  # ~33 days
@@ -141,6 +144,23 @@ RATE_LIMITERS = {
     "bscscan": SimpleRateLimiter(240, "bscscan"),
     "coinglass": SimpleRateLimiter(25, "coinglass"),      # Open API: 30/min
     "santiment": SimpleRateLimiter(120, "santiment"),     # Basic: 300/min
+    "dexscreener": SimpleRateLimiter(250, "dexscreener"), # Free: 300/min, leave headroom
+    "dune_execute": SimpleRateLimiter(12, "dune_execute"),  # API tier limit
+    "dune_results": SimpleRateLimiter(30, "dune_results"),  # Polling + pagination
+}
+
+# DexScreener chain mapping (CoinGecko platform name → DexScreener chainId)
+_DEXSCREENER_CHAIN_MAP = {
+    "ethereum": "ethereum",
+    "bsc": "bsc",
+    "solana": "solana",
+    "arbitrum": "arbitrum",
+    "optimism": "optimism",
+    "polygon": "polygon",
+    "avalanche": "avalanche",
+    "base": "base",
+    "fantom": "fantom",
+    "near": "near",
 }
 
 
@@ -303,6 +323,30 @@ _INSERT_SQL = {
         INSERT INTO holder_distribution (symbol, timestamp, tier, address_count, total_held,
             source, batch_id)
         VALUES (%s, %s, %s, %s, %s, %s, %s)
+        ON CONFLICT DO NOTHING
+    """,
+    'dex_snapshots': """
+        INSERT INTO dex_snapshots (symbol, timestamp, chain, pair_address, dex_id,
+            base_token_address, quote_token_symbol,
+            price_usd, volume_h1_usd, volume_h6_usd, volume_h24_usd,
+            liquidity_usd, liquidity_base, liquidity_quote,
+            txns_h1_buys, txns_h1_sells, txns_h24_buys, txns_h24_sells,
+            price_change_h1, price_change_h6, price_change_h24,
+            fdv, market_cap, source, batch_id)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        ON CONFLICT DO NOTHING
+    """,
+    'dune_dex_volume': """
+        INSERT INTO dune_dex_volume (symbol, block_date, chain, token_address, volume_usd,
+            trade_count, source, batch_id)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        ON CONFLICT DO NOTHING
+    """,
+    'dune_large_transfers': """
+        INSERT INTO dune_large_transfers (symbol, block_date, chain, token_address,
+            transfer_count, total_volume_usd, unique_senders, unique_receivers,
+            source, batch_id)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         ON CONFLICT DO NOTHING
     """,
 }
@@ -1037,6 +1081,536 @@ def _parse_san_datetime(dt_str):
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# SOURCE: DexScreener (FREE — no auth, 300 rpm)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def collect_dexscreener(symbols, mapping, write_queue, batch_id):
+    """Collect DEX pair snapshots from DexScreener.
+
+    Uses /tokens/v1/{chainId}/{addresses} endpoint — up to 30 addresses per request.
+    Stores ALL returned pairs per token (not just highest liquidity).
+    Snapshot-only API: every call captures current state, no historical backfill.
+    """
+    rl = RATE_LIMITERS["dexscreener"]
+    dex_map = mapping.get("dexscreener", {})
+
+    if not dex_map:
+        logger.warning("  DexScreener: no symbol mappings available, skipping")
+        return {"dex_snapshots": 0}
+
+    stats = defaultdict(int)
+    now_ts = datetime.now(timezone.utc).replace(minute=0, second=0, microsecond=0)
+
+    # Group symbols by chain: {chainId: [(symbol, contract_address), ...]}
+    chain_groups = defaultdict(list)
+    for sym in symbols:
+        if sym not in dex_map:
+            continue
+        info = dex_map[sym]
+        chain = info.get("chain")
+        contract = info.get("contract_address")
+        if chain and contract:
+            # Map to DexScreener chainId
+            dex_chain = _DEXSCREENER_CHAIN_MAP.get(chain, chain)
+            chain_groups[dex_chain].append((sym, contract))
+
+    total_tokens = sum(len(v) for v in chain_groups.values())
+    logger.info("  DexScreener: collecting for %d tokens across %d chains",
+                total_tokens, len(chain_groups))
+
+    completed = 0
+    failed = 0
+    t0 = time.time()
+
+    for chain_id, tokens in chain_groups.items():
+        # Batch up to 30 addresses per request
+        for batch_start in range(0, len(tokens), 30):
+            batch_tokens = tokens[batch_start:batch_start + 30]
+            addresses = ",".join(t[1] for t in batch_tokens)
+            # Build reverse map: lowercase address → symbol
+            addr_to_sym = {t[1].lower(): t[0] for t in batch_tokens}
+
+            url = f"https://api.dexscreener.com/tokens/v1/{chain_id}/{addresses}"
+            data = _api_get(url, rate_limiter=rl, timeout=30)
+
+            if not data or not isinstance(data, list):
+                failed += len(batch_tokens)
+                completed += len(batch_tokens)
+                continue
+
+            # data is a list of pair objects
+            rows = []
+            for pair in data:
+                base_token = pair.get("baseToken", {})
+                base_addr = (base_token.get("address") or "").lower()
+                sym = addr_to_sym.get(base_addr)
+                if not sym:
+                    # Try quote token in case the pair is inverted
+                    quote_token = pair.get("quoteToken", {})
+                    quote_addr = (quote_token.get("address") or "").lower()
+                    sym = addr_to_sym.get(quote_addr)
+                if not sym:
+                    continue
+
+                pair_addr = pair.get("pairAddress", "")
+                dex_id = pair.get("dexId")
+                quote_sym = pair.get("quoteToken", {}).get("symbol")
+
+                volume = pair.get("volume", {})
+                liquidity = pair.get("liquidity", {})
+                txns = pair.get("txns", {})
+                price_change = pair.get("priceChange", {})
+
+                rows.append((
+                    sym,
+                    now_ts,
+                    chain_id,
+                    pair_addr,
+                    dex_id,
+                    base_addr,
+                    quote_sym,
+                    _safe_float(pair.get("priceUsd")),
+                    _safe_float(volume.get("h1")),
+                    _safe_float(volume.get("h6")),
+                    _safe_float(volume.get("h24")),
+                    _safe_float(liquidity.get("usd")),
+                    _safe_float(liquidity.get("base")),
+                    _safe_float(liquidity.get("quote")),
+                    _safe_int(txns.get("h1", {}).get("buys")),
+                    _safe_int(txns.get("h1", {}).get("sells")),
+                    _safe_int(txns.get("h24", {}).get("buys")),
+                    _safe_int(txns.get("h24", {}).get("sells")),
+                    _safe_float(price_change.get("h1")),
+                    _safe_float(price_change.get("h6")),
+                    _safe_float(price_change.get("h24")),
+                    _safe_float(pair.get("fdv")),
+                    _safe_float(pair.get("marketCap")),
+                    'dexscreener',
+                    batch_id,
+                ))
+
+            if rows:
+                write_queue.put(('dex_snapshots', rows))
+                stats['dex_snapshots'] += len(rows)
+
+            completed += len(batch_tokens)
+            if completed % 100 == 0 or completed >= total_tokens:
+                elapsed = time.time() - t0
+                rate = completed / elapsed if elapsed > 0 else 0
+                logger.info("    DexScreener: %d/%d tokens (%.1f/s), %d pairs stored, %d failed",
+                            completed, total_tokens, rate, stats['dex_snapshots'], failed)
+
+    logger.info("  DexScreener complete: %d pair snapshots from %d tokens",
+                stats['dex_snapshots'], completed - failed)
+    return dict(stats)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# SOURCE: Dune Analytics (FREE TIER — 2500 credits/month)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+_DUNE_API_BASE = "https://api.dune.com/api/v1"
+
+
+def _dune_execute_and_wait(sql, query_name, date_from, date_to, chunk_index,
+                           batch_id, db_url, timeout_s=600):
+    """Execute a Dune SQL query and wait for results.
+
+    Returns: list of result rows (dicts), or None on failure.
+    Logs execution to dune_executions table for credit accounting.
+    """
+    if not DUNE_API_KEY:
+        return None
+
+    headers = {"X-Dune-API-Key": DUNE_API_KEY}
+    rl_exec = RATE_LIMITERS["dune_execute"]
+    rl_results = RATE_LIMITERS["dune_results"]
+
+    # Submit execution
+    rl_exec.acquire()
+    try:
+        resp = _get_session().post(
+            f"{_DUNE_API_BASE}/execution/execute",
+            json={"query_parameters": {}, "query": sql},
+            headers=headers,
+            timeout=30,
+        )
+        resp.raise_for_status()
+        exec_data = resp.json()
+    except Exception as e:
+        logger.error("  Dune execute failed for %s: %s", query_name, e)
+        return None
+
+    execution_id = exec_data.get("execution_id")
+    if not execution_id:
+        logger.error("  Dune: no execution_id returned for %s", query_name)
+        return None
+
+    logger.info("    Dune: submitted %s chunk=%d → execution_id=%s",
+                query_name, chunk_index, execution_id)
+
+    # Record execution in DB
+    try:
+        with psycopg.connect(db_url) as conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    INSERT INTO dune_executions
+                        (execution_id, query_name, status, date_from, date_to,
+                         chunk_index, batch_id)
+                    VALUES (%s, %s, 'executing', %s, %s, %s, %s)
+                    ON CONFLICT (execution_id) DO NOTHING
+                """, (execution_id, query_name, date_from, date_to,
+                      chunk_index, batch_id))
+            conn.commit()
+    except Exception as e:
+        logger.warning("    Dune: could not log execution: %s", e)
+
+    # Poll for completion
+    t0 = time.time()
+    while time.time() - t0 < timeout_s:
+        time.sleep(10)
+        rl_results.acquire()
+        try:
+            resp = _get_session().get(
+                f"{_DUNE_API_BASE}/execution/{execution_id}/status",
+                headers=headers,
+                timeout=30,
+            )
+            resp.raise_for_status()
+            status_data = resp.json()
+        except Exception as e:
+            logger.warning("    Dune: status poll failed: %s", e)
+            continue
+
+        state = status_data.get("state")
+        if state == "QUERY_STATE_COMPLETED":
+            break
+        elif state in ("QUERY_STATE_FAILED", "QUERY_STATE_CANCELLED",
+                       "QUERY_STATE_EXPIRED"):
+            error_msg = status_data.get("error", state)
+            logger.error("    Dune: %s failed: %s", query_name, error_msg)
+            _update_dune_execution(db_url, execution_id, 'failed',
+                                   error_message=error_msg)
+            return None
+    else:
+        logger.error("    Dune: %s timed out after %ds", query_name, timeout_s)
+        _update_dune_execution(db_url, execution_id, 'failed',
+                               error_message='timeout')
+        return None
+
+    # Fetch results (paginated)
+    all_rows = []
+    offset = 0
+    limit = 1000
+    while True:
+        rl_results.acquire()
+        try:
+            resp = _get_session().get(
+                f"{_DUNE_API_BASE}/execution/{execution_id}/results",
+                params={"offset": offset, "limit": limit},
+                headers=headers,
+                timeout=60,
+            )
+            resp.raise_for_status()
+            result_data = resp.json()
+        except Exception as e:
+            logger.warning("    Dune: result fetch failed at offset %d: %s", offset, e)
+            break
+
+        result = result_data.get("result", {})
+        rows = result.get("rows", [])
+        if not rows:
+            break
+        all_rows.extend(rows)
+        offset += len(rows)
+        if len(rows) < limit:
+            break
+
+    # Update execution record
+    credits = (status_data.get("execution", {}) or {}).get("credits_used")
+    _update_dune_execution(db_url, execution_id, 'completed',
+                           credits_used=credits, rows_returned=len(all_rows))
+
+    logger.info("    Dune: %s chunk=%d complete — %d rows, %.1f credits",
+                query_name, chunk_index, len(all_rows), credits or 0)
+    return all_rows
+
+
+def _update_dune_execution(db_url, execution_id, status, credits_used=None,
+                           rows_returned=None, error_message=None):
+    """Update dune_executions record."""
+    try:
+        with psycopg.connect(db_url) as conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    UPDATE dune_executions SET
+                        status = %s,
+                        completed_at = NOW(),
+                        credits_used = COALESCE(%s, credits_used),
+                        rows_returned = COALESCE(%s, rows_returned),
+                        error_message = COALESCE(%s, error_message)
+                    WHERE execution_id = %s
+                """, (status, credits_used, rows_returned, error_message,
+                      execution_id))
+            conn.commit()
+    except Exception:
+        pass
+
+
+def collect_dune(symbols, mapping, write_queue, batch_id, db_url,
+                 backfill_days=None, run_large_transfers=False):
+    """Collect DEX volume + large transfers from Dune Analytics.
+
+    Chunks addresses into groups of 200 per query execution.
+    DEX volume runs daily; large transfers every 3rd day (credit conservation).
+
+    Args:
+        backfill_days: If set, backfill from N days ago. Chunks into 30-day windows.
+        run_large_transfers: Whether to run the expensive large_transfers query.
+    """
+    if not DUNE_API_KEY:
+        logger.info("  Dune: DUNE_API_KEY not set, skipping")
+        return {}
+
+    stats = defaultdict(int)
+
+    # Build address lists from symbol_mapping
+    # We need tokens that have contract addresses on ethereum or bsc
+    cg_map = mapping.get("coingecko", {})
+    eth_map = mapping.get("etherscan", {})
+    bsc_map = mapping.get("bscscan", {})
+
+    # {chain: [(symbol, address), ...]}
+    chain_tokens = defaultdict(list)
+    for sym in symbols:
+        # Check etherscan mapping
+        if sym in eth_map:
+            addr = eth_map[sym].get("contract_address")
+            if addr:
+                chain_tokens["ethereum"].append((sym, addr.lower()))
+        # Check bscscan mapping
+        if sym in bsc_map:
+            addr = bsc_map[sym].get("contract_address")
+            if addr:
+                chain_tokens["bnb"].append((sym, addr.lower()))
+
+    total_tokens = sum(len(v) for v in chain_tokens.values())
+    if total_tokens == 0:
+        logger.warning("  Dune: no tokens with contract addresses, skipping")
+        return {}
+
+    logger.info("  Dune: %d tokens with contracts (ethereum=%d, bnb=%d)",
+                total_tokens,
+                len(chain_tokens.get("ethereum", [])),
+                len(chain_tokens.get("bnb", [])))
+
+    # Determine date range
+    now = datetime.now(timezone.utc).date()
+    if backfill_days:
+        date_from = now - timedelta(days=backfill_days)
+    else:
+        # Resume from latest data
+        date_from = _dune_get_resume_date(db_url, 'dune_dex_volume')
+        if date_from is None:
+            date_from = now - timedelta(days=7)  # Default: last 7 days
+
+    date_to = now
+    logger.info("  Dune: date range %s to %s", date_from, date_to)
+
+    # Build date windows (chunk backfills into 30-day windows to avoid timeouts)
+    windows = []
+    window_start = date_from
+    while window_start < date_to:
+        window_end = min(window_start + timedelta(days=30), date_to)
+        windows.append((window_start, window_end))
+        window_start = window_end
+    logger.info("  Dune: %d date windows", len(windows))
+
+    # Build all address chunks (200 per chunk) with reverse lookups
+    all_chunks = []  # [(chain, [(sym, addr), ...], chunk_idx)]
+    for chain, tokens in chain_tokens.items():
+        for chunk_idx, start in enumerate(range(0, len(tokens), 200)):
+            chunk = tokens[start:start + 200]
+            all_chunks.append((chain, chunk, chunk_idx))
+
+    # ── DEX volume queries ────────────────────────────────────────────────
+    logger.info("  Dune: running DEX volume queries...")
+    for win_from, win_to in windows:
+        for chain, chunk, chunk_idx in all_chunks:
+            # Build address→symbol lookup for this chunk
+            addr_to_sym = {addr: sym for sym, addr in chunk}
+            addresses_sql = ",".join(f"0x{a}" if not a.startswith("0x") else a
+                                     for _, a in chunk)
+            # Dune SQL uses byte arrays for addresses
+            addr_list = ",".join(f"0x{a}" if not a.startswith("0x") else a
+                                 for _, a in chunk)
+
+            sql = f"""
+SELECT
+    block_date,
+    token_bought_address AS token_address,
+    blockchain,
+    SUM(amount_usd) AS volume_usd,
+    COUNT(*) AS trade_count
+FROM dex.trades
+WHERE blockchain = '{chain}'
+  AND block_date >= DATE '{win_from.isoformat()}'
+  AND block_date < DATE '{win_to.isoformat()}'
+  AND token_bought_address IN ({addr_list})
+  AND amount_usd > 0
+GROUP BY 1, 2, 3
+
+UNION ALL
+
+SELECT
+    block_date,
+    token_sold_address AS token_address,
+    blockchain,
+    SUM(amount_usd) AS volume_usd,
+    COUNT(*) AS trade_count
+FROM dex.trades
+WHERE blockchain = '{chain}'
+  AND block_date >= DATE '{win_from.isoformat()}'
+  AND block_date < DATE '{win_to.isoformat()}'
+  AND token_sold_address IN ({addr_list})
+  AND amount_usd > 0
+GROUP BY 1, 2, 3
+"""
+            rows = _dune_execute_and_wait(
+                sql, 'dex_volume', win_from, win_to, chunk_idx,
+                batch_id, db_url, timeout_s=600,
+            )
+            if not rows:
+                continue
+
+            db_rows = []
+            for r in rows:
+                token_addr = (r.get("token_address") or "").lower()
+                sym = addr_to_sym.get(token_addr)
+                if not sym:
+                    # Try without 0x prefix
+                    sym = addr_to_sym.get(token_addr.replace("0x", ""))
+                if not sym:
+                    continue
+                block_date = r.get("block_date")
+                if isinstance(block_date, str):
+                    block_date = block_date[:10]  # 'YYYY-MM-DD'
+                db_rows.append((
+                    sym,
+                    block_date,
+                    r.get("blockchain", chain),
+                    token_addr,
+                    _safe_float(r.get("volume_usd")),
+                    _safe_int(r.get("trade_count")),
+                    'dune',
+                    batch_id,
+                ))
+
+            if db_rows:
+                write_queue.put(('dune_dex_volume', db_rows))
+                stats['dune_dex_volume'] += len(db_rows)
+
+    # ── Large transfer queries (only when requested) ──────────────────────
+    if run_large_transfers:
+        logger.info("  Dune: running large transfer queries...")
+        for win_from, win_to in windows:
+            # Large transfers only for ethereum (prices.usd table coverage)
+            eth_chunks = [(c, ch, ci) for c, ch, ci in all_chunks if c == "ethereum"]
+            for chain, chunk, chunk_idx in eth_chunks:
+                addr_to_sym = {addr: sym for sym, addr in chunk}
+                addr_list = ",".join(f"0x{a}" if not a.startswith("0x") else a
+                                     for _, a in chunk)
+
+                sql = f"""
+SELECT
+    block_date,
+    token_address,
+    blockchain,
+    COUNT(*) AS transfer_count,
+    SUM(value_usd) AS total_volume_usd,
+    COUNT(DISTINCT sender) AS unique_senders,
+    COUNT(DISTINCT receiver) AS unique_receivers
+FROM (
+    SELECT
+        DATE_TRUNC('day', t.evt_block_time) AS block_date,
+        t.contract_address AS token_address,
+        'ethereum' AS blockchain,
+        t."from" AS sender,
+        t."to" AS receiver,
+        t.value * p.price / POWER(10, tok.decimals) AS value_usd
+    FROM erc20_ethereum.evt_Transfer t
+    JOIN prices.usd p
+        ON p.contract_address = t.contract_address
+        AND p.blockchain = 'ethereum'
+        AND p.minute = DATE_TRUNC('minute', t.evt_block_time)
+    JOIN tokens.erc20 tok
+        ON tok.contract_address = t.contract_address
+        AND tok.blockchain = 'ethereum'
+    WHERE t.evt_block_time >= TIMESTAMP '{win_from.isoformat()}'
+      AND t.evt_block_time < TIMESTAMP '{win_to.isoformat()}'
+      AND t.contract_address IN ({addr_list})
+) whale_transfers
+WHERE value_usd > 100000
+GROUP BY 1, 2, 3
+"""
+                rows = _dune_execute_and_wait(
+                    sql, 'large_transfers', win_from, win_to, chunk_idx,
+                    batch_id, db_url, timeout_s=900,
+                )
+                if not rows:
+                    continue
+
+                db_rows = []
+                for r in rows:
+                    token_addr = (r.get("token_address") or "").lower()
+                    sym = addr_to_sym.get(token_addr)
+                    if not sym:
+                        sym = addr_to_sym.get(token_addr.replace("0x", ""))
+                    if not sym:
+                        continue
+                    block_date = r.get("block_date")
+                    if isinstance(block_date, str):
+                        block_date = block_date[:10]
+                    db_rows.append((
+                        sym,
+                        block_date,
+                        r.get("blockchain", "ethereum"),
+                        token_addr,
+                        _safe_int(r.get("transfer_count")),
+                        _safe_float(r.get("total_volume_usd")),
+                        _safe_int(r.get("unique_senders")),
+                        _safe_int(r.get("unique_receivers")),
+                        'dune',
+                        batch_id,
+                    ))
+
+                if db_rows:
+                    write_queue.put(('dune_large_transfers', db_rows))
+                    stats['dune_large_transfers'] += len(db_rows)
+
+    # Summary
+    logger.info("  Dune complete: dex_volume=%d, large_transfers=%d rows",
+                stats.get('dune_dex_volume', 0),
+                stats.get('dune_large_transfers', 0))
+    return dict(stats)
+
+
+def _dune_get_resume_date(db_url, table):
+    """Get the latest date in a Dune table for resume logic."""
+    try:
+        with psycopg.connect(db_url) as conn:
+            with conn.cursor() as cur:
+                cur.execute(f"SELECT MAX(block_date) FROM {table}")
+                row = cur.fetchone()
+                if row and row[0]:
+                    # Resume from the day after the latest
+                    return row[0] + timedelta(days=1)
+    except Exception:
+        pass
+    return None
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # FEATURE MATERIALIZATION
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -1127,12 +1701,65 @@ def materialize_features(db_url, symbols, lookback_hours=FEATURE_LOOKBACK_HOURS)
             """, (cutoff,))
             stable_rows = cur.fetchall()
 
+            # DexScreener snapshots — aggregate all pairs per symbol per hour
+            dex_snap_rows = []
+            try:
+                cur.execute("""
+                    SELECT symbol,
+                           timestamp,
+                           SUM(COALESCE(volume_h1_usd, 0)) AS total_vol_h1,
+                           SUM(COALESCE(liquidity_usd, 0)) AS total_liq
+                    FROM dex_snapshots
+                    WHERE symbol = ANY(%s) AND timestamp >= %s
+                    GROUP BY symbol, timestamp
+                    ORDER BY symbol, timestamp
+                """, (symbols, cutoff))
+                dex_snap_rows = cur.fetchall()
+            except Exception as e:
+                logger.warning("  dex_snapshots query failed (table may not exist): %s", e)
+
+            # CEX volume from OHLCV (for dex/cex ratio)
+            cex_vol_rows = []
+            try:
+                cur.execute("""
+                    SELECT symbol,
+                           bar_start_ts,
+                           volume * close AS volume_usd
+                    FROM ohlcv
+                    WHERE symbol = ANY(%s)
+                      AND bar_start_ts >= %s
+                      AND timeframe = '1h'
+                    ORDER BY symbol, bar_start_ts
+                """, (symbols, cutoff))
+                cex_vol_rows = cur.fetchall()
+            except Exception as e:
+                logger.warning("  OHLCV CEX volume query failed: %s", e)
+
+            # Dune DEX volume (daily) — for backfill when DexScreener has no data
+            dune_dex_rows = []
+            try:
+                cur.execute("""
+                    SELECT symbol,
+                           block_date,
+                           SUM(volume_usd) AS volume_usd
+                    FROM dune_dex_volume
+                    WHERE symbol = ANY(%s) AND block_date >= %s
+                    GROUP BY symbol, block_date
+                    ORDER BY symbol, block_date
+                """, (symbols, cutoff.date()))
+                dune_dex_rows = cur.fetchall()
+            except Exception as e:
+                logger.warning("  dune_dex_volume query failed (table may not exist): %s", e)
+
     total_raw = (len(flow_rows) + len(whale_rows) + len(network_rows) +
-                 len(tvl_rows) + len(liq_rows) + len(oi_ext_rows))
-    logger.info("  Loaded %d raw rows (%.1fs): flows=%d whale=%d network=%d tvl=%d liq=%d oi=%d",
+                 len(tvl_rows) + len(liq_rows) + len(oi_ext_rows) +
+                 len(dex_snap_rows) + len(cex_vol_rows))
+    logger.info("  Loaded %d raw rows (%.1fs): flows=%d whale=%d network=%d tvl=%d "
+                "liq=%d oi=%d dex_snap=%d cex_vol=%d dune_dex=%d",
                 total_raw, time.time() - t0,
                 len(flow_rows), len(whale_rows), len(network_rows),
-                len(tvl_rows), len(liq_rows), len(oi_ext_rows))
+                len(tvl_rows), len(liq_rows), len(oi_ext_rows),
+                len(dex_snap_rows), len(cex_vol_rows), len(dune_dex_rows))
 
     if total_raw == 0:
         logger.warning("  No raw on-chain data to materialize.")
@@ -1140,7 +1767,8 @@ def materialize_features(db_url, symbols, lookback_hours=FEATURE_LOOKBACK_HOURS)
 
     # ── Build hourly grid from all available timestamps ───────────────────
     all_ts = set()
-    for rows in [flow_rows, whale_rows, network_rows, tvl_rows, liq_rows, oi_ext_rows]:
+    for rows in [flow_rows, whale_rows, network_rows, tvl_rows, liq_rows,
+                 oi_ext_rows, dex_snap_rows, cex_vol_rows]:
         for row in rows:
             ts = row[1]
             if ts.tzinfo is None:
@@ -1338,9 +1966,40 @@ def materialize_features(db_url, symbols, lookback_hours=FEATURE_LOOKBACK_HOURS)
     unique_holders_growth = np.full((n_bars, n_sym), np.nan)
     holder_concentration = np.full((n_bars, n_sym), np.nan)
 
-    # DEX features (placeholder — need DEX volume data aligned per symbol)
-    dex_vol_zscore = np.full((n_bars, n_sym), np.nan)
-    dex_cex_ratio = np.full((n_bars, n_sym), np.nan)
+    # DEX features — DexScreener (primary) with Dune backfill
+    # Step 1: Build DexScreener hourly volume matrix
+    dex_vol_h1_mat = _fill_matrix_noff(dex_snap_rows, val_col=2) if dex_snap_rows else np.full((n_bars, n_sym), np.nan)
+
+    # Step 2: Backfill with Dune daily DEX volume (forward-fill daily→hourly)
+    if dune_dex_rows:
+        dune_dex_mat = np.full((n_bars, n_sym), np.nan, dtype=np.float64)
+        for row in dune_dex_rows:
+            sym = row[0]
+            if sym not in sym_to_idx:
+                continue
+            block_date = row[1]
+            vol = row[2]
+            if vol is None:
+                continue
+            # Dune gives daily volume — spread to hourly: vol/24 per hour of that day
+            hourly_vol = float(vol) / 24.0
+            for h in range(24):
+                ts_h = datetime(block_date.year, block_date.month, block_date.day,
+                                h, 0, 0, tzinfo=timezone.utc)
+                if ts_h in ts_to_idx:
+                    dune_dex_mat[ts_to_idx[ts_h], sym_to_idx[sym]] = hourly_vol
+        # Fill DexScreener NaN slots with Dune values
+        mask = np.isnan(dex_vol_h1_mat) & ~np.isnan(dune_dex_mat)
+        dex_vol_h1_mat[mask] = dune_dex_mat[mask]
+
+    # Step 3: Build CEX volume matrix
+    cex_vol_mat = _fill_matrix_noff(cex_vol_rows, val_col=2) if cex_vol_rows else np.full((n_bars, n_sym), np.nan)
+
+    # Step 4: Compute features
+    dex_vol_zscore = _zscore(dex_vol_h1_mat, ZSCORE_WINDOW)
+    with np.errstate(divide='ignore', invalid='ignore'):
+        dex_cex_ratio = np.where(cex_vol_mat > 0,
+                                  dex_vol_h1_mat / cex_vol_mat, np.nan)
 
     # ── Data completeness ─────────────────────────────────────────────────
     TOTAL_FEATURES = 31
@@ -1536,7 +2195,7 @@ def main():
     parser.add_argument("--materialize-only", action="store_true",
                         help="Only run feature materialization")
     parser.add_argument("--source", type=str, default="all",
-                        help="Only collect from: defillama|coingecko|etherscan|coinglass|santiment")
+                        help="Only collect from: defillama|coingecko|etherscan|coinglass|santiment|dexscreener|dune")
     parser.add_argument("--symbols", type=int, default=0,
                         help="Limit to first N symbols (0 = all)")
     parser.add_argument("--backfill-days", type=int, default=365,
@@ -1559,6 +2218,7 @@ def main():
     logger.info("  ETHERSCAN_API_KEY:  %s", "SET" if ETHERSCAN_API_KEY else "NOT SET (using free tier)")
     logger.info("  BSCSCAN_API_KEY:    %s", "SET" if BSCSCAN_API_KEY else "NOT SET (using free tier)")
     logger.info("  COINGECKO_API_KEY:  %s", "SET" if COINGECKO_API_KEY else "NOT SET (using free tier)")
+    logger.info("  DUNE_API_KEY:       %s", "SET" if DUNE_API_KEY else "NOT SET (skipping Dune)")
 
     # ── Load symbol mappings ──────────────────────────────────────────────
     mapping = load_symbol_mapping(db_url)
@@ -1596,12 +2256,20 @@ def main():
         batch_id = f"onchain_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}"
         all_stats = {}
 
+        # Determine if Dune large_transfers should run (every 3rd day)
+        today = datetime.now(timezone.utc).date()
+        run_lt = today.day % 3 == 0
+
         sources = {
             "defillama": lambda: collect_defillama(symbols, mapping, write_queue, batch_id, backfill_days),
             "coingecko": lambda: collect_coingecko(symbols, mapping, write_queue, batch_id),
             "etherscan": lambda: collect_etherscan(symbols, mapping, write_queue, batch_id),
             "coinglass": lambda: collect_coinglass(symbols, mapping, write_queue, batch_id, backfill_days),
             "santiment": lambda: collect_santiment(symbols, mapping, write_queue, batch_id, backfill_days),
+            "dexscreener": lambda: collect_dexscreener(symbols, mapping, write_queue, batch_id),
+            "dune": lambda: collect_dune(symbols, mapping, write_queue, batch_id, db_url,
+                                          backfill_days=backfill_days if (args.backfill or args.backfill_only) else None,
+                                          run_large_transfers=run_lt),
         }
 
         for name, collect_fn in sources.items():

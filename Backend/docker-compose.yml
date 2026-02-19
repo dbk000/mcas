@@ -205,6 +205,7 @@ services:
     environment:
       SERVICE_NAME: onchain_collector
       ONCHAIN_COLLECTION_INTERVAL_S: "3600"
+      DUNE_API_KEY: ${DUNE_API_KEY:-}
     command: ["python", "-u", "/scripts/onchain_collector.py"]
     volumes:
       - ./scripts:/scripts

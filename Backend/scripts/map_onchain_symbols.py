@@ -8,6 +8,7 @@ Maps Binance USDT spot symbols to external data source IDs:
   - Santiment:  slug    (e.g. BTCUSDT → 'bitcoin')
   - DefiLlama: protocol slug (e.g. AAVEUSDT → 'aave')
   - Etherscan:  contract address + chain (ERC-20 / BEP-20)
+  - DexScreener: chainId derived from CoinGecko platform data
 
 Writes results to:
   1. symbol_mapping table in Postgres
@@ -334,10 +335,67 @@ def map_santiment(symbols, cg_mapping):
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# DexScreener Mapping
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# CoinGecko platform name → DexScreener chainId
+_DEXSCREENER_CHAIN_MAP = {
+    "ethereum": "ethereum",
+    "binance-smart-chain": "bsc",
+    "solana": "solana",
+    "arbitrum-one": "arbitrum",
+    "optimistic-ethereum": "optimism",
+    "polygon-pos": "polygon",
+    "avalanche": "avalanche",
+    "base": "base",
+    "fantom": "fantom",
+    "near-protocol": "near",
+}
+
+
+def map_dexscreener(symbols, cg_mapping):
+    """Map Binance symbols to DexScreener chainId using CoinGecko platform data.
+
+    DexScreener uses chainId + contract address for token lookups.
+    We derive the chainId from the CoinGecko platform field.
+
+    Returns: dict[binance_symbol] -> {chain, contract_address}
+    """
+    mapping = {}
+
+    for binance_sym, cg_info in cg_mapping.items():
+        chain = cg_info.get("chain")
+        contract = cg_info.get("contract_address")
+        if not chain or not contract:
+            continue
+
+        # Map CoinGecko platform name to DexScreener chainId
+        # CoinGecko stores chain as the resolved name (e.g. 'ethereum', 'bsc'),
+        # but sometimes the raw platform key is needed
+        dex_chain = _DEXSCREENER_CHAIN_MAP.get(chain)
+        if not dex_chain:
+            # Try matching against the raw CoinGecko platform keys
+            # (map_coingecko resolves 'binance-smart-chain' to 'bsc', etc.)
+            # Handle the already-resolved names
+            reverse = {"bsc": "bsc", "ethereum": "ethereum", "solana": "solana"}
+            dex_chain = reverse.get(chain)
+
+        if dex_chain:
+            mapping[binance_sym] = {
+                "chain": dex_chain,
+                "contract_address": contract,
+            }
+
+    logger.info("  Mapped %d/%d symbols to DexScreener (chain+contract)",
+                len(mapping), len(symbols))
+    return mapping
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # Write Results
 # ═══════════════════════════════════════════════════════════════════════════════
 
-def write_to_db(db_url, cg_mapping, dl_mapping, san_mapping):
+def write_to_db(db_url, cg_mapping, dl_mapping, san_mapping, dex_mapping=None):
     """Write all mappings to the symbol_mapping table."""
     logger.info("Writing mappings to symbol_mapping table...")
     rows = []
@@ -356,6 +414,10 @@ def write_to_db(db_url, cg_mapping, dl_mapping, san_mapping):
     for sym, info in san_mapping.items():
         rows.append((sym, 'santiment', info['santiment_slug'], None, None))
 
+    for sym, info in (dex_mapping or {}).items():
+        rows.append((sym, 'dexscreener', info['contract_address'],
+                      info['chain'], info['contract_address']))
+
     with psycopg.connect(db_url) as conn:
         with conn.cursor() as cur:
             cur.executemany("""
@@ -372,10 +434,11 @@ def write_to_db(db_url, cg_mapping, dl_mapping, san_mapping):
     logger.info("  Wrote %d mapping rows", len(rows))
 
 
-def write_json(cg_mapping, dl_mapping, san_mapping):
+def write_json(cg_mapping, dl_mapping, san_mapping, dex_mapping=None):
     """Write combined mapping to JSON for offline reference."""
+    dex_mapping = dex_mapping or {}
     combined = {}
-    for sym in set(list(cg_mapping) + list(dl_mapping) + list(san_mapping)):
+    for sym in set(list(cg_mapping) + list(dl_mapping) + list(san_mapping) + list(dex_mapping)):
         combined[sym] = {}
         if sym in cg_mapping:
             combined[sym].update(cg_mapping[sym])
@@ -383,6 +446,8 @@ def write_json(cg_mapping, dl_mapping, san_mapping):
             combined[sym].update(dl_mapping[sym])
         if sym in san_mapping:
             combined[sym].update(san_mapping[sym])
+        if sym in dex_mapping:
+            combined[sym]["dexscreener_chain"] = dex_mapping[sym]["chain"]
 
     out = {
         "generated_at": datetime.now(timezone.utc).isoformat(),
@@ -390,6 +455,7 @@ def write_json(cg_mapping, dl_mapping, san_mapping):
         "coingecko_mapped": len(cg_mapping),
         "defillama_mapped": len(dl_mapping),
         "santiment_mapped": len(san_mapping),
+        "dexscreener_mapped": len(dex_mapping),
         "etherscan_mapped": sum(1 for v in cg_mapping.values() if v.get('chain') == 'ethereum' and v.get('contract_address')),
         "bscscan_mapped": sum(1 for v in cg_mapping.values() if v.get('chain') == 'bsc' and v.get('contract_address')),
         "mappings": combined,
@@ -430,6 +496,9 @@ def main():
     # Map to Santiment
     san_mapping = map_santiment(symbols, cg_mapping)
 
+    # Map to DexScreener (derives chain from CoinGecko platform data)
+    dex_mapping = map_dexscreener(symbols, cg_mapping)
+
     # Summary
     eth_count = sum(1 for v in cg_mapping.values() if v.get('chain') == 'ethereum' and v.get('contract_address'))
     bsc_count = sum(1 for v in cg_mapping.values() if v.get('chain') == 'bsc' and v.get('contract_address'))
@@ -442,17 +511,18 @@ def main():
     logger.info("  CoinGecko mapped:       %d (%.1f%%)", len(cg_mapping), 100 * len(cg_mapping) / len(symbols))
     logger.info("  DefiLlama protocols:    %d (%.1f%%)", len(dl_mapping), 100 * len(dl_mapping) / len(symbols))
     logger.info("  Santiment slugs:        %d (%.1f%%)", len(san_mapping), 100 * len(san_mapping) / len(symbols))
+    logger.info("  DexScreener mapped:     %d (%.1f%%)", len(dex_mapping), 100 * len(dex_mapping) / len(symbols))
     logger.info("  Etherscan (ERC-20):     %d", eth_count)
     logger.info("  BSCScan (BEP-20):       %d", bsc_count)
 
     # Write to DB and JSON
     try:
-        write_to_db(db_url, cg_mapping, dl_mapping, san_mapping)
+        write_to_db(db_url, cg_mapping, dl_mapping, san_mapping, dex_mapping)
     except Exception as e:
         logger.warning("Could not write to DB (table may not exist yet): %s", e)
         logger.info("Run the migration first: 20260219_add_onchain_tables.sql")
 
-    write_json(cg_mapping, dl_mapping, san_mapping)
+    write_json(cg_mapping, dl_mapping, san_mapping, dex_mapping)
 
     logger.info("")
     logger.info("Done. Next: run onchain_collector.py --backfill")
