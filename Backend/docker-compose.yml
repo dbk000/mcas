@@ -163,10 +163,26 @@ services:
     networks:
       - backend
 
+  social_collector:
+    build:
+      context: ./social_collector
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      SERVICE_NAME: social_collector
+    volumes:
+      - ./social_collector/app:/app
+      - social_telegram_sessions:/app/sessions
+    networks:
+      - backend
+
 volumes:
   caddy_data:
   caddy_config:
   pg_data:
+  social_telegram_sessions:
 
 networks:
   backend:
