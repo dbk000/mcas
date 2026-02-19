@@ -326,3 +326,8 @@ deep, invisible from reading _process_fold alone. The correct audit question is:
 
   Key insight: The symptom is not "slow code" — it's near-zero CPU utilization on a 16-core machine. A single Python thread doing dict lookups uses ~3% of a 16-vCPU machine. Numpy vectorized
    code on the same data saturates BLAS threads and shows 400-800% CPU. If a compute-heavy phase shows <100% CPU, the bottleneck is Python interpretation overhead, not the math.
+
+2026-02-19 — Tighter exits with low-precision rare-event model
+  Rule: For rare-event models with <30% precision, wider exits outperform tighter ones. The rare true positives need room to develop their full MFE. Trails and TPs cap the upside on the few
+  winners, which are the only trades that can offset the many losers. Tighter stops also increase turnover (more entries, each with negative EV). The monotonic pattern (wider → better across
+   all three exit dimensions) proves this is structural, not a calibration issue.

@@ -1,0 +1,541 @@
+{
+  "run_info": {
+    "timestamp": "2026-02-19T14:46:07.022376+00:00",
+    "elapsed_seconds": 685.5,
+    "days": 365,
+    "n_bars": 8773,
+    "n_symbols": 496,
+    "n_folds": 5,
+    "holdout_days": 30,
+    "train_days": 90,
+    "max_features": 8,
+    "discovery_rounds": 3,
+    "signal_layer": "v3 (rolling window, feature cap, P75 threshold)",
+    "exit_factorial": {
+      "stop_atr": [
+        2.0,
+        3.0
+      ],
+      "trail_act_atr": [
+        1.0,
+        1.5,
+        2.0
+      ],
+      "tp_atr": [
+        2.0,
+        3.0
+      ],
+      "trail_dist_atr": 0.5,
+      "n_configs": 12
+    },
+    "configs": {
+      "S2_T1.0_P2": {
+        "exit_type": "atr",
+        "stop_atr_mult": 2.0,
+        "trail_act_atr": 1.0,
+        "trail_dist_atr": 0.5,
+        "tp_atr": 2.0,
+        "time_stop_bars": 48,
+        "fail_fast": false,
+        "vol_filter": true
+      },
+      "S2_T1.0_P3": {
+        "exit_type": "atr",
+        "stop_atr_mult": 2.0,
+        "trail_act_atr": 1.0,
+        "trail_dist_atr": 0.5,
+        "tp_atr": 3.0,
+        "time_stop_bars": 48,
+        "fail_fast": false,
+        "vol_filter": true
+      },
+      "S2_T1.5_P2": {
+        "exit_type": "atr",
+        "stop_atr_mult": 2.0,
+        "trail_act_atr": 1.5,
+        "trail_dist_atr": 0.5,
+        "tp_atr": 2.0,
+        "time_stop_bars": 48,
+        "fail_fast": false,
+        "vol_filter": true
+      },
+      "S2_T1.5_P3": {
+        "exit_type": "atr",
+        "stop_atr_mult": 2.0,
+        "trail_act_atr": 1.5,
+        "trail_dist_atr": 0.5,
+        "tp_atr": 3.0,
+        "time_stop_bars": 48,
+        "fail_fast": false,
+        "vol_filter": true
+      },
+      "S2_T2.0_P2": {
+        "exit_type": "atr",
+        "stop_atr_mult": 2.0,
+        "trail_act_atr": 2.0,
+        "trail_dist_atr": 0.5,
+        "tp_atr": 2.0,
+        "time_stop_bars": 48,
+        "fail_fast": false,
+        "vol_filter": true
+      },
+      "S2_T2.0_P3": {
+        "exit_type": "atr",
+        "stop_atr_mult": 2.0,
+        "trail_act_atr": 2.0,
+        "trail_dist_atr": 0.5,
+        "tp_atr": 3.0,
+        "time_stop_bars": 48,
+        "fail_fast": false,
+        "vol_filter": true
+      },
+      "S3_T1.0_P2": {
+        "exit_type": "atr",
+        "stop_atr_mult": 3.0,
+        "trail_act_atr": 1.0,
+        "trail_dist_atr": 0.5,
+        "tp_atr": 2.0,
+        "time_stop_bars": 48,
+        "fail_fast": false,
+        "vol_filter": true
+      },
+      "S3_T1.0_P3": {
+        "exit_type": "atr",
+        "stop_atr_mult": 3.0,
+        "trail_act_atr": 1.0,
+        "trail_dist_atr": 0.5,
+        "tp_atr": 3.0,
+        "time_stop_bars": 48,
+        "fail_fast": false,
+        "vol_filter": true
+      },
+      "S3_T1.5_P2": {
+        "exit_type": "atr",
+        "stop_atr_mult": 3.0,
+        "trail_act_atr": 1.5,
+        "trail_dist_atr": 0.5,
+        "tp_atr": 2.0,
+        "time_stop_bars": 48,
+        "fail_fast": false,
+        "vol_filter": true
+      },
+      "S3_T1.5_P3": {
+        "exit_type": "atr",
+        "stop_atr_mult": 3.0,
+        "trail_act_atr": 1.5,
+        "trail_dist_atr": 0.5,
+        "tp_atr": 3.0,
+        "time_stop_bars": 48,
+        "fail_fast": false,
+        "vol_filter": true
+      },
+      "S3_T2.0_P2": {
+        "exit_type": "atr",
+        "stop_atr_mult": 3.0,
+        "trail_act_atr": 2.0,
+        "trail_dist_atr": 0.5,
+        "tp_atr": 2.0,
+        "time_stop_bars": 48,
+        "fail_fast": false,
+        "vol_filter": true
+      },
+      "S3_T2.0_P3": {
+        "exit_type": "atr",
+        "stop_atr_mult": 3.0,
+        "trail_act_atr": 2.0,
+        "trail_dist_atr": 0.5,
+        "tp_atr": 3.0,
+        "time_stop_bars": 48,
+        "fail_fast": false,
+        "vol_filter": true
+      }
+    }
+  },
+  "volume_filter": {
+    "n_symbols_total": 496,
+    "n_symbols_filtered": 248,
+    "percentile": 50
+  },
+  "walk_forward": {
+    "S2_T1.0_P2": {
+      "avg_robust_pf": 0.2495,
+      "avg_agg_pf": 0.2183,
+      "fold_robust_pfs": [
+        0.3092,
+        0.2679,
+        0.283,
+        0.1379
+      ],
+      "fold_agg_pfs": [
+        0.2815,
+        0.2075,
+        0.222,
+        0.1624
+      ],
+      "consistency_robust": 0.0,
+      "consistency_agg": 0.0,
+      "total_trades": 35125,
+      "total_pnl": -345925.26,
+      "avg_precision": 0.2358,
+      "total_signals": 126283,
+      "exit_distribution_pct": {
+        "TRAIL_STOP": 67.6,
+        "STOP_LOSS": 25.3,
+        "TIME_STOP": 1.2,
+        "TP1": 6.0
+      },
+      "n_folds": 4,
+      "status": "FAIL"
+    },
+    "S2_T1.0_P3": {
+      "avg_robust_pf": 0.231,
+      "avg_agg_pf": 0.205,
+      "fold_robust_pfs": [
+        0.2835,
+        0.2206,
+        0.2593,
+        0.1606
+      ],
+      "fold_agg_pfs": [
+        0.2586,
+        0.167,
+        0.1969,
+        0.1975
+      ],
+      "consistency_robust": 0.0,
+      "consistency_agg": 0.0,
+      "total_trades": 35125,
+      "total_pnl": -359903.54,
+      "avg_precision": 0.2358,
+      "total_signals": 126283,
+      "exit_distribution_pct": {
+        "TRAIL_STOP": 71.0,
+        "STOP_LOSS": 25.3,
+        "TIME_STOP": 1.2,
+        "TP1": 2.5
+      },
+      "n_folds": 4,
+      "status": "FAIL"
+    },
+    "S2_T1.5_P2": {
+      "avg_robust_pf": 0.3231,
+      "avg_agg_pf": 0.2772,
+      "fold_robust_pfs": [
+        0.3908,
+        0.3752,
+        0.3628,
+        0.1634
+      ],
+      "fold_agg_pfs": [
+        0.3237,
+        0.2972,
+        0.2832,
+        0.2047
+      ],
+      "consistency_robust": 0.0,
+      "consistency_agg": 0.0,
+      "total_trades": 32521,
+      "total_pnl": -321094.77,
+      "avg_precision": 0.2358,
+      "total_signals": 126283,
+      "exit_distribution_pct": {
+        "TRAIL_STOP": 59.4,
+        "STOP_LOSS": 30.0,
+        "TIME_STOP": 1.6,
+        "TP1": 9.0
+      },
+      "n_folds": 4,
+      "status": "FAIL"
+    },
+    "S2_T1.5_P3": {
+      "avg_robust_pf": 0.28,
+      "avg_agg_pf": 0.2459,
+      "fold_robust_pfs": [
+        0.3412,
+        0.29,
+        0.3038,
+        0.1849
+      ],
+      "fold_agg_pfs": [
+        0.2835,
+        0.2242,
+        0.2323,
+        0.2434
+      ],
+      "consistency_robust": 0.0,
+      "consistency_agg": 0.0,
+      "total_trades": 32521,
+      "total_pnl": -346861.29,
+      "avg_precision": 0.2358,
+      "total_signals": 126283,
+      "exit_distribution_pct": {
+        "TRAIL_STOP": 65.1,
+        "STOP_LOSS": 30.0,
+        "TIME_STOP": 1.6,
+        "TP1": 3.3
+      },
+      "n_folds": 4,
+      "status": "FAIL"
+    },
+    "S2_T2.0_P2": {
+      "avg_robust_pf": 0.5968,
+      "avg_agg_pf": 0.4409,
+      "fold_robust_pfs": [
+        0.7299,
+        0.6528,
+        0.524,
+        0.4803
+      ],
+      "fold_agg_pfs": [
+        0.4994,
+        0.4764,
+        0.3916,
+        0.3963
+      ],
+      "consistency_robust": 0.0,
+      "consistency_agg": 0.0,
+      "total_trades": 24473,
+      "total_pnl": -245814.96,
+      "avg_precision": 0.2358,
+      "total_signals": 126283,
+      "exit_distribution_pct": {
+        "TRAIL_STOP": 31.4,
+        "STOP_LOSS": 42.3,
+        "TIME_STOP": 3.5,
+        "TP1": 22.8
+      },
+      "n_folds": 4,
+      "status": "FAIL"
+    },
+    "S2_T2.0_P3": {
+      "avg_robust_pf": 0.4794,
+      "avg_agg_pf": 0.3644,
+      "fold_robust_pfs": [
+        0.5544,
+        0.4697,
+        0.3929,
+        0.5005
+      ],
+      "fold_agg_pfs": [
+        0.3906,
+        0.3387,
+        0.2888,
+        0.4394
+      ],
+      "consistency_robust": 0.0,
+      "consistency_agg": 0.0,
+      "total_trades": 24473,
+      "total_pnl": -294979.6,
+      "avg_precision": 0.2358,
+      "total_signals": 126283,
+      "exit_distribution_pct": {
+        "TRAIL_STOP": 48.4,
+        "STOP_LOSS": 42.3,
+        "TIME_STOP": 3.5,
+        "TP1": 5.8
+      },
+      "n_folds": 4,
+      "status": "FAIL"
+    },
+    "S3_T1.0_P2": {
+      "avg_robust_pf": 0.2828,
+      "avg_agg_pf": 0.2229,
+      "fold_robust_pfs": [
+        0.3707,
+        0.2734,
+        0.3037,
+        0.1834
+      ],
+      "fold_agg_pfs": [
+        0.2897,
+        0.2023,
+        0.2087,
+        0.1911
+      ],
+      "consistency_robust": 0.0,
+      "consistency_agg": 0.0,
+      "total_trades": 30749,
+      "total_pnl": -339881.88,
+      "avg_precision": 0.2358,
+      "total_signals": 126283,
+      "exit_distribution_pct": {
+        "TRAIL_STOP": 73.0,
+        "STOP_LOSS": 18.8,
+        "TIME_STOP": 1.2,
+        "TP1": 7.0
+      },
+      "n_folds": 4,
+      "status": "FAIL"
+    },
+    "S3_T1.0_P3": {
+      "avg_robust_pf": 0.2607,
+      "avg_agg_pf": 0.2096,
+      "fold_robust_pfs": [
+        0.3216,
+        0.2306,
+        0.2779,
+        0.2128
+      ],
+      "fold_agg_pfs": [
+        0.2604,
+        0.166,
+        0.1835,
+        0.2283
+      ],
+      "consistency_robust": 0.0,
+      "consistency_agg": 0.0,
+      "total_trades": 30749,
+      "total_pnl": -354651.22,
+      "avg_precision": 0.2358,
+      "total_signals": 126283,
+      "exit_distribution_pct": {
+        "TRAIL_STOP": 77.0,
+        "STOP_LOSS": 18.8,
+        "TIME_STOP": 1.2,
+        "TP1": 3.0
+      },
+      "n_folds": 4,
+      "status": "FAIL"
+    },
+    "S3_T1.5_P2": {
+      "avg_robust_pf": 0.3817,
+      "avg_agg_pf": 0.2875,
+      "fold_robust_pfs": [
+        0.4964,
+        0.4073,
+        0.4076,
+        0.2156
+      ],
+      "fold_agg_pfs": [
+        0.3389,
+        0.2996,
+        0.2696,
+        0.242
+      ],
+      "consistency_robust": 0.0,
+      "consistency_agg": 0.0,
+      "total_trades": 27847,
+      "total_pnl": -312626.72,
+      "avg_precision": 0.2358,
+      "total_signals": 126283,
+      "exit_distribution_pct": {
+        "TRAIL_STOP": 64.1,
+        "STOP_LOSS": 23.0,
+        "TIME_STOP": 2.2,
+        "TP1": 10.7
+      },
+      "n_folds": 4,
+      "status": "FAIL"
+    },
+    "S3_T1.5_P3": {
+      "avg_robust_pf": 0.3256,
+      "avg_agg_pf": 0.2545,
+      "fold_robust_pfs": [
+        0.4108,
+        0.3169,
+        0.3321,
+        0.2427
+      ],
+      "fold_agg_pfs": [
+        0.2889,
+        0.2284,
+        0.2176,
+        0.2832
+      ],
+      "consistency_robust": 0.0,
+      "consistency_agg": 0.0,
+      "total_trades": 27847,
+      "total_pnl": -339642.01,
+      "avg_precision": 0.2358,
+      "total_signals": 126283,
+      "exit_distribution_pct": {
+        "TRAIL_STOP": 70.9,
+        "STOP_LOSS": 23.0,
+        "TIME_STOP": 2.2,
+        "TP1": 4.0
+      },
+      "n_folds": 4,
+      "status": "FAIL"
+    },
+    "S3_T2.0_P2": {
+      "avg_robust_pf": 0.751,
+      "avg_agg_pf": 0.4507,
+      "fold_robust_pfs": [
+        0.9646,
+        0.7382,
+        0.6514,
+        0.6497
+      ],
+      "fold_agg_pfs": [
+        0.5286,
+        0.4876,
+        0.3842,
+        0.4026
+      ],
+      "consistency_robust": 0.0,
+      "consistency_agg": 0.0,
+      "total_trades": 21692,
+      "total_pnl": -237824.1,
+      "avg_precision": 0.2358,
+      "total_signals": 126283,
+      "exit_distribution_pct": {
+        "TRAIL_STOP": 37.9,
+        "STOP_LOSS": 31.2,
+        "TIME_STOP": 4.4,
+        "TP1": 26.5
+      },
+      "n_folds": 4,
+      "status": "FAIL"
+    },
+    "S3_T2.0_P3": {
+      "avg_robust_pf": 0.6028,
+      "avg_agg_pf": 0.3678,
+      "fold_robust_pfs": [
+        0.7299,
+        0.539,
+        0.4698,
+        0.6723
+      ],
+      "fold_agg_pfs": [
+        0.4055,
+        0.346,
+        0.2805,
+        0.4393
+      ],
+      "consistency_robust": 0.0,
+      "consistency_agg": 0.0,
+      "total_trades": 21692,
+      "total_pnl": -288501.07,
+      "avg_precision": 0.2358,
+      "total_signals": 126283,
+      "exit_distribution_pct": {
+        "TRAIL_STOP": 57.5,
+        "STOP_LOSS": 31.2,
+        "TIME_STOP": 4.4,
+        "TP1": 6.8
+      },
+      "n_folds": 4,
+      "status": "FAIL"
+    }
+  },
+  "ranking": [
+    "S3_T2.0_P2",
+    "S2_T2.0_P2",
+    "S3_T2.0_P3",
+    "S2_T2.0_P3",
+    "S3_T1.5_P2",
+    "S2_T1.5_P2",
+    "S3_T1.5_P3",
+    "S2_T1.5_P3",
+    "S3_T1.0_P2",
+    "S2_T1.0_P2",
+    "S3_T1.0_P3",
+    "S2_T1.0_P3"
+  ],
+  "holdout": null,
+  "verdict": "FAIL_WALK_FORWARD",
+  "fail_reasons": [
+    "best avg_agg_pf=0.451 (S3_T2.0_P2)",
+    "best consistency_agg=0.00"
+  ]
+}
