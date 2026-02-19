@@ -65,6 +65,30 @@ When anything affecting signal generation, evaluation, or simulation changes, ex
 2. Provide exact server commands using current backfill pipeline
 3. Remind that in-flight simulation results from before regeneration are based on old opportunities
 
+## 1.5 Production Database Access
+Claude Code runs on the same machine as production (65.109.7.49). No SSH tunnel is needed.
+
+**Ad-hoc SQL queries:**
+```bash
+docker exec backend-postgres-1 psql -U trading -d trading -c "SQL HERE"
+```
+
+**Running scripts against production DB:**
+```bash
+docker exec backend-worker-1 python3 /scripts/my_script.py --args
+```
+Scripts write output to `/scripts/` inside the container, which is bind-mounted to `/srv/mcas/Backend/scripts/` on the host — read results directly from there.
+
+For heavy/long-running scripts that shouldn't compete with the live worker, spin up a fresh container instead:
+```bash
+cd /srv/mcas/Backend && docker compose -f docker-compose.yml run --rm -T worker python3 /scripts/my_script.py
+```
+
+**Container names:**
+- `backend-postgres-1` / `backend-worker-1` = production
+- `mcas-dev-postgres-1` / `mcas-dev-worker-1` = dev
+- Do not confuse them.
+
 ---
 
 # 2) Hard Nevers (Override Any Reasoning)
@@ -269,3 +293,36 @@ Hard-won lessons from past failures. Entries are append-only.
 ### 2026-02-13 — Monitoring a Backgrounded Long-Running Script [PATHFINDING]
 **Winning path:** `ps -p PID -o pid,cputime,rss --no-headers` run twice 30s apart.
 **Key insight:** A process at 99% CPU with zero output is indistinguishable from hung.
+                                                                                                                                                                   
+### 2026-02-18 — Anchored to existing template instead of reasoning from first principles
+  Rule: When the plan says "unlimited latitude in methodology," do not copy-paste the existing pipeline with a different target variable. The methodology itself must be derived from the     
+  problem structure. Opus-level work means the architecture is novel, not just the features.
+
+### 2026-02-18 — Nested multiprocessing.Pool Crashes with Daemonic Process Assertion                                                                                                            
+What happened: _process_fold ran inside Pool(12) workers and called generate_features_round1 (Pool(5)) and screen_features (Pool(8)). Crashed with AssertionError: daemonic processes are   
+not allowed to have children.                           
+Mechanics: multiprocessing.Pool sets all worker processes to daemon=True so they die if the parent dies (prevents orphan trees). Python enforces that daemon processes cannot call          
+Process.start(), which means they cannot spawn child Pools. This is an assertion in multiprocessing/process.py:118, not a catchable exception — it's a hard architectural constraint.
+Rule: Any function that spawns a multiprocessing.Pool internally must accept a parallel=False flag (or equivalent) that falls back to serial execution ([f(a) for a in args] instead of
+pool.map(f, args)). Any code that runs inside a Pool worker must call such functions with parallel=False. Audit the full call tree of every Pool worker function for nested Pool usage
+before running.
+Key insight: The danger is indirect nesting. _process_fold didn't directly create a Pool — it called generate_features_round1 which called mp.Pool(5). The nesting was two function calls
+deep, invisible from reading _process_fold alone. The correct audit question is: "does anything in this worker's entire call graph spawn a Pool?"
+
+2026-02-18 — Pure Python Loops Over (bars × symbols) Matrices
+                                                                                                                                                                                              
+  What happened: generate_signals looped for t in bars: for s in symbols: score_bar(model, features, t, s) — 400 bars × 500 symbols = 200,000 Python function calls, each doing 16 dict       
+  lookups and numpy scalar indexing. Single-threaded, ~3% CPU for 30+ minutes. Same pattern in build_control_group (O(events × all_bars) per symbol) and threshold tuning (O(points ×
+  features) scoring loop).
+
+  Mechanics: Python for loops execute at ~10M bytecode ops/sec. Numpy vectorized ops on the same data execute at ~1B elements/sec (100× faster) because the loop runs in C and data stays in
+  contiguous memory. A function like np.digitize(feature_matrix, edges) bins the entire (2600, 500) matrix in one call — replacing 1.3M individual np.searchsorted + Python dict lookups with
+  a single C-level pass. The cost of the Python loop isn't the arithmetic, it's the per-iteration overhead: function call frames, dict hash lookups, type checking, and — critically —
+  breaking numpy's ability to use SIMD/BLAS on contiguous memory.
+
+  Rule: Any operation that touches every (bar, symbol) slot must be a numpy matrix operation, never a Python loop. The pattern is: precompute bin indices / masks / lookups for ALL slots as
+  (n_bars, n_symbols) arrays, then combine via numpy arithmetic. If you find yourself writing for t in range(n_bars): for s in range(n_symbols): or for idx, (t, s) in enumerate(points): over
+   more than ~1000 iterations, stop and redesign as a matrix op.
+
+  Key insight: The symptom is not "slow code" — it's near-zero CPU utilization on a 16-core machine. A single Python thread doing dict lookups uses ~3% of a 16-vCPU machine. Numpy vectorized
+   code on the same data saturates BLAS threads and shows 400-800% CPU. If a compute-heavy phase shows <100% CPU, the bottleneck is Python interpretation overhead, not the math.
