@@ -46,7 +46,7 @@ from setups.s4_vwap_reversion import S4State
 from setups.s5_sr_breakout import S5State
 from setups.s6_trend_pullback import S6State
 from setups.s7_momentum_breakout import S7State
-from setups.u1_unicorn_ignition import U1Evaluator, U1State, U1Phase, U1Config
+from setups.u1_unicorn_ignition import U1Evaluator, U1State, U1Phase, U1Config, load_funding_rates
 from setup_base import Direction
 
 logger = logging.getLogger("signal_worker")
@@ -597,8 +597,11 @@ class SignalWorker:
         if u1_state.phase not in (U1Phase.EMBRYO_ACTIVE, U1Phase.IGNITION_WATCH):
             return
 
+        # Load funding rates (cached 1h inside load_funding_rates)
+        funding_rates = load_funding_rates(DATABASE_URL) if DATABASE_URL else {}
+
         # Evaluate trigger
-        u1_signal = self.u1_evaluator.evaluate_trigger(candles, u1_state, symbol, tf)
+        u1_signal = self.u1_evaluator.evaluate_trigger(candles, u1_state, symbol, tf, funding_rates=funding_rates)
         if u1_signal:
             self._store_u1_signal(u1_signal, symbol, tf, bar_start_ts)
 

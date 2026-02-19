@@ -178,6 +178,39 @@ services:
     networks:
       - backend
 
+  derivatives_collector:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      SERVICE_NAME: derivatives_collector
+      COLLECTION_INTERVAL_S: "3600"
+      FUNDING_INTERVAL_S: "14400"
+    command: ["python", "-u", "/scripts/derivatives_collector.py"]
+    volumes:
+      - ./scripts:/scripts
+    networks:
+      - backend
+
+  onchain_collector:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      SERVICE_NAME: onchain_collector
+      ONCHAIN_COLLECTION_INTERVAL_S: "3600"
+    command: ["python", "-u", "/scripts/onchain_collector.py"]
+    volumes:
+      - ./scripts:/scripts
+    networks:
+      - backend
+
 volumes:
   caddy_data:
   caddy_config:

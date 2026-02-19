@@ -1,0 +1,216 @@
+{
+  "run_id": "c115072c",
+  "generated_at": "2026-02-16T18:15:34.266172+00:00",
+  "total_insights": 19,
+  "insights": [
+    {
+      "id": "I09",
+      "title": "44% of trades die within 2 bars",
+      "section": "4b",
+      "impact": 5,
+      "confidence": 5,
+      "actionability": 4,
+      "detail": "476/1087 trades exit via STOP_LOSS or FAIL_FAST within 2 bars. These are entries that immediately move against the position.",
+      "code_path": "exit_checker.py:101-107 (FAIL_FAST logic)",
+      "score": 100
+    },
+    {
+      "id": "I19",
+      "title": "MAE/MFE data not available \u2014 bar-by-bar tracking needed",
+      "section": "6",
+      "impact": 4,
+      "confidence": 5,
+      "actionability": 4,
+      "detail": "trace_json stores entry-time features only, not intra-trade bar tracking. Adding MAE/MFE would enable stop optimization (are stops too tight? too loose?) and target calibration. Implementation: ~30 lines in opportunity_simulator.py:611-676.",
+      "code_path": "opportunity_simulator.py:611-676 (trace construction)",
+      "score": 80
+    },
+    {
+      "id": "I01",
+      "title": "Top positive correlate with pnl_net: score.htf_confluence",
+      "section": "3a",
+      "impact": 4,
+      "confidence": 4,
+      "actionability": 3,
+      "detail": "score.htf_confluence has rho=0.235 (p=0.006678, N=132) with pnl_net. Higher values predict better outcomes.",
+      "code_path": "",
+      "score": 48
+    },
+    {
+      "id": "I05",
+      "title": "Best winner rule: ind.ema50_slope_atr <= 0.2183 AND ind.vwap_distance_atr > 5.1432",
+      "section": "3b",
+      "impact": 4,
+      "confidence": 3,
+      "actionability": 4,
+      "detail": "Decision tree path [ind.ema50_slope_atr <= 0.2183 AND ind.vwap_distance_atr > 5.1432 AND ind.ma_gap_atr > 1.7467 AND ind.rsi_sma > 63.1764] \u2192 13% win rate on 39 trades. vs population 44.3%.",
+      "code_path": "",
+      "score": 48
+    },
+    {
+      "id": "I06",
+      "title": "High stop-loss rule: ind.clv <= 0.978 AND ind.rsi <= 66.13",
+      "section": "3b",
+      "impact": 4,
+      "confidence": 3,
+      "actionability": 4,
+      "detail": "Path [ind.clv <= 0.978 AND ind.rsi <= 66.13 AND ind.vwap_distance_atr <= 2.9999 AND ind.donchian_high_20 <= 1.3365] \u2192 22% stop-loss rate on 111 trades.",
+      "code_path": "exit_checker.py:101-107 (FAIL_FAST), exit_checker.py:131-153 (TRAIL_STOP)",
+      "score": 48
+    },
+    {
+      "id": "I08",
+      "title": "Worst archetype: 'Mixed Quick-Death (S6)' (41% WR)",
+      "section": "3c",
+      "impact": 4,
+      "confidence": 3,
+      "actionability": 4,
+      "detail": "Cluster 3 (145 trades): WR=41.4%, avg R=-0.11, dominant setup=S6, exit=FAIL_FAST. Top features: score.pullback_quality(z=2.42), score.retrace_depth(z=2.11), state.retrace_depth_atr(z=1.9).",
+      "code_path": "",
+      "score": 48
+    },
+    {
+      "id": "I07",
+      "title": "Best archetype: 'Winners Target-Hit (S6)' (73% WR)",
+      "section": "3c",
+      "impact": 4,
+      "confidence": 3,
+      "actionability": 3,
+      "detail": "Cluster 2 (11 trades): WR=72.7%, avg R=0.11, dominant setup=S6, exit=TP1. Top features: ind.bb_ub(z=9.87), ind.kc_ub(z=9.87), ind.ema_50(z=9.87).",
+      "code_path": "",
+      "score": 36
+    },
+    {
+      "id": "I10",
+      "title": "TP2 hit rate: 5% of profitable exits reach TP2",
+      "section": "4c",
+      "impact": 3,
+      "confidence": 4,
+      "actionability": 3,
+      "detail": "Of 363 trades exiting at a target, 18 (5%) reached TP2. TP1: 345, TP2: 18.",
+      "code_path": "exit_checker.py:155-175 (TP1/TP2 logic)",
+      "score": 36
+    },
+    {
+      "id": "I17",
+      "title": "Outperformer: S1 (67% WR)",
+      "section": "5",
+      "impact": 4,
+      "confidence": 3,
+      "actionability": 3,
+      "detail": "S1: WR=66.7% vs overall 44.3% (N=15, Wilson 95% CI: (0.4171, 0.8482)). Avg R=0.059, total PnL=7.16.",
+      "code_path": "",
+      "score": 36
+    },
+    {
+      "id": "I18",
+      "title": "Outperformer: S2 (76% WR)",
+      "section": "5",
+      "impact": 4,
+      "confidence": 3,
+      "actionability": 3,
+      "detail": "S2: WR=76.5% vs overall 44.3% (N=17, Wilson 95% CI: (0.5274, 0.9045)). Avg R=0.085, total PnL=76.15.",
+      "code_path": "",
+      "score": 36
+    },
+    {
+      "id": "I11",
+      "title": "Top predictor of STOP_LOSS: score.div_magnitude",
+      "section": "4a",
+      "impact": 3,
+      "confidence": 3,
+      "actionability": 3,
+      "detail": "score.div_magnitude correlates with STOP_LOSS exit (rho=0.206, p=0.26631, N=31).",
+      "code_path": "",
+      "score": 27
+    },
+    {
+      "id": "I12",
+      "title": "Top predictor of FAIL_FAST: score.span_quality",
+      "section": "4a",
+      "impact": 3,
+      "confidence": 3,
+      "actionability": 3,
+      "detail": "score.span_quality correlates with FAIL_FAST exit (rho=-0.2266, p=0.220171, N=31).",
+      "code_path": "",
+      "score": 27
+    },
+    {
+      "id": "I13",
+      "title": "Top predictor of TP1: score.span_quality",
+      "section": "4a",
+      "impact": 3,
+      "confidence": 3,
+      "actionability": 3,
+      "detail": "score.span_quality correlates with TP1 exit (rho=0.236, p=0.201246, N=31).",
+      "code_path": "",
+      "score": 27
+    },
+    {
+      "id": "I14",
+      "title": "Top predictor of TP2: state.long_breakout",
+      "section": "4a",
+      "impact": 3,
+      "confidence": 3,
+      "actionability": 3,
+      "detail": "state.long_breakout correlates with TP2 exit (rho=-0.1002, p=0.252842, N=132).",
+      "code_path": "",
+      "score": 27
+    },
+    {
+      "id": "I15",
+      "title": "Top predictor of TRAIL_STOP: score.span_quality",
+      "section": "4a",
+      "impact": 3,
+      "confidence": 3,
+      "actionability": 3,
+      "detail": "score.span_quality correlates with TRAIL_STOP exit (rho=-0.184, p=0.321627, N=31).",
+      "code_path": "",
+      "score": 27
+    },
+    {
+      "id": "I16",
+      "title": "Top predictor of TIME_STOP: state.long_allowed",
+      "section": "4a",
+      "impact": 3,
+      "confidence": 3,
+      "actionability": 3,
+      "detail": "state.long_allowed correlates with TIME_STOP exit (rho=-0.3578, p=0.044347, N=32).",
+      "code_path": "",
+      "score": 27
+    },
+    {
+      "id": "I02",
+      "title": "Top negative correlate with pnl_net: state.box_low",
+      "section": "3a",
+      "impact": 4,
+      "confidence": 2,
+      "actionability": 3,
+      "detail": "state.box_low has rho=-0.2929 (p=0.289472, N=15) with pnl_net. Higher values predict worse outcomes.",
+      "code_path": "",
+      "score": 24
+    },
+    {
+      "id": "I03",
+      "title": "Top positive correlate with is_winner: score.severity",
+      "section": "3a",
+      "impact": 4,
+      "confidence": 2,
+      "actionability": 3,
+      "detail": "score.severity has rho=0.3446 (p=0.208436, N=15) with is_winner. Higher values predict better outcomes.",
+      "code_path": "",
+      "score": 24
+    },
+    {
+      "id": "I04",
+      "title": "Top negative correlate with is_winner: state.bb_width_pctile",
+      "section": "3a",
+      "impact": 4,
+      "confidence": 2,
+      "actionability": 3,
+      "detail": "state.bb_width_pctile has rho=-0.3446 (p=0.208436, N=15) with is_winner. Higher values predict worse outcomes.",
+      "code_path": "",
+      "score": 24
+    }
+  ]
+}
