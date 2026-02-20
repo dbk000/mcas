@@ -213,7 +213,9 @@ services:
       - backend
 
   cpu_collector:
-    image: python:3.12-slim
+    build:
+      context: ./monitoring
+      dockerfile: Dockerfile
     container_name: mcas-cpu-collector
     restart: unless-stopped
     volumes:
@@ -232,16 +234,15 @@ services:
       - CPU_ALERT_THRESHOLD=85
       - CPU_ALERT_SUSTAINED=30
       - HOST_PROC=/host/proc
-    working_dir: /app
-    entrypoint: ["sh", "-c", "pip install --quiet redis && python cpu_collector.py"]
+    command: ["python", "-u", "cpu_collector.py"]
     deploy:
       resources:
         limits:
           cpus: '0.10'
-          memory: 192M
+          memory: 64M
         reservations:
           cpus: '0.01'
-          memory: 32M
+          memory: 16M
     networks:
       - backend
 
