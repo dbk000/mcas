@@ -212,6 +212,39 @@ services:
     networks:
       - backend
 
+  cpu_collector:
+    image: python:3.12-slim
+    container_name: mcas-cpu-collector
+    restart: unless-stopped
+    volumes:
+      - /proc:/host/proc:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /usr/bin/docker:/usr/bin/docker:ro
+      - ./monitoring/cpu_collector.py:/app/cpu_collector.py:ro
+      - ./monitoring/cpu_query.py:/app/cpu_query.py:ro
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_DB=0
+      - CPU_SAMPLE_INTERVAL=5
+      - CPU_HISTORY_TTL=86400
+      - CPU_DOCKER_STATS=true
+      - CPU_ALERT_THRESHOLD=85
+      - CPU_ALERT_SUSTAINED=30
+      - HOST_PROC=/host/proc
+    working_dir: /app
+    entrypoint: ["sh", "-c", "pip install --quiet redis && python cpu_collector.py"]
+    deploy:
+      resources:
+        limits:
+          cpus: '0.05'
+          memory: 64M
+        reservations:
+          cpus: '0.01'
+          memory: 16M
+    networks:
+      - backend
+
 volumes:
   caddy_data:
   caddy_config:

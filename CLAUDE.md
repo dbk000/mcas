@@ -89,6 +89,41 @@ cd /srv/mcas/Backend && docker compose -f docker-compose.yml run --rm -T worker 
 - `mcas-dev-postgres-1` / `mcas-dev-worker-1` = dev
 - Do not confuse them.
 
+## 1.6 Resource Awareness Protocol
+
+The VPS runs a CPU metrics collector (`cpu_collector`) that writes to Redis every 5 seconds. Claude Code can query it via the `mcas-cpu-collector` container to observe real-time resource utilisation. This closes the feedback loop: instead of writing scripts blind and waiting, observe resource profiles and adapt.
+
+**Before running any script expected to take >60s:**
+```bash
+docker exec mcas-cpu-collector python cpu_query.py brief
+```
+
+**Interpret the output:**
+- `usage <40%` on multi-core = you're single-threaded, refactor for parallelism
+- One core at 100%, others idle = GIL-bound or single-process bottleneck
+- `steal >5%` = hypervisor throttling, reduce concurrency or schedule off-peak
+- `iowait >20%` = disk/network bound, not CPU bound — parallelism won't help
+
+**During any script taking >2 minutes:**
+```bash
+docker exec mcas-cpu-collector python cpu_query.py brief
+```
+Check every 2-3 minutes. If the resource profile indicates the script is under-utilising available compute, consider stopping, refactoring, and restarting.
+
+**After any script completes:**
+```bash
+docker exec mcas-cpu-collector python cpu_query.py history <duration_seconds>
+```
+Log peak CPU, mean CPU, and whether the job was compute-bound or IO-bound. Use this to inform how you write the next script.
+
+**Diagnostic commands (all via `docker exec mcas-cpu-collector python cpu_query.py`):**
+- `now` — full current snapshot (aggregate + per-core + load avg)
+- `summary` — rolling 5m/15m/1h stats (mean/max/min/p95)
+- `containers` — per-container CPU/mem breakdown
+- `hotspots` — per-core imbalance + top container consumers
+- `alerts` — sustained high-CPU alert state
+- `health` — collector liveness check
+
 ---
 
 # 2) Hard Nevers (Override Any Reasoning)
@@ -165,6 +200,7 @@ Python 3.12, FastAPI, PostgreSQL 16, Redis 7, React 18 + Vite + Tailwind, Caddy 
 | Unicorn pipeline | unicorn_pipeline | — | `worker/app/unicorn_pipeline.py` |
 | PostgreSQL 16 | postgres | 5432 int | — |
 | Redis 7 | redis | 6379 int | — |
+| CPU collector | mcas-cpu-collector | — | `monitoring/cpu_collector.py` |
 | Frontend (React SPA) | — (separate) | 5173 dev | `Frontend/src/main.jsx` |
 
 ## 3.3 Data Flow
