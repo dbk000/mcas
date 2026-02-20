@@ -1230,8 +1230,8 @@ def _dune_execute_and_wait(sql, query_name, date_from, date_to, chunk_index,
     rl_exec.acquire()
     try:
         resp = _get_session().post(
-            f"{_DUNE_API_BASE}/execution/execute",
-            json={"query_parameters": {}, "query": sql},
+            f"{_DUNE_API_BASE}/sql/execute",
+            json={"sql": sql, "performance": "medium"},
             headers=headers,
             timeout=30,
         )
@@ -1717,6 +1717,7 @@ def materialize_features(db_url, symbols, lookback_hours=FEATURE_LOOKBACK_HOURS)
                 dex_snap_rows = cur.fetchall()
             except Exception as e:
                 logger.warning("  dex_snapshots query failed (table may not exist): %s", e)
+                conn.rollback()
 
             # CEX volume from OHLCV (for dex/cex ratio)
             cex_vol_rows = []
@@ -1734,6 +1735,7 @@ def materialize_features(db_url, symbols, lookback_hours=FEATURE_LOOKBACK_HOURS)
                 cex_vol_rows = cur.fetchall()
             except Exception as e:
                 logger.warning("  OHLCV CEX volume query failed: %s", e)
+                conn.rollback()
 
             # Dune DEX volume (daily) — for backfill when DexScreener has no data
             dune_dex_rows = []
@@ -1750,6 +1752,7 @@ def materialize_features(db_url, symbols, lookback_hours=FEATURE_LOOKBACK_HOURS)
                 dune_dex_rows = cur.fetchall()
             except Exception as e:
                 logger.warning("  dune_dex_volume query failed (table may not exist): %s", e)
+                conn.rollback()
 
     total_raw = (len(flow_rows) + len(whale_rows) + len(network_rows) +
                  len(tvl_rows) + len(liq_rows) + len(oi_ext_rows) +
