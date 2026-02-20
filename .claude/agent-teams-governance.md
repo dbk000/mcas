@@ -20,6 +20,29 @@ Each session picks an ID on startup: `S1`, `S2`, `S3`. This ID prefixes all task
 
 ---
 
+## The Prime Directive: Never Idle
+
+You have access to 365 days of OHLCV across 588 pairs, on-chain flow data, sentiment
+data from 5 sources, and a 16-vCPU VPS with live performance telemetry. Idle time is
+unacceptable. The opportunity cost of an Opus 4.6 instance doing nothing exceeds the
+cost of it trying something that fails.
+
+**Check CPU utilisation via `docker exec mcas-cpu-collector python cpu_query.py brief`
+regularly. If aggregate usage is below 50% and you have available agents, you are
+under-utilising the VPS. Create work.**
+
+### The Three States
+
+Every agent is always in exactly one state:
+
+1. **EXECUTING** — Running an assigned task from the taskboard
+2. **HUNTING** — No taskboard work available; autonomously exploring data for edge
+3. **WATCHING** — One agent per session on inotifywait; the OTHER agent must be HUNTING
+
+There is no fourth state. There is no "idle." There is no "polling." There is no "waiting."
+
+---
+
 ## Shared Taskboard Protocol
 
 The taskboard lives at `.claude/taskboard/` with three subdirectories:
@@ -63,11 +86,131 @@ DEPENDS_ON: [file path or task filename that must exist/complete first, or "none
 - **Prefer your own tasks.** If your session posted it and no one else has claimed it, you can claim it yourself. No obligation to farm everything out.
 - **Don't hoard.** Only claim what your agents can start within the next few minutes. If both agents are busy, leave tasks in `pending/` for other sessions.
 
-### Polling Protocol
-Leads check `pending/` for new work:
-- Every time a sub-agent completes a task and is free
-- Every 3-5 minutes if all agents are busy (to reprioritize if a `high` task appeared)
-- Immediately after posting a task that depends on another session's output (to see if anything else is available while waiting)
+### Waiting for Dependencies (File Watch Protocol)
+
+**NEVER poll in a loop.** Polling with `sleep && ls` burns tokens doing nothing.
+
+When blocked on a file that doesn't exist yet, use `inotifywait` to block at the OS level:
+
+```bash
+# Wait for a specific file to appear (blocks silently, zero token cost)
+inotifywait -e create,moved_to --include "ignition_events_with_outcomes.csv" /srv/mcas/results/ 2>/dev/null
+```
+
+```bash
+# Wait for ANY new file in the taskboard pending directory
+inotifywait -e create,moved_to /home/darren/Desktop/MCAS/.claude/taskboard/pending/ 2>/dev/null
+```
+
+```bash
+# Wait for a specific task to move to done/
+inotifywait -e create,moved_to --include "baseline" /home/darren/Desktop/MCAS/.claude/taskboard/done/ 2>/dev/null
+```
+
+**Rules:**
+- inotifywait blocks the bash call until the event fires. No looping. No token burn.
+- Set a timeout if you don't want to wait forever: `inotifywait -t 300 ...` (5 min max)
+- When it fires, THEN check what appeared and decide your next action.
+- If timeout expires with no event, check team state files for updates, then re-enter the watch.
+
+**While waiting for inotifywait, use your OTHER agent for prep work** (see "Blocked But Not Idle" below).
+
+### Task Decomposition Rules (Lead Only)
+
+When posting tasks to the taskboard:
+
+1. **Maximise independent work.** If 3 sessions are running, there should be at least 3 tasks claimable in parallel at all times. If your DAG has a single bottleneck that blocks everything else, you've designed it wrong.
+
+2. **Split audits from extraction.** An audit (what's in the DB?) and an extraction (build the dataset) are separate tasks. Don't chain them if they can be parallelised.
+
+3. **Post prep tasks alongside blocked tasks.** If Task B is blocked on Task A, post a "Prep Task B" that does the non-dependent parts (schema analysis, harness scaffolding, methodology review). This gives idle sessions useful work.
+
+4. **Never post a task that only one session can claim.** If a task requires context that only S1 has, either include that context in the task file or make S1 do it. Every task should be claimable by any session.
+
+5. **Dependency depth limit: 3.** If your DAG is deeper than 3 levels, flatten it. Sequential chains of 6+ tasks (like the current W1->W2->W3 chain) guarantee that 2 of 3 sessions are idle at any given time.
+
+---
+
+## Blocked But Not Idle
+
+If you have nothing to claim from the taskboard, DO NOT poll. Instead:
+
+1. **Set an inotifywait** on the taskboard or results directory (zero-cost wait)
+2. **Use your OTHER agent for prep work** while the watch blocks. Prep work is scoped, non-conflicting work that positions you to move faster when unblocked:
+
+   Prep work examples (ALWAYS allowed):
+   - Read and understand data schemas you'll need later
+   - Write analysis plans / feature engineering plans to markdown
+   - Build script scaffolding (functions, imports, structure) WITHOUT running it
+   - Profile existing result files to understand formats
+   - Read CLAUDE.md methodology sections you'll need for validation
+   - Document findings from completed work
+
+   Prep work anti-patterns (NEVER do these):
+   - Don't write to anyone else's SCOPE
+   - Don't run scripts that modify the database
+   - Don't claim tasks that aren't formally unblocked
+   - Don't start compute work that depends on files that don't exist yet
+
+3. **When inotifywait fires**, check what appeared, claim if appropriate, dispatch agents.
+
+This way one agent does the blocking wait (zero cost) while the other does prep (actual value). Two agents, never both idle.
+
+---
+
+## Hunting Protocol
+
+When an agent enters HUNTING state, it picks from this priority list:
+
+**Priority 1: Unexplored data corners**
+- Query tables nobody has audited yet
+- Find columns with signal potential that no task has addressed
+- Cross-reference data sources (e.g., do sentiment spikes in social_posts
+  correlate with anything in whale_transactions?)
+- Look for temporal patterns nobody asked about (day-of-week effects,
+  hour-of-day effects, pre/post-funding-rate-snapshot behaviour)
+
+**Priority 2: Stress-test existing findings**
+- Take any result file in results/ and try to break it
+- Run the same analysis on a different time window
+- Check if a finding survives different market regimes (trending vs ranging)
+- Test sensitivity to parameter choices (what happens if you shift a window by +/-20%?)
+
+**Priority 3: Novel feature discovery**
+- Engineer features nobody asked for
+- Combine data sources in ways the task spec didn't suggest
+- Look for non-linear relationships (interactions, ratios, regime switches)
+- Test unconventional predictors (e.g., does the *variance* of sentiment
+  predict better than the *level*? Does funding rate *acceleration* matter
+  more than the rate itself?)
+
+**Priority 4: Infrastructure improvements**
+- Profile slow queries and suggest indexes
+- Identify data gaps that could be backfilled
+- Write utility functions that would speed up future research
+- Document undocumented schemas or data quirks
+
+### Hunting Rules
+
+1. **All hunting output goes to `results/hunting/`** — create the directory if needed.
+   Filename format: `{session}_{agent}_{timestamp}_{topic}.json`
+2. **Hunting never modifies production code or existing results.** Read-only on
+   everything except your output directory.
+3. **If a hunt finds something with IC > 0.02, immediately post a task to the
+   taskboard** for proper walk-forward validation. Don't validate it yourself
+   during a hunt — that's a task.
+4. **Hunting is interruptible.** The moment a taskboard item becomes claimable,
+   drop the hunt mid-stride, claim the task, and execute. Hunting is the lowest
+   priority activity but it is NOT optional.
+5. **Log every hunt.** Even failures are data. Write a one-paragraph summary to
+   `results/hunting/hunt_log.md` (append, don't overwrite):
+   ```
+   ## [S2-A] 2026-02-20 19:30 — Funding rate acceleration as ignition filter
+   Tested whether d(funding_rate)/dt in the 24h before ignition predicts outcomes.
+   Coverage: 847/30794 events (2.7%) — too sparse from derivatives data.
+   IC: not computable (insufficient overlap). DEAD END due to data depth.
+   Time spent: ~3 minutes. VPS CPU during: 34%.
+   ```
 
 ---
 
@@ -75,8 +218,8 @@ Leads check `pending/` for new work:
 
 ### Lead (the Claude Code session itself)
 - **Role**: Task decomposition, cross-session coordination, assignment to own agents, synthesis
-- **Never does**: Run long scripts, backtests, heavy computation
-- **Always does**: Read result files from disk, manage taskboard, assign next tasks, maintain the big picture
+- **Never does**: Run long scripts, backtests, heavy computation. **Never idles waiting for user input.**
+- **Always does**: Read result files from disk, manage taskboard, assign next tasks, maintain the big picture. **When agents are working or done, check the taskboard for new work. This is your default state — not "awaiting instructions."**
 - **Context discipline**: Your context window is the bottleneck. Protect it ruthlessly.
 
 ### Agent A — Compute
@@ -145,6 +288,53 @@ If the lead estimates it's above 70% context usage:
 - Synthesize current state into its session state file
 - Write summary to `.claude/team-state-S{N}.md`
 - Continue with clean context
+
+---
+
+## VPS Utilisation Targets
+
+| Metric | Target | Action if below |
+|--------|--------|-----------------|
+| Aggregate CPU | >50% during active research | More agents should be HUNTING |
+| Per-core max | At least 2 cores >80% | Scripts are single-threaded; refactor |
+| steal% | <5% | Acceptable; proceed |
+| steal% | >10% | Reduce concurrency, alert Darren |
+| iowait% | >15% | DB-bound; check for missing indexes |
+| Load average (1m) | >8 (on 16 cores) | Good utilisation |
+| Load average (1m) | <4 (on 16 cores) | Under-utilised; create more parallel work |
+
+### The Lead's Responsibility
+
+The lead monitors aggregate VPS utilisation. If CPU is under 50%:
+
+1. Check how many agents are HUNTING vs WATCHING vs EXECUTING
+2. If any agent is in a state other than these three, fix it
+3. If all agents are HUNTING and CPU is still low, the hunts are too
+   lightweight — push them toward compute-heavier exploration
+   (parameter sweeps, cross-validation, feature interaction matrices)
+4. Post the current utilisation to your team-state file every 15 minutes:
+   ```
+   ## VPS Utilisation [19:30]
+   CPU: 67% | load: 10.2/8.4/6.1 | steal: 0.1%
+   Agents: 2 EXECUTING, 3 HUNTING, 1 WATCHING
+   Top containers: mcas-worker@234%, postgres@89%, python3@156%
+   ```
+
+### What "Creating Work" Looks Like in Practice
+
+If S1 finishes its sentiment feature screen and S2 finishes on-chain, and both are
+waiting for the walk-forward harness — that's 4 idle agents across 2 sessions. Instead:
+
+- S1-A: Hunt for day-of-week effects in ignition success rates
+- S1-B: inotifywait on harness completion
+- S2-A: Hunt for whether social_posts velocity in the 6h window outperforms 24h
+- S2-B: Profile the walk-forward query pattern for optimization opportunities
+
+CPU should be at 60%+ even while "waiting." The inotifywait costs nothing. The hunts
+are burning compute productively. The moment the harness lands, one agent per session
+drops the hunt and claims the next task. The other continues hunting.
+
+This is not optional behaviour. This is how the hive works.
 
 ---
 
@@ -276,6 +466,10 @@ When starting a Claude Code session as part of the mesh:
 - A lead hoards 5 pending tasks while other sessions' agents sit idle
 - Sessions write to each other's team-state files
 - Three compute-heavy scripts running simultaneously (max 2)
+- A lead says "awaiting task assignment" or "what should I work on?" — check the taskboard, that IS your task
+- A lead goes idle after its agents finish — set inotifywait + start HUNTING
+- Any agent polls with `sleep && ls` in a loop — use inotifywait
+- Any agent is in a state other than EXECUTING, HUNTING, or WATCHING
 
 ## Good Patterns (Do These)
 
@@ -289,4 +483,7 @@ When starting a Claude Code session as part of the mesh:
 - Leads check other sessions' team-state files before claiming heavy compute tasks
 - Sessions stagger heavy work based on CPU load
 - Failed cross-session tasks return to pending with failure context for the next claimant
-- Leads poll the taskboard whenever an agent finishes work
+- One agent on inotifywait while the other hunts — never both idle
+- Hunting output goes to `results/hunting/` with session/agent prefix
+- Hunts with IC > 0.02 immediately become taskboard items for proper validation
+- Every hunt logged to `results/hunting/hunt_log.md`, even dead ends

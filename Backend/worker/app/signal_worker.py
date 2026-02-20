@@ -617,7 +617,7 @@ class SignalWorker:
         funding_rates = load_funding_rates(DATABASE_URL) if DATABASE_URL else {}
 
         # Evaluate trigger
-        u1_signal = self.u1_evaluator.evaluate_trigger(candles, u1_state, symbol, tf, funding_rates=funding_rates)
+        u1_signal = self.u1_evaluator.evaluate_trigger(candles, u1_state, symbol, tf, funding_rates=funding_rates, database_url=DATABASE_URL)
         if u1_signal:
             self._store_u1_signal(u1_signal, symbol, tf, bar_start_ts)
 

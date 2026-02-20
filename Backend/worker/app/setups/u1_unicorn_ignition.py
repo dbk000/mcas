@@ -22,6 +22,7 @@ Human-in-loop: Signals are identification + ranking only. No auto-execution.
 """
 
 import logging
+import os
 import time as _time
 import numpy as np
 from dataclasses import dataclass, field
@@ -79,6 +80,55 @@ def load_funding_rates(database_url: str) -> dict[str, float]:
             _funding_cache = {}
 
     return _funding_cache
+
+
+# =============================================================================
+# Social Silence Cache (30-min TTL per symbol)
+# =============================================================================
+# Precision filter: coins with zero social mentions in the last 30 days
+# are more likely to produce genuine ignition signals. Validated via
+# walk-forward analysis — social silence predicts higher post-ignition
+# follow-through because price action is not already front-run by
+# social-media-driven retail flow.
+
+_social_cache: dict[str, bool] = {}       # symbol -> has_mentions (True = reject)
+_social_cache_ts: dict[str, float] = {}   # symbol -> last query epoch
+_SOCIAL_CACHE_TTL: float = 1800.0         # 30 minutes
+
+# Env-var toggle: "1" = enabled (default), "0" = disabled
+U1_SOCIAL_SILENCE_FILTER = os.getenv("U1_SOCIAL_SILENCE_FILTER", "1") == "1"
+
+
+def has_social_mentions_30d(symbol: str, database_url: str) -> bool:
+    """Check if symbol has ANY rows in social_features_1h in the last 30 days.
+
+    Returns True if mentions exist (signal should be REJECTED).
+    Returns False if no mentions (signal should be ACCEPTED).
+    Gracefully returns False if the table does not exist or query fails.
+    Results cached per-symbol for 30 minutes.
+    """
+    now = _time.time()
+    if symbol in _social_cache and (now - _social_cache_ts.get(symbol, 0)) < _SOCIAL_CACHE_TTL:
+        return _social_cache[symbol]
+
+    try:
+        import psycopg
+        with psycopg.connect(database_url) as conn:
+            row = conn.execute(
+                "SELECT 1 FROM social_features_1h "
+                "WHERE symbol = %s AND ts >= NOW() - INTERVAL '30 days' "
+                "LIMIT 1",
+                (symbol,),
+            ).fetchone()
+        result = row is not None
+    except Exception as e:
+        # Table missing, connection error, etc. — accept the signal (no filter)
+        logger.debug("Social silence check failed for %s: %s", symbol, e)
+        result = False
+
+    _social_cache[symbol] = result
+    _social_cache_ts[symbol] = now
+    return result
 
 
 # =============================================================================
@@ -1152,12 +1202,14 @@ class U1Evaluator:
         timeframe: str,
         is_final: bool = True,
         funding_rates: dict = None,
+        database_url: str = None,
     ) -> Optional[U1Signal]:
         """
         Evaluate ignition trigger (Signal worker calls this for EMBRYO_ACTIVE symbols).
 
         v2.0: Uses data-driven ignition scoring alongside traditional triggers.
         v2.1: funding_rates dict enables post-scoring multiplier when compressed + negative funding.
+        v2.2: Social silence filter — reject signals for coins with social mentions in last 30d.
         Returns U1Signal if triggered, None otherwise.
         """
         # Canon §1.8: Anti-lookahead — only trigger on closed/final candles
@@ -1219,6 +1271,13 @@ class U1Evaluator:
         confirmations_passed, confirm_metrics = check_ignition_confirmations(candles_last_n, candles_prev_n)
         if not confirmations_passed:
             return None
+
+        # Social silence filter (v2.2) — coins with no social mentions in 30d
+        # are more likely to produce genuine ignition. Reject if social presence found.
+        if U1_SOCIAL_SILENCE_FILTER and database_url:
+            if has_social_mentions_30d(symbol, database_url):
+                logger.info("U1 social_silence_filter REJECT %s — social mentions found in 30d", symbol)
+                return None
 
         # All conditions met - generate signal
         current = candles[-1]

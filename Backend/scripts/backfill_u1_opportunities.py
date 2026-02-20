@@ -201,7 +201,7 @@ def process_symbol_timeframe(
 
         # Evaluate trigger (only fires for EMBRYO_ACTIVE phase)
         try:
-            signal = evaluator.evaluate_trigger(window, u1_state, symbol, tf)
+            signal = evaluator.evaluate_trigger(window, u1_state, symbol, tf, database_url=DATABASE_URL)
         except Exception:
             continue
 
