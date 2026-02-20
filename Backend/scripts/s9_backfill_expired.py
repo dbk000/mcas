@@ -247,18 +247,26 @@ def build_opportunity_payload(sig, micro_ctx):
 # Phase 4: DB operations
 # ---------------------------------------------------------------------------
 
-def delete_old_expired_s9(conn):
-    """Delete all existing expired S9 opportunities."""
+def delete_old_expired(conn):
+    """Delete all expired opportunities — S1-S8 are retired, U1 is WIP, S9 gets backfilled."""
     with conn.cursor() as cur:
+        # S9: delete expired (will be replaced by backfill)
         cur.execute("""
             DELETE FROM opportunities
             WHERE setup_id = 'S9' AND status = 'expired'
-            RETURNING id
         """)
-        deleted = cur.rowcount
+        s9_deleted = cur.rowcount
+
+        # S1-S8, U1: delete ALL expired (retired / WIP)
+        cur.execute("""
+            DELETE FROM opportunities
+            WHERE setup_id NOT IN ('S9') AND status = 'expired'
+        """)
+        other_deleted = cur.rowcount
     conn.commit()
-    logger.info("Deleted %d old expired S9 opportunities", deleted)
-    return deleted
+    logger.info("Deleted %d expired S9 opps + %d expired S1-S8/U1 opps",
+                s9_deleted, other_deleted)
+    return s9_deleted + other_deleted
 
 
 def insert_batch(conn, rows):
@@ -302,8 +310,8 @@ def run_backfill(days=30):
                 signal_start.strftime("%Y-%m-%d"),
                 signal_end.strftime("%Y-%m-%d"), days)
 
-    # Step 1: Delete old expired S9 opps
-    delete_old_expired_s9(conn)
+    # Step 1: Delete all expired opps (S1-S8 retired, U1 WIP, S9 gets backfilled)
+    delete_old_expired(conn)
 
     # Step 2: Load 1h candle data
     candle_data = load_1h_candles(conn, data_start, now)
