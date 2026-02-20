@@ -237,11 +237,11 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.05'
-          memory: 64M
+          cpus: '0.10'
+          memory: 192M
         reservations:
           cpus: '0.01'
-          memory: 16M
+          memory: 32M
     networks:
       - backend
 
