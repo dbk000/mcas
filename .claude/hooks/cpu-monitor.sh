@@ -6,8 +6,10 @@
 # Consume stdin (hook protocol requires reading it)
 cat > /dev/null
 
-# Fetch brief with 3s timeout — if collector is down, silently allow
-BRIEF=$(timeout 3 docker exec mcas-cpu-collector python cpu_query.py brief 2>/dev/null) || exit 0
+# Fetch brief with 5s timeout — if collector is down, silently allow
+# Note: docker exec takes longer in hook pipe context (closed stdin inheritance),
+# so 5s is needed where 3s is insufficient.
+BRIEF=$(timeout 5 docker exec mcas-cpu-collector python cpu_query.py brief < /dev/null 2>/dev/null) || exit 0
 [ -z "$BRIEF" ] && exit 0
 
 # Safely encode as JSON additionalContext
