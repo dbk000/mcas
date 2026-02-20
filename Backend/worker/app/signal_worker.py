@@ -38,6 +38,7 @@ from setups import (
     S3Evaluator, S3Signal, S4Evaluator, S4Signal,
     S5Evaluator, S5Signal, S6Evaluator, S6Signal,
     S7Evaluator, S7Signal,
+    S9Evaluator, S9Signal, S9State,
 )
 from setups.s1_bb_squeeze import S1State
 from setups.s2_golden_cross import S2State
@@ -48,6 +49,10 @@ from setups.s6_trend_pullback import S6State
 from setups.s7_momentum_breakout import S7State
 from setups.u1_unicorn_ignition import U1Evaluator, U1State, U1Phase, U1Config, load_funding_rates
 from setup_base import Direction
+from s9_microstructure import (
+    fetch_1s_klines_batch, analyze_tape, analyze_exit_tape,
+    MicrostructureContext,
+)
 
 logger = logging.getLogger("signal_worker")
 
@@ -75,6 +80,7 @@ SETUP_SCORE_MULTIPLIERS = {
     "S6": float(os.getenv("S6_SCORE_MULT", "0.90")),
     "S7": float(os.getenv("S7_SCORE_MULT", "0.95")),
     "U1": float(os.getenv("U1_SCORE_MULT", "1.0")),
+    "S9": float(os.getenv("S9_SCORE_MULT", "1.0")),
 }
 
 
@@ -150,8 +156,11 @@ class SignalWorker:
         self.s6_evaluator = S6Evaluator()
         self.s7_evaluator = S7Evaluator()
         self.u1_evaluator = U1Evaluator()
+        self.s9_evaluator = S9Evaluator()
         self.last_reconcile = 0.0
         self.last_prune = 0.0
+        self._s9_last_evaluated_hour = 0  # Unix hour for S9 dedup
+        self._s9_last_position_check = 0.0  # Position monitor timestamp
         # Per-worker consumer group: each worker instance gets ALL messages
         # and filters by partition locally. Fixes the shared-group bug where
         # ACK-ing another worker's message silently drops it.
@@ -172,6 +181,7 @@ class SignalWorker:
             "s6_signal": 0, "s6_no_trend": 0,
             "s7_signal": 0, "s7_no_break": 0,
             "btc_blocked": 0,
+            "s9_signal": 0, "s9_breadth_fail": 0,
         }
         self._last_diag_log = 0.0
 
@@ -284,6 +294,12 @@ class SignalWorker:
                 if now - self.last_prune > PRUNE_INTERVAL_S:
                     self._prune_all()
                     self.last_prune = now
+
+                # S9 cross-sectional: run once per 1h bar (after indicators settle)
+                self._maybe_evaluate_s9()
+
+                # S9 position monitor: check open positions every 5 min
+                self._maybe_monitor_s9_positions()
 
                 # Diagnostic summary every 60s
                 if now - self._last_diag_log > 60 and self._diag["evaluated"] > 0:
@@ -662,6 +678,7 @@ class SignalWorker:
         "S3": "S3_v1.0", "S4": "S4_v1.0", "S5": "S5_v1.0",
         "S6": "S6_v1.0", "S7": "S7_v1.0",
         "U1": "U1_v1.0",
+        "S9": "S9_v1.0",
     }
 
     def _persist_signal_to_pg(self, symbol: str, tf: str, setup_id: str,
@@ -774,6 +791,356 @@ class SignalWorker:
             f"calib={calib_mult:.2f} regime={regime_mult:.2f})"
         )
 
+    # ------------------------------------------------------------------
+    # S9 - Cross-Sectional Short Reversion
+    # ------------------------------------------------------------------
+
+    def _maybe_evaluate_s9(self):
+        """Run S9 cross-sectional evaluation once per 1h bar, +300s after the hour.
+
+        Waits 300 seconds so the 1s tape has full data for microstructure analysis.
+        Only worker 0 runs S9 to avoid duplicate signals.
+        """
+        if WORKER_INDEX != 0:
+            return
+
+        now = time.time()
+        current_hour = int(now // 3600)
+
+        # Already evaluated this hour?
+        if current_hour == self._s9_last_evaluated_hour:
+            return
+
+        # Wait 300s after the hour: 1s tape needs 300 seconds of data
+        seconds_into_hour = now - (current_hour * 3600)
+        if seconds_into_hour < 300:
+            return
+
+        self._s9_last_evaluated_hour = current_hour
+        try:
+            self._evaluate_s9_cross_sectional()
+        except Exception as e:
+            logger.error(f"S9 cross-sectional evaluation failed: {e}", exc_info=True)
+
+    def _evaluate_s9_cross_sectional(self):
+        """Cross-sectional S9: short top-decile by ret_4h when breadth > 0.3.
+
+        At +300s after the hour, also fetches 300 x 1-second klines for each
+        top-decile symbol and derives live microstructure context for execution.
+        """
+        all_symbols = get_universe(self.r)
+        if not all_symbols:
+            return
+
+        # Read recent candle closes for each symbol
+        symbol_data = {}
+        for symbol in all_symbols:
+            candles = get_candles_as_ohlcv(self.r, symbol, "1h")
+            if not candles or len(candles) < 25:
+                continue
+            close_now = candles[-1].close
+            close_4h = candles[-5].close if len(candles) >= 5 else None
+            close_24h = candles[-25].close if len(candles) >= 25 else None
+            if (close_now and close_now > 0 and close_4h and close_4h > 0
+                    and close_24h and close_24h > 0):
+                ret_4h = close_now / close_4h - 1
+                ret_24h = close_now / close_24h - 1
+                symbol_data[symbol] = (ret_4h, ret_24h, close_now)
+
+        if len(symbol_data) < 20:
+            logger.debug("S9: only %d symbols, need >= 20", len(symbol_data))
+            return
+
+        # Market breadth
+        n_positive = sum(1 for _, (_, r24, _) in symbol_data.items() if r24 > 0)
+        breadth = n_positive / len(symbol_data)
+
+        if breadth <= S9Evaluator.BREADTH_THRESHOLD:
+            self._diag["s9_breadth_fail"] += 1
+            logger.info("S9: breadth=%.3f <= %.1f, no signals",
+                        breadth, S9Evaluator.BREADTH_THRESHOLD)
+            return
+
+        # Rank by ret_4h descending, top decile
+        sorted_syms = sorted(symbol_data.items(), key=lambda x: x[1][0], reverse=True)
+        decile_n = max(1, len(sorted_syms) // 10)
+        top_decile = sorted_syms[:decile_n]
+
+        state = S9State(
+            breadth=breadth,
+            breadth_passes=True,
+            universe_size=len(symbol_data),
+            top_decile_threshold=top_decile[-1][1][0] if top_decile else 0.0,
+            top_decile_count=decile_n,
+        )
+
+        # Fetch 300 x 1s klines for all top-decile symbols (parallel)
+        hour_start_ms = int(time.time() // 3600) * 3600 * 1000
+        top_symbols = [sym for sym, _ in top_decile]
+        micro_data = {}
+        try:
+            kline_batch = fetch_1s_klines_batch(
+                top_symbols, hour_start_ms + 1000, limit=300, max_workers=8,
+            )
+            for sym, klines in kline_batch.items():
+                close_price = symbol_data[sym][2]  # ret_4h, ret_24h, close
+                micro_data[sym] = analyze_tape(close_price, klines)
+            logger.info("S9: fetched 1s klines for %d/%d top-decile symbols",
+                        len(kline_batch), len(top_symbols))
+        except Exception as e:
+            logger.warning("S9: 1s kline fetch failed, proceeding without: %s", e)
+
+        bar_start_ts = str(hour_start_ms)
+        count = 0
+
+        for rank, (symbol, (ret_4h, ret_24h, close)) in enumerate(top_decile):
+            signal = S9Evaluator.build_signal(
+                symbol=symbol, close=close,
+                ret_4h=ret_4h, ret_24h=ret_24h,
+                breadth=breadth, rank=rank,
+                universe_size=len(symbol_data),
+                decile_size=decile_n, state=state,
+                bar_start_ts=bar_start_ts,
+            )
+
+            # Microstructure context (live tape analysis)
+            micro_ctx = micro_data.get(symbol)
+            micro_payload = {}
+            if micro_ctx:
+                micro_payload = {
+                    "entry_type": micro_ctx.entry_type,
+                    "suggested_entry_price": micro_ctx.suggested_entry_price,
+                    "micro_reason": micro_ctx.reason,
+                    "drift_bps": round(micro_ctx.drift_bps, 1),
+                    "max_drift_bps": round(micro_ctx.max_drift_bps, 1),
+                    "max_price_300s": micro_ctx.max_price,
+                    "current_price_300s": micro_ctx.current_price,
+                    "still_climbing": micro_ctx.still_climbing,
+                    "already_reverted": micro_ctx.already_reverted,
+                    "volume_ratio_early_late": round(micro_ctx.volume_ratio_early_late, 1),
+                    "n_klines": micro_ctx.n_klines,
+                }
+
+            # Use tape-derived entry if available and not SKIP
+            effective_entry = signal.entry_price
+            if micro_ctx and micro_ctx.entry_type != "SKIP":
+                effective_entry = micro_ctx.suggested_entry_price
+
+            # Build payload
+            payload = {
+                "setup_id": "S9",
+                "setup_name": "Short Reversion v1.0",
+                "symbol": symbol,
+                "timeframe": "1h",
+                "direction": signal.direction.value,
+                "setup_score": signal.setup_score,
+                "raw_score": signal.setup_score,
+                "entry_price": effective_entry,
+                "naive_entry_price": signal.entry_price,
+                "stop_price": signal.stop_price,
+                "tp1_price": signal.tp1_price,
+                "tp2_price": signal.tp2_price,
+                "r_value": signal.r_value,
+                "time_stop_bars": signal.time_stop_bars,
+                "bar_start_ts": bar_start_ts,
+                "as_of_ts": time.time(),
+                "why_items": signal.explain.why_items if signal.explain else [],
+                "state": {
+                    "ret_4h": ret_4h,
+                    "ret_24h": ret_24h,
+                    "breadth": breadth,
+                    "rank": rank + 1,
+                    "decile_size": decile_n,
+                    "universe_size": len(symbol_data),
+                },
+                "score_components": {
+                    "rank_score": signal.rank_score,
+                    "breadth_score": signal.breadth_score,
+                    "magnitude_score": signal.magnitude_score,
+                },
+                "microstructure": micro_payload,
+            }
+
+            # If tape says SKIP, still store the signal but at lower score
+            final_score = signal.setup_score
+            if micro_ctx and micro_ctx.entry_type == "SKIP":
+                final_score = signal.setup_score * 0.5
+                payload["setup_score"] = final_score
+                payload["skip_reason"] = micro_ctx.reason
+
+            store_signal(self.r, symbol, "1h", "S9", payload,
+                         final_score, bar_start_ts)
+            reason = "; ".join(signal.explain.why_items) if signal.explain else None
+            self._persist_signal_to_pg(symbol, "1h", "S9",
+                                       final_score, reason, payload)
+            count += 1
+
+        self._diag["s9_signal"] += count
+        skipped = sum(1 for s in top_symbols
+                      if s in micro_data and micro_data[s].entry_type == "SKIP")
+        logger.info(
+            "S9: breadth=%.3f, %d/%d symbols → %d signals "
+            "(%d with 1s context, %d SKIP)",
+            breadth, decile_n, len(symbol_data), count,
+            len(micro_data), skipped,
+        )
+
+    # ------------------------------------------------------------------
+    # S9 Position Monitor — early exit detection via 1s tape
+    # ------------------------------------------------------------------
+
+    S9_MONITOR_INTERVAL_S = 300  # Check every 5 minutes
+
+    def _maybe_monitor_s9_positions(self):
+        """Check open S9 positions for early exit conditions, every 5 min.
+
+        Only worker 0 runs this to avoid duplicate checks.
+        """
+        if WORKER_INDEX != 0:
+            return
+
+        now = time.time()
+        if now - self._s9_last_position_check < self.S9_MONITOR_INTERVAL_S:
+            return
+
+        self._s9_last_position_check = now
+
+        if not DATABASE_URL:
+            return
+
+        try:
+            self._check_s9_positions()
+        except Exception as e:
+            logger.error("S9 position monitor failed: %s", e, exc_info=True)
+
+    def _check_s9_positions(self):
+        """Query open S9 opportunities and check for early exit via 1s tape."""
+        import requests as _req
+
+        with psycopg.connect(DATABASE_URL) as conn:
+            with conn.cursor() as cur:
+                # Find S9 opportunities that are still active and within 48h window
+                cur.execute("""
+                    SELECT id, symbol, payload_json, created_ts
+                    FROM opportunities
+                    WHERE setup_id = 'S9'
+                      AND status = 'active'
+                      AND created_ts > NOW() - INTERVAL '48 hours'
+                    ORDER BY created_ts DESC
+                """)
+                positions = cur.fetchall()
+
+        if not positions:
+            return
+
+        logger.info("S9 monitor: checking %d open positions", len(positions))
+
+        # Get current prices from Binance ticker
+        symbols_to_check = set()
+        pos_data = []
+        for row in positions:
+            pos_id, symbol, payload_json, created_ts = row
+            try:
+                payload = json.loads(payload_json) if payload_json else {}
+            except (json.JSONDecodeError, TypeError):
+                payload = {}
+            entry_price = payload.get("entry_price", 0)
+            if entry_price <= 0:
+                continue
+            symbols_to_check.add(symbol)
+            pos_data.append({
+                "id": pos_id,
+                "symbol": symbol,
+                "entry_price": entry_price,
+                "created_ts": created_ts,
+                "payload": payload,
+            })
+
+        if not pos_data:
+            return
+
+        # Fetch current prices
+        try:
+            resp = _req.get(
+                "https://api.binance.com/api/v3/ticker/price",
+                timeout=10,
+            )
+            resp.raise_for_status()
+            price_map = {
+                t["symbol"]: float(t["price"])
+                for t in resp.json()
+                if t["symbol"] in symbols_to_check
+            }
+        except Exception as e:
+            logger.debug("S9 monitor: price fetch failed: %s", e)
+            return
+
+        # For positions with >= 1% unrealized profit, fetch 1s tape
+        positions_to_tape = []
+        for pos in pos_data:
+            current = price_map.get(pos["symbol"])
+            if current is None:
+                continue
+            # Short: profit when price drops
+            unrealized_pct = (pos["entry_price"] - current) / pos["entry_price"] * 100
+            pos["current_price"] = current
+            pos["unrealized_pct"] = unrealized_pct
+            if unrealized_pct >= 1.0:
+                positions_to_tape.append(pos)
+
+        if not positions_to_tape:
+            logger.debug("S9 monitor: no positions with >= 1%% unrealized profit")
+            return
+
+        # Fetch recent 300 x 1s klines for profitable positions
+        now_ms = int(time.time() * 1000)
+        start_ms = now_ms - 300_000  # Last 300 seconds
+        tape_symbols = [p["symbol"] for p in positions_to_tape]
+        kline_batch = fetch_1s_klines_batch(
+            tape_symbols, start_ms, limit=300, max_workers=6,
+        )
+
+        exit_flagged = 0
+        for pos in positions_to_tape:
+            klines = kline_batch.get(pos["symbol"], [])
+            if not klines:
+                continue
+
+            rec = analyze_exit_tape(
+                pos["entry_price"], klines, pos["unrealized_pct"],
+            )
+
+            if rec.action == "EXIT":
+                exit_flagged += 1
+                logger.info(
+                    "S9 EARLY EXIT flagged: %s unrealized=%.1f%% — %s",
+                    pos["symbol"], pos["unrealized_pct"], rec.reason,
+                )
+                # Update opportunity payload with exit flag
+                try:
+                    payload = pos["payload"]
+                    payload["early_exit_flagged"] = True
+                    payload["early_exit_reason"] = rec.reason
+                    payload["early_exit_urgency"] = rec.urgency
+                    payload["early_exit_unrealized_pct"] = round(pos["unrealized_pct"], 2)
+                    payload["early_exit_ts"] = time.time()
+
+                    with psycopg.connect(DATABASE_URL) as conn:
+                        with conn.cursor() as cur:
+                            cur.execute("""
+                                UPDATE opportunities
+                                SET payload_json = %s, updated_ts = NOW()
+                                WHERE id = %s
+                            """, (json.dumps(payload), pos["id"]))
+                        conn.commit()
+                except Exception as e:
+                    logger.debug("S9 monitor: failed to update opp %s: %s",
+                                 pos["id"], e)
+
+        if exit_flagged > 0:
+            logger.info("S9 monitor: %d/%d positions flagged for early exit",
+                        exit_flagged, len(positions_to_tape))
+
     def _reconcile(self):
         """Periodic reconciliation (invariant #17 — sharded, #30 — decode safety)."""
         try:
@@ -793,7 +1160,7 @@ class SignalWorker:
                         continue
 
                     reeval_needed = False
-                    for setup_id in ["S1", "S2", "S3", "S4", "S5", "S6", "S7", "U1"]:
+                    for setup_id in ["S1", "S2", "S3", "S4", "S5", "S6", "S7", "S9", "U1"]:
                         sig_ts = b2f(self.r.hget(
                             sig_meta_key(symbol, tf, setup_id), "bar_start_ts"
                         ))
@@ -818,7 +1185,7 @@ class SignalWorker:
         """Prune stale signals across all setups and timeframes."""
         try:
             timeframes = get_timeframes(self.r)
-            for setup_id in ["S1", "S2", "S3", "S4", "S5", "S6", "S7", "U1"]:
+            for setup_id in ["S1", "S2", "S3", "S4", "S5", "S6", "S7", "S9", "U1"]:
                 for tf in timeframes:
                     prune_stale_signals(self.r, setup_id, tf)
             # Also expire stale active records in Postgres

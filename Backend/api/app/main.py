@@ -482,7 +482,7 @@ def _read_opportunities_from_redis(min_score: float = 0.0, limit: int = 50, setu
         if cache_ready != "1":
             return None
 
-        setup_ids = [setup_id] if setup_id else ["S1", "S2", "S3", "S4", "S5", "S6", "S7", "U1"]
+        setup_ids = [setup_id] if setup_id else ["S1", "S2", "S3", "S4", "S5", "S6", "S7", "S9", "U1"]
         timeframes = list(r.smembers("cache:timeframes")) or DEFAULT_TIMEFRAMES
         results = []
         seen = set()

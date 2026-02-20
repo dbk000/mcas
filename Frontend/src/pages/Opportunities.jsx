@@ -320,6 +320,7 @@ export default function Opportunities() {
               { value: 'S5', label: 'S5' },
               { value: 'S6', label: 'S6' },
               { value: 'S7', label: 'S7' },
+              { value: 'S9', label: 'S9' },
               { value: 'U1', label: 'U1' },
             ]}
             className="w-32"
@@ -470,6 +471,7 @@ export default function Opportunities() {
                       { value: 'S5', label: 'S5' },
                       { value: 'S6', label: 'S6' },
                       { value: 'S7', label: 'S7' },
+                      { value: 'S9', label: 'S9' },
                       { value: 'U1', label: 'U1' },
                     ]}
                     placeholder="All"

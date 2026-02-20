@@ -31,6 +31,7 @@ from setups import S1Evaluator, S1Signal, S2Evaluator, S2Signal
 from setups import S3Evaluator, S3Signal, S4Evaluator, S4Signal
 from setups import S5Evaluator, S5Signal, S6Evaluator, S6Signal
 from setups import S7Evaluator, S7Signal, S8Evaluator, S8Signal
+from setups import S9Evaluator, S9Signal, S9State
 from data_layer import log_signal_event
 
 logger = logging.getLogger(__name__)
@@ -652,6 +653,7 @@ class SignalEngine:
         "S6": "Trend Continuation Pullback v1.0",
         "S7": "Momentum Breakout (Donchian) v1.0",
         "S8": "MTF Momentum Pullback v1.0",
+        "S9": "Short Reversion v1.0",
     }
 
     def signal_to_ranked(self, signal) -> RankedSignal:
@@ -832,6 +834,27 @@ class SignalEngine:
                 "time_stop_bars": signal.time_stop_bars,
                 "recommended_exit_config": signal.recommended_exit_config,
             }
+        elif isinstance(signal, S9Signal):
+            setup_id = "S9"
+            payload = {
+                "setup_id": "S9",
+                "setup_name": self._SETUP_NAMES["S9"],
+                "state": {
+                    "ret_4h": signal.ret_4h,
+                    "ret_24h": signal.ret_24h,
+                    "breadth": signal.breadth,
+                    "rank": signal.rank,
+                    "universe_size": signal.universe_size,
+                    "decile_size": signal.decile_size,
+                },
+                "score_components": {
+                    "rank_score": signal.rank_score,
+                    "breadth_score": signal.breadth_score,
+                    "magnitude_score": signal.magnitude_score,
+                },
+                "why_items": signal.explain.why_items if signal.explain else [],
+                "time_stop_bars": signal.time_stop_bars,
+            }
         else:
             setup_id = "UNKNOWN"
             payload = {
@@ -882,7 +905,7 @@ class SignalEngine:
             if is_cache_ready(self.redis_client):
                 cached = get_top_signals(
                     self.redis_client,
-                    setup_ids=["S1", "S2", "S3", "S4", "S5", "S6", "S7", "U1"],
+                    setup_ids=["S1", "S2", "S3", "S4", "S5", "S6", "S7", "S9", "U1"],
                     timeframes=self.timeframes,
                     top_n=self.top_n or 9999,
                 )
@@ -1003,12 +1026,18 @@ class SignalEngine:
             finally:
                 ctx_symbol.reset(token)
 
+        # Phase 2C: S9 cross-sectional evaluation (needs all symbols' data)
+        s9_signals = self._evaluate_s9_cross_sectional(snapshots, successful_pairs)
+        for sig in s9_signals:
+            ranked = self.signal_to_ranked(sig)
+            all_signals.append(ranked)
+
         eval_time = round(time.time() - eval_start, 1)
         logger.info("Setup evaluation complete", extra={
             "event": "setups_evaluated",
             "signal_count": len(all_signals), "duration_s": eval_time,
         })
-        
+
         # Sort by score descending
         all_signals.sort(key=lambda s: s.setup_score, reverse=True)
         
@@ -1051,6 +1080,70 @@ class SignalEngine:
         # Return top N
         return top_n_signals
     
+    def _evaluate_s9_cross_sectional(self, snapshots, successful_pairs) -> list:
+        """Cross-sectional S9 evaluation: short top-decile by ret_4h when breadth > 0.3.
+
+        Runs after all per-symbol indicators are computed. Reads candle closes
+        from cached OHLCV to compute 4h returns, market breadth, and rankings.
+        """
+        s9_evaluator = S9Evaluator()
+
+        # Collect 1h candle data for each symbol
+        symbol_data = {}
+        for symbol, tf in successful_pairs:
+            if tf != "1h":
+                continue
+            candles = self.ohlcv_cache.get(symbol, "1h")
+            if not candles or len(candles) < 25:
+                continue
+            close_now = candles[-1].close
+            close_4h = candles[-5].close if len(candles) >= 5 else None
+            close_24h = candles[-25].close if len(candles) >= 25 else None
+            if (close_now and close_now > 0 and close_4h and close_4h > 0
+                    and close_24h and close_24h > 0):
+                ret_4h = close_now / close_4h - 1
+                ret_24h = close_now / close_24h - 1
+                symbol_data[symbol] = (ret_4h, ret_24h, close_now)
+
+        if len(symbol_data) < 20:
+            return []
+
+        # Compute market breadth
+        n_positive = sum(1 for _, (_, r24, _) in symbol_data.items() if r24 > 0)
+        breadth = n_positive / len(symbol_data)
+
+        if breadth <= S9Evaluator.BREADTH_THRESHOLD:
+            logger.debug("S9: breadth=%.3f <= threshold, skipping", breadth)
+            return []
+
+        # Rank by ret_4h descending, select top decile
+        sorted_syms = sorted(symbol_data.items(), key=lambda x: x[1][0], reverse=True)
+        decile_n = max(1, len(sorted_syms) // 10)
+        top_decile = sorted_syms[:decile_n]
+
+        state = S9State(
+            breadth=breadth,
+            breadth_passes=True,
+            universe_size=len(symbol_data),
+            top_decile_threshold=top_decile[-1][1][0] if top_decile else 0.0,
+            top_decile_count=decile_n,
+        )
+
+        signals = []
+        for rank, (symbol, (ret_4h, ret_24h, close)) in enumerate(top_decile):
+            sig = S9Evaluator.build_signal(
+                symbol=symbol, close=close,
+                ret_4h=ret_4h, ret_24h=ret_24h,
+                breadth=breadth, rank=rank,
+                universe_size=len(symbol_data),
+                decile_size=decile_n, state=state,
+            )
+            signals.append(sig)
+
+        logger.info("S9 cross-sectional: breadth=%.3f, %d/%d symbols → %d shorts",
+                     breadth, decile_n, len(symbol_data), len(signals))
+        return signals
+
     def scan_symbol(self, symbol: str, tf: str) -> Optional[RankedSignal]:
         """
         Scan a single symbol/timeframe.
