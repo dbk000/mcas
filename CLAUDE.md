@@ -89,40 +89,28 @@ cd /srv/mcas/Backend && docker compose -f docker-compose.yml run --rm -T worker 
 - `mcas-dev-postgres-1` / `mcas-dev-worker-1` = dev
 - Do not confuse them.
 
-## 1.6 Resource Awareness Protocol
+## 1.6 Resource Awareness & Agent Teams Protocol
 
-The VPS runs a CPU metrics collector (`cpu_collector`) that writes to Redis every 5 seconds. Claude Code can query it via the `mcas-cpu-collector` container to observe real-time resource utilisation. This closes the feedback loop: instead of writing scripts blind and waiting, observe resource profiles and adapt.
-
-**Before running any script expected to take >60s:**
+### CPU Monitoring
+The VPS runs a CPU metrics collector (`cpu_collector`) writing to Redis every 5 seconds. Query via:
 ```bash
-docker exec mcas-cpu-collector python cpu_query.py brief
+docker exec mcas-cpu-collector python cpu_query.py <command>
 ```
+Commands: `brief` (one-liner), `now` (full snapshot), `summary` (rolling stats), `containers` (per-container), `hotspots` (imbalance), `history <secs>` (time series), `health` (liveness), `alerts` (threshold state).
 
-**Interpret the output:**
-- `usage <40%` on multi-core = you're single-threaded, refactor for parallelism
-- One core at 100%, others idle = GIL-bound or single-process bottleneck
-- `steal >5%` = hypervisor throttling, reduce concurrency or schedule off-peak
-- `iowait >20%` = disk/network bound, not CPU bound — parallelism won't help
+**Mandatory**: Check `brief` before any script >60s. Check every 2-3 min during long runs. Log `history` after completion.
 
-**During any script taking >2 minutes:**
-```bash
-docker exec mcas-cpu-collector python cpu_query.py brief
-```
-Check every 2-3 minutes. If the resource profile indicates the script is under-utilising available compute, consider stopping, refactoring, and restarting.
+**Interpretation**: usage <40% on multi-core = single-threaded, refactor. One core pinned = GIL-bound. steal >5% = hypervisor throttle. iowait >20% = I/O bound. load > 2x cores = oversubscribed.
 
-**After any script completes:**
-```bash
-docker exec mcas-cpu-collector python cpu_query.py history <duration_seconds>
-```
-Log peak CPU, mean CPU, and whether the job was compute-bound or IO-bound. Use this to inform how you write the next script.
-
-**Diagnostic commands (all via `docker exec mcas-cpu-collector python cpu_query.py`):**
-- `now` — full current snapshot (aggregate + per-core + load avg)
-- `summary` — rolling 5m/15m/1h stats (mean/max/min/p95)
-- `containers` — per-container CPU/mem breakdown
-- `hotspots` — per-core imbalance + top container consumers
-- `alerts` — sustained high-CPU alert state
-- `health` — collector liveness check
+### Agent Teams (Mesh Architecture)
+Up to 3 Claude Code sessions run simultaneously, each spawning 2 sub-agents (9 Claudes total). All follow `.claude/agent-teams-governance.md`. Key rules:
+- **All substance on disk.** Chat carries pointers and summaries only.
+- **Cross-session coordination via `.claude/taskboard/`.** Leads post, claim, and complete task files. Sub-agents only talk to their own lead.
+- **Check-ins under 50 tokens.** STATUS, RESULT (one line), OUTPUT (path), READY.
+- **Lead never runs heavy scripts.** Lead assigns, reads files, synthesizes, manages taskboard.
+- **File ownership via SCOPE.** Only write where assigned. Shared files are lead-only. Output paths are session-namespaced.
+- **Max 2 heavy scripts concurrently across all sessions.** Leads check each other's team-state files to stagger compute.
+- **Recovery via `.claude/team-state-S{N}.md`.** Each lead maintains its own session state file.
 
 ---
 
