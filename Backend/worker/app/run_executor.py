@@ -37,10 +37,15 @@ from runs.repository import RunRepository
 from signal_engine import SignalEngine, RankedSignal
 from execution import ExecutionConfig, realistic_config, FixedBpsSlippage, TieredFees
 from indicators import FeatureFactory, IndicatorSnapshot, OHLCV
-from setups import S1Evaluator, S1Signal, S2Evaluator, S2Signal
-from setups import S3Evaluator, S3Signal, S4Evaluator, S4Signal
-from setups import S5Evaluator, S5Signal, S6Evaluator, S6Signal
-from setups import S7Evaluator, S7Signal
+# S1-S7 archived — import conditionally for legacy backtest support
+try:
+    from setups import S1Evaluator, S1Signal, S2Evaluator, S2Signal
+    from setups import S3Evaluator, S3Signal, S4Evaluator, S4Signal
+    from setups import S5Evaluator, S5Signal, S6Evaluator, S6Signal
+    from setups import S7Evaluator, S7Signal
+    _LEGACY_SETUPS_AVAILABLE = True
+except ImportError:
+    _LEGACY_SETUPS_AVAILABLE = False
 from exit_checker import check_exit, ExitConfig, PositionState
 from opportunity_simulator import OpportunitySimulator, SimulationConfig
 
@@ -365,13 +370,17 @@ class RunExecutor:
         # P0-1: Setup evaluators and per-symbol state
         # =====================================================================
         feature_factory = FeatureFactory()
-        s1_evaluator = S1Evaluator()
-        s2_evaluator = S2Evaluator()
-        s3_evaluator = S3Evaluator()
-        s4_evaluator = S4Evaluator()
-        s5_evaluator = S5Evaluator()
-        s6_evaluator = S6Evaluator()
-        s7_evaluator = S7Evaluator()
+        if _LEGACY_SETUPS_AVAILABLE:
+            s1_evaluator = S1Evaluator()
+            s2_evaluator = S2Evaluator()
+            s3_evaluator = S3Evaluator()
+            s4_evaluator = S4Evaluator()
+            s5_evaluator = S5Evaluator()
+            s6_evaluator = S6Evaluator()
+            s7_evaluator = S7Evaluator()
+        else:
+            s1_evaluator = s2_evaluator = s3_evaluator = None
+            s4_evaluator = s5_evaluator = s6_evaluator = s7_evaluator = None
 
         candle_history: dict[str, list] = {}       # key -> list[OHLCV]
         bb_width_history: dict[str, list] = {}     # key -> list[float]
