@@ -878,13 +878,22 @@ from cc_api import router as cc_router
 app.include_router(cc_router, prefix="/v1", dependencies=[Depends(require_api_key)])
 
 # Mount Analytics API (correlation analysis, etc.)
-from analytics_api import router as analytics_router
-app.include_router(analytics_router, prefix="/v1", dependencies=[Depends(require_api_key)])
+try:
+    from analytics_api import router as analytics_router
+    app.include_router(analytics_router, prefix="/v1", dependencies=[Depends(require_api_key)])
+except ImportError:
+    pass
 
 # Mount Equities Forward Predictor API
-from equities_api import router as equities_router
-app.include_router(equities_router, prefix="/v1", dependencies=[Depends(require_api_key)])
+try:
+    from equities_api import router as equities_router
+    app.include_router(equities_router, prefix="/v1", dependencies=[Depends(require_api_key)])
+except ImportError:
+    pass  # psycopg_pool not available in this container
 
 # Mount Equities Simulation API
-from equities_sim_runner import router as eq_sim_router
-app.include_router(eq_sim_router, prefix="/v1", dependencies=[Depends(require_api_key)])
+try:
+    from equities_sim_runner import router as eq_sim_router
+    app.include_router(eq_sim_router, prefix="/v1", dependencies=[Depends(require_api_key)])
+except ImportError:
+    pass
