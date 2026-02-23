@@ -1,0 +1,147 @@
+{
+  "run_timestamp": "2026-02-18T14:56:32.911755+00:00",
+  "elapsed_seconds": 13.265129089355469,
+  "model": "timeseries_adaptive",
+  "hypothesis": "Per-symbol adaptive momentum/reversion based on own autocorrelation structure",
+  "horizon": 24,
+  "config": {
+    "ac_lags": [
+      1,
+      4,
+      8,
+      12,
+      24
+    ],
+    "ac_window": 55,
+    "sharpe_windows": [
+      8,
+      13,
+      21
+    ],
+    "mr_window": 21,
+    "er_window": 13,
+    "threshold_sweep": [
+      0.5,
+      1.0,
+      1.5,
+      2.0
+    ],
+    "exit_configs": [
+      "standard",
+      "time_stop_only"
+    ],
+    "n_folds": 2,
+    "holdout_days": 18,
+    "slippage_bps": 5.0,
+    "fee_bps": 4.0
+  },
+  "data": {
+    "n_symbols": 453,
+    "n_bars": 2991,
+    "days_loaded": 110
+  },
+  "regime_diagnostics": {
+    "n_momentum_bars": 497217,
+    "n_mr_bars": 779941,
+    "momentum_fwd_ret_mean": -0.005327449180185795,
+    "mr_fwd_ret_mean": -0.004044793546199799,
+    "regime_persistence_rate": 0.9544537503078289
+  },
+  "walk_forward": {
+    "summaries": {
+      "standard": {
+        "avg_daily_pf": 0.0,
+        "avg_daily_pf_robust": 0.0,
+        "median_daily_pf": 0.0,
+        "consistency": 0.0,
+        "total_trades": 0
+      },
+      "time_stop_only": {
+        "avg_daily_pf": 0.0,
+        "avg_daily_pf_robust": 0.0,
+        "median_daily_pf": 0.0,
+        "consistency": 0.0,
+        "total_trades": 0
+      }
+    },
+    "best_exit_config": "standard",
+    "pass": false,
+    "folds": [
+      {
+        "fold_idx": 0,
+        "horizon": 24,
+        "exit_config_name": "standard",
+        "threshold": 1.0,
+        "n_trades": 0,
+        "avg_daily_pf": 0.0,
+        "avg_daily_pf_robust": 0.0,
+        "median_daily_pf": 0.0,
+        "aggregate_pf": 0.0,
+        "win_rate": 0.0,
+        "total_pnl": 0.0,
+        "avg_r_mult": 0.0,
+        "exit_reasons": {}
+      },
+      {
+        "fold_idx": 0,
+        "horizon": 24,
+        "exit_config_name": "time_stop_only",
+        "threshold": 1.0,
+        "n_trades": 0,
+        "avg_daily_pf": 0.0,
+        "avg_daily_pf_robust": 0.0,
+        "median_daily_pf": 0.0,
+        "aggregate_pf": 0.0,
+        "win_rate": 0.0,
+        "total_pnl": 0.0,
+        "avg_r_mult": 0.0,
+        "exit_reasons": {}
+      },
+      {
+        "fold_idx": 1,
+        "horizon": 24,
+        "exit_config_name": "standard",
+        "threshold": 1.0,
+        "n_trades": 0,
+        "avg_daily_pf": 0.0,
+        "avg_daily_pf_robust": 0.0,
+        "median_daily_pf": 0.0,
+        "aggregate_pf": 0.0,
+        "win_rate": 0.0,
+        "total_pnl": 0.0,
+        "avg_r_mult": 0.0,
+        "exit_reasons": {}
+      },
+      {
+        "fold_idx": 1,
+        "horizon": 24,
+        "exit_config_name": "time_stop_only",
+        "threshold": 1.0,
+        "n_trades": 0,
+        "avg_daily_pf": 0.0,
+        "avg_daily_pf_robust": 0.0,
+        "median_daily_pf": 0.0,
+        "aggregate_pf": 0.0,
+        "win_rate": 0.0,
+        "total_pnl": 0.0,
+        "avg_r_mult": 0.0,
+        "exit_reasons": {}
+      }
+    ]
+  },
+  "holdout": {
+    "avg_daily_pf": 0.0,
+    "avg_daily_pf_robust": 0.0,
+    "median_daily_pf": 0.0,
+    "aggregate_pf": 0.0,
+    "dsr": -99.0,
+    "n_trades": 0
+  },
+  "n_configs_tested": 16,
+  "verdict": "FAIL_WALK_FORWARD",
+  "fail_reasons": [
+    "robust_avg_daily_pf=0.000 <= 1.0",
+    "consistency=0.00 < 0.67",
+    "trades=0 < 25"
+  ]
+}

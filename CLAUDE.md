@@ -45,7 +45,7 @@ Use quantitative validation methods (walk-forward, holdout, DSR) because those a
 # 1) Session Rules & Protocols
 
 ## 1.1 Claude Code Session Rules
-- Maximum 2 concurrent sub-agents/tasks. No more.
+- Maximum 6 concurrent sub-agents/tasks. No more. Agents must write findings to disk and share filepath to avoid busting chat context.
 - Work through all tasks sequentially (or 2 at a time) without waiting for user confirmation between tasks.
 - Keep changes per task to <5 files where possible.
 
@@ -355,3 +355,8 @@ deep, invisible from reading _process_fold alone. The correct audit question is:
   Rule: For rare-event models with <30% precision, wider exits outperform tighter ones. The rare true positives need room to develop their full MFE. Trails and TPs cap the upside on the few
   winners, which are the only trades that can offset the many losers. Tighter stops also increase turnover (more entries, each with negative EV). The monotonic pattern (wider → better across
    all three exit dimensions) proves this is structural, not a calibration issue.
+
+2026-02-21 — simulation_results contains massive duplication (2-11x per setup)
+  Rule: ALL queries against simulation_results must use `DISTINCT ON (opportunity_id) ORDER BY opportunity_id, created_ts DESC` to get the latest run's result per opportunity, or filter by a specific `run_id`. Raw `COUNT(*)` or `SUM(pnl_net)` without deduplication is NEVER valid. The table is a run-log (multiple sim configs × same opportunities), not a trade-log.
+  What happened: Multiple simulation runs (auto-runs Feb 13-16 + Phase3/4/5 config variants) each re-simulated the same opportunities. 72,713 rows = 25,219 unique opportunities = 2.88x avg inflation. S1/5m was inflated 11.4x. S2-15m "809 trades" was actually 97 unique (67% from one day). All S2 hunting analyses used raw counts — directional findings survived but magnitudes were ~2.5x overstated.
+  Key insight: The duplication was roughly uniform across exit types, so ratios (FF rate, TP1 rate, win rate) and directional comparisons (A > B) were preserved. But absolute PnL, trade counts, and sample size confidence were all inflated. Any finding that relied on "large sample" confidence (like the S2-15m hour filter at "809 trades") collapsed when deduped.

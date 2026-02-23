@@ -1,0 +1,791 @@
+{
+  "validation_type": "walk_forward_ff_cooldown",
+  "timestamp": "2026-02-21T00:54:07.680437+00:00",
+  "data_window": "2026-01-21 to 2026-02-16",
+  "n_trading_days": 26,
+  "n_trades": 8442,
+  "n_ff_trades": 2165,
+  "baseline": {
+    "avg_daily_pf": 2.9559,
+    "aggregate_pf": 0.6624,
+    "sharpe": -0.4269,
+    "total_pnl": -9891.07
+  },
+  "variants": {
+    "N1": {
+      "total_trades": 8442,
+      "filtered_trades": 7389,
+      "total_excluded": 1053,
+      "pct_excluded": 12.5,
+      "folds": [
+        {
+          "fold": 1,
+          "days": "2026-01-21 \u2192 2026-01-24",
+          "n_test_days": 4,
+          "baseline_trades": 65,
+          "filtered_trades": 51,
+          "excluded": 14,
+          "baseline_avg_daily_pf": 1.9489,
+          "filtered_avg_daily_pf": 1.9028,
+          "improvement": -0.0461,
+          "fold_pass": false
+        },
+        {
+          "fold": 2,
+          "days": "2026-01-25 \u2192 2026-01-28",
+          "n_test_days": 4,
+          "baseline_trades": 72,
+          "filtered_trades": 56,
+          "excluded": 16,
+          "baseline_avg_daily_pf": 5.8874,
+          "filtered_avg_daily_pf": 14.0461,
+          "improvement": 8.1587,
+          "fold_pass": true
+        },
+        {
+          "fold": 3,
+          "days": "2026-01-30 \u2192 2026-02-02",
+          "n_test_days": 4,
+          "baseline_trades": 38,
+          "filtered_trades": 27,
+          "excluded": 11,
+          "baseline_avg_daily_pf": 8.8232,
+          "filtered_avg_daily_pf": 14.8938,
+          "improvement": 6.0706,
+          "fold_pass": true
+        },
+        {
+          "fold": 4,
+          "days": "2026-02-03 \u2192 2026-02-06",
+          "n_test_days": 4,
+          "baseline_trades": 759,
+          "filtered_trades": 663,
+          "excluded": 96,
+          "baseline_avg_daily_pf": 0.8438,
+          "filtered_avg_daily_pf": 0.7558,
+          "improvement": -0.0881,
+          "fold_pass": false
+        },
+        {
+          "fold": 5,
+          "days": "2026-02-07 \u2192 2026-02-11",
+          "n_test_days": 5,
+          "baseline_trades": 3354,
+          "filtered_trades": 2999,
+          "excluded": 355,
+          "baseline_avg_daily_pf": 0.8541,
+          "filtered_avg_daily_pf": 1.105,
+          "improvement": 0.2509,
+          "fold_pass": true
+        }
+      ],
+      "n_pass": 3,
+      "wf_pass": false,
+      "holdout": {
+        "n_days": 5,
+        "baseline_trades": 4154,
+        "filtered_trades": 3593,
+        "baseline_avg_daily_pf": 0.5137,
+        "filtered_avg_daily_pf": 0.6245,
+        "improvement": 0.1109,
+        "baseline_sharpe": -1.0377,
+        "filtered_sharpe": -0.7979
+      },
+      "setup_breakdown": {
+        "S1": {
+          "baseline_trades": 308,
+          "filtered_trades": 280,
+          "excluded": 28,
+          "baseline_pnl": -272.83,
+          "filtered_pnl": -192.41,
+          "pnl_improvement": 80.42,
+          "baseline_ff_count": 63,
+          "filtered_ff_count": 41
+        },
+        "S2": {
+          "baseline_trades": 1229,
+          "filtered_trades": 1110,
+          "excluded": 119,
+          "baseline_pnl": -263.06,
+          "filtered_pnl": -32.97,
+          "pnl_improvement": 230.09,
+          "baseline_ff_count": 249,
+          "filtered_ff_count": 162
+        },
+        "S3": {
+          "baseline_trades": 133,
+          "filtered_trades": 119,
+          "excluded": 14,
+          "baseline_pnl": -192.61,
+          "filtered_pnl": -100.77,
+          "pnl_improvement": 91.84,
+          "baseline_ff_count": 39,
+          "filtered_ff_count": 25
+        },
+        "S4": {
+          "baseline_trades": 261,
+          "filtered_trades": 258,
+          "excluded": 3,
+          "baseline_pnl": -89.1,
+          "filtered_pnl": -99.45,
+          "pnl_improvement": -10.35,
+          "baseline_ff_count": 36,
+          "filtered_ff_count": 36
+        },
+        "S6": {
+          "baseline_trades": 1586,
+          "filtered_trades": 1342,
+          "excluded": 244,
+          "baseline_pnl": -3067.29,
+          "filtered_pnl": -1635.38,
+          "pnl_improvement": 1431.91,
+          "baseline_ff_count": 525,
+          "filtered_ff_count": 330
+        },
+        "S7": {
+          "baseline_trades": 483,
+          "filtered_trades": 474,
+          "excluded": 9,
+          "baseline_pnl": 1083.6,
+          "filtered_pnl": 1119.38,
+          "pnl_improvement": 35.77,
+          "baseline_ff_count": 21,
+          "filtered_ff_count": 13
+        },
+        "S9": {
+          "baseline_trades": 288,
+          "filtered_trades": 213,
+          "excluded": 75,
+          "baseline_pnl": 336.25,
+          "filtered_pnl": 241.4,
+          "pnl_improvement": -94.85,
+          "baseline_ff_count": 117,
+          "filtered_ff_count": 84
+        }
+      }
+    },
+    "N2": {
+      "total_trades": 8442,
+      "filtered_trades": 6888,
+      "total_excluded": 1554,
+      "pct_excluded": 18.4,
+      "folds": [
+        {
+          "fold": 1,
+          "days": "2026-01-21 \u2192 2026-01-24",
+          "n_test_days": 4,
+          "baseline_trades": 65,
+          "filtered_trades": 44,
+          "excluded": 21,
+          "baseline_avg_daily_pf": 1.9489,
+          "filtered_avg_daily_pf": 4.2468,
+          "improvement": 2.2979,
+          "fold_pass": true
+        },
+        {
+          "fold": 2,
+          "days": "2026-01-25 \u2192 2026-01-28",
+          "n_test_days": 4,
+          "baseline_trades": 72,
+          "filtered_trades": 44,
+          "excluded": 28,
+          "baseline_avg_daily_pf": 5.8874,
+          "filtered_avg_daily_pf": 7.9354,
+          "improvement": 2.048,
+          "fold_pass": true
+        },
+        {
+          "fold": 3,
+          "days": "2026-01-30 \u2192 2026-02-02",
+          "n_test_days": 4,
+          "baseline_trades": 38,
+          "filtered_trades": 21,
+          "excluded": 17,
+          "baseline_avg_daily_pf": 8.8232,
+          "filtered_avg_daily_pf": 6.9868,
+          "improvement": -1.8364,
+          "fold_pass": false
+        },
+        {
+          "fold": 4,
+          "days": "2026-02-03 \u2192 2026-02-06",
+          "n_test_days": 4,
+          "baseline_trades": 759,
+          "filtered_trades": 629,
+          "excluded": 130,
+          "baseline_avg_daily_pf": 0.8438,
+          "filtered_avg_daily_pf": 1.9137,
+          "improvement": 1.0699,
+          "fold_pass": true
+        },
+        {
+          "fold": 5,
+          "days": "2026-02-07 \u2192 2026-02-11",
+          "n_test_days": 5,
+          "baseline_trades": 3354,
+          "filtered_trades": 2835,
+          "excluded": 519,
+          "baseline_avg_daily_pf": 0.8541,
+          "filtered_avg_daily_pf": 1.2172,
+          "improvement": 0.363,
+          "fold_pass": true
+        }
+      ],
+      "n_pass": 4,
+      "wf_pass": true,
+      "holdout": {
+        "n_days": 5,
+        "baseline_trades": 4154,
+        "filtered_trades": 3315,
+        "baseline_avg_daily_pf": 0.5137,
+        "filtered_avg_daily_pf": 0.6513,
+        "improvement": 0.1376,
+        "baseline_sharpe": -1.0377,
+        "filtered_sharpe": -0.6267
+      },
+      "setup_breakdown": {
+        "S1": {
+          "baseline_trades": 308,
+          "filtered_trades": 271,
+          "excluded": 37,
+          "baseline_pnl": -272.83,
+          "filtered_pnl": -163.04,
+          "pnl_improvement": 109.78,
+          "baseline_ff_count": 63,
+          "filtered_ff_count": 36
+        },
+        "S2": {
+          "baseline_trades": 1229,
+          "filtered_trades": 1039,
+          "excluded": 190,
+          "baseline_pnl": -263.06,
+          "filtered_pnl": 34.15,
+          "pnl_improvement": 297.21,
+          "baseline_ff_count": 249,
+          "filtered_ff_count": 142
+        },
+        "S3": {
+          "baseline_trades": 133,
+          "filtered_trades": 115,
+          "excluded": 18,
+          "baseline_pnl": -192.61,
+          "filtered_pnl": -81.68,
+          "pnl_improvement": 110.93,
+          "baseline_ff_count": 39,
+          "filtered_ff_count": 21
+        },
+        "S4": {
+          "baseline_trades": 261,
+          "filtered_trades": 258,
+          "excluded": 3,
+          "baseline_pnl": -89.1,
+          "filtered_pnl": -99.45,
+          "pnl_improvement": -10.35,
+          "baseline_ff_count": 36,
+          "filtered_ff_count": 36
+        },
+        "S6": {
+          "baseline_trades": 1586,
+          "filtered_trades": 1250,
+          "excluded": 336,
+          "baseline_pnl": -3067.29,
+          "filtered_pnl": -1349.29,
+          "pnl_improvement": 1717.99,
+          "baseline_ff_count": 525,
+          "filtered_ff_count": 282
+        },
+        "S7": {
+          "baseline_trades": 483,
+          "filtered_trades": 469,
+          "excluded": 14,
+          "baseline_pnl": 1083.6,
+          "filtered_pnl": 1146.37,
+          "pnl_improvement": 62.77,
+          "baseline_ff_count": 21,
+          "filtered_ff_count": 9
+        },
+        "S9": {
+          "baseline_trades": 288,
+          "filtered_trades": 171,
+          "excluded": 117,
+          "baseline_pnl": 336.25,
+          "filtered_pnl": 172.65,
+          "pnl_improvement": -163.59,
+          "baseline_ff_count": 117,
+          "filtered_ff_count": 71
+        }
+      }
+    },
+    "6h": {
+      "total_trades": 8442,
+      "filtered_trades": 7015,
+      "total_excluded": 1427,
+      "pct_excluded": 16.9,
+      "folds": [
+        {
+          "fold": 1,
+          "days": "2026-01-21 \u2192 2026-01-24",
+          "n_test_days": 4,
+          "baseline_trades": 65,
+          "filtered_trades": 54,
+          "excluded": 11,
+          "baseline_avg_daily_pf": 1.9489,
+          "filtered_avg_daily_pf": 1.8685,
+          "improvement": -0.0805,
+          "fold_pass": false
+        },
+        {
+          "fold": 2,
+          "days": "2026-01-25 \u2192 2026-01-28",
+          "n_test_days": 4,
+          "baseline_trades": 72,
+          "filtered_trades": 61,
+          "excluded": 11,
+          "baseline_avg_daily_pf": 5.8874,
+          "filtered_avg_daily_pf": 7.8806,
+          "improvement": 1.9931,
+          "fold_pass": true
+        },
+        {
+          "fold": 3,
+          "days": "2026-01-30 \u2192 2026-02-02",
+          "n_test_days": 4,
+          "baseline_trades": 38,
+          "filtered_trades": 31,
+          "excluded": 7,
+          "baseline_avg_daily_pf": 8.8232,
+          "filtered_avg_daily_pf": 9.3684,
+          "improvement": 0.5453,
+          "fold_pass": true
+        },
+        {
+          "fold": 4,
+          "days": "2026-02-03 \u2192 2026-02-06",
+          "n_test_days": 4,
+          "baseline_trades": 759,
+          "filtered_trades": 597,
+          "excluded": 162,
+          "baseline_avg_daily_pf": 0.8438,
+          "filtered_avg_daily_pf": 1.4732,
+          "improvement": 0.6294,
+          "fold_pass": true
+        },
+        {
+          "fold": 5,
+          "days": "2026-02-07 \u2192 2026-02-11",
+          "n_test_days": 5,
+          "baseline_trades": 3354,
+          "filtered_trades": 2866,
+          "excluded": 488,
+          "baseline_avg_daily_pf": 0.8541,
+          "filtered_avg_daily_pf": 1.4194,
+          "improvement": 0.5652,
+          "fold_pass": true
+        }
+      ],
+      "n_pass": 4,
+      "wf_pass": true,
+      "holdout": {
+        "n_days": 5,
+        "baseline_trades": 4154,
+        "filtered_trades": 3406,
+        "baseline_avg_daily_pf": 0.5137,
+        "filtered_avg_daily_pf": 0.7396,
+        "improvement": 0.2259,
+        "baseline_sharpe": -1.0377,
+        "filtered_sharpe": -0.392
+      },
+      "setup_breakdown": {
+        "S1": {
+          "baseline_trades": 308,
+          "filtered_trades": 247,
+          "excluded": 61,
+          "baseline_pnl": -272.83,
+          "filtered_pnl": -129.45,
+          "pnl_improvement": 143.37,
+          "baseline_ff_count": 63,
+          "filtered_ff_count": 28
+        },
+        "S2": {
+          "baseline_trades": 1229,
+          "filtered_trades": 1047,
+          "excluded": 182,
+          "baseline_pnl": -263.06,
+          "filtered_pnl": 95.4,
+          "pnl_improvement": 358.46,
+          "baseline_ff_count": 249,
+          "filtered_ff_count": 117
+        },
+        "S3": {
+          "baseline_trades": 133,
+          "filtered_trades": 110,
+          "excluded": 23,
+          "baseline_pnl": -192.61,
+          "filtered_pnl": -35.85,
+          "pnl_improvement": 156.76,
+          "baseline_ff_count": 39,
+          "filtered_ff_count": 16
+        },
+        "S4": {
+          "baseline_trades": 261,
+          "filtered_trades": 260,
+          "excluded": 1,
+          "baseline_pnl": -89.1,
+          "filtered_pnl": -100.54,
+          "pnl_improvement": -11.43,
+          "baseline_ff_count": 36,
+          "filtered_ff_count": 36
+        },
+        "S6": {
+          "baseline_trades": 1586,
+          "filtered_trades": 1235,
+          "excluded": 351,
+          "baseline_pnl": -3067.29,
+          "filtered_pnl": -909.69,
+          "pnl_improvement": 2157.6,
+          "baseline_ff_count": 525,
+          "filtered_ff_count": 231
+        },
+        "S7": {
+          "baseline_trades": 483,
+          "filtered_trades": 469,
+          "excluded": 14,
+          "baseline_pnl": 1083.6,
+          "filtered_pnl": 1154.54,
+          "pnl_improvement": 70.94,
+          "baseline_ff_count": 21,
+          "filtered_ff_count": 7
+        },
+        "S9": {
+          "baseline_trades": 288,
+          "filtered_trades": 241,
+          "excluded": 47,
+          "baseline_pnl": 336.25,
+          "filtered_pnl": 295.1,
+          "pnl_improvement": -41.15,
+          "baseline_ff_count": 117,
+          "filtered_ff_count": 97
+        }
+      }
+    },
+    "12h": {
+      "total_trades": 8442,
+      "filtered_trades": 6855,
+      "total_excluded": 1587,
+      "pct_excluded": 18.8,
+      "folds": [
+        {
+          "fold": 1,
+          "days": "2026-01-21 \u2192 2026-01-24",
+          "n_test_days": 4,
+          "baseline_trades": 65,
+          "filtered_trades": 51,
+          "excluded": 14,
+          "baseline_avg_daily_pf": 1.9489,
+          "filtered_avg_daily_pf": 1.9025,
+          "improvement": -0.0465,
+          "fold_pass": false
+        },
+        {
+          "fold": 2,
+          "days": "2026-01-25 \u2192 2026-01-28",
+          "n_test_days": 4,
+          "baseline_trades": 72,
+          "filtered_trades": 56,
+          "excluded": 16,
+          "baseline_avg_daily_pf": 5.8874,
+          "filtered_avg_daily_pf": 7.5103,
+          "improvement": 1.6229,
+          "fold_pass": true
+        },
+        {
+          "fold": 3,
+          "days": "2026-01-30 \u2192 2026-02-02",
+          "n_test_days": 4,
+          "baseline_trades": 38,
+          "filtered_trades": 31,
+          "excluded": 7,
+          "baseline_avg_daily_pf": 8.8232,
+          "filtered_avg_daily_pf": 9.3684,
+          "improvement": 0.5453,
+          "fold_pass": true
+        },
+        {
+          "fold": 4,
+          "days": "2026-02-03 \u2192 2026-02-06",
+          "n_test_days": 4,
+          "baseline_trades": 759,
+          "filtered_trades": 582,
+          "excluded": 177,
+          "baseline_avg_daily_pf": 0.8438,
+          "filtered_avg_daily_pf": 1.3771,
+          "improvement": 0.5332,
+          "fold_pass": true
+        },
+        {
+          "fold": 5,
+          "days": "2026-02-07 \u2192 2026-02-11",
+          "n_test_days": 5,
+          "baseline_trades": 3354,
+          "filtered_trades": 2827,
+          "excluded": 527,
+          "baseline_avg_daily_pf": 0.8541,
+          "filtered_avg_daily_pf": 1.4251,
+          "improvement": 0.571,
+          "fold_pass": true
+        }
+      ],
+      "n_pass": 4,
+      "wf_pass": true,
+      "holdout": {
+        "n_days": 5,
+        "baseline_trades": 4154,
+        "filtered_trades": 3308,
+        "baseline_avg_daily_pf": 0.5137,
+        "filtered_avg_daily_pf": 0.7282,
+        "improvement": 0.2145,
+        "baseline_sharpe": -1.0377,
+        "filtered_sharpe": -0.4478
+      },
+      "setup_breakdown": {
+        "S1": {
+          "baseline_trades": 308,
+          "filtered_trades": 247,
+          "excluded": 61,
+          "baseline_pnl": -272.83,
+          "filtered_pnl": -129.45,
+          "pnl_improvement": 143.37,
+          "baseline_ff_count": 63,
+          "filtered_ff_count": 28
+        },
+        "S2": {
+          "baseline_trades": 1229,
+          "filtered_trades": 1023,
+          "excluded": 206,
+          "baseline_pnl": -263.06,
+          "filtered_pnl": 101.45,
+          "pnl_improvement": 364.51,
+          "baseline_ff_count": 249,
+          "filtered_ff_count": 115
+        },
+        "S3": {
+          "baseline_trades": 133,
+          "filtered_trades": 110,
+          "excluded": 23,
+          "baseline_pnl": -192.61,
+          "filtered_pnl": -35.85,
+          "pnl_improvement": 156.76,
+          "baseline_ff_count": 39,
+          "filtered_ff_count": 16
+        },
+        "S4": {
+          "baseline_trades": 261,
+          "filtered_trades": 258,
+          "excluded": 3,
+          "baseline_pnl": -89.1,
+          "filtered_pnl": -99.45,
+          "pnl_improvement": -10.35,
+          "baseline_ff_count": 36,
+          "filtered_ff_count": 36
+        },
+        "S6": {
+          "baseline_trades": 1586,
+          "filtered_trades": 1219,
+          "excluded": 367,
+          "baseline_pnl": -3067.29,
+          "filtered_pnl": -866.98,
+          "pnl_improvement": 2200.31,
+          "baseline_ff_count": 525,
+          "filtered_ff_count": 224
+        },
+        "S7": {
+          "baseline_trades": 483,
+          "filtered_trades": 466,
+          "excluded": 17,
+          "baseline_pnl": 1083.6,
+          "filtered_pnl": 1154.72,
+          "pnl_improvement": 71.11,
+          "baseline_ff_count": 21,
+          "filtered_ff_count": 7
+        },
+        "S9": {
+          "baseline_trades": 288,
+          "filtered_trades": 224,
+          "excluded": 64,
+          "baseline_pnl": 336.25,
+          "filtered_pnl": 265.26,
+          "pnl_improvement": -70.98,
+          "baseline_ff_count": 117,
+          "filtered_ff_count": 92
+        }
+      }
+    },
+    "24h": {
+      "total_trades": 8442,
+      "filtered_trades": 6658,
+      "total_excluded": 1784,
+      "pct_excluded": 21.1,
+      "folds": [
+        {
+          "fold": 1,
+          "days": "2026-01-21 \u2192 2026-01-24",
+          "n_test_days": 4,
+          "baseline_trades": 65,
+          "filtered_trades": 51,
+          "excluded": 14,
+          "baseline_avg_daily_pf": 1.9489,
+          "filtered_avg_daily_pf": 2.6706,
+          "improvement": 0.7217,
+          "fold_pass": true
+        },
+        {
+          "fold": 2,
+          "days": "2026-01-25 \u2192 2026-01-28",
+          "n_test_days": 4,
+          "baseline_trades": 72,
+          "filtered_trades": 52,
+          "excluded": 20,
+          "baseline_avg_daily_pf": 5.8874,
+          "filtered_avg_daily_pf": 7.7341,
+          "improvement": 1.8467,
+          "fold_pass": true
+        },
+        {
+          "fold": 3,
+          "days": "2026-01-30 \u2192 2026-02-02",
+          "n_test_days": 4,
+          "baseline_trades": 38,
+          "filtered_trades": 30,
+          "excluded": 8,
+          "baseline_avg_daily_pf": 8.8232,
+          "filtered_avg_daily_pf": 9.1081,
+          "improvement": 0.2849,
+          "fold_pass": true
+        },
+        {
+          "fold": 4,
+          "days": "2026-02-03 \u2192 2026-02-06",
+          "n_test_days": 4,
+          "baseline_trades": 759,
+          "filtered_trades": 578,
+          "excluded": 181,
+          "baseline_avg_daily_pf": 0.8438,
+          "filtered_avg_daily_pf": 1.6267,
+          "improvement": 0.7828,
+          "fold_pass": true
+        },
+        {
+          "fold": 5,
+          "days": "2026-02-07 \u2192 2026-02-11",
+          "n_test_days": 5,
+          "baseline_trades": 3354,
+          "filtered_trades": 2751,
+          "excluded": 603,
+          "baseline_avg_daily_pf": 0.8541,
+          "filtered_avg_daily_pf": 1.4079,
+          "improvement": 0.5538,
+          "fold_pass": true
+        }
+      ],
+      "n_pass": 5,
+      "wf_pass": true,
+      "holdout": {
+        "n_days": 5,
+        "baseline_trades": 4154,
+        "filtered_trades": 3196,
+        "baseline_avg_daily_pf": 0.5137,
+        "filtered_avg_daily_pf": 0.7502,
+        "improvement": 0.2365,
+        "baseline_sharpe": -1.0377,
+        "filtered_sharpe": -0.3546
+      },
+      "setup_breakdown": {
+        "S1": {
+          "baseline_trades": 308,
+          "filtered_trades": 247,
+          "excluded": 61,
+          "baseline_pnl": -272.83,
+          "filtered_pnl": -129.45,
+          "pnl_improvement": 143.37,
+          "baseline_ff_count": 63,
+          "filtered_ff_count": 28
+        },
+        "S2": {
+          "baseline_trades": 1229,
+          "filtered_trades": 989,
+          "excluded": 240,
+          "baseline_pnl": -263.06,
+          "filtered_pnl": 100.11,
+          "pnl_improvement": 363.18,
+          "baseline_ff_count": 249,
+          "filtered_ff_count": 110
+        },
+        "S3": {
+          "baseline_trades": 133,
+          "filtered_trades": 110,
+          "excluded": 23,
+          "baseline_pnl": -192.61,
+          "filtered_pnl": -35.85,
+          "pnl_improvement": 156.76,
+          "baseline_ff_count": 39,
+          "filtered_ff_count": 16
+        },
+        "S4": {
+          "baseline_trades": 261,
+          "filtered_trades": 258,
+          "excluded": 3,
+          "baseline_pnl": -89.1,
+          "filtered_pnl": -99.45,
+          "pnl_improvement": -10.35,
+          "baseline_ff_count": 36,
+          "filtered_ff_count": 36
+        },
+        "S6": {
+          "baseline_trades": 1586,
+          "filtered_trades": 1181,
+          "excluded": 405,
+          "baseline_pnl": -3067.29,
+          "filtered_pnl": -1009.84,
+          "pnl_improvement": 2057.44,
+          "baseline_ff_count": 525,
+          "filtered_ff_count": 216
+        },
+        "S7": {
+          "baseline_trades": 483,
+          "filtered_trades": 466,
+          "excluded": 17,
+          "baseline_pnl": 1083.6,
+          "filtered_pnl": 1154.72,
+          "pnl_improvement": 71.11,
+          "baseline_ff_count": 21,
+          "filtered_ff_count": 7
+        },
+        "S9": {
+          "baseline_trades": 288,
+          "filtered_trades": 211,
+          "excluded": 77,
+          "baseline_pnl": 336.25,
+          "filtered_pnl": 273.28,
+          "pnl_improvement": -62.97,
+          "baseline_ff_count": 117,
+          "filtered_ff_count": 85
+        }
+      }
+    }
+  },
+  "dsr": {
+    "best_variant": "24h",
+    "holdout_sharpe": -0.3546,
+    "n_trials": 5,
+    "n_holdout_days": 5,
+    "dsr": -4.1636,
+    "p_value": 0.999984,
+    "dsr_pass": false
+  },
+  "gate": "avg daily PF improvement in \u22654/5 folds",
+  "observation_sl_clustering": {
+    "sl_after_sl_n": 1011,
+    "sl_after_sl_pnl": -5850.05
+  },
+  "elapsed_s": 0.2
+}

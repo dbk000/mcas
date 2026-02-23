@@ -1,0 +1,55 @@
+{
+  "_metadata": {
+    "version": "1.0",
+    "created": "2026-02-19",
+    "verification_method": "Web search against t.me URLs, TGStat listings, and official exchange community pages",
+    "review_schedule": "Monthly via Brain 2 Opus review cycle",
+    "notes": "All channels verified as real and active as of Feb 2026. Usernames are case-sensitive in Telethon. Categories align with Brain 2 catalyst_type taxonomy."
+  },
+
+  "channels": [
+
+    {"username": "whale_alert_io",           "category": "whale_alerts",         "priority": "high",   "notes": "332K subs. Official Whale Alert — large BTC/ETH/USDT transfers. Extremely high volume, structured format easy to parse."},
+    {"username": "WhaleBotAlerts",           "category": "whale_alerts",         "priority": "high",   "notes": "Official @CryptoWhaleBot channel. BTC transfers with sender/receiver balances. Sister channels: @WhaleBotRektd (liquidations), @WhaleBotPumps (alt monitor)."},
+    {"username": "WhaleBotRektd",            "category": "liquidations",         "priority": "medium", "notes": "Liquidation alerts from WhaleBot ecosystem. Useful for cascade/sentiment detection."},
+    {"username": "WhaleBotPumps",            "category": "alt_monitor",          "priority": "medium", "notes": "Alt coin pump detection from WhaleBot. Directly relevant to ignition model."},
+    {"username": "lookonchain",              "category": "on_chain_analytics",   "priority": "high",   "notes": "Smart money on-chain tracking. Whale wallet movements, exchange flows. Very high signal for pre-ignition detection."},
+
+    {"username": "binance_announcements",    "category": "exchange_listings",    "priority": "high",   "notes": "Official Binance announcements. New listings, delistings, trading pair changes. Critical for listing_rumor catalyst detection."},
+    {"username": "Bybit_Announcements",      "category": "exchange_listings",    "priority": "high",   "notes": "Official Bybit announcements channel."},
+    {"username": "OKXAnnouncements",         "category": "exchange_listings",    "priority": "high",   "notes": "Official OKX announcements. Listings, delistings, network upgrades."},
+    {"username": "Kucoin_News",              "category": "exchange_listings",    "priority": "high",   "notes": "Official KuCoin announcement channel. Active with listings, alpha zone additions."},
+    {"username": "CryptoComOfficialAnnouncements", "category": "exchange_listings", "priority": "medium", "notes": "Official Crypto.com announcements."},
+    {"username": "Bybit_API_Announcements",  "category": "exchange_technical",   "priority": "low",    "notes": "Bybit API changes — useful for detecting new trading pair availability before public announcement."},
+
+    {"username": "cointelegraph",            "category": "news",                 "priority": "high",   "notes": "500K+ subs. Major crypto news outlet. Multiple posts/day. Market news sub-channel: @CTMarkets."},
+    {"username": "CTMarkets",                "category": "news_markets",         "priority": "medium", "notes": "CoinTelegraph markets sub-channel. Price-focused news and analysis."},
+    {"username": "coingeckonews",            "category": "news",                 "priority": "medium", "notes": "11K subs. CoinGecko official news channel."},
+
+    {"username": "glassnode",                "category": "on_chain_analytics",   "priority": "high",   "notes": "Pioneering on-chain analytics. 1-2 posts/day with BTC metrics, SOPR, HODL waves, exchange flows."},
+    {"username": "investigations",           "category": "security_intel",       "priority": "high",   "notes": "ZachXBT's channel. Scam/hack/exploit investigations. High signal for negative catalyst detection (hacks, rug pulls)."},
+    {"username": "Rekt_HQ",                  "category": "security_intel",       "priority": "medium", "notes": "Rekt News — DeFi exploits, hacks, and post-mortems."},
+    {"username": "rektnews",                 "category": "security_intel",       "priority": "medium", "notes": "Rekt News alerts channel."},
+
+    {"username": "cbinsider",                "category": "alpha",                "priority": "medium", "notes": "Coin Bureau Insider. Market analysis and insights from a well-known crypto analyst team."},
+    {"username": "cryptonarratives1",        "category": "narratives",           "priority": "medium", "notes": "Crypto Narratives channel. Tracks emerging narrative themes — directly maps to Brain 2 narrative_category."},
+    {"username": "unfolded",                 "category": "alpha",                "priority": "medium", "notes": "Curated daily alpha, DeFi insights, emerging trends."},
+    {"username": "ico_analytic",             "category": "token_launches",       "priority": "medium", "notes": "ICO Analytics. Token sale calendars, independent ratings, market dashboards."},
+
+    {"username": "CryptoScanner100eyes",     "category": "technical_alerts",     "priority": "medium", "notes": "100 Eyes Crypto Scanner. Technical analysis alerts and chart pattern detection."},
+    {"username": "lunarcrush",               "category": "social_analytics",     "priority": "medium", "notes": "LunarCrush announcements. Social media engagement metrics for crypto — meta-signal for our own pipeline."},
+
+    {"username": "bybitcryptofeed",          "category": "exchange_news",        "priority": "low",    "notes": "Bybit Crypto Feed — broader crypto news curated by Bybit."}
+  ],
+
+  "_pruning_log": [],
+
+  "_candidate_channels_to_evaluate": [
+    {"username": "olimpioalpha",     "category": "alpha",            "notes": "Olimpio Alpha — real-time DeFi/airdrop alpha. Need to verify exact username."},
+    {"username": "theaboratory",     "category": "on_chain_analytics", "notes": "The Aboratory — on-chain research. Need to verify."},
+    {"username": "defiprime",        "category": "defi_news",        "notes": "DeFi Prime — new DeFi primitives, audits, docs. Need to verify username."},
+    {"username": "AirdropDetective", "category": "airdrops",         "notes": "Airdrop Detective — early airdrop intel. Verified t.me link exists."},
+    {"username": "GateioOfficial",   "category": "exchange_listings", "notes": "Gate.io official — need to verify exact username."},
+    {"username": "MEXCGlobal",       "category": "exchange_listings", "notes": "MEXC official — need to verify exact username. MEXC lists aggressively early."}
+  ]
+}

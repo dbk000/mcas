@@ -1,0 +1,130 @@
+{
+  "run_timestamp": "2026-02-18T14:10:24.217597+00:00",
+  "elapsed_seconds": 78.70431184768677,
+  "strategy": "volatility_gated_momentum",
+  "hypothesis": "Volatility features predict magnitude of moves, not direction. Stage 1 (vol gate) selects high-expected-move symbols. Stage 2 (direction filter) determines long/short via momentum.",
+  "vol_features": [
+    "parkinson_vol_21",
+    "garman_klass_21",
+    "atr_14_norm",
+    "range_pct",
+    "vol_ratio_8_21"
+  ],
+  "dir_features": [
+    "ret_norm_5",
+    "relative_strength_21"
+  ],
+  "param_grid": {
+    "V": [
+      10,
+      20,
+      30,
+      40,
+      50
+    ],
+    "D": [
+      20,
+      30,
+      40,
+      50
+    ]
+  },
+  "horizon": 24,
+  "exit_config": {
+    "stop_atr_mult": 2.0,
+    "time_stop_bars": 36,
+    "trail_activation_r": 1.5,
+    "trail_distance_r": 1.0,
+    "trail_breakeven_r": 0.0,
+    "slippage_bps": 5.0,
+    "fee_bps": 4.0,
+    "slippage_on_all_exits": true
+  },
+  "walk_forward": {
+    "n_folds": 2,
+    "avg_daily_pf": 0.5346881533250994,
+    "consistency": 0.0,
+    "total_trades": 56313,
+    "folds": [
+      {
+        "fold_idx": 0,
+        "horizon": 24,
+        "n_trades": 10579,
+        "avg_daily_pf": 0.5805922689157205,
+        "aggregate_pf": 0.5208727671577265,
+        "win_rate": 0.27242650534076945,
+        "total_pnl": -92459.91594571082,
+        "best_v": 10,
+        "best_d": 50,
+        "vol_features": [
+          "parkinson_vol_21",
+          "garman_klass_21",
+          "atr_14_norm",
+          "range_pct",
+          "vol_ratio_8_21"
+        ],
+        "dir_features": [
+          "ret_norm_5",
+          "relative_strength_21"
+        ],
+        "dir_ic_weights": [
+          -0.4784176496221089,
+          -0.521582350377891
+        ]
+      },
+      {
+        "fold_idx": 1,
+        "horizon": 24,
+        "n_trades": 45734,
+        "avg_daily_pf": 0.4887840377344785,
+        "aggregate_pf": 0.4404624976777302,
+        "win_rate": 0.2679188350024052,
+        "total_pnl": -410336.7294594982,
+        "best_v": 50,
+        "best_d": 30,
+        "vol_features": [
+          "parkinson_vol_21",
+          "garman_klass_21",
+          "atr_14_norm",
+          "range_pct",
+          "vol_ratio_8_21"
+        ],
+        "dir_features": [
+          "ret_norm_5",
+          "relative_strength_21"
+        ],
+        "dir_ic_weights": [
+          -0.45668546281035455,
+          -0.5433145371896454
+        ]
+      }
+    ]
+  },
+  "holdout": {
+    "avg_daily_pf": 0.0,
+    "aggregate_pf": 0.0,
+    "dsr": -99.0,
+    "n_trades": 0,
+    "sharpe": 0.0,
+    "win_rate": 0.0,
+    "total_pnl": 0.0,
+    "best_v": 0,
+    "best_d": 0,
+    "ic_weights": [],
+    "ics": {},
+    "exit_breakdown": {},
+    "long_trades": 0,
+    "short_trades": 0,
+    "long_pnl": 0.0,
+    "short_pnl": 0.0
+  },
+  "slippage_2x": {
+    "avg_daily_pf": 0.0,
+    "n_trades": 0
+  },
+  "verdict": "FAIL_WALK_FORWARD",
+  "fail_reasons": [
+    "avg_daily_pf=0.535 <= 1.0",
+    "consistency=0.00 < 0.67"
+  ]
+}
