@@ -38,6 +38,7 @@ function ExitReasonBadge({ reason }) {
     TRAIL_STOP: 'success',
     TP1: 'success',
     TP2: 'success',
+    HORIZON_EXIT: 'info',
   }
   return <Badge variant={variants[reason] || 'default'}>{reason}</Badge>
 }

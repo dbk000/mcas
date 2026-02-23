@@ -12,7 +12,6 @@ import os
 import sys
 import json
 import time
-import types
 import logging
 from dataclasses import dataclass, asdict
 
@@ -33,20 +32,7 @@ from cache_contract import (
 )
 import numpy as np
 from indicators import IndicatorSnapshot
-from setups import (
-    S1Evaluator, S1Signal, S2Evaluator, S2Signal,
-    S3Evaluator, S3Signal, S4Evaluator, S4Signal,
-    S5Evaluator, S5Signal, S6Evaluator, S6Signal,
-    S7Evaluator, S7Signal,
-    S9Evaluator, S9Signal, S9State,
-)
-from setups.s1_bb_squeeze import S1State
-from setups.s2_golden_cross import S2State
-from setups.s3_rsi_divergence import S3State
-from setups.s4_vwap_reversion import S4State
-from setups.s5_sr_breakout import S5State
-from setups.s6_trend_pullback import S6State
-from setups.s7_momentum_breakout import S7State
+from setups import S9Evaluator, S9Signal, S9State
 from setups.u1_unicorn_ignition import U1Evaluator, U1State, U1Phase, U1Config, load_funding_rates
 from setup_base import Direction
 from s9_microstructure import (
@@ -69,16 +55,10 @@ CONSUMER_NAME = f"sig-{WORKER_INDEX}"
 XREAD_BLOCK_MS = 5000
 XREAD_COUNT = 50
 PRUNE_INTERVAL_S = 300  # Prune stale signals every 5 min
+SYMBOL_QUALITY_FILTER = os.getenv("SYMBOL_QUALITY_FILTER", "0") == "1"
 
 # Cross-setup score calibration (env-overridable)
 SETUP_SCORE_MULTIPLIERS = {
-    "S1": float(os.getenv("S1_SCORE_MULT", "1.0")),
-    "S2": float(os.getenv("S2_SCORE_MULT", "1.0")),
-    "S3": float(os.getenv("S3_SCORE_MULT", "0.85")),
-    "S4": float(os.getenv("S4_SCORE_MULT", "0.80")),
-    "S5": float(os.getenv("S5_SCORE_MULT", "1.05")),
-    "S6": float(os.getenv("S6_SCORE_MULT", "0.90")),
-    "S7": float(os.getenv("S7_SCORE_MULT", "0.95")),
     "U1": float(os.getenv("U1_SCORE_MULT", "1.0")),
     "S9": float(os.getenv("S9_SCORE_MULT", "1.0")),
 }
@@ -105,37 +85,14 @@ def setup_logging():
 # ---------------------------------------------------------------------------
 
 def _serialize_state(state) -> str:
-    """Serialize S1State or S2State to JSON."""
+    """Serialize setup state to JSON."""
     d = {}
     for k, v in state.__dict__.items():
-        if isinstance(v, Direction):
+        if hasattr(v, 'value'):
             d[k] = v.value if v is not None else None
         else:
             d[k] = v
     return json.dumps(d)
-
-
-def _deserialize_s1_state(raw: str) -> S1State:
-    """Deserialize S1State from JSON."""
-    d = json.loads(raw)
-    # Convert Direction enum
-    if d.get("btc_breakout_direction") is not None:
-        d["btc_breakout_direction"] = Direction(d["btc_breakout_direction"])
-    else:
-        d["btc_breakout_direction"] = None
-    return S1State(**d)
-
-
-def _deserialize_s2_state(raw: str) -> S2State:
-    """Deserialize S2State from JSON."""
-    d = json.loads(raw)
-    return S2State(**d)
-
-
-def _deserialize_s6_state(raw: str) -> S6State:
-    """Deserialize S6State from JSON."""
-    d = json.loads(raw)
-    return S6State(**d)
 
 
 # ---------------------------------------------------------------------------
@@ -148,13 +105,6 @@ class SignalWorker:
     def __init__(self):
         # Invariant #24: decode_responses=True mandatory
         self.r = redis.Redis.from_url(REDIS_URL, decode_responses=True)
-        self.s1_evaluator = S1Evaluator()
-        self.s2_evaluator = S2Evaluator()
-        self.s3_evaluator = S3Evaluator()
-        self.s4_evaluator = S4Evaluator()
-        self.s5_evaluator = S5Evaluator()
-        self.s6_evaluator = S6Evaluator()
-        self.s7_evaluator = S7Evaluator()
         self.u1_evaluator = U1Evaluator()
         self.s9_evaluator = S9Evaluator()
         self.last_reconcile = 0.0
@@ -168,79 +118,17 @@ class SignalWorker:
         # Cache of EMBRYO_ACTIVE symbols (refreshed periodically)
         self._embryo_active_cache: set[str] = set()
         self._embryo_active_cache_ts = 0.0
+        # Symbol quality filter (excluded symbols cache, 5-min TTL)
+        self._symbol_quality_filter_enabled = SYMBOL_QUALITY_FILTER
+        self._excluded_symbols_cache: set[str] = set()
+        self._excluded_symbols_cache_ts: float = 0.0
         # Diagnostic counters (reset per logging cycle)
         self._diag = {
             "evaluated": 0, "snapshot_fail": 0, "candle_fail": 0,
-            "s1_squeeze_off": 0, "s1_pctile_fail": 0,
-            "s1_age_fail": 0, "s1_ripe_fail": 0, "s1_trigger_fail": 0,
-            "s1_signal": 0, "s2_not_converging": 0,
-            "s2_trigger_fail": 0, "s2_signal": 0,
-            "s3_signal": 0, "s3_no_div": 0,
-            "s4_signal": 0, "s4_not_extended": 0,
-            "s5_signal": 0, "s5_no_break": 0,
-            "s6_signal": 0, "s6_no_trend": 0,
-            "s7_signal": 0, "s7_no_break": 0,
-            "btc_blocked": 0,
+            "symbol_quality_excluded": 0,
             "s9_signal": 0, "s9_breadth_fail": 0,
         }
         self._last_diag_log = 0.0
-
-    # ------------------------------------------------------------------
-    # BTC directional filter (S3-S7 only; S1/S2 have built-in BTC logic)
-    # ------------------------------------------------------------------
-
-    @staticmethod
-    def _btc_bias(btc_snapshot) -> str:
-        """Classify BTC market bias from snapshot."""
-        if btc_snapshot is None:
-            return "neutral"
-        rsi = btc_snapshot.rsi if btc_snapshot.rsi else 50.0
-        slope = btc_snapshot.sma50_slope_atr if btc_snapshot.sma50_slope_atr else 0.0
-        if rsi < 35 and slope < -1.0:
-            return "bearish"
-        if rsi > 65 and slope > 1.0:
-            return "bullish"
-        return "neutral"
-
-    def _btc_blocks_signal(self, btc_snapshot, direction, setup_id: str,
-                           symbol: str, tf: str) -> bool:
-        """Return True if BTC bias contradicts the signal direction."""
-        bias = self._btc_bias(btc_snapshot)
-        if bias == "neutral":
-            return False
-        blocked = (
-            (bias == "bearish" and direction.value == "LONG") or
-            (bias == "bullish" and direction.value == "SHORT")
-        )
-        if blocked:
-            self._diag["btc_blocked"] += 1
-            logger.debug(
-                "BTC filter blocked %s %s %s:%s (btc_bias=%s)",
-                setup_id, direction.value, symbol, tf, bias,
-            )
-        return blocked
-
-    # ------------------------------------------------------------------
-    # Regime-aware score adjustment
-    # ------------------------------------------------------------------
-
-    @staticmethod
-    def _regime_score_adjust(setup_id: str, snapshot) -> float:
-        """Return multiplier based on market regime (trending vs ranging)."""
-        slope = abs(snapshot.sma50_slope_atr) if snapshot.sma50_slope_atr else 0.0
-        if slope > 0.02:
-            # Trending regime: boost trend-following, penalize mean-reversion
-            if setup_id in ("S6", "S7"):
-                return 1.15
-            if setup_id == "S4":
-                return 0.75
-        elif slope < 0.005:
-            # Ranging regime: boost mean-reversion/breakout, penalize trend
-            if setup_id in ("S4", "S5"):
-                return 1.10
-            if setup_id == "S7":
-                return 0.80
-        return 1.0
 
     def run(self):
         """Main loop."""
@@ -336,8 +224,13 @@ class SignalWorker:
         self.r.xack(stream_name, self.group_name, msg_id)
 
     def _evaluate_symbol(self, symbol: str, tf: str, bar_start_ts: str = None):
-        """Run S1/S2 evaluators for a symbol/tf."""
+        """Run active evaluators for a symbol/tf. S1-S8 archived; only U1 remains per-symbol."""
         self._diag["evaluated"] += 1
+
+        # Symbol quality filter — skip chronic-firer symbols
+        if self._is_symbol_excluded(symbol):
+            self._diag["symbol_quality_excluded"] += 1
+            return
 
         # Step 1: Mandatory m1/snap/m2 read (invariant #22)
         snapshot, snap_ts = read_fresh_snapshot(
@@ -349,228 +242,14 @@ class SignalWorker:
             logger.debug(f"Stale/inconsistent snapshot for {symbol}:{tf}, skipping")
             return
 
-        # Step 1b: Populate OHLCV candles (needed by setup evaluators for box/range calcs)
+        # Step 1b: Populate OHLCV candles (needed by U1 evaluator)
         snapshot.ohlcv = get_candles_as_ohlcv(self.r, symbol, tf)
         if not snapshot.ohlcv:
             self._diag["candle_fail"] += 1
             logger.debug(f"No candles in Redis for {symbol}:{tf}, skipping")
             return
 
-        # Step 2: Read indicator histories from Redis
-        bb_width_history = [
-            b2f(x) for x in
-            self.r.lrange(ind_hist_key("bb_width", symbol, tf), 0, -1)
-        ]
-        ma_gap_history = [
-            b2f(x) for x in
-            self.r.lrange(ind_hist_key("ma_gap", symbol, tf), 0, -1)
-        ]
-
-        # Step 3: Read previous setup states
-        prev_s1_raw = self.r.get(setup_state_key("S1", symbol, tf))
-        prev_s1_state = None
-        if prev_s1_raw:
-            try:
-                prev_s1_state = _deserialize_s1_state(b2s(prev_s1_raw))
-            except Exception:
-                pass
-
-        prev_s2_raw = self.r.get(setup_state_key("S2", symbol, tf))
-        prev_s2_state = None
-        if prev_s2_raw:
-            try:
-                prev_s2_state = _deserialize_s2_state(b2s(prev_s2_raw))
-            except Exception:
-                pass
-
-        # Step 4: BTC data with graceful degradation (invariant #12)
-        btc_snapshot = None
-        btc_bb_hist = None
-
-        if symbol != "BTCUSDT":
-            btc_staleness = check_staleness(self.r, "BTCUSDT", tf)
-            if not btc_staleness["stale"]:
-                btc_snapshot = read_indicator_snapshot(self.r, "BTCUSDT", tf)
-                btc_bb_hist = [
-                    b2f(x) for x in
-                    self.r.lrange(ind_hist_key("bb_width", "BTCUSDT", tf), 0, -1)
-                ]
-            else:
-                logger.warning(
-                    f"BTC stale ({btc_staleness['age_s']:.0f}s), "
-                    f"skipping BTC filter for {symbol}:{tf}"
-                )
-
-        # Step 5: Run S1 evaluator
-        s1_state = self.s1_evaluator.compute_state(
-            snapshot, bb_width_history, prev_s1_state,
-            btc_snapshot, btc_bb_hist,
-        )
-
-        # Store updated state with TTL (invariant #19)
-        self.r.set(
-            setup_state_key("S1", symbol, tf),
-            _serialize_state(s1_state),
-            ex=SETUP_STATE_TTL_S,
-        )
-
-        s1_signal = self.s1_evaluator.evaluate_trigger(snapshot, s1_state, symbol, tf)
-        if s1_signal:
-            self._diag["s1_signal"] += 1
-            self._store_signal_from_evaluator(s1_signal, "S1", symbol, tf, snap_ts)
-        else:
-            # Track which S1 gate rejected (from state)
-            if not s1_state.squeeze_on:
-                self._diag["s1_squeeze_off"] += 1
-            elif s1_state.bb_width_pctile > self.s1_evaluator.bb_width_pctile_trigger:
-                self._diag["s1_pctile_fail"] += 1
-            elif s1_state.squeeze_age < self.s1_evaluator.squeeze_age_min:
-                self._diag["s1_age_fail"] += 1
-            elif not s1_state.ripe_at_prev_bar:
-                self._diag["s1_ripe_fail"] += 1
-            else:
-                self._diag["s1_trigger_fail"] += 1
-
-        # Step 6: Run S2 evaluator
-        s2_state = self.s2_evaluator.compute_state(
-            snapshot, ma_gap_history, prev_s2_state, btc_snapshot,
-        )
-
-        self.r.set(
-            setup_state_key("S2", symbol, tf),
-            _serialize_state(s2_state),
-            ex=SETUP_STATE_TTL_S,
-        )
-
-        s2_signal = self.s2_evaluator.evaluate_trigger(snapshot, s2_state, symbol, tf)
-        if s2_signal:
-            self._diag["s2_signal"] += 1
-            self._store_signal_from_evaluator(s2_signal, "S2", symbol, tf, snap_ts)
-        else:
-            if not s2_state.converging:
-                self._diag["s2_not_converging"] += 1
-            else:
-                self._diag["s2_trigger_fail"] += 1
-
-        # Step 7: Run S3 evaluator (RSI Divergence — reads RSI from Redis history)
-        rsi_history_raw = self.r.lrange(ind_hist_key("rsi", symbol, tf), 0, -1)
-        if len(rsi_history_raw) >= 50:  # S3 pivot_lookback minimum
-            try:
-                rsi_series = np.array([b2f(x) for x in rsi_history_raw])
-                s3_state = self.s3_evaluator.compute_state(snapshot, rsi_series)
-                s3_signal = self.s3_evaluator.evaluate_trigger(
-                    snapshot, s3_state, symbol, tf,
-                )
-                if s3_signal:
-                    if not self._btc_blocks_signal(btc_snapshot, s3_signal.direction, "S3", symbol, tf):
-                        self._diag["s3_signal"] += 1
-                        self._store_signal_from_evaluator(s3_signal, "S3", symbol, tf, snap_ts, snapshot)
-                else:
-                    if not s3_state.has_divergence:
-                        self._diag["s3_no_div"] += 1
-            except Exception as e:
-                logger.debug(f"S3 eval failed for {symbol}:{tf}: {e}")
-
-        # Step 8: Run S4 evaluator (VWAP Reversion — intraday only)
-        if snapshot.vwap is not None:
-            vwap_distance_history = [
-                b2f(x) for x in
-                self.r.lrange(ind_hist_key("vwap_dist", symbol, tf), 0, -1)
-            ]
-            s4_state = self.s4_evaluator.compute_state(snapshot, vwap_distance_history)
-            s4_signal = self.s4_evaluator.evaluate_trigger(
-                snapshot, s4_state, symbol, tf,
-            )
-            if s4_signal:
-                if not self._btc_blocks_signal(btc_snapshot, s4_signal.direction, "S4", symbol, tf):
-                    self._diag["s4_signal"] += 1
-                    self._store_signal_from_evaluator(s4_signal, "S4", symbol, tf, snap_ts, snapshot)
-            else:
-                if not (s4_state.extended_above or s4_state.extended_below):
-                    self._diag["s4_not_extended"] += 1
-
-        # Step 9: Run S5 evaluator (S/R Breakout)
-        if len(snapshot.ohlcv) >= 50:
-            s5_state = self.s5_evaluator.compute_state(snapshot)
-            s5_signal = self.s5_evaluator.evaluate_trigger(
-                snapshot, s5_state, symbol, tf,
-            )
-            if s5_signal:
-                if not self._btc_blocks_signal(btc_snapshot, s5_signal.direction, "S5", symbol, tf):
-                    self._diag["s5_signal"] += 1
-                    self._store_signal_from_evaluator(s5_signal, "S5", symbol, tf, snap_ts, snapshot)
-            else:
-                self._diag["s5_no_break"] += 1
-
-        # Step 10: Run S6 evaluator (Trend Continuation Pullback)
-        prev_s6_raw = self.r.get(setup_state_key("S6", symbol, tf))
-        prev_s6_state = None
-        if prev_s6_raw:
-            try:
-                prev_s6_state = _deserialize_s6_state(b2s(prev_s6_raw))
-            except Exception:
-                pass
-
-        s6_state = self.s6_evaluator.compute_state(snapshot, prev_s6_state)
-        self.r.set(
-            setup_state_key("S6", symbol, tf),
-            _serialize_state(s6_state),
-            ex=SETUP_STATE_TTL_S,
-        )
-        s6_signal = self.s6_evaluator.evaluate_trigger(
-            snapshot, s6_state, symbol, tf,
-        )
-        if s6_signal:
-            # Cooldown: suppress re-fire for same symbol/tf for time_stop_bars
-            s6_cd_key = f"cooldown:S6:{symbol}:{tf}"
-            if self.r.exists(s6_cd_key):
-                logger.debug("S6 cooldown active %s:%s", symbol, tf)
-            elif not self._btc_blocks_signal(btc_snapshot, s6_signal.direction, "S6", symbol, tf):
-                self._diag["s6_signal"] += 1
-                self._store_signal_from_evaluator(s6_signal, "S6", symbol, tf, snap_ts, snapshot)
-                # Set cooldown for 8 bars × timeframe seconds
-                cd_ttl = 8 * TF_SECONDS.get(tf, 3600)
-                self.r.set(s6_cd_key, "1", ex=cd_ttl)
-        else:
-            if s6_state.trend_direction == "none":
-                self._diag["s6_no_trend"] += 1
-
-        # Step 11: Run S7 evaluator (Momentum Breakout Donchian)
-        # Read previous Donchian values from Redis (not in-memory — avoids
-        # ~1800 IndicatorSnapshot objects leaking RAM)
-        s7_state_k = setup_state_key("S7", symbol, tf)
-        prev_s7_raw = self.r.get(s7_state_k)
-        prev_snap_s7 = None
-        if prev_s7_raw:
-            try:
-                d = json.loads(b2s(prev_s7_raw))
-                prev_snap_s7 = types.SimpleNamespace(
-                    donchian_high_20=d.get("prev_don_high"),
-                    donchian_low_20=d.get("prev_don_low"),
-                )
-            except Exception:
-                pass
-
-        s7_state = self.s7_evaluator.compute_state(snapshot, prev_snap_s7)
-
-        # Store current Donchian values for next bar
-        self.r.set(s7_state_k, json.dumps({
-            "prev_don_high": snapshot.donchian_high_20,
-            "prev_don_low": snapshot.donchian_low_20,
-        }), ex=SETUP_STATE_TTL_S)
-
-        s7_signal = self.s7_evaluator.evaluate_trigger(
-            snapshot, s7_state, symbol, tf,
-        )
-        if s7_signal:
-            if not self._btc_blocks_signal(btc_snapshot, s7_signal.direction, "S7", symbol, tf):
-                self._diag["s7_signal"] += 1
-                self._store_signal_from_evaluator(s7_signal, "S7", symbol, tf, snap_ts, snapshot)
-        else:
-            if not (s7_state.long_breakout or s7_state.short_breakout):
-                self._diag["s7_no_break"] += 1
-
-        # Step 12: Run U1 evaluator (only for EMBRYO_ACTIVE symbols)
+        # U1 evaluator (only for EMBRYO_ACTIVE symbols)
         self._evaluate_u1(symbol, tf, snapshot.ohlcv, snap_ts)
 
     def _refresh_embryo_active_cache(self):
@@ -584,6 +263,24 @@ class SignalWorker:
                 self._embryo_active_cache_ts = now
             except Exception as e:
                 logger.debug(f"Failed to refresh embryo active cache: {e}")
+
+    def _refresh_excluded_symbols_cache(self):
+        """Refresh cache of excluded symbols from Redis (every 300s)."""
+        now = time.time()
+        if now - self._excluded_symbols_cache_ts > 300:
+            try:
+                members = self.r.smembers("symbol:excluded:quality")
+                self._excluded_symbols_cache = set(members) if members else set()
+                self._excluded_symbols_cache_ts = now
+            except Exception as e:
+                logger.debug(f"Failed to refresh excluded symbols cache: {e}")
+
+    def _is_symbol_excluded(self, symbol: str) -> bool:
+        """Check if symbol is excluded by quality filter."""
+        if not self._symbol_quality_filter_enabled:
+            return False
+        self._refresh_excluded_symbols_cache()
+        return symbol in self._excluded_symbols_cache
 
     def _evaluate_u1(self, symbol: str, tf: str, candles, bar_start_ts: str):
         """Run U1 evaluator for EMBRYO_ACTIVE symbols only."""
@@ -674,9 +371,6 @@ class SignalWorker:
 
     # Setup version mapping for live signals
     SETUP_VERSIONS = {
-        "S1": "S1_v2.1", "S2": "S2_v1.4",
-        "S3": "S3_v1.0", "S4": "S4_v1.0", "S5": "S5_v1.0",
-        "S6": "S6_v1.0", "S7": "S7_v1.0",
         "U1": "U1_v1.0",
         "S9": "S9_v1.0",
     }
@@ -724,7 +418,11 @@ class SignalWorker:
             logger.debug(f"Postgres persist failed for {setup_id}:{symbol}:{tf}: {e}")
 
     def _expire_stale_pg_signals(self):
-        """Mark Postgres opportunities as expired if older than SIGNAL_MAX_AGE_S."""
+        """Mark Postgres opportunities as expired if older than SIGNAL_MAX_AGE_S.
+
+        Equities strategies (EQ_*) have their own expiry logic in
+        equities_strategy_worker — do not expire them here.
+        """
         if not DATABASE_URL:
             return
         try:
@@ -734,6 +432,7 @@ class SignalWorker:
                         UPDATE opportunities
                         SET status = 'expired'
                         WHERE status = 'active'
+                          AND setup_id NOT LIKE 'EQ_%%'
                           AND updated_ts < NOW() - INTERVAL '%s seconds';
                     """ % int(SIGNAL_MAX_AGE_S))
                 conn.commit()
@@ -748,11 +447,10 @@ class SignalWorker:
         Applies cross-setup score calibration (SETUP_SCORE_MULTIPLIERS) and
         regime-aware adjustment before storage, capped at 1.0.
         """
-        # Score calibration: setup multiplier × regime multiplier, capped
+        # Score calibration: setup multiplier, capped at 1.0
         raw_score = signal.setup_score
         calib_mult = SETUP_SCORE_MULTIPLIERS.get(setup_id, 1.0)
-        regime_mult = self._regime_score_adjust(setup_id, snapshot) if snapshot else 1.0
-        calibrated_score = min(raw_score * calib_mult * regime_mult, 1.0)
+        calibrated_score = min(raw_score * calib_mult, 1.0)
 
         payload = {
             "setup_id": setup_id,
@@ -835,6 +533,8 @@ class SignalWorker:
         # Read recent candle closes for each symbol
         symbol_data = {}
         for symbol in all_symbols:
+            if self._is_symbol_excluded(symbol):
+                continue
             candles = get_candles_as_ohlcv(self.r, symbol, "1h")
             if not candles or len(candles) < 25:
                 continue
@@ -1160,7 +860,7 @@ class SignalWorker:
                         continue
 
                     reeval_needed = False
-                    for setup_id in ["S1", "S2", "S3", "S4", "S5", "S6", "S7", "S9", "U1"]:
+                    for setup_id in ["S9", "U1"]:
                         sig_ts = b2f(self.r.hget(
                             sig_meta_key(symbol, tf, setup_id), "bar_start_ts"
                         ))
@@ -1185,7 +885,7 @@ class SignalWorker:
         """Prune stale signals across all setups and timeframes."""
         try:
             timeframes = get_timeframes(self.r)
-            for setup_id in ["S1", "S2", "S3", "S4", "S5", "S6", "S7", "S9", "U1"]:
+            for setup_id in ["S9", "U1"]:
                 for tf in timeframes:
                     prune_stale_signals(self.r, setup_id, tf)
             # Also expire stale active records in Postgres

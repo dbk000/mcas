@@ -482,7 +482,7 @@ def _read_opportunities_from_redis(min_score: float = 0.0, limit: int = 50, setu
         if cache_ready != "1":
             return None
 
-        setup_ids = [setup_id] if setup_id else ["S1", "S2", "S3", "S4", "S5", "S6", "S7", "S9", "U1"]
+        setup_ids = [setup_id] if setup_id else ["S9", "U1", "EQ_TSMOM", "EQ_XSMOM", "EQ_REV1A", "EQ_REV1B", "EQ_VPD"]
         timeframes = list(r.smembers("cache:timeframes")) or DEFAULT_TIMEFRAMES
         results = []
         seen = set()
@@ -516,11 +516,12 @@ def _read_opportunities_from_redis(min_score: float = 0.0, limit: int = 50, setu
                     meta = r.hgetall(meta_key)
                     as_of_ts = float(meta.get("as_of_ts", 0)) if meta else 0
 
-                    # Skip expired signals
-                    if as_of_ts > 0 and (now_ts - as_of_ts) > SIGNAL_MAX_AGE_S:
+                    # Skip expired signals (equities get 24h, crypto gets default 1h)
+                    max_age = 86400 if sid.startswith("EQ_") else SIGNAL_MAX_AGE_S
+                    if as_of_ts > 0 and (now_ts - as_of_ts) > max_age:
                         continue
 
-                    expires_at = (as_of_ts + SIGNAL_MAX_AGE_S) if as_of_ts > 0 else None
+                    expires_at = (as_of_ts + max_age) if as_of_ts > 0 else None
 
                     results.append({
                         "id": f"{sid}:{symbol}:{tf}",
@@ -663,7 +664,10 @@ def export_opportunities_csv(
                            CASE WHEN payload_json IS NOT NULL THEN payload_json::jsonb ->> 'stop_price' END AS stop_price,
                            CASE WHEN payload_json IS NOT NULL THEN payload_json::jsonb ->> 'tp1_price' END AS tp1_price,
                            CASE WHEN payload_json IS NOT NULL THEN payload_json::jsonb ->> 'tp2_price' END AS tp2_price,
-                           CASE WHEN payload_json IS NOT NULL THEN payload_json::jsonb ->> 'r_value' END AS r_value
+                           CASE WHEN payload_json IS NOT NULL THEN payload_json::jsonb ->> 'r_value' END AS r_value,
+                           CASE WHEN payload_json IS NOT NULL THEN payload_json::jsonb ->> 'horizon_days' END AS horizon_days,
+                           CASE WHEN payload_json IS NOT NULL THEN payload_json::jsonb ->> 'expected_return_bps' END AS expected_return_bps,
+                           CASE WHEN payload_json IS NOT NULL THEN payload_json::jsonb ->> 'confidence' END AS confidence
             """
             if status != "active":
                 query = f"""
@@ -737,7 +741,8 @@ def get_live_opportunity(setup_id: str, symbol: str, tf: str):
         if score is None:
             score = 0.0
 
-        expires_at = (as_of_ts + SIGNAL_MAX_AGE_S) if as_of_ts > 0 else None
+        max_age = 86400 if setup_id.startswith("EQ_") else SIGNAL_MAX_AGE_S
+        expires_at = (as_of_ts + max_age) if as_of_ts > 0 else None
 
         return envelope({
             "id": f"{setup_id}:{symbol}:{tf}",
@@ -875,3 +880,11 @@ app.include_router(cc_router, prefix="/v1", dependencies=[Depends(require_api_ke
 # Mount Analytics API (correlation analysis, etc.)
 from analytics_api import router as analytics_router
 app.include_router(analytics_router, prefix="/v1", dependencies=[Depends(require_api_key)])
+
+# Mount Equities Forward Predictor API
+from equities_api import router as equities_router
+app.include_router(equities_router, prefix="/v1", dependencies=[Depends(require_api_key)])
+
+# Mount Equities Simulation API
+from equities_sim_runner import router as eq_sim_router
+app.include_router(eq_sim_router, prefix="/v1", dependencies=[Depends(require_api_key)])

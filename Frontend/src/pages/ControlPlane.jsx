@@ -77,7 +77,7 @@ function QueueItem({ item, onCancel }) {
 // Scan form component
 function ScanForm({ onSubmit, loading, markets, timeframes }) {
   const [name, setName] = useState('')
-  const [setupIds, setSetupIds] = useState(['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7'])
+  const [setupIds, setSetupIds] = useState(['S9', 'U1'])
   const [topN, setTopN] = useState(10)
   const [priority, setPriority] = useState(0)
   
@@ -104,13 +104,8 @@ function ScanForm({ onSubmit, loading, markets, timeframes }) {
       <FormField label="Setups">
         <div className="flex flex-wrap gap-3">
           {[
-            { id: 'S1', label: 'S1 (BB Squeeze)' },
-            { id: 'S2', label: 'S2 (Golden Cross)' },
-            { id: 'S3', label: 'S3 (RSI Divergence)' },
-            { id: 'S4', label: 'S4 (VWAP Reversion)' },
-            { id: 'S5', label: 'S5 (S/R Breakout)' },
-            { id: 'S6', label: 'S6 (Trend Pullback)' },
-            { id: 'S7', label: 'S7 (Donchian Breakout)' },
+            { id: 'S9', label: 'S9 (Short Reversion)' },
+            { id: 'U1', label: 'U1 (Unicorn)' },
           ].map(s => (
             <label key={s.id} className="flex items-center gap-2 cursor-pointer">
               <input
@@ -329,7 +324,7 @@ function BacktestForm({ onSubmit, loading, markets }) {
     d.setDate(d.getDate() - 1)
     return d.toISOString().slice(0, 10)
   })
-  const [setupIds, setSetupIds] = useState(['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7'])
+  const [setupIds, setSetupIds] = useState(['S9', 'U1'])
   const [slippageBps, setSlippageBps] = useState(5)
   const [feeBps, setFeeBps] = useState(10)
 
@@ -403,7 +398,7 @@ function BacktestForm({ onSubmit, loading, markets }) {
 
       <FormField label="Setups">
         <div className="flex flex-wrap gap-3">
-          {['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7'].map(s => (
+          {['S9', 'U1'].map(s => (
             <label key={s} className="flex items-center gap-2 cursor-pointer">
               <input
                 type="checkbox"
@@ -468,7 +463,7 @@ function BacktestForm({ onSubmit, loading, markets }) {
 // Paper trading form component
 function PaperForm({ onSubmit, onStop, loading, paperStatus }) {
   const [name, setName] = useState('')
-  const [setupIds, setSetupIds] = useState(['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7'])
+  const [setupIds, setSetupIds] = useState(['S9', 'U1'])
   const [initialCapital, setInitialCapital] = useState(10000)
   const [riskPerTrade, setRiskPerTrade] = useState(1.0)
   const [maxPositions, setMaxPositions] = useState(3)
@@ -539,7 +534,7 @@ function PaperForm({ onSubmit, onStop, loading, paperStatus }) {
       
       <FormField label="Setups">
         <div className="flex flex-wrap gap-3">
-          {['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7'].map(s => (
+          {['S9', 'U1'].map(s => (
             <label key={s} className="flex items-center gap-2 cursor-pointer">
               <input
                 type="checkbox"

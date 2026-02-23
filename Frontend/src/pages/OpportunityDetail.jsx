@@ -236,36 +236,79 @@ export default function OpportunityDetail() {
           {/* Trade levels */}
           <Card>
             <CardHeader>
-              <CardTitle>Trade Levels</CardTitle>
+              <CardTitle>{opp.setup_id?.startsWith('EQ_') ? 'Signal Details' : 'Trade Levels'}</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <LevelBox
-                  label="Entry"
-                  value={formatPrice(payload.entry_price)}
-                  color="text-terminal-100"
-                />
-                <LevelBox
-                  label="Stop Loss"
-                  value={formatPrice(payload.stop_price)}
-                  color="text-signal-short"
-                />
-                <LevelBox
-                  label="Take Profit 1"
-                  value={formatPrice(payload.tp1_price)}
-                  color="text-signal-long"
-                />
-                <LevelBox
-                  label="Take Profit 2"
-                  value={formatPrice(payload.tp2_price)}
-                  color="text-signal-long"
-                />
-              </div>
-
-              <div className="mt-4 pt-4 border-t border-terminal-600 grid grid-cols-2 gap-4">
-                <DataRow label="R-Value" value={formatDollar(payload.r_value)} />
-                <DataRow label="Score" value={opp.score?.toFixed(2)} />
-              </div>
+              {opp.setup_id?.startsWith('EQ_') ? (
+                <>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <LevelBox
+                      label="Entry Price"
+                      value={formatPrice(payload.entry_price)}
+                      color="text-terminal-100"
+                    />
+                    <LevelBox
+                      label="Direction"
+                      value={payload.direction || opp.direction}
+                      color={payload.direction === 'LONG' ? 'text-signal-long' : 'text-signal-short'}
+                    />
+                    <LevelBox
+                      label="Horizon"
+                      value={`${payload.horizon_days}d`}
+                      color="text-terminal-100"
+                    />
+                    <LevelBox
+                      label="Confidence"
+                      value={`${(payload.confidence * 100).toFixed(0)}%`}
+                      color="text-amber-400"
+                    />
+                  </div>
+                  <div className="mt-4 pt-4 border-t border-terminal-600 grid grid-cols-2 gap-4">
+                    <DataRow label="Expected Return" value={`+${payload.expected_return_bps} bps`} />
+                    <DataRow label="Score" value={opp.score?.toFixed(2)} />
+                    <DataRow label="Strategy Version" value={payload.strategy_version || '\u2014'} />
+                    {payload.exploratory && (
+                      <DataRow label="Status" value={<Badge variant="warning">EXPLORATORY</Badge>} />
+                    )}
+                  </div>
+                  {payload.explain && payload.explain.length > 0 && (
+                    <div className="mt-4 pt-4 border-t border-terminal-600">
+                      <p className="text-xs text-terminal-500 uppercase tracking-wider mb-2">Signal Explanation</p>
+                      <ul className="space-y-1">
+                        {payload.explain.map((item, i) => (
+                          <li key={i} className="text-sm text-terminal-300">{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {payload.features && Object.keys(payload.features).length > 0 && (
+                    <div className="mt-4 pt-4 border-t border-terminal-600">
+                      <p className="text-xs text-terminal-500 uppercase tracking-wider mb-2">Feature Snapshot</p>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                        {Object.entries(payload.features).map(([k, v]) => (
+                          <div key={k} className="text-sm">
+                            <span className="text-terminal-500">{k}</span>
+                            <p className="font-mono text-terminal-100">{typeof v === 'number' ? v.toFixed(4) : v}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <LevelBox label="Entry" value={formatPrice(payload.entry_price)} color="text-terminal-100" />
+                    <LevelBox label="Stop Loss" value={formatPrice(payload.stop_price)} color="text-signal-short" />
+                    <LevelBox label="Take Profit 1" value={formatPrice(payload.tp1_price)} color="text-signal-long" />
+                    <LevelBox label="Take Profit 2" value={formatPrice(payload.tp2_price)} color="text-signal-long" />
+                  </div>
+                  <div className="mt-4 pt-4 border-t border-terminal-600 grid grid-cols-2 gap-4">
+                    <DataRow label="R-Value" value={formatDollar(payload.r_value)} />
+                    <DataRow label="Score" value={opp.score?.toFixed(2)} />
+                  </div>
+                </>
+              )}
             </CardContent>
           </Card>
 

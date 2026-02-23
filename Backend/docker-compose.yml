@@ -251,6 +251,21 @@ services:
     networks:
       - backend
 
+  equities_strategy_worker:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      SERVICE_NAME: equities_strategy_worker
+    command: ["python", "-u", "equities_strategy_worker.py"]
+    volumes:
+      - ./scripts:/scripts
+    networks:
+      - backend
+
 volumes:
   caddy_data:
   caddy_config:

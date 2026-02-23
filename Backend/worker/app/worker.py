@@ -52,7 +52,7 @@ SCAN_INTERVAL_SECONDS = int(os.getenv("SCAN_INTERVAL_SECONDS", "300"))
 USE_DYNAMIC_SYMBOLS = os.getenv("USE_DYNAMIC_SYMBOLS", "false").lower() == "true"
 SYMBOL_COUNT = int(os.getenv("SYMBOL_COUNT", "200"))  # DEPRECATED: fallback only
 KNOWN_UNIVERSE_SIZE = int(os.getenv("KNOWN_UNIVERSE_SIZE", "1024"))
-SETUP_IDS = os.getenv("SETUP_IDS", "S1,S2,S3,S4,S5,S6,S7,U1").split(",")
+SETUP_IDS = os.getenv("SETUP_IDS", "S9,U1").split(",")
 ENABLE_PERIODIC_SCANS = os.getenv("ENABLE_PERIODIC_SCANS", "true").lower() == "true"
 
 # Redis client

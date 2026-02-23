@@ -313,15 +313,13 @@ export default function Opportunities() {
             onChange={(e) => setFilters({ ...filters, setup_id: e.target.value })}
             options={[
               { value: '', label: 'All Setups' },
-              { value: 'S1', label: 'S1' },
-              { value: 'S2', label: 'S2' },
-              { value: 'S3', label: 'S3' },
-              { value: 'S4', label: 'S4' },
-              { value: 'S5', label: 'S5' },
-              { value: 'S6', label: 'S6' },
-              { value: 'S7', label: 'S7' },
-              { value: 'S9', label: 'S9' },
-              { value: 'U1', label: 'U1' },
+              { value: 'S9', label: 'S9 (Short Reversion)' },
+              { value: 'U1', label: 'U1 (Unicorn)' },
+              { value: 'EQ_TSMOM', label: 'EQ: TSMOM (20d)' },
+              { value: 'EQ_XSMOM', label: 'EQ: XS Momentum (20d)' },
+              { value: 'EQ_REV1A', label: 'EQ: Reversion 1a (10d)' },
+              { value: 'EQ_REV1B', label: 'EQ: Reversion 1b (10d)' },
+              { value: 'EQ_VPD', label: 'EQ: Vol-Price Div (1d)' },
             ]}
             className="w-32"
           />
@@ -464,15 +462,13 @@ export default function Opportunities() {
                     value={simConfig.setup_ids}
                     onChange={(vals) => setSimConfig({ ...simConfig, setup_ids: vals })}
                     options={[
-                      { value: 'S1', label: 'S1' },
-                      { value: 'S2', label: 'S2' },
-                      { value: 'S3', label: 'S3' },
-                      { value: 'S4', label: 'S4' },
-                      { value: 'S5', label: 'S5' },
-                      { value: 'S6', label: 'S6' },
-                      { value: 'S7', label: 'S7' },
                       { value: 'S9', label: 'S9' },
                       { value: 'U1', label: 'U1' },
+                      { value: 'EQ_TSMOM', label: 'EQ_TSMOM' },
+                      { value: 'EQ_XSMOM', label: 'EQ_XSMOM' },
+                      { value: 'EQ_REV1A', label: 'EQ_REV1A' },
+                      { value: 'EQ_REV1B', label: 'EQ_REV1B' },
+                      { value: 'EQ_VPD', label: 'EQ_VPD' },
                     ]}
                     placeholder="All"
                   />
@@ -758,25 +754,58 @@ function OpportunityCard({ opportunity, onCopy }) {
             </div>
           </div>
 
-          {/* Price levels */}
+          {/* Price levels — equities vs crypto */}
           {payload.entry_price && (
-            <div className="grid grid-cols-2 gap-2 text-sm border-t border-terminal-600 pt-3">
-              <div>
-                <span className="text-terminal-500">Entry</span>
-                <p className="font-mono text-terminal-100">{formatPrice(payload.entry_price)}</p>
-              </div>
-              <div>
-                <span className="text-terminal-500">Stop</span>
-                <p className="font-mono text-signal-short">{formatPrice(payload.stop_price)}</p>
-              </div>
-              <div>
-                <span className="text-terminal-500">TP1</span>
-                <p className="font-mono text-signal-long">{formatPrice(payload.tp1_price)}</p>
-              </div>
-              <div>
-                <span className="text-terminal-500">R-Value</span>
-                <p className="font-mono text-terminal-100">{formatDollar(payload.r_value)}</p>
-              </div>
+            <div className="border-t border-terminal-600 pt-3">
+              {opportunity.setup_id?.startsWith('EQ_') ? (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <DirectionBadge direction={payload.direction} />
+                    <Badge>{payload.horizon_days}d horizon</Badge>
+                    {payload.exploratory && <Badge variant="warning">EXPLORATORY</Badge>}
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 text-sm">
+                    <div>
+                      <span className="text-terminal-500">Entry</span>
+                      <p className="font-mono text-terminal-100">{formatPrice(payload.entry_price)}</p>
+                    </div>
+                    <div>
+                      <span className="text-terminal-500">Expected</span>
+                      <p className="font-mono text-signal-long">+{payload.expected_return_bps} bps</p>
+                    </div>
+                    <div>
+                      <span className="text-terminal-500">Confidence</span>
+                      <p className="font-mono text-terminal-100">{(payload.confidence * 100).toFixed(0)}%</p>
+                    </div>
+                  </div>
+                  {payload.explain && (
+                    <ul className="space-y-0.5 mt-1">
+                      {payload.explain.map((item, i) => (
+                        <li key={i} className="text-xs text-terminal-400">{item}</li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div>
+                    <span className="text-terminal-500">Entry</span>
+                    <p className="font-mono text-terminal-100">{formatPrice(payload.entry_price)}</p>
+                  </div>
+                  <div>
+                    <span className="text-terminal-500">Stop</span>
+                    <p className="font-mono text-signal-short">{formatPrice(payload.stop_price)}</p>
+                  </div>
+                  <div>
+                    <span className="text-terminal-500">TP1</span>
+                    <p className="font-mono text-signal-long">{formatPrice(payload.tp1_price)}</p>
+                  </div>
+                  <div>
+                    <span className="text-terminal-500">R-Value</span>
+                    <p className="font-mono text-terminal-100">{formatDollar(payload.r_value)}</p>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
