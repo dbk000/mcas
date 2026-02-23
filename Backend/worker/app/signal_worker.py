@@ -33,6 +33,7 @@ from cache_contract import (
 import numpy as np
 from indicators import IndicatorSnapshot
 from setups import S9Evaluator, S9Signal, S9State
+from setups import S10Evaluator, S10Signal
 from setups.u1_unicorn_ignition import U1Evaluator, U1State, U1Phase, U1Config, load_funding_rates
 from setup_base import Direction
 from s9_microstructure import (
@@ -61,6 +62,7 @@ SYMBOL_QUALITY_FILTER = os.getenv("SYMBOL_QUALITY_FILTER", "0") == "1"
 SETUP_SCORE_MULTIPLIERS = {
     "U1": float(os.getenv("U1_SCORE_MULT", "1.0")),
     "S9": float(os.getenv("S9_SCORE_MULT", "1.0")),
+    "S10": float(os.getenv("S10_SCORE_MULT", "1.0")),
 }
 
 

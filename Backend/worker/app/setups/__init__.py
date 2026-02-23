@@ -21,10 +21,12 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from setups.u1_unicorn_ignition import U1Evaluator, U1State, U1Signal, U1Phase, U1Config
 from setups.s9_short_reversion import S9Evaluator, S9State, S9Signal
+from setups.s10_macd_scalp import S10Evaluator, S10State, S10Signal
 from setup_base import Direction
 
 __all__ = [
     "S9Evaluator", "S9State", "S9Signal",
+    "S10Evaluator", "S10State", "S10Signal",
     "U1Evaluator", "U1State", "U1Signal", "U1Phase", "U1Config",
     "Direction",
 ]

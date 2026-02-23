@@ -251,6 +251,27 @@ _register(IndicatorDef(
     implementation="(ema50[-1] - ema50[-6]) / (5 * atr)",
 ))
 
+# Tier 2 — SMA 20 (for S10 MACD Scalp)
+_register(IndicatorDef(
+    indicator_id=generate_indicator_id("SMA", 20), name="SMA 20", tier=2,
+    inputs=["close"], params={"n": 20},
+    implementation="FeatureFactory._sma",
+))
+
+# Tier 2 — MACD (12, 26, 9)
+_register(IndicatorDef(
+    indicator_id=generate_indicator_id("MACD", 12, 26, 9), name="MACD (12, 26, 9)", tier=2,
+    inputs=["close"], params={"fast": 12, "slow": 26, "signal": 9},
+    implementation="EMA(close, 12) - EMA(close, 26); Signal = EMA(macd, 9)",
+))
+
+# Tier 1 — Relative Volume Ratio
+_register(IndicatorDef(
+    indicator_id=generate_indicator_id("RVOL", 20), name="Relative Volume Ratio (20-bar)", tier=1,
+    inputs=["volume"], params={"n": 20},
+    implementation="volume[-1] / mean(volume[-20:])",
+))
+
 # Tier 2 — Donchian Channels (20-bar)
 _register(IndicatorDef(
     indicator_id=generate_indicator_id("DONCHIAN_HIGH", 20), name="Donchian High (20)", tier=2,
@@ -359,6 +380,18 @@ class IndicatorSnapshot:
     # Tier 2 - EMA Slopes (ATR-normalised, 5-bar delta)
     ema20_slope_atr: float = 0.0
     ema50_slope_atr: float = 0.0
+
+    # Tier 2 - SMA 20
+    sma_20: float = 0.0
+
+    # Tier 2 - MACD (12, 26, 9)
+    macd_line: float = 0.0       # EMA(12) - EMA(26)
+    macd_signal: float = 0.0     # EMA(9) of MACD line
+    macd_histogram: float = 0.0  # macd_line - macd_signal
+    macd_prev_histogram: float = 0.0  # previous bar's histogram (for crossover detection)
+
+    # Relative volume ratio (current bar vol / 20-bar mean vol)
+    rvol: float = 1.0
 
     # Tier 2 - Donchian Channels (20-bar)
     donchian_high_20: float = 0.0
@@ -475,6 +508,24 @@ class FeatureFactory:
             ema20_slope_atr = 0.0
             ema50_slope_atr = 0.0
 
+        # Tier 2 - SMA 20 (for S10 MACD Scalp)
+        sma_20_series = self._sma(closes, 20)
+        sma_20 = float(sma_20_series[-1])
+
+        # Tier 2 - MACD (12, 26, 9) (for S10 MACD Scalp)
+        ema_12_series = self._ema(closes, 12)
+        ema_26_series = self._ema(closes, 26)
+        macd_line_series = ema_12_series - ema_26_series
+        macd_signal_series = self._ema(macd_line_series, 9)
+        macd_line = float(macd_line_series[-1])
+        macd_signal = float(macd_signal_series[-1])
+        macd_histogram = macd_line - macd_signal
+        macd_prev_histogram = float(macd_line_series[-2] - macd_signal_series[-2]) if len(macd_line_series) >= 2 else 0.0
+
+        # Relative volume ratio (for S10 MACD Scalp)
+        vol_mean_20 = float(np.mean(volumes[-20:])) if len(volumes) >= 20 else float(np.mean(volumes))
+        rvol = float(volumes[-1] / vol_mean_20) if vol_mean_20 > 0 else 1.0
+
         # Tier 2 - Donchian Channels (20-bar) (for S7)
         donchian_high_20 = float(np.max(highs[-20:])) if len(highs) >= 20 else float(np.max(highs))
         donchian_low_20 = float(np.min(lows[-20:])) if len(lows) >= 20 else float(np.min(lows))
@@ -522,6 +573,12 @@ class FeatureFactory:
             ma_gap_atr=ma_gap_atr,
             ema20_slope_atr=ema20_slope_atr,
             ema50_slope_atr=ema50_slope_atr,
+            sma_20=sma_20,
+            macd_line=macd_line,
+            macd_signal=macd_signal,
+            macd_histogram=macd_histogram,
+            macd_prev_histogram=macd_prev_histogram,
+            rvol=rvol,
             donchian_high_20=donchian_high_20,
             donchian_low_20=donchian_low_20,
             donchian_mid_20=donchian_mid_20,
@@ -684,7 +741,7 @@ class FeatureFactory:
         if cum_vol[-1] == 0:
             return None, None, None
 
-        vwap_series = cum_tp_vol / cum_vol
+        vwap_series = np.divide(cum_tp_vol, cum_vol, out=np.zeros_like(cum_tp_vol), where=cum_vol > 0)
 
         vwap = float(vwap_series[-1])
 

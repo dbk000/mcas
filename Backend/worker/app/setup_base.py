@@ -81,6 +81,13 @@ class IndicatorRequirement(Enum):
     # HTF
     HTF_INDICATORS = "HTF_INDICATORS"
 
+    # Tier 2 - MACD
+    MACD = "MACD"
+    SMA_20 = "SMA_20"
+    DONCHIAN = "DONCHIAN"
+    VWAP_IND = "VWAP"
+    EMA_SLOPES = "EMA_SLOPES"
+
 
 @dataclass
 class SetupParameter:

@@ -1,0 +1,816 @@
+{
+  "run_ts": "2026-02-23T18:34:32.232711+00:00",
+  "config": {
+    "symbols": 50,
+    "candle_limit": 500,
+    "rolling_window": 210,
+    "timeframe": "5m"
+  },
+  "results": {
+    "total_signals": 21,
+    "symbols_with_signals": 16,
+    "total_hours_scanned": 1210.0,
+    "signals_per_hour_universe": 0.0174
+  },
+  "timing": {
+    "fetch_s": 12.3,
+    "eval_s": 58.7,
+    "total_s": 71.0
+  },
+  "per_symbol": [
+    {
+      "symbol": "ESPUSDT",
+      "bars": 500,
+      "hours_covered": 24.2,
+      "signals": 3,
+      "signal_rate_per_hour": 0.12,
+      "details": [
+        {
+          "timestamp": "2026-02-23T03:40:00+00:00",
+          "entry": 0.07855,
+          "stop": 0.07737829,
+          "tp1": 0.08030757,
+          "tp2": 0.08089343,
+          "r_value": 2.0,
+          "score": 0.5197,
+          "rvol": 2.1,
+          "macd_hist": 5.48e-05,
+          "flat_top_level": 0.07761,
+          "why": [
+            "MACD bullish crossover \u2014 histogram flipped positive (0.000055)",
+            "Flat top breakout at 0.0776 \u2014 2 touches, new high on volume",
+            "Relative volume 2.1x normal \u2014 above-average interest"
+          ],
+          "symbol": "ESPUSDT"
+        },
+        {
+          "timestamp": "2026-02-23T08:40:00+00:00",
+          "entry": 0.08737,
+          "stop": 0.08591286,
+          "tp1": 0.08955571,
+          "tp2": 0.09028429,
+          "r_value": 2.0,
+          "score": 0.3613,
+          "rvol": 2.6,
+          "macd_hist": 2.31e-06,
+          "flat_top_level": 0.08633,
+          "why": [
+            "MACD bullish crossover \u2014 histogram flipped positive (0.000002)",
+            "Flat top breakout at 0.0863 \u2014 2 touches, new high on volume",
+            "Relative volume 2.6x normal \u2014 above-average interest"
+          ],
+          "symbol": "ESPUSDT"
+        },
+        {
+          "timestamp": "2026-02-23T14:25:00+00:00",
+          "entry": 0.09252,
+          "stop": 0.09109714,
+          "tp1": 0.09465429,
+          "tp2": 0.09536571,
+          "r_value": 2.0,
+          "score": 0.54,
+          "rvol": 2.8,
+          "macd_hist": 5.388e-05,
+          "flat_top_level": 0.09099,
+          "why": [
+            "MACD bullish crossover \u2014 histogram flipped positive (0.000054)",
+            "Flat top breakout at 0.0910 \u2014 2 touches, new high on volume",
+            "Relative volume 2.8x normal \u2014 above-average interest"
+          ],
+          "symbol": "ESPUSDT"
+        }
+      ]
+    },
+    {
+      "symbol": "SOLUSDT",
+      "bars": 500,
+      "hours_covered": 24.2,
+      "signals": 2,
+      "signal_rate_per_hour": 0.08,
+      "details": [
+        {
+          "timestamp": "2026-02-23T12:35:00+00:00",
+          "entry": 80.67,
+          "stop": 80.42057143,
+          "tp1": 81.04414286,
+          "tp2": 81.16885714,
+          "r_value": 2.0,
+          "score": 0.6034,
+          "rvol": 3.5,
+          "macd_hist": 0.00672696,
+          "flat_top_level": 80.22,
+          "why": [
+            "MACD bullish crossover \u2014 histogram flipped positive (0.006727)",
+            "Flat top breakout at 80.2200 \u2014 5 touches, new high on volume",
+            "Relative volume 3.5x normal \u2014 above-average interest"
+          ],
+          "symbol": "SOLUSDT"
+        },
+        {
+          "timestamp": "2026-02-23T13:40:00+00:00",
+          "entry": 81.04,
+          "stop": 80.71942857,
+          "tp1": 81.52085714,
+          "tp2": 81.68114286,
+          "r_value": 2.0,
+          "score": 0.6343,
+          "rvol": 3.2,
+          "macd_hist": 0.02176702,
+          "flat_top_level": 80.77,
+          "why": [
+            "MACD bullish crossover \u2014 histogram flipped positive (0.021767)",
+            "Flat top breakout at 80.7700 \u2014 5 touches, new high on volume",
+            "Relative volume 3.2x normal \u2014 above-average interest"
+          ],
+          "symbol": "SOLUSDT"
+        }
+      ]
+    },
+    {
+      "symbol": "USDCUSDT",
+      "bars": 500,
+      "hours_covered": 24.2,
+      "signals": 2,
+      "signal_rate_per_hour": 0.08,
+      "details": [
+        {
+          "timestamp": "2026-02-22T19:10:00+00:00",
+          "entry": 1.0004,
+          "stop": 1.00027143,
+          "tp1": 1.00059286,
+          "tp2": 1.00065714,
+          "r_value": 2.0,
+          "score": 0.7014,
+          "rvol": 9.2,
+          "macd_hist": 4.63e-06,
+          "flat_top_level": 1.0003,
+          "why": [
+            "MACD bullish crossover \u2014 histogram flipped positive (0.000005)",
+            "Flat top breakout at 1.0003 \u2014 7 touches, new high on volume",
+            "Relative volume 9.2x normal \u2014 above-average interest"
+          ],
+          "symbol": "USDCUSDT"
+        },
+        {
+          "timestamp": "2026-02-23T04:20:00+00:00",
+          "entry": 1.0003,
+          "stop": 1.00019714,
+          "tp1": 1.00045429,
+          "tp2": 1.00050571,
+          "r_value": 2.0,
+          "score": 0.7017,
+          "rvol": 5.9,
+          "macd_hist": 5.75e-06,
+          "flat_top_level": 1.0002,
+          "why": [
+            "MACD bullish crossover \u2014 histogram flipped positive (0.000006)",
+            "Flat top breakout at 1.0002 \u2014 7 touches, new high on volume",
+            "Relative volume 5.9x normal \u2014 above-average interest"
+          ],
+          "symbol": "USDCUSDT"
+        }
+      ]
+    },
+    {
+      "symbol": "OPUSDT",
+      "bars": 500,
+      "hours_covered": 24.2,
+      "signals": 2,
+      "signal_rate_per_hour": 0.08,
+      "details": [
+        {
+          "timestamp": "2026-02-23T12:00:00+00:00",
+          "entry": 0.1247,
+          "stop": 0.12419429,
+          "tp1": 0.12545857,
+          "tp2": 0.12571143,
+          "r_value": 2.0,
+          "score": 0.3945,
+          "rvol": 3.1,
+          "macd_hist": 6.6e-07,
+          "flat_top_level": 0.1246,
+          "why": [
+            "MACD bullish crossover \u2014 histogram flipped positive (0.000001)",
+            "Flat top breakout at 0.1246 \u2014 2 touches, new high on volume",
+            "Relative volume 3.1x normal \u2014 above-average interest"
+          ],
+          "symbol": "OPUSDT"
+        },
+        {
+          "timestamp": "2026-02-23T16:15:00+00:00",
+          "entry": 0.1224,
+          "stop": 0.12190429,
+          "tp1": 0.12314357,
+          "tp2": 0.12339143,
+          "r_value": 2.0,
+          "score": 0.4613,
+          "rvol": 3.2,
+          "macd_hist": 2.635e-05,
+          "flat_top_level": 0.1221,
+          "why": [
+            "MACD bullish crossover \u2014 histogram flipped positive (0.000026)",
+            "Flat top breakout at 0.1221 \u2014 2 touches, new high on volume",
+            "Relative volume 3.2x normal \u2014 above-average interest"
+          ],
+          "symbol": "OPUSDT"
+        }
+      ]
+    },
+    {
+      "symbol": "PEPEUSDT",
+      "bars": 500,
+      "hours_covered": 24.2,
+      "signals": 1,
+      "signal_rate_per_hour": 0.04,
+      "details": [
+        {
+          "timestamp": "2026-02-23T09:30:00+00:00",
+          "entry": 4.06e-06,
+          "stop": 4.04e-06,
+          "tp1": 4.1e-06,
+          "tp2": 4.11e-06,
+          "r_value": 2.0,
+          "score": 0.5571,
+          "rvol": 5.4,
+          "macd_hist": 0.0,
+          "flat_top_level": 4e-06,
+          "why": [
+            "MACD bullish crossover \u2014 histogram flipped positive (0.000000)",
+            "Flat top breakout at 0.0000 \u2014 2 touches, new high on volume",
+            "Relative volume 5.4x normal \u2014 above-average interest"
+          ],
+          "symbol": "PEPEUSDT"
+        }
+      ]
+    },
+    {
+      "symbol": "FDUSDUSDT",
+      "bars": 500,
+      "hours_covered": 24.2,
+      "signals": 1,
+      "signal_rate_per_hour": 0.04,
+      "details": [
+        {
+          "timestamp": "2026-02-23T06:25:00+00:00",
+          "entry": 0.9992,
+          "stop": 0.99907143,
+          "tp1": 0.99939286,
+          "tp2": 0.99945714,
+          "r_value": 2.0,
+          "score": 0.7017,
+          "rvol": 5.6,
+          "macd_hist": 5.66e-06,
+          "flat_top_level": 0.9991,
+          "why": [
+            "MACD bullish crossover \u2014 histogram flipped positive (0.000006)",
+            "Flat top breakout at 0.9991 \u2014 7 touches, new high on volume",
+            "Relative volume 5.6x normal \u2014 above-average interest"
+          ],
+          "symbol": "FDUSDUSDT"
+        }
+      ]
+    },
+    {
+      "symbol": "LINKUSDT",
+      "bars": 500,
+      "hours_covered": 24.2,
+      "signals": 1,
+      "signal_rate_per_hour": 0.04,
+      "details": [
+        {
+          "timestamp": "2026-02-23T12:35:00+00:00",
+          "entry": 8.53,
+          "stop": 8.49742857,
+          "tp1": 8.57885714,
+          "tp2": 8.59514286,
+          "r_value": 2.0,
+          "score": 0.3456,
+          "rvol": 2.2,
+          "macd_hist": 0.00072589,
+          "flat_top_level": 8.49,
+          "why": [
+            "MACD bullish crossover \u2014 histogram flipped positive (0.000726)",
+            "Flat top breakout at 8.4900 \u2014 2 touches, new high on volume",
+            "Relative volume 2.2x normal \u2014 above-average interest"
+          ],
+          "symbol": "LINKUSDT"
+        }
+      ]
+    },
+    {
+      "symbol": "KITEUSDT",
+      "bars": 500,
+      "hours_covered": 24.2,
+      "signals": 1,
+      "signal_rate_per_hour": 0.04,
+      "details": [
+        {
+          "timestamp": "2026-02-23T00:15:00+00:00",
+          "entry": 0.2613,
+          "stop": 0.25878857,
+          "tp1": 0.26506714,
+          "tp2": 0.26632286,
+          "r_value": 2.0,
+          "score": 0.9063,
+          "rvol": 5.3,
+          "macd_hist": 0.00022322,
+          "flat_top_level": 0.2584,
+          "why": [
+            "MACD bullish crossover \u2014 histogram flipped positive (0.000223)",
+            "Flat top breakout at 0.2584 \u2014 4 touches, new high on volume",
+            "Relative volume 5.3x normal \u2014 above-average interest"
+          ],
+          "symbol": "KITEUSDT"
+        }
+      ]
+    },
+    {
+      "symbol": "UNIUSDT",
+      "bars": 500,
+      "hours_covered": 24.2,
+      "signals": 1,
+      "signal_rate_per_hour": 0.04,
+      "details": [
+        {
+          "timestamp": "2026-02-23T12:35:00+00:00",
+          "entry": 3.467,
+          "stop": 3.45414286,
+          "tp1": 3.48628571,
+          "tp2": 3.49271429,
+          "r_value": 2.0,
+          "score": 0.4008,
+          "rvol": 2.2,
+          "macd_hist": 0.00096267,
+          "flat_top_level": 3.446,
+          "why": [
+            "MACD bullish crossover \u2014 histogram flipped positive (0.000963)",
+            "Flat top breakout at 3.4460 \u2014 2 touches, new high on volume",
+            "Relative volume 2.2x normal \u2014 above-average interest"
+          ],
+          "symbol": "UNIUSDT"
+        }
+      ]
+    },
+    {
+      "symbol": "PUMPUSDT",
+      "bars": 500,
+      "hours_covered": 24.2,
+      "signals": 1,
+      "signal_rate_per_hour": 0.04,
+      "details": [
+        {
+          "timestamp": "2026-02-23T12:35:00+00:00",
+          "entry": 0.001947,
+          "stop": 0.00193774,
+          "tp1": 0.00196089,
+          "tp2": 0.00196551,
+          "r_value": 2.0,
+          "score": 0.5068,
+          "rvol": 2.4,
+          "macd_hist": 1.7e-07,
+          "flat_top_level": 0.001938,
+          "why": [
+            "MACD bullish crossover \u2014 histogram flipped positive (0.000000)",
+            "Flat top breakout at 0.0019 \u2014 5 touches, new high on volume",
+            "Relative volume 2.4x normal \u2014 above-average interest"
+          ],
+          "symbol": "PUMPUSDT"
+        }
+      ]
+    },
+    {
+      "symbol": "ENAUSDT",
+      "bars": 500,
+      "hours_covered": 24.2,
+      "signals": 1,
+      "signal_rate_per_hour": 0.04,
+      "details": [
+        {
+          "timestamp": "2026-02-23T12:35:00+00:00",
+          "entry": 0.1018,
+          "stop": 0.10145714,
+          "tp1": 0.10231429,
+          "tp2": 0.10248571,
+          "r_value": 2.0,
+          "score": 0.5493,
+          "rvol": 4.1,
+          "macd_hist": 9.34e-06,
+          "flat_top_level": 0.1015,
+          "why": [
+            "MACD bullish crossover \u2014 histogram flipped positive (0.000009)",
+            "Flat top breakout at 0.1015 \u2014 3 touches, new high on volume",
+            "Relative volume 4.1x normal \u2014 above-average interest"
+          ],
+          "symbol": "ENAUSDT"
+        }
+      ]
+    },
+    {
+      "symbol": "ENSOUSDT",
+      "bars": 500,
+      "hours_covered": 24.2,
+      "signals": 1,
+      "signal_rate_per_hour": 0.04,
+      "details": [
+        {
+          "timestamp": "2026-02-23T01:45:00+00:00",
+          "entry": 2.025,
+          "stop": 1.96611429,
+          "tp1": 2.11332857,
+          "tp2": 2.14277143,
+          "r_value": 2.0,
+          "score": 0.6339,
+          "rvol": 2.4,
+          "macd_hist": 0.00639601,
+          "flat_top_level": 1.969,
+          "why": [
+            "MACD bullish crossover \u2014 histogram flipped positive (0.006396)",
+            "Flat top breakout at 1.9690 \u2014 2 touches, new high on volume",
+            "Relative volume 2.4x normal \u2014 above-average interest"
+          ],
+          "symbol": "ENSOUSDT"
+        }
+      ]
+    },
+    {
+      "symbol": "AGLDUSDT",
+      "bars": 500,
+      "hours_covered": 24.2,
+      "signals": 1,
+      "signal_rate_per_hour": 0.04,
+      "details": [
+        {
+          "timestamp": "2026-02-22T22:35:00+00:00",
+          "entry": 0.387,
+          "stop": 0.38151429,
+          "tp1": 0.39522857,
+          "tp2": 0.39797143,
+          "r_value": 2.0,
+          "score": 0.6032,
+          "rvol": 3.1,
+          "macd_hist": 0.00027763,
+          "flat_top_level": 0.38,
+          "why": [
+            "MACD bullish crossover \u2014 histogram flipped positive (0.000278)",
+            "Flat top breakout at 0.3800 \u2014 2 touches, new high on volume",
+            "Relative volume 3.1x normal \u2014 above-average interest"
+          ],
+          "symbol": "AGLDUSDT"
+        }
+      ]
+    },
+    {
+      "symbol": "ARBUSDT",
+      "bars": 500,
+      "hours_covered": 24.2,
+      "signals": 1,
+      "signal_rate_per_hour": 0.04,
+      "details": [
+        {
+          "timestamp": "2026-02-23T12:35:00+00:00",
+          "entry": 0.0959,
+          "stop": 0.09538571,
+          "tp1": 0.09667143,
+          "tp2": 0.09692857,
+          "r_value": 2.0,
+          "score": 0.3945,
+          "rvol": 3.0,
+          "macd_hist": 4.4e-06,
+          "flat_top_level": 0.0957,
+          "why": [
+            "MACD bullish crossover \u2014 histogram flipped positive (0.000004)",
+            "Flat top breakout at 0.0957 \u2014 2 touches, new high on volume",
+            "Relative volume 3.0x normal \u2014 above-average interest"
+          ],
+          "symbol": "ARBUSDT"
+        }
+      ]
+    },
+    {
+      "symbol": "FILUSDT",
+      "bars": 500,
+      "hours_covered": 24.2,
+      "signals": 1,
+      "signal_rate_per_hour": 0.04,
+      "details": [
+        {
+          "timestamp": "2026-02-23T12:35:00+00:00",
+          "entry": 0.911,
+          "stop": 0.908,
+          "tp1": 0.9155,
+          "tp2": 0.917,
+          "r_value": 2.0,
+          "score": 0.3718,
+          "rvol": 2.4,
+          "macd_hist": 0.00012334,
+          "flat_top_level": 0.907,
+          "why": [
+            "MACD bullish crossover \u2014 histogram flipped positive (0.000123)",
+            "Flat top breakout at 0.9070 \u2014 2 touches, new high on volume",
+            "Relative volume 2.4x normal \u2014 above-average interest"
+          ],
+          "symbol": "FILUSDT"
+        }
+      ]
+    },
+    {
+      "symbol": "SENTUSDT",
+      "bars": 500,
+      "hours_covered": 24.2,
+      "signals": 1,
+      "signal_rate_per_hour": 0.04,
+      "details": [
+        {
+          "timestamp": "2026-02-23T14:50:00+00:00",
+          "entry": 0.02257,
+          "stop": 0.02240457,
+          "tp1": 0.02281814,
+          "tp2": 0.02290086,
+          "r_value": 2.0,
+          "score": 0.4781,
+          "rvol": 2.6,
+          "macd_hist": 9.78e-06,
+          "flat_top_level": 0.02236,
+          "why": [
+            "MACD bullish crossover \u2014 histogram flipped positive (0.000010)",
+            "Flat top breakout at 0.0224 \u2014 2 touches, new high on volume",
+            "Relative volume 2.6x normal \u2014 above-average interest"
+          ],
+          "symbol": "SENTUSDT"
+        }
+      ]
+    },
+    {
+      "symbol": "XRPUSDT",
+      "bars": 500,
+      "hours_covered": 24.2,
+      "signals": 0,
+      "signal_rate_per_hour": 0.0,
+      "details": []
+    },
+    {
+      "symbol": "BTCUSDT",
+      "bars": 500,
+      "hours_covered": 24.2,
+      "signals": 0,
+      "signal_rate_per_hour": 0.0,
+      "details": []
+    },
+    {
+      "symbol": "USD1USDT",
+      "bars": 500,
+      "hours_covered": 24.2,
+      "signals": 0,
+      "signal_rate_per_hour": 0.0,
+      "details": []
+    },
+    {
+      "symbol": "ETHUSDT",
+      "bars": 500,
+      "hours_covered": 24.2,
+      "signals": 0,
+      "signal_rate_per_hour": 0.0,
+      "details": []
+    },
+    {
+      "symbol": "BNBUSDT",
+      "bars": 500,
+      "hours_covered": 24.2,
+      "signals": 0,
+      "signal_rate_per_hour": 0.0,
+      "details": []
+    },
+    {
+      "symbol": "PAXGUSDT",
+      "bars": 500,
+      "hours_covered": 24.2,
+      "signals": 0,
+      "signal_rate_per_hour": 0.0,
+      "details": []
+    },
+    {
+      "symbol": "DOGEUSDT",
+      "bars": 500,
+      "hours_covered": 24.2,
+      "signals": 0,
+      "signal_rate_per_hour": 0.0,
+      "details": []
+    },
+    {
+      "symbol": "WLFIUSDT",
+      "bars": 500,
+      "hours_covered": 24.2,
+      "signals": 0,
+      "signal_rate_per_hour": 0.0,
+      "details": []
+    },
+    {
+      "symbol": "TRXUSDT",
+      "bars": 500,
+      "hours_covered": 24.2,
+      "signals": 0,
+      "signal_rate_per_hour": 0.0,
+      "details": []
+    },
+    {
+      "symbol": "SUIUSDT",
+      "bars": 500,
+      "hours_covered": 24.2,
+      "signals": 0,
+      "signal_rate_per_hour": 0.0,
+      "details": []
+    },
+    {
+      "symbol": "ZECUSDT",
+      "bars": 500,
+      "hours_covered": 24.2,
+      "signals": 0,
+      "signal_rate_per_hour": 0.0,
+      "details": []
+    },
+    {
+      "symbol": "EURUSDT",
+      "bars": 500,
+      "hours_covered": 24.2,
+      "signals": 0,
+      "signal_rate_per_hour": 0.0,
+      "details": []
+    },
+    {
+      "symbol": "ADAUSDT",
+      "bars": 500,
+      "hours_covered": 24.2,
+      "signals": 0,
+      "signal_rate_per_hour": 0.0,
+      "details": []
+    },
+    {
+      "symbol": "UUSDT",
+      "bars": 500,
+      "hours_covered": 24.2,
+      "signals": 0,
+      "signal_rate_per_hour": 0.0,
+      "details": []
+    },
+    {
+      "symbol": "ASTERUSDT",
+      "bars": 500,
+      "hours_covered": 24.2,
+      "signals": 0,
+      "signal_rate_per_hour": 0.0,
+      "details": []
+    },
+    {
+      "symbol": "LTCUSDT",
+      "bars": 500,
+      "hours_covered": 24.2,
+      "signals": 0,
+      "signal_rate_per_hour": 0.0,
+      "details": []
+    },
+    {
+      "symbol": "AVAXUSDT",
+      "bars": 500,
+      "hours_covered": 24.2,
+      "signals": 0,
+      "signal_rate_per_hour": 0.0,
+      "details": []
+    },
+    {
+      "symbol": "BCHUSDT",
+      "bars": 500,
+      "hours_covered": 24.2,
+      "signals": 0,
+      "signal_rate_per_hour": 0.0,
+      "details": []
+    },
+    {
+      "symbol": "\u5e01\u5b89\u4eba\u751fUSDT",
+      "bars": 500,
+      "hours_covered": 24.2,
+      "signals": 0,
+      "signal_rate_per_hour": 0.0,
+      "details": []
+    },
+    {
+      "symbol": "AAVEUSDT",
+      "bars": 500,
+      "hours_covered": 24.2,
+      "signals": 0,
+      "signal_rate_per_hour": 0.0,
+      "details": []
+    },
+    {
+      "symbol": "TRUMPUSDT",
+      "bars": 500,
+      "hours_covered": 24.2,
+      "signals": 0,
+      "signal_rate_per_hour": 0.0,
+      "details": []
+    },
+    {
+      "symbol": "XPLUSDT",
+      "bars": 500,
+      "hours_covered": 24.2,
+      "signals": 0,
+      "signal_rate_per_hour": 0.0,
+      "details": []
+    },
+    {
+      "symbol": "TAOUSDT",
+      "bars": 500,
+      "hours_covered": 24.2,
+      "signals": 0,
+      "signal_rate_per_hour": 0.0,
+      "details": []
+    },
+    {
+      "symbol": "APTUSDT",
+      "bars": 500,
+      "hours_covered": 24.2,
+      "signals": 0,
+      "signal_rate_per_hour": 0.0,
+      "details": []
+    },
+    {
+      "symbol": "NEARUSDT",
+      "bars": 500,
+      "hours_covered": 24.2,
+      "signals": 0,
+      "signal_rate_per_hour": 0.0,
+      "details": []
+    },
+    {
+      "symbol": "HBARUSDT",
+      "bars": 500,
+      "hours_covered": 24.2,
+      "signals": 0,
+      "signal_rate_per_hour": 0.0,
+      "details": []
+    },
+    {
+      "symbol": "WLDUSDT",
+      "bars": 500,
+      "hours_covered": 24.2,
+      "signals": 0,
+      "signal_rate_per_hour": 0.0,
+      "details": []
+    },
+    {
+      "symbol": "ZROUSDT",
+      "bars": 500,
+      "hours_covered": 24.2,
+      "signals": 0,
+      "signal_rate_per_hour": 0.0,
+      "details": []
+    },
+    {
+      "symbol": "DASHUSDT",
+      "bars": 500,
+      "hours_covered": 24.2,
+      "signals": 0,
+      "signal_rate_per_hour": 0.0,
+      "details": []
+    },
+    {
+      "symbol": "LAUSDT",
+      "bars": 500,
+      "hours_covered": 24.2,
+      "signals": 0,
+      "signal_rate_per_hour": 0.0,
+      "details": []
+    },
+    {
+      "symbol": "XUSDUSDT",
+      "bars": 500,
+      "hours_covered": 24.2,
+      "signals": 0,
+      "signal_rate_per_hour": 0.0,
+      "details": []
+    },
+    {
+      "symbol": "ZAMAUSDT",
+      "bars": 500,
+      "hours_covered": 24.2,
+      "signals": 0,
+      "signal_rate_per_hour": 0.0,
+      "details": []
+    },
+    {
+      "symbol": "PENGUUSDT",
+      "bars": 500,
+      "hours_covered": 24.2,
+      "signals": 0,
+      "signal_rate_per_hour": 0.0,
+      "details": []
+    },
+    {
+      "symbol": "DOTUSDT",
+      "bars": 500,
+      "hours_covered": 24.2,
+      "signals": 0,
+      "signal_rate_per_hour": 0.0,
+      "details": []
+    }
+  ]
+}

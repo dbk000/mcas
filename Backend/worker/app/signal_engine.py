@@ -28,6 +28,7 @@ import requests
 from json_logging import ctx_symbol
 from indicators import FeatureFactory, IndicatorSnapshot, OHLCV
 from setups import S9Evaluator, S9Signal, S9State
+from setups import S10Evaluator, S10Signal
 from data_layer import log_signal_event
 
 logger = logging.getLogger(__name__)
@@ -336,13 +337,27 @@ class SignalEngine:
         Run per-symbol setup evaluators and return any signals that triggered.
 
         S1-S8 archived. S9 is cross-sectional (evaluated separately).
-        Per-symbol setups kept as extension point for future strategies.
+        S10 is per-symbol MACD scalp on 5m timeframe.
         """
-        return []
+        signals = []
+
+        # S10: MACD Scalp (5m only)
+        if tf == "5m":
+            try:
+                s10 = S10Evaluator()
+                state = s10.compute_state(snapshot)
+                sig = s10.evaluate_trigger(snapshot, state, symbol, tf)
+                if sig is not None:
+                    signals.append(sig)
+            except Exception as e:
+                logger.debug("S10 eval error %s %s: %s", symbol, tf, e)
+
+        return signals
     
     # ── Setup ID + name mapping ──────────────────────────────────────
     _SETUP_NAMES = {
         "S9": "Short Reversion v1.0",
+        "S10": "MACD Scalp v1.0",
     }
 
     def signal_to_ranked(self, signal) -> RankedSignal:
@@ -367,6 +382,22 @@ class SignalEngine:
                     "breadth_score": signal.breadth_score,
                     "magnitude_score": signal.magnitude_score,
                 },
+                "why_items": signal.explain.why_items if signal.explain else [],
+                "time_stop_bars": signal.time_stop_bars,
+            }
+        elif isinstance(signal, S10Signal):
+            setup_id = "S10"
+            payload = {
+                "setup_id": "S10",
+                "setup_name": self._SETUP_NAMES["S10"],
+                "state": {
+                    "macd_histogram": signal.macd_histogram,
+                    "rvol": signal.rvol,
+                    "sma_20": signal.sma_20,
+                    "flat_top_level": signal.flat_top_level,
+                    "trend_bias": signal.trend_bias,
+                },
+                "score_components": signal.score_components,
                 "why_items": signal.explain.why_items if signal.explain else [],
                 "time_stop_bars": signal.time_stop_bars,
             }
@@ -420,7 +451,7 @@ class SignalEngine:
             if is_cache_ready(self.redis_client):
                 cached = get_top_signals(
                     self.redis_client,
-                    setup_ids=["S9", "U1"],
+                    setup_ids=["S9", "U1", "S10"],
                     timeframes=self.timeframes,
                     top_n=self.top_n or 9999,
                 )
