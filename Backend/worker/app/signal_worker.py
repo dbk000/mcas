@@ -124,10 +124,12 @@ class SignalWorker:
         self._symbol_quality_filter_enabled = SYMBOL_QUALITY_FILTER
         self._excluded_symbols_cache: set[str] = set()
         self._excluded_symbols_cache_ts: float = 0.0
+        self.s10_evaluator = S10Evaluator()
         # Diagnostic counters (reset per logging cycle)
         self._diag = {
             "evaluated": 0, "snapshot_fail": 0, "candle_fail": 0,
             "symbol_quality_excluded": 0,
+            "s10_signal": 0,
             "s9_signal": 0, "s9_breadth_fail": 0,
         }
         self._last_diag_log = 0.0
@@ -226,7 +228,7 @@ class SignalWorker:
         self.r.xack(stream_name, self.group_name, msg_id)
 
     def _evaluate_symbol(self, symbol: str, tf: str, bar_start_ts: str = None):
-        """Run active evaluators for a symbol/tf. S1-S8 archived; only U1 remains per-symbol."""
+        """Run active evaluators for a symbol/tf. S1-S8 archived; U1 + S10 active."""
         self._diag["evaluated"] += 1
 
         # Symbol quality filter — skip chronic-firer symbols
@@ -244,12 +246,16 @@ class SignalWorker:
             logger.debug(f"Stale/inconsistent snapshot for {symbol}:{tf}, skipping")
             return
 
-        # Step 1b: Populate OHLCV candles (needed by U1 evaluator)
+        # Step 1b: Populate OHLCV candles (needed by evaluators)
         snapshot.ohlcv = get_candles_as_ohlcv(self.r, symbol, tf)
         if not snapshot.ohlcv:
             self._diag["candle_fail"] += 1
             logger.debug(f"No candles in Redis for {symbol}:{tf}, skipping")
             return
+
+        # S10: MACD Scalp (5m only, per-symbol)
+        if tf == "5m":
+            self._evaluate_s10(symbol, tf, snapshot, bar_start_ts)
 
         # U1 evaluator (only for EMBRYO_ACTIVE symbols)
         self._evaluate_u1(symbol, tf, snapshot.ohlcv, snap_ts)
@@ -283,6 +289,57 @@ class SignalWorker:
             return False
         self._refresh_excluded_symbols_cache()
         return symbol in self._excluded_symbols_cache
+
+    def _evaluate_s10(self, symbol: str, tf: str, snapshot, bar_start_ts: str):
+        """Run S10 MACD Scalp evaluator on 5m bars."""
+        try:
+            state = self.s10_evaluator.compute_state(snapshot)
+            sig = self.s10_evaluator.evaluate_trigger(snapshot, state, symbol, tf)
+            if sig is None:
+                return
+
+            self._diag["s10_signal"] += 1
+
+            # Build payload
+            calib_mult = SETUP_SCORE_MULTIPLIERS.get("S10", 1.0)
+            calibrated_score = min(sig.setup_score * calib_mult, 1.0)
+
+            payload = {
+                "setup_id": "S10",
+                "setup_name": "MACD Scalp v1.0",
+                "symbol": symbol,
+                "timeframe": tf,
+                "direction": sig.direction.value,
+                "setup_score": calibrated_score,
+                "raw_score": sig.setup_score,
+                "entry_price": sig.entry_price,
+                "stop_price": sig.stop_price,
+                "tp1_price": sig.tp1_price,
+                "tp2_price": sig.tp2_price,
+                "r_value": sig.r_value,
+                "time_stop_bars": sig.time_stop_bars,
+                "bar_start_ts": bar_start_ts or "",
+                "as_of_ts": time.time(),
+                "why_items": sig.explain.why_items if sig.explain else [],
+                "macd_histogram": sig.macd_histogram,
+                "rvol": sig.rvol,
+                "sma_20": sig.sma_20,
+                "flat_top_level": sig.flat_top_level,
+                "trend_bias": sig.trend_bias,
+                "score_components": sig.score_components,
+            }
+
+            store_signal(self.r, symbol, tf, "S10", payload,
+                         calibrated_score, bar_start_ts or "")
+            reason = "; ".join(sig.explain.why_items) if sig.explain else None
+            self._persist_signal_to_pg(symbol, tf, "S10", calibrated_score, reason, payload)
+
+            logger.info(
+                "Signal: S10 LONG %s:%s score=%.3f rvol=%.1fx macd_hist=%.6f",
+                symbol, tf, calibrated_score, sig.rvol, sig.macd_histogram,
+            )
+        except Exception as e:
+            logger.debug("S10 eval error %s:%s: %s", symbol, tf, e)
 
     def _evaluate_u1(self, symbol: str, tf: str, candles, bar_start_ts: str):
         """Run U1 evaluator for EMBRYO_ACTIVE symbols only."""
@@ -375,6 +432,7 @@ class SignalWorker:
     SETUP_VERSIONS = {
         "U1": "U1_v1.0",
         "S9": "S9_v1.0",
+        "S10": "S10_v1.0",
     }
 
     def _persist_signal_to_pg(self, symbol: str, tf: str, setup_id: str,
@@ -862,7 +920,7 @@ class SignalWorker:
                         continue
 
                     reeval_needed = False
-                    for setup_id in ["S9", "U1"]:
+                    for setup_id in ["S9", "U1", "S10"]:
                         sig_ts = b2f(self.r.hget(
                             sig_meta_key(symbol, tf, setup_id), "bar_start_ts"
                         ))
@@ -887,7 +945,7 @@ class SignalWorker:
         """Prune stale signals across all setups and timeframes."""
         try:
             timeframes = get_timeframes(self.r)
-            for setup_id in ["S9", "U1"]:
+            for setup_id in ["S9", "U1", "S10"]:
                 for tf in timeframes:
                     prune_stale_signals(self.r, setup_id, tf)
             # Also expire stale active records in Postgres
