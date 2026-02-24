@@ -14,7 +14,7 @@ from typing import Optional
 
 import psycopg
 from fastapi import APIRouter, Request, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 logger = logging.getLogger("telemetry_api")
 
@@ -52,6 +52,8 @@ def _check_rate_limit(client_ip: str) -> bool:
 # Models
 # ---------------------------------------------------------------------------
 class FrontendLogEntry(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
     timestamp: str
     level: str
     logger: str
@@ -98,6 +100,10 @@ async def ingest_frontend_logs(batch: FrontendLogBatch, request: Request):
         # the Pydantic model only captures known fields; everything else lands
         # in entry.data.  We also pull correlation_id from data if present.
         merged_data = dict(entry.data) if entry.data else {}
+        # Merge any extra top-level fields the frontend spread into the entry
+        # (e.g. service, version, correlation_id, event, etc.)
+        if entry.model_extra:
+            merged_data.update(entry.model_extra)
         # Strip fields already stored in dedicated columns
         merged_data.pop("level", None)
         merged_data.pop("logger", None)

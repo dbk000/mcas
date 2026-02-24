@@ -64,10 +64,18 @@ app = FastAPI(
     version="1.0.0",
 )
 
-# CORS: Allow frontend on Cloudflare Pages to access this API
+# CORS: Allow frontend origins (production + dev)
+_CORS_ORIGINS = os.getenv("CORS_ORIGINS", "").strip()
+_cors_origins = [o.strip() for o in _CORS_ORIGINS.split(",") if o.strip()] if _CORS_ORIGINS else []
+_cors_origins += [
+    "https://mcas.pages.dev",
+    "http://localhost:3000",
+    "http://localhost:5173",
+    "http://localhost:5174",
+]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://mcas.pages.dev"],
+    allow_origins=_cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -112,7 +120,7 @@ DEFAULT_SYMBOLS = [
     "ORDIUSDT", "SATSUSDT", "RATSUSDT", "1000SATSUSDT", "PYTHUSDT",
     "JUPUSDT", "WUSDT", "STRKUSDT", "MANTAUSDT", "ALTUSDT",
     "PIXELUSDT", "PORTALUSDT", "ACEUSDT", "XAIUSDT", "AIUSDT",
-    "ONDOUSDT", "ENAUSDT", "WUSDT", "ETHFIUSDT", "SAGAUSDT",
+    "ONDOUSDT", "ENAUSDT", "ETHFIUSDT", "SAGAUSDT",
     # Tier 4 - Active mid/small caps
     "CFXUSDT", "CKBUSDT", "HOOKUSDT", "MAGICUSDT", "TUSDT",
     "IDUSDT", "RDNTUSDT", "LQTYUSDT", "SSVUSDT",
@@ -380,36 +388,6 @@ def queue_signal(req: SignalRequest):
     return envelope({"signal_id": signal_id, "status": "queued"}, t0)
 
 
-@router.get("/signals/{signal_id}")
-def get_signal(signal_id: int):
-    """Get signal processing result."""
-    t0 = time.time()
-
-    if not DATABASE_URL:
-        raise HTTPException(status_code=500, detail="Database not configured")
-
-    with psycopg.connect(DATABASE_URL) as conn:
-        with conn.cursor() as cur:
-            cur.execute("""
-                SELECT id, status, result_json, symbol, timeframe, setup_id
-                FROM signal_queue WHERE id = %s;
-            """, (signal_id,))
-            row = cur.fetchone()
-
-    if not row:
-        raise HTTPException(status_code=404, detail="Signal not found")
-
-    _id, status, result_json, symbol, timeframe, setup_id = row
-    return envelope({
-        "id": _id,
-        "symbol": symbol,
-        "timeframe": timeframe,
-        "setup_id": setup_id,
-        "status": status,
-        "result": json.loads(result_json) if result_json else None,
-    }, t0)
-
-
 @router.get("/signals/top")
 def get_top_signals(
     limit: int = Query(default=3, ge=1, le=20),
@@ -462,6 +440,36 @@ def get_top_signals(
         })
 
     return envelope({"signals": signals, "count": len(signals)}, t0)
+
+
+@router.get("/signals/{signal_id}")
+def get_signal(signal_id: int):
+    """Get signal processing result."""
+    t0 = time.time()
+
+    if not DATABASE_URL:
+        raise HTTPException(status_code=500, detail="Database not configured")
+
+    with psycopg.connect(DATABASE_URL) as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT id, status, result_json, symbol, timeframe, setup_id
+                FROM signal_queue WHERE id = %s;
+            """, (signal_id,))
+            row = cur.fetchone()
+
+    if not row:
+        raise HTTPException(status_code=404, detail="Signal not found")
+
+    _id, status, result_json, symbol, timeframe, setup_id = row
+    return envelope({
+        "id": _id,
+        "symbol": symbol,
+        "timeframe": timeframe,
+        "setup_id": setup_id,
+        "status": status,
+        "result": json.loads(result_json) if result_json else None,
+    }, t0)
 
 
 # -------------------------
