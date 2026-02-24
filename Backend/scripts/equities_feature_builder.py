@@ -9,6 +9,7 @@ from datetime import datetime, timedelta, timezone
 
 import numpy as np
 
+import equities_predictor.indicators as indicators
 from equities_predictor.calendar import session_state
 from equities_predictor.db import (
     connect,
@@ -102,6 +103,11 @@ def _event_window_stats(events: list[dict], as_of_ts: datetime) -> tuple[dict, d
     return features, coverage
 
 
+def load_external_features(symbol: str, bar_start_ts: datetime) -> dict[str, float]:
+    """Hook for external feature sources. Default returns empty dict."""
+    return {}
+
+
 def build_features(
     *,
     database_url: str | None,
@@ -183,6 +189,18 @@ def build_features(
                     "earnings_window_flag": earnings_window,
                     **event_feats,
                 }
+
+                indicator_feats: dict[str, float] = {}
+                if (i + 1) >= 200:
+                    indicator_feats = indicators.compute_all(rows, i)
+
+                external_feats_raw = load_external_features(symbol, bar_start)
+                external_feats = external_feats_raw if isinstance(external_feats_raw, dict) else {}
+
+                for key, value in indicator_feats.items():
+                    features.setdefault(key, value)
+                for key, value in external_feats.items():
+                    features.setdefault(key, value)
 
                 regime_labels = {
                     "trend_regime": regime["trend_regime"],

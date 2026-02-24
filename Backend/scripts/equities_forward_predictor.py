@@ -26,9 +26,10 @@ from equities_predictor.db import (
     upsert_equities_opportunity,
 )
 from equities_predictor.ids import deterministic_uuid, stable_hash
+from equities_predictor.indicators import INDICATOR_REGISTRY
 from equities_predictor.universe import get_default_symbols
 
-FEATURE_COLUMNS = [
+LEGACY_FEATURE_COLUMNS = [
     "price_return_1",
     "price_return_5",
     "price_return_20",
@@ -45,6 +46,9 @@ FEATURE_COLUMNS = [
     "source_count_6h",
     "source_count_24h",
     "source_count_3d",
+]
+FEATURE_COLUMNS = LEGACY_FEATURE_COLUMNS + [
+    name for name in INDICATOR_REGISTRY.keys() if name not in LEGACY_FEATURE_COLUMNS
 ]
 
 

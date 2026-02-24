@@ -9,12 +9,13 @@ U1 uses raw candles (not IndicatorSnapshot/FeatureFactory), so this script
 is simpler: load OHLCV → walk forward → evaluate_gates → evaluate_trigger.
 
 Writes to DB incrementally per-symbol. Logs per-symbol progress with ETA.
+Supports multiprocessing via --workers flag.
 
 Usage:
-    python scripts/backfill_u1_opportunities.py --days 8 --timeframes 15m,1h,4h,1d
+    python scripts/backfill_u1_opportunities.py --days 30 --timeframes 5m --workers 8
 
     # Clear stale U1 backfill opps before regenerating:
-    python scripts/backfill_u1_opportunities.py --days 8 --timeframes 15m,1h,4h,1d --clear-expired
+    python scripts/backfill_u1_opportunities.py --days 30 --timeframes 5m --clear-expired --workers 8
 
 Requires DATABASE_URL env var (reads from .env if available).
 """
@@ -26,6 +27,7 @@ import time
 import hashlib
 import logging
 import argparse
+import multiprocessing
 from datetime import datetime, timezone
 from collections import defaultdict
 
@@ -67,6 +69,10 @@ DATABASE_URL = os.environ.get('DATABASE_URL')
 
 # U1 needs GATE_WINDOW_BARS * 2 = 96 candles minimum
 U1_MIN_BARS = 96
+
+# Module-level shared data — set before Pool fork, inherited via copy-on-write
+_ALL_DATA = None
+_WORKER_ARGS = None
 
 
 def load_ohlcv_from_db(
@@ -244,6 +250,24 @@ def process_symbol_timeframe(
     return opportunities
 
 
+def _worker_process_symbol(symbol: str) -> tuple[str, list[dict]]:
+    """Multiprocessing worker: process one symbol using fork-inherited globals."""
+    evaluator = U1Evaluator()
+    tfs = _WORKER_ARGS["symbol_tfs"][symbol]
+    results = []
+    for tf in tfs:
+        candles = _ALL_DATA.get((symbol, tf), [])
+        opps = process_symbol_timeframe(
+            symbol=symbol, tf=tf, candles=candles,
+            setup_version=_WORKER_ARGS["setup_version"],
+            batch_id=_WORKER_ARGS["batch_id"],
+            evaluator=evaluator,
+            start_days=_WORKER_ARGS["start_days"],
+        )
+        results.extend(opps)
+    return symbol, results
+
+
 def _format_duration(seconds: float) -> str:
     """Format seconds as human-readable duration."""
     if seconds < 60:
@@ -256,6 +280,8 @@ def _format_duration(seconds: float) -> str:
 
 
 def main():
+    global _ALL_DATA, _WORKER_ARGS
+
     parser = argparse.ArgumentParser(
         description="Backfill U1 (Unicorn Ignition) opportunities from stored OHLCV data"
     )
@@ -264,8 +290,8 @@ def main():
         help="Number of days to evaluate (default: 7)"
     )
     parser.add_argument(
-        "--setup-version", type=str, default="U1_v1.0",
-        help="U1 setup version tag (default: U1_v1.0)"
+        "--setup-version", type=str, default="U1_v2.0",
+        help="U1 setup version tag (default: U1_v2.0)"
     )
     parser.add_argument(
         "--symbols", type=str, default=None,
@@ -283,11 +309,17 @@ def main():
         "--clear-expired", action="store_true",
         help="Delete stale backfill-generated expired U1 opportunities before inserting."
     )
+    parser.add_argument(
+        "--workers", type=int, default=1,
+        help="Number of parallel workers (default: 1, max: 12)"
+    )
     args = parser.parse_args()
 
     if not DATABASE_URL:
         logger.error("DATABASE_URL not set. Set it in .env or environment.")
         sys.exit(1)
+
+    n_workers = min(args.workers, 12)
 
     # Generate batch ID
     batch_hash = hashlib.sha256(
@@ -312,6 +344,7 @@ def main():
     logger.info(f"  Batch ID:       {batch_id}")
     logger.info(f"  Symbol filter:  {symbol_filter or 'all'}")
     logger.info(f"  TF filter:      {tf_filter or 'all'}")
+    logger.info(f"  Workers:        {n_workers}")
     logger.info(f"  Clear expired:  {args.clear_expired}")
     logger.info("=" * 60)
 
@@ -366,40 +399,80 @@ def main():
     symbol_tfs_map = defaultdict(list)
     for (sym, tf) in sorted(all_data.keys()):
         symbol_tfs_map[sym].append(tf)
-    work_items = list(symbol_tfs_map.items())
+    work_symbols = sorted(symbol_tfs_map.keys())
 
     t0 = time.time()
     total_inserted = 0
     total_found = 0
-    evaluator = U1Evaluator()
 
-    for idx, (symbol, tfs) in enumerate(work_items, 1):
-        symbol_opps = []
-        for tf in tfs:
-            candles = all_data.get((symbol, tf), [])
-            opps = process_symbol_timeframe(
-                symbol=symbol, tf=tf, candles=candles,
-                setup_version=args.setup_version, batch_id=batch_id,
-                evaluator=evaluator, start_days=args.days,
+    if n_workers > 1:
+        # ---- Parallel path ----
+        # Set module-level globals BEFORE fork so children inherit via COW
+        _ALL_DATA = all_data
+        _WORKER_ARGS = {
+            "symbol_tfs": dict(symbol_tfs_map),
+            "setup_version": args.setup_version,
+            "batch_id": batch_id,
+            "start_days": args.days,
+        }
+
+        # Sort heaviest-first (most bars) so the tail is short units
+        bar_counts = {sym: sum(len(all_data.get((sym, tf), []))
+                               for tf in symbol_tfs_map[sym])
+                      for sym in work_symbols}
+        work_symbols_sorted = sorted(work_symbols, key=lambda s: bar_counts[s], reverse=True)
+
+        logger.info(f"Starting {n_workers} workers, {len(work_symbols_sorted)} symbols "
+                     f"(heaviest: {max(bar_counts.values()):,} bars, "
+                     f"lightest: {min(bar_counts.values()):,} bars)")
+
+        completed = 0
+        with multiprocessing.Pool(n_workers) as pool:
+            for symbol, opps in pool.imap_unordered(_worker_process_symbol, work_symbols_sorted):
+                completed += 1
+                if opps:
+                    opps.sort(key=lambda o: (o["timeframe"], o["created_ts"]))
+                    n_ins = insert_opportunities(opps)
+                    total_inserted += n_ins
+                    total_found += len(opps)
+
+                elapsed = time.time() - t0
+                eta = (elapsed / completed) * (len(work_symbols_sorted) - completed)
+                if opps or completed % 50 == 0 or completed == len(work_symbols_sorted):
+                    logger.info(
+                        "[%d/%d] %s: %d signals | %s total | %s elapsed | ~%s remaining",
+                        completed, len(work_symbols_sorted), symbol, len(opps),
+                        f"{total_inserted:,}",
+                        _format_duration(elapsed), _format_duration(eta),
+                    )
+    else:
+        # ---- Serial path ----
+        evaluator = U1Evaluator()
+        for idx, symbol in enumerate(work_symbols, 1):
+            symbol_opps = []
+            for tf in symbol_tfs_map[symbol]:
+                candles = all_data.get((symbol, tf), [])
+                opps = process_symbol_timeframe(
+                    symbol=symbol, tf=tf, candles=candles,
+                    setup_version=args.setup_version, batch_id=batch_id,
+                    evaluator=evaluator, start_days=args.days,
+                )
+                symbol_opps.extend(opps)
+
+            if symbol_opps:
+                symbol_opps.sort(key=lambda o: (o["timeframe"], o["created_ts"]))
+                n_ins = insert_opportunities(symbol_opps)
+                total_inserted += n_ins
+                total_found += len(symbol_opps)
+
+            elapsed = time.time() - t0
+            eta = (elapsed / idx) * (len(work_symbols) - idx) if idx > 0 else 0
+            logger.info(
+                "[%d/%d] %s: %d U1 signals | %s inserted | %s elapsed | ~%s remaining",
+                idx, len(work_symbols), symbol, len(symbol_opps),
+                f"{total_inserted:,}",
+                _format_duration(elapsed), _format_duration(eta),
             )
-            symbol_opps.extend(opps)
-
-        # Incremental write per-symbol
-        if symbol_opps:
-            symbol_opps.sort(key=lambda o: (o["timeframe"], o["created_ts"]))
-            n_ins = insert_opportunities(symbol_opps)
-            total_inserted += n_ins
-            total_found += len(symbol_opps)
-
-        # Per-symbol progress log
-        elapsed = time.time() - t0
-        eta = (elapsed / idx) * (len(work_items) - idx) if idx > 0 else 0
-        logger.info(
-            "[%d/%d] %s: %d U1 signals | %s inserted | %s elapsed | ~%s remaining",
-            idx, len(work_items), symbol, len(symbol_opps),
-            f"{total_inserted:,}",
-            _format_duration(elapsed), _format_duration(eta),
-        )
 
     # Summary
     elapsed = time.time() - t0

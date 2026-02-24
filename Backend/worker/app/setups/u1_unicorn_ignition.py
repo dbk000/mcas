@@ -139,7 +139,7 @@ class U1Config:
     """Unicorn configuration — profiler-derived defaults where applicable."""
 
     # Universe (MVP: Spot USDT only)
-    MIN_VOLUME_USD = 10_000
+    MIN_VOLUME_USD = 100_000
     MAX_VOLUME_USD = 1_000_000
     MAX_MIN_NOTIONAL = 100
     HYPE_REL_VOL_CAP = 20.0
@@ -216,7 +216,8 @@ class U1Config:
 
     # Risk — volatility envelope stop (replaces pure ATR stops)
     STOP_ATR_BUFFER = 1.0
-    STOP_RANGE_MULT = 1.5          # Stop = entry - N × mean(high-low, 20 bars)
+    STOP_RANGE_MULT = 3.0          # Stop = entry - N × mean(high-low, 20 bars)
+    MIN_STOP_PCT = 0.005           # Floor: 0.5% minimum stop distance (clears fee burden)
     TP1_R = 1.0
     TP2_R = 2.0
 
@@ -734,7 +735,7 @@ def evaluate_gate2_participation_proxy(
     candles_last_n: list[OHLCV],
     candles_prev_n: list[OHLCV],
 ) -> tuple[bool, dict]:
-    """OHLCV proxy for participation broadening. Pass all 3."""
+    """OHLCV proxy for participation broadening. Pass 2 of 3."""
 
     # Metric 1: Volume sum rising
     vol_sum_last = sum(c.volume for c in candles_last_n)
@@ -753,7 +754,7 @@ def evaluate_gate2_participation_proxy(
     whale_ratio = max_vol_last / avg_vol_last if avg_vol_last > 0 else float('inf')
     no_whale_dominance = whale_ratio < 10.0
 
-    passed = volume_rising and activity_rising and no_whale_dominance
+    passed = sum([volume_rising, activity_rising, no_whale_dominance]) >= 2
 
     return passed, {
         "vol_sum_last": vol_sum_last,
@@ -772,7 +773,7 @@ def evaluate_gate3_compression(
     candles_prev_n: list[OHLCV],
     rel_volume_last: float,
 ) -> tuple[bool, dict]:
-    """Compression detection for pre-ignition state. Pass all 3."""
+    """Compression detection for pre-ignition state. Pass 2 of 3."""
 
     if not candles_last_n:
         return False, {}
@@ -793,7 +794,7 @@ def evaluate_gate3_compression(
     vol_slope = compute_slope([c.volume for c in candles_last_n])
     not_igniting = vol_slope >= 0 and rel_volume_last < U1Config.REL_VOL_IGNITION_MIN
 
-    passed = range_tight and atr_contracting and not_igniting
+    passed = sum([range_tight, atr_contracting, not_igniting]) >= 2
 
     return passed, {
         "range_pct_last": range_pct_last,
@@ -1032,14 +1033,19 @@ def compute_volatility_envelope_stop(candles: list[OHLCV], entry_price: float,
     if len(candles) < 20:
         # Fallback to ATR-based
         atr_pct = compute_atr_pct(candles)
-        return entry_price * (1 - atr_pct * U1Config.STOP_ATR_BUFFER)
+        stop = entry_price * (1 - atr_pct * U1Config.STOP_ATR_BUFFER)
+        min_stop = entry_price * (1 - U1Config.MIN_STOP_PCT)
+        return min(stop, min_stop)
 
     # Mean range over last 20 bars
     ranges = [c.high - c.low for c in candles[-20:]]
     mean_range = _safe_mean(ranges)
 
     stop = entry_price - range_mult * mean_range
-    return max(stop, entry_price * 0.80)  # Floor: never risk more than 20%
+    # Floor: stop must be at least MIN_STOP_PCT away (clears fee burden on pennycoins)
+    min_stop = entry_price * (1 - U1Config.MIN_STOP_PCT)
+    stop = min(stop, min_stop)
+    return max(stop, entry_price * 0.80)  # Ceiling: never risk more than 20%
 
 
 # =============================================================================

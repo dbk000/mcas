@@ -251,7 +251,7 @@ services:
     networks:
       - backend
 
-  equities_strategy_worker:
+  equities_pipeline:
     build:
       context: ./worker
       dockerfile: Dockerfile
@@ -259,8 +259,25 @@ services:
     env_file:
       - .env
     environment:
-      SERVICE_NAME: equities_strategy_worker
-    command: ["python", "-u", "equities_strategy_worker.py"]
+      SERVICE_NAME: equities_pipeline
+    command: ["python", "-u", "/scripts/equities_pipeline_runner.py", "--loop", "--interval-seconds", "600"]
+    volumes:
+      - ./scripts:/scripts
+    cpus: "2.0"
+    mem_limit: 2g
+    networks:
+      - backend
+
+  equities_task_worker:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      SERVICE_NAME: equities_task_worker
+    command: ["python", "-u", "/scripts/equities_task_worker_loop.py"]
     volumes:
       - ./scripts:/scripts
     networks:

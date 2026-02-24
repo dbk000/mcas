@@ -2,15 +2,19 @@
 Unicorn Pipeline Worker
 =======================
 
-Runs on schedule (every 5 minutes). Owns:
+Runs on schedule (every 5 minutes). Self-contained pipeline that:
 - Universe refresh (daily full scan, incremental updates)
+- Fetches 5m candles from Binance REST for embryo coins (not in monitored universe)
 - Gate evaluation for promotion candidates
+- Trigger evaluation + signal emission for EMBRYO_ACTIVE/SCANNING symbols
 - Promotion decisions (EMBRYO -> EMBRYO_ACTIVE)
 - Demotion rules (pump traps, timeout, eviction)
 - Cap enforcement (MAX_EMBRYO_ACTIVE)
 - State persistence to Redis
 
-Rule: Pipeline worker writes state, signal worker reads state and emits signals.
+Self-contained: fetches its own candles, evaluates triggers, and emits signals.
+Embryo coins are NOT in the monitored universe, so the normal ingestor/signal_worker
+pipeline never sees them. This worker handles the entire lifecycle.
 """
 
 import os
@@ -31,12 +35,16 @@ from cache_contract import (
     add_to_embryo_active, remove_from_embryo_active,
     get_embryo_active_symbols, get_embryo_active_count,
     get_candles_as_ohlcv, b2s, b2f,
+    store_signal, check_staleness,
+    candle_key, candle_meta_key, serialize_candle,
+    ohlcv_to_candle_dict, RING_BUFFER_SIZE,
     UNICORN_STATE_TTL_S,
 )
+from indicators import OHLCV
 from setups.u1_unicorn_ignition import (
     U1Config, U1State, U1Phase, U1Evaluator,
     base_asset, is_stablecoin_base, is_wrapped, is_leverage_token,
-    check_demotion,
+    check_demotion, load_funding_rates,
 )
 
 logger = logging.getLogger("unicorn_pipeline")
@@ -46,10 +54,13 @@ logger = logging.getLogger("unicorn_pipeline")
 # =============================================================================
 
 REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
+DATABASE_URL = os.getenv("DATABASE_URL")
 PIPELINE_INTERVAL_S = int(os.getenv("UNICORN_PIPELINE_INTERVAL_S", "300"))  # 5 min
 FULL_REFRESH_HOUR = 0  # UTC hour for full universe refresh
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 BINANCE_API = "https://api.binance.com"
+KLINE_FETCH_LIMIT = 200   # 200 5m bars = ~16.7 hours (enough for 96-bar windows + buffer)
+KLINE_FETCH_DELAY_S = 0.1  # Rate limit delay between Binance API requests
 
 
 # =============================================================================
@@ -66,6 +77,68 @@ def setup_logging():
     root.handlers.clear()
     root.addHandler(handler)
     root.setLevel(getattr(logging, LOG_LEVEL.upper(), logging.INFO))
+
+
+# =============================================================================
+# Candle Fetching (self-contained — embryo coins aren't in monitored universe)
+# =============================================================================
+
+def fetch_5m_klines(symbol: str, limit: int = KLINE_FETCH_LIMIT) -> list[OHLCV]:
+    """Fetch 5m candles from Binance REST API.
+
+    Returns list[OHLCV] oldest->newest. Timestamps are ms (Binance format).
+    Used for embryo coins that have no WS feed or ingestor coverage.
+    """
+    try:
+        resp = requests.get(
+            f"{BINANCE_API}/api/v3/klines",
+            params={"symbol": symbol, "interval": "5m", "limit": limit},
+            timeout=15,
+        )
+        resp.raise_for_status()
+        candles = []
+        for k in resp.json():
+            candles.append(OHLCV(
+                timestamp=int(k[0]),   # open_time_ms (Binance = ms)
+                open=float(k[1]),
+                high=float(k[2]),
+                low=float(k[3]),
+                close=float(k[4]),
+                volume=float(k[5]),
+            ))
+        return candles
+    except Exception as e:
+        logger.debug("Failed to fetch 5m klines for %s: %s", symbol, e)
+        return []
+
+
+def seed_candles_to_redis(r, symbol: str, tf: str, candles: list[OHLCV]):
+    """Bulk-seed candle ring buffer from fetched OHLCV list.
+
+    Replaces existing data for this symbol/tf. Used by the pipeline
+    for embryo coins that have no WS feed (not in monitored universe).
+    """
+    if not candles:
+        return
+
+    key = candle_key(symbol, tf)
+    meta_k = candle_meta_key(symbol, tf)
+
+    pipe = r.pipeline(transaction=True)
+    pipe.delete(key)
+    for c in candles:
+        pipe.rpush(key, serialize_candle(ohlcv_to_candle_dict(c)))
+    pipe.ltrim(key, -RING_BUFFER_SIZE, -1)
+
+    last = candles[-1]
+    pipe.hset(meta_k, mapping={
+        "last_bar_ts": str(last.timestamp),
+        "last_close": str(last.close),
+        "is_final": "True",
+        "as_of_ts": str(time.time()),
+        "count": str(min(len(candles), RING_BUFFER_SIZE)),
+    })
+    pipe.execute()
 
 
 # =============================================================================
@@ -250,17 +323,22 @@ def build_embryo_universe(r) -> list[str]:
 # =============================================================================
 
 class UnicornPipeline:
-    """Runs the Unicorn pipeline on schedule."""
+    """Runs the Unicorn pipeline on schedule. Self-contained: fetches candles,
+    evaluates gates + triggers, emits signals."""
+
+    SETUP_VERSIONS = {"U1": "U1_v2.0"}
 
     def __init__(self):
         self.r = redis.Redis.from_url(REDIS_URL, decode_responses=True)
         self.evaluator = U1Evaluator()
         self.last_full_refresh: Optional[datetime] = None
+        self._funding_rates: dict = {}
+        self._funding_rates_ts: float = 0.0
 
     def run(self):
         """Main loop."""
         setup_logging()
-        logger.info("Unicorn pipeline starting")
+        logger.info("Unicorn pipeline starting (self-contained mode)")
 
         while True:
             try:
@@ -295,23 +373,44 @@ class UnicornPipeline:
         # Get current EMBRYO_ACTIVE
         active_symbols = {sym for sym, _ in get_embryo_active_symbols(self.r)}
 
-        # Evaluate candidates
+        # Refresh funding rates (cached 1h inside load_funding_rates)
+        if DATABASE_URL and time.time() - self._funding_rates_ts > 3600:
+            self._funding_rates = load_funding_rates(DATABASE_URL)
+            self._funding_rates_ts = time.time()
+
+        # Counters for diagnostics
+        evaluated = 0
         promoted = []
         demoted = []
-        evaluated = 0
+        candle_fetched = 0
+        candle_cached = 0
+        gate_passed = 0
+        triggers_fired = 0
 
         for symbol in universe:
             try:
-                result = self._evaluate_symbol(symbol)
+                result = self._evaluate_symbol(symbol, active_symbols)
                 evaluated += 1
 
                 if result is None:
                     continue
 
-                state, metrics = result
+                state, metrics, was_fetched, trigger_fired = result
+
+                if was_fetched:
+                    candle_fetched += 1
+                else:
+                    candle_cached += 1
+
+                if state.gate1_passed and state.gate2_passed and state.gate3_passed:
+                    gate_passed += 1
+
+                if trigger_fired:
+                    triggers_fired += 1
 
                 # Check promotion
-                if state.phase == U1Phase.EMBRYO_ACTIVE and symbol not in active_symbols:
+                if state.phase in (U1Phase.EMBRYO_ACTIVE, U1Phase.SCANNING) \
+                        and symbol not in active_symbols:
                     promoted.append((symbol, state))
 
                 # Check demotion
@@ -336,41 +435,179 @@ class UnicornPipeline:
             "promoted_count": str(len(promoted)),
             "demoted_count": str(len(demoted)),
             "active_count": str(get_embryo_active_count(self.r)),
+            "candle_fetched": str(candle_fetched),
+            "candle_cached": str(candle_cached),
+            "gate_passed": str(gate_passed),
+            "triggers_fired": str(triggers_fired),
             "cycle_duration_s": str(time.time() - cycle_start),
         })
 
         logger.info(
-            f"Pipeline cycle: evaluated={evaluated}, "
-            f"promoted={len(promoted)}, demoted={len(demoted)}, "
-            f"active={get_embryo_active_count(self.r)}, "
-            f"duration={time.time() - cycle_start:.1f}s"
+            "Pipeline cycle: universe=%d evaluated=%d "
+            "candles(fetched=%d cached=%d) "
+            "gates_passed=%d triggers=%d "
+            "promoted=%d demoted=%d active=%d "
+            "duration=%.1fs",
+            len(universe), evaluated,
+            candle_fetched, candle_cached,
+            gate_passed, triggers_fired,
+            len(promoted), len(demoted),
+            get_embryo_active_count(self.r),
+            time.time() - cycle_start,
         )
 
-    def _evaluate_symbol(self, symbol: str) -> Optional[tuple[U1State, dict]]:
-        """Evaluate a single symbol for gate passage."""
+    def _evaluate_symbol(self, symbol: str, active_symbols: set) -> Optional[tuple]:
+        """Evaluate a single symbol: fetch candles -> gates -> trigger -> signal.
 
-        # Read existing state
+        Returns (state, metrics, was_fetched, trigger_fired) or None.
+        Incremental: processes one symbol at a time, no bulk accumulation.
+        """
+        tf = U1Config.GATE_TIMEFRAME
+        required_bars = U1Config.GATE_WINDOW_BARS * 2  # 96
+
+        # Step 1: Get candles (try Redis first, fetch from Binance if needed)
+        candles = get_candles_as_ohlcv(self.r, symbol, tf)
+        was_fetched = False
+
+        need_fetch = len(candles) < required_bars
+        if not need_fetch:
+            # Check freshness — re-fetch if stale (>2.5x candle interval = 12.5 min)
+            staleness = check_staleness(self.r, symbol, tf)
+            if staleness["stale"]:
+                need_fetch = True
+
+        if need_fetch:
+            fetched = fetch_5m_klines(symbol, limit=KLINE_FETCH_LIMIT)
+            if fetched:
+                seed_candles_to_redis(self.r, symbol, tf, fetched)
+                candles = fetched
+                was_fetched = True
+            time.sleep(KLINE_FETCH_DELAY_S)  # Rate limit
+
+        if len(candles) < required_bars:
+            return None
+
+        # Step 2: Read existing state
         state_dict = read_unicorn_state(self.r, symbol)
         prev_state = U1State.from_dict(state_dict) if state_dict else None
 
-        # Get candles from Redis
-        tf = U1Config.GATE_TIMEFRAME
-        candles = get_candles_as_ohlcv(self.r, symbol, tf)
-
-        if len(candles) < U1Config.GATE_WINDOW_BARS * 2:
-            # Not enough data yet
-            return None
-
-        # Evaluate gates
+        # Step 3: Evaluate gates
         state = self.evaluator.evaluate_gates(candles, prev_state)
 
-        # Store state (refreshes TTL)
+        # Store state + metrics (refreshes TTL)
         store_unicorn_state(self.r, symbol, state.to_dict())
-
-        # Store metrics
         store_unicorn_metrics(self.r, symbol, state.metrics)
 
-        return state, state.metrics
+        # Step 4: Evaluate trigger for promoted symbols
+        trigger_fired = False
+        if state.phase in (U1Phase.EMBRYO_ACTIVE, U1Phase.SCANNING,
+                           U1Phase.IGNITION_WATCH):
+            signal = self.evaluator.evaluate_trigger(
+                candles, state, symbol, tf,
+                funding_rates=self._funding_rates,
+                database_url=DATABASE_URL,
+            )
+            if signal:
+                self._store_u1_signal(signal, symbol, tf)
+                trigger_fired = True
+                # Update state after trigger fired (phase changed to IGNITION)
+                store_unicorn_state(self.r, symbol, state.to_dict())
+
+        return state, state.metrics, was_fetched, trigger_fired
+
+    def _store_u1_signal(self, signal, symbol: str, tf: str):
+        """Store U1 signal in Redis + Postgres."""
+        bar_ts_str = str(signal.bar_start_ts.isoformat()) if signal.bar_start_ts else ""
+
+        payload = {
+            "setup_id": "U1",
+            "symbol": symbol,
+            "timeframe": tf,
+            "direction": signal.direction.value,
+            "setup_score": signal.setup_score,
+            "entry_price": signal.entry_price,
+            "stop_price": signal.stop_price,
+            "tp1_price": signal.tp1_price,
+            "tp2_price": signal.tp2_price,
+            "r_value": signal.r_value,
+            "time_stop_bars": signal.time_stop_bars,
+            "time_stop_policy": signal.time_stop_policy,
+            "bar_start_ts": bar_ts_str,
+            "signal_ts": signal.signal_ts.isoformat() if signal.signal_ts else None,
+            "action_by_ts": signal.action_by_ts.isoformat() if signal.action_by_ts else None,
+            "age_seconds": signal.age_seconds,
+            "as_of_ts": time.time(),
+            "rel_volume": signal.rel_volume,
+            "compression_box_high": signal.compression_box_high,
+            "compression_box_low": signal.compression_box_low,
+            "confirmations_met": signal.confirmations_met,
+            "tradability_score": signal.tradability_score,
+            "participation_score": signal.participation_score,
+            "compression_score": signal.compression_score,
+            "embryo_active_score": signal.embryo_active_score,
+        }
+
+        if signal.explain:
+            payload["why_items"] = signal.explain.why_items
+
+        store_signal(
+            self.r, symbol, tf, "U1",
+            signal_payload=payload,
+            setup_score=signal.setup_score,
+            bar_start_ts=bar_ts_str,
+        )
+
+        # Persist to Postgres
+        reason = "; ".join(signal.explain.why_items) if signal.explain else None
+        self._persist_signal_to_pg(symbol, tf, "U1", signal.setup_score, reason, payload)
+
+        logger.info(
+            "Signal: U1 %s %s:%s score=%.3f rel_vol=%.1fx",
+            signal.direction.value, symbol, tf,
+            signal.setup_score, signal.rel_volume,
+        )
+
+    def _persist_signal_to_pg(self, symbol: str, tf: str, setup_id: str,
+                               score: float, reason: str, payload: dict):
+        """Persist signal to Postgres opportunities table.
+
+        Upsert pattern: update existing active record in place, or insert new.
+        Prevents duplicate expired rows when the same signal persists
+        across multiple pipeline cycles.
+        """
+        if not DATABASE_URL:
+            return
+        try:
+            import psycopg
+            payload_json = json.dumps(payload)
+            setup_version = self.SETUP_VERSIONS.get(setup_id, f"{setup_id}_v1.0")
+            with psycopg.connect(DATABASE_URL) as conn:
+                with conn.cursor() as cur:
+                    # Try to update existing active record in place
+                    cur.execute("""
+                        UPDATE opportunities
+                        SET score = %s, reason = %s, payload_json = %s,
+                            setup_version = %s, updated_ts = NOW()
+                        WHERE symbol = %s AND timeframe = %s AND setup_id = %s
+                          AND status = 'active'
+                        RETURNING id;
+                    """, (score, reason, payload_json, setup_version,
+                          symbol, tf, setup_id))
+                    updated = cur.fetchone()
+
+                    if not updated:
+                        # No active record exists — insert new one
+                        cur.execute("""
+                            INSERT INTO opportunities
+                                (symbol, timeframe, setup_id, decision, score, reason,
+                                 payload_json, status, setup_version)
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, 'active', %s);
+                        """, (symbol, tf, setup_id, 'SIGNAL', score, reason,
+                              payload_json, setup_version))
+                conn.commit()
+        except Exception as e:
+            logger.debug("Postgres persist failed for %s:%s:%s: %s",
+                         setup_id, symbol, tf, e)
 
     def _apply_promotions(self, promoted: list[tuple[str, U1State]]):
         """Apply promotions with cap enforcement."""
