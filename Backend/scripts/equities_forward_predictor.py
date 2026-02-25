@@ -984,13 +984,15 @@ def run_predictor(
         prediction_count = insert_predictions(conn, prediction_rows)
         opportunities = 0
         for cand in opportunity_candidates:
+            dedup_key = deterministic_uuid(
+                "equities_opportunity",
+                cand["pred_id"],
+                cand["symbol"],
+                cand["horizon"],
+            )
             legacy_payload = {
-                "deterministic_opportunity_id": deterministic_uuid(
-                    "equities_opportunity",
-                    cand["pred_id"],
-                    cand["symbol"],
-                    cand["horizon"],
-                ),
+                "deterministic_opportunity_id": dedup_key,
+                "direction": cand["direction"].lower(),
                 "horizon": cand["horizon"],
                 "predicted_return": cand["pred_ret"],
                 "predicted_prob_up": cand["pred_prob"],
@@ -1016,6 +1018,7 @@ def run_predictor(
                     "score": cand["confidence"] * 100.0,
                     "reason": f"EQFP {cand['horizon']} {cand['direction']}",
                     "payload_json": legacy_payload,
+                    "batch_id": dedup_key,
                     "status": "active",
                 },
             )

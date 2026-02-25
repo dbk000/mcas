@@ -685,15 +685,25 @@ def load_recent_calibration_alerts(
 
 
 def insert_legacy_opportunity(conn: psycopg.Connection, row: dict[str, Any]) -> int:
+    batch_id = row.get("batch_id")
     with conn.cursor() as cur:
+        # Dedup: if batch_id provided and already exists, return existing id
+        if batch_id:
+            cur.execute(
+                "SELECT id FROM opportunities WHERE batch_id = %s LIMIT 1",
+                (batch_id,),
+            )
+            existing = cur.fetchone()
+            if existing:
+                return int(existing["id"])
         cur.execute(
             """
             INSERT INTO opportunities (
                 created_ts, updated_ts,
                 symbol, timeframe, setup_id, decision,
-                score, reason, payload_json, status
+                score, reason, payload_json, status, batch_id
             )
-            VALUES (NOW(), NOW(), %s, %s, %s, %s, %s, %s, %s, %s)
+            VALUES (NOW(), NOW(), %s, %s, %s, %s, %s, %s, %s, %s, %s)
             RETURNING id;
             """,
             (
@@ -705,6 +715,7 @@ def insert_legacy_opportunity(conn: psycopg.Connection, row: dict[str, Any]) -> 
                 row.get("reason"),
                 _json(row.get("payload_json") or {}),
                 row.get("status", "active"),
+                batch_id,
             ),
         )
         return int(cur.fetchone()["id"])
