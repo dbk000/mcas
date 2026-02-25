@@ -30,7 +30,7 @@ elif os.path.isdir('/home/darren/Desktop/MCAS/Backend/worker/app'):
 
 from equities_strategies import (
     ALL_STRATEGIES, EquitiesSignal,
-    load_ohlcv_matrix, load_news_matrix, engineer_features,
+    load_ohlcv_matrix, load_news_matrix, load_atc_matrix, engineer_features,
     check_data_freshness, check_split_guard,
 )
 
@@ -306,8 +306,10 @@ def evaluate_once(conn, r) -> dict:
     # 3. Load data
     ohlcv = load_ohlcv_matrix(conn, symbols, LOOKBACK_DAYS)
     news_mat = load_news_matrix(conn, symbols, ohlcv["timestamps"])
+    atc_mat = load_atc_matrix(conn, symbols, ohlcv["timestamps"])
     T = ohlcv["close"].shape[0]
     logger.info("OHLCV matrix: %d bars x %d symbols", T, len(symbols))
+    logger.info("ATC matrix loaded: %d non-zero slots", int((atc_mat[:, :, 0] > 0).sum()))
 
     # 4. Check for splits
     split_mask = check_split_guard(ohlcv["close"])
@@ -320,7 +322,8 @@ def evaluate_once(conn, r) -> dict:
                 ohlcv[key][split_mask] = float('nan')
 
     # 5. Engineer features
-    features = engineer_features(ohlcv, news_mat)
+    features = engineer_features(ohlcv, news_mat, atc_mat=atc_mat)
+    features["_timestamps"] = ohlcv["timestamps"]  # Date context for event-driven strategies
     logger.info("Engineered %d features", len(features))
 
     # 6. Evaluate all strategies at latest bar

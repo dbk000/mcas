@@ -321,6 +321,7 @@ export default function Opportunities() {
               { value: 'EQ_REV1A', label: 'EQ: Reversion 1a (10d)' },
               { value: 'EQ_REV1B', label: 'EQ: Reversion 1b (10d)' },
               { value: 'EQ_VPD', label: 'EQ: Vol-Price Div (1d)' },
+              { value: 'EQ_ATC', label: 'EQ: After-Trading Chatter (1d)' },
             ]}
             className="w-32"
           />
@@ -471,6 +472,7 @@ export default function Opportunities() {
                       { value: 'EQ_REV1A', label: 'EQ_REV1A' },
                       { value: 'EQ_REV1B', label: 'EQ_REV1B' },
                       { value: 'EQ_VPD', label: 'EQ_VPD' },
+                      { value: 'EQ_ATC', label: 'EQ_ATC' },
                     ]}
                     placeholder="All"
                   />

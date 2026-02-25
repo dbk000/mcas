@@ -7,7 +7,8 @@ Extracted from opus_discovery_iter4_equities.py.
 
 import logging
 import numpy as np
-from datetime import datetime, timezone
+from collections import defaultdict
+from datetime import datetime, timedelta, timezone
 
 logger = logging.getLogger(__name__)
 
@@ -142,6 +143,9 @@ def load_ohlcv_matrix(conn, symbols: list[str], lookback_days: int = 200):
 def load_news_matrix(conn, symbols: list[str], timestamps):
     """Load news event matrix from Postgres equities_events table.
 
+    Aggregates raw rows from equities_events (which has individual event rows,
+    not pre-aggregated columns) into per-day, per-symbol counts.
+
     Returns:
         news_mat: (T, N, 4) array — [event_count, unique_pubs, avg_sentiment, pub_novelty]
         Returns zeros if table doesn't exist or has no data.
@@ -153,17 +157,26 @@ def load_news_matrix(conn, symbols: list[str], timestamps):
     try:
         cur = conn.cursor()
         sym_idx = {s: i for i, s in enumerate(symbols)}
-        date_idx = {d: i for i, d in enumerate(timestamps)}
+        # Map OHLCV bar dates to indices — handle both date and datetime timestamps
+        date_idx = {}
+        for i, ts in enumerate(timestamps):
+            if hasattr(ts, 'date'):
+                date_idx[ts.date()] = i
+            else:
+                date_idx[ts] = i
 
-        placeholders = ",".join(["%s"] * len(symbols))
-        cur.execute(f"""
-            SELECT symbol, event_date, event_count, unique_publishers,
-                   avg_sentiment, publisher_novelty
+        cur.execute("""
+            SELECT symbol,
+                   DATE(available_at_ts AT TIME ZONE 'America/New_York') AS event_date,
+                   COUNT(*) AS event_count,
+                   COUNT(DISTINCT publisher) AS unique_publishers,
+                   AVG(COALESCE(sentiment_score, 0)) AS avg_sentiment,
+                   COUNT(DISTINCT source) AS pub_novelty
             FROM equities_events
-            WHERE symbol IN ({placeholders})
-              AND event_date >= %s
-            ORDER BY event_date
-        """, (*symbols, timestamps[0]))
+            WHERE symbol = ANY(%s)
+              AND available_at_ts >= %s
+            GROUP BY symbol, DATE(available_at_ts AT TIME ZONE 'America/New_York')
+        """, (symbols, timestamps[0]))
 
         for row in cur.fetchall():
             sym, dt, count, pubs, sent, novelty = row
@@ -176,14 +189,185 @@ def load_news_matrix(conn, symbols: list[str], timestamps):
                 news_mat[t, n, 3] = float(novelty or 0)
 
         cur.close()
+        filled = int((news_mat[:, :, 0] > 0).sum())
+        logger.info("News matrix: %d/%d (date,symbol) slots filled", filled, T * N)
     except Exception as e:
         logger.warning("News matrix load failed (table may not exist): %s", e)
 
     return news_mat
 
 
-def engineer_features(ohlcv: dict, news_mat: np.ndarray) -> dict[str, np.ndarray]:
-    """Compute all features from OHLCV and news matrices.
+def load_atc_matrix(conn, symbols: list[str], timestamps):
+    """Load after-trading chatter matrix from equities_events.
+
+    Single raw-row query + Python-side aggregation. Fixes v1 bugs:
+      - Friday postclose bug (uses OHLCV trading-day calendar, not +1 calendar day)
+      - Publisher double-counting (set-based dedup across postclose+preopen)
+      - Adds keyword tone scoring for OPEN_NEWS titles (v2)
+
+    Temporal model:
+      - 'postclose'/'weekend' events → attributed to NEXT trading day
+      - 'published_preopen' events → attributed to SAME trading day
+
+    Returns:
+        atc_mat: (T, N, 8) array:
+          [0] event_count         — all overnight events (including SEC)
+          [1] unique_publishers   — set-deduped across sessions
+          [2] mean_sentiment      — avg of original sentiment_score
+          [3] sentiment_std       — std of original sentiment_score
+          [4] max_abs_sentiment   — max |sentiment_score|
+          [5] avg_tone            — mean of nonzero keyword tone scores (OPEN_NEWS only)
+          [6] tone_eligible_count — count of OPEN_NEWS events
+          [7] tone_nonzero_count  — count of OPEN_NEWS events with directional keywords
+        Returns zeros if table doesn't exist or has no data.
+    """
+    T = len(timestamps)
+    N = len(symbols)
+    atc_mat = np.zeros((T, N, 8))
+
+    try:
+        # Import tone scorer (may not be available)
+        try:
+            from equities_strategies.tone_scorer import score_title_tone as _score_fn
+        except Exception:
+            _score_fn = None
+
+        # Timezone for ET conversion
+        try:
+            from zoneinfo import ZoneInfo
+            _ET = ZoneInfo('America/New_York')
+        except Exception:
+            _ET = timezone(timedelta(hours=-5))  # Approximate fallback
+
+        cur = conn.cursor()
+        sym_idx = {s: i for i, s in enumerate(symbols)}
+
+        # Build date-to-index mapping from OHLCV timestamps
+        date_to_idx = {}
+        for i, ts in enumerate(timestamps):
+            d = ts.date() if hasattr(ts, 'date') else ts
+            date_to_idx[d] = i
+
+        trading_dates = sorted(date_to_idx.keys())
+
+        # Build next-trading-day-after lookup (for postclose/weekend → next trading day)
+        # Fixes Friday bug: Friday postclose → Monday (not Saturday)
+        next_td_after = {}
+        for i in range(len(trading_dates) - 1):
+            target_idx = date_to_idx[trading_dates[i + 1]]
+            d = trading_dates[i]
+            while d < trading_dates[i + 1]:
+                next_td_after[d] = target_idx
+                d += timedelta(days=1)
+
+        # Single raw-row query (replaces two GROUP BY queries)
+        cur.execute("""
+            SELECT symbol, title, source, publisher, available_at_ts,
+                   session_relation, sentiment_score, anti_bot_score
+            FROM equities_events
+            WHERE session_relation IN ('postclose', 'published_preopen', 'weekend')
+              AND symbol = ANY(%s)
+              AND available_at_ts >= %s - INTERVAL '5 days'
+            ORDER BY available_at_ts
+        """, (symbols, timestamps[0]))
+
+        # Per-slot accumulators (set-based dedup for publishers)
+        slot_pubs = defaultdict(set)
+        slot_sents = defaultdict(list)
+        slot_counts = defaultdict(int)
+        slot_tones = defaultdict(list)         # nonzero tone scores only
+        slot_tone_eligible = defaultdict(int)  # all OPEN_NEWS count
+
+        rows_fetched = 0
+        for row in cur.fetchall():
+            sym, title, source, publisher, available_at_ts, session_rel, sentiment, anti_bot = row
+            rows_fetched += 1
+
+            if sym not in sym_idx:
+                continue
+            n_col = sym_idx[sym]
+
+            # Convert to ET date (DST-safe)
+            if hasattr(available_at_ts, 'astimezone'):
+                et_date = available_at_ts.astimezone(_ET).date()
+            elif hasattr(available_at_ts, 'date'):
+                et_date = available_at_ts.date()
+            else:
+                continue
+
+            # Determine target bar index using trading-day calendar
+            if session_rel in ('postclose', 'weekend'):
+                target_idx = next_td_after.get(et_date)
+            else:  # published_preopen
+                target_idx = date_to_idx.get(et_date)
+
+            if target_idx is None:
+                continue
+
+            key = (target_idx, n_col)
+            slot_counts[key] += 1
+            if publisher:
+                slot_pubs[key].add(publisher)
+            if sentiment is not None:
+                slot_sents[key].append(float(sentiment))
+
+            # Tone scoring (OPEN_NEWS only — scorer handles source/anti_bot/min_tokens)
+            if source == 'OPEN_NEWS':
+                slot_tone_eligible[key] += 1
+                if _score_fn is not None:
+                    tone = _score_fn(
+                        title or "",
+                        source=source or "",
+                        anti_bot_score=float(anti_bot or 0.0),
+                    )
+                    if abs(tone) > 0:
+                        slot_tones[key].append(tone)
+
+        # Fill matrix from accumulators
+        for key, count in slot_counts.items():
+            t, n_col = key
+            if t < 0 or t >= T:
+                continue
+            atc_mat[t, n_col, 0] = count
+            atc_mat[t, n_col, 1] = len(slot_pubs.get(key, set()))
+
+            sents = slot_sents.get(key, [])
+            if sents:
+                atc_mat[t, n_col, 2] = np.mean(sents)
+                atc_mat[t, n_col, 3] = np.std(sents) if len(sents) > 1 else 0.0
+                atc_mat[t, n_col, 4] = max(abs(s) for s in sents)
+
+            tones = slot_tones.get(key, [])
+            if tones:
+                atc_mat[t, n_col, 5] = np.mean(tones)
+            atc_mat[t, n_col, 6] = slot_tone_eligible.get(key, 0)
+            atc_mat[t, n_col, 7] = len(tones)
+
+        cur.close()
+
+        filled = int((atc_mat[:, :, 0] > 0).sum())
+        tone_slots = int((atc_mat[:, :, 7] > 0).sum())
+        open_news_total = int(atc_mat[:, :, 6].sum())
+        tone_nonzero_total = int(atc_mat[:, :, 7].sum())
+        logger.info(
+            "ATC matrix: %d/%d slots filled, %d with tone data (%d OPEN_NEWS events scored)",
+            filled, T * N, tone_slots, open_news_total,
+        )
+        if open_news_total > 0:
+            logger.info(
+                "ATC tone: %d/%d OPEN_NEWS had directional keywords (%.1f%%)",
+                tone_nonzero_total, open_news_total,
+                100.0 * tone_nonzero_total / max(open_news_total, 1),
+            )
+
+    except Exception as e:
+        logger.warning("ATC matrix load failed (table may not exist): %s", e)
+
+    return atc_mat
+
+
+def engineer_features(ohlcv: dict, news_mat: np.ndarray, atc_mat: np.ndarray = None) -> dict[str, np.ndarray]:
+    """Compute all features from OHLCV, news, and ATC matrices.
 
     Returns dict of feature_name -> (T, N) arrays.
     """
@@ -200,6 +384,10 @@ def engineer_features(ohlcv: dict, news_mat: np.ndarray) -> dict[str, np.ndarray
     features["ret_5d"] = ret_5
     features["ret_20d"] = ret_20
     features["ret_60d"] = ret_60
+
+    # Overnight gap: today's open vs yesterday's close
+    overnight_gap = O / _lag(C, 1) - 1.0
+    features["overnight_gap"] = overnight_gap
 
     # Volatility
     realized_vol_20 = _rolling_std(ret_1, 20)
@@ -267,6 +455,51 @@ def engineer_features(ohlcv: dict, news_mat: np.ndarray) -> dict[str, np.ndarray
                 if var_spy > 1e-10:
                     spy_beta[t, n] = cov / var_spy
     features["spy_beta_60"] = spy_beta
+
+    # ATC (After-Trading Chatter) features
+    if atc_mat is not None:
+        atc_event_count = atc_mat[:, :, 0]
+        atc_unique_pubs = atc_mat[:, :, 1]
+        features["atc_event_count"] = atc_event_count
+        features["atc_unique_pubs"] = atc_unique_pubs
+        features["atc_source_diversity"] = atc_unique_pubs / np.maximum(atc_event_count, 1.0)
+        features["atc_has_chatter"] = (atc_event_count > 0).astype(float)
+
+        # Velocity: event count relative to 20d rolling mean
+        atc_mean_20 = _rolling_mean(atc_event_count, 20)
+        atc_velocity = atc_event_count / np.maximum(atc_mean_20, 0.1)
+        features["atc_velocity"] = atc_velocity
+
+        # Velocity z-score for confidence scaling
+        vel_mean_20 = _rolling_mean(atc_velocity, 20)
+        vel_std_20 = _rolling_std(atc_velocity, 20)
+        features["atc_velocity_z"] = (atc_velocity - vel_mean_20) / np.maximum(vel_std_20, 0.01)
+
+        # Tone features (v2 — keyword scoring of OPEN_NEWS titles)
+        if atc_mat.shape[2] >= 8:
+            tone_avg = atc_mat[:, :, 5]       # mean of nonzero tone scores
+            tone_eligible = atc_mat[:, :, 6]  # total OPEN_NEWS count
+            tone_nonzero = atc_mat[:, :, 7]   # directional OPEN_NEWS count
+
+            features["atc_tone"] = tone_avg
+            features["atc_tone_eligible_count"] = tone_eligible
+            features["atc_tone_nonzero_count"] = tone_nonzero
+
+            # Breadth: fraction of OPEN_NEWS events with directional keywords
+            breadth = tone_nonzero / np.maximum(tone_eligible, 1.0)
+            features["atc_tone_breadth"] = breadth
+
+            # Agreement with momentum direction (NaN when no directional tone data)
+            has_directional = tone_nonzero > 0
+            agrees = np.where(
+                has_directional,
+                (np.sign(tone_avg) == np.sign(ret_1)).astype(float),
+                np.nan,
+            )
+            features["atc_tone_agrees_momentum"] = agrees
+
+            # Combined conviction: direction strength × breadth
+            features["atc_tone_strength"] = np.abs(tone_avg) * breadth
 
     # Clip all features
     for k in features:

@@ -1,0 +1,294 @@
+"""
+EQ_NVDA_MACRO - NVDA Earnings Cascade Strategy (v1.0)
+=====================================================
+Event-driven strategy that detects laggard equities after NVDA earnings.
+
+Core thesis: when NVDA reports strong earnings, correlated equities move
+in sympathy — but some lag behind. Those laggards tend to catch up over
+the following 2-5 trading days.
+
+This strategy:
+  1. Detects NVDA earnings reaction days (next trading day after AMC report)
+  2. Measures NVDA's close-to-close return (ret_1d)
+  3. For each cascade-eligible asset (direction_consistency >= 7/8 from D1):
+     - Computes SPY-controlled excess return
+     - Identifies laggards (excess return below D1-derived threshold)
+     - Skips divergent assets (sign of excess opposite to NVDA)
+  4. Generates LONG signals for laggards on positive NVDA reactions
+
+v1 constraints:
+  - LONG-only (positive NVDA reactions only)
+  - Equities only (no crypto)
+  - Max 10 signals per event
+  - exploratory=True (pending walk-forward validation)
+
+Cascade profiles loaded from D1 output:
+  /scripts/output/nvda_cascade_profiles.json
+
+Status: exploratory (8-event sample, no backtest possible).
+"""
+
+import json
+import logging
+import os
+from datetime import date, datetime, timezone
+
+import numpy as np
+from equities_strategies.base import EquitiesStrategy, EquitiesSignal
+
+logger = logging.getLogger(__name__)
+
+# Paths to cascade profiles (bind-mounted in Docker, host fallback)
+_PROFILE_PATHS = [
+    "/scripts/output/nvda_cascade_profiles.json",
+    os.path.join(os.path.dirname(__file__), "..", "..", "..", "scripts", "output", "nvda_cascade_profiles.json"),
+]
+
+# Max staleness of cascade profiles (days)
+MAX_PROFILE_AGE_DAYS = 120
+
+# LONG-only v1: minimum NVDA ret_1d to generate signals
+MIN_NVDA_RET = 0.03
+
+# Max signals per event
+MAX_SIGNALS = 10
+
+# Minimum direction consistency for cascade eligibility
+MIN_DIRECTION_CONSISTENCY = 7
+
+# Minimum excess return divergence to skip (not lag — divergence)
+DIVERGENCE_THRESHOLD = 0.005
+
+
+class EqNvdaMacro(EquitiesStrategy):
+    strategy_id = "EQ_NVDA_MACRO"
+    horizon_days = 3
+    version = "EQ_NVDA_MACRO_v1.0"
+
+    EXPECTED_RETURN_BPS = 50  # Placeholder pending D1 calibration
+
+    def __init__(self):
+        self._profiles = None
+        self._reaction_dates: set[str] = set()
+        self._next_reaction_date: str | None = None
+        self._recommended_threshold: float = 0.5
+        self._load_profiles()
+
+    def _load_profiles(self):
+        """Load cascade profiles from D1 output JSON."""
+        for path in _PROFILE_PATHS:
+            abs_path = os.path.abspath(path)
+            if not os.path.exists(abs_path):
+                continue
+            try:
+                with open(abs_path) as f:
+                    data = json.load(f)
+
+                # Validate staleness
+                gen_ts = data.get("generated_ts")
+                if gen_ts:
+                    gen_dt = datetime.fromisoformat(gen_ts.replace("Z", "+00:00"))
+                    if gen_dt.tzinfo is None:
+                        gen_dt = gen_dt.replace(tzinfo=timezone.utc)
+                    age_days = (datetime.now(timezone.utc) - gen_dt).days
+                    if age_days > MAX_PROFILE_AGE_DAYS:
+                        logger.warning(
+                            "EQ_NVDA_MACRO: cascade profiles are %d days old (>%d), ignoring",
+                            age_days, MAX_PROFILE_AGE_DAYS,
+                        )
+                        continue
+
+                self._profiles = data
+                self._reaction_dates = set(data.get("reaction_dates", []))
+                self._next_reaction_date = data.get("next_reaction_date")
+                if self._next_reaction_date:
+                    self._reaction_dates.add(self._next_reaction_date)
+                self._recommended_threshold = data.get("recommended_laggard_threshold", 0.5)
+                logger.info("EQ_NVDA_MACRO: loaded cascade profiles from %s (%d events, %d eligible assets)",
+                            abs_path, data.get("n_events", 0),
+                            data.get("summary", {}).get("cascade_eligible_count", 0))
+                return
+            except Exception as e:
+                logger.warning("EQ_NVDA_MACRO: failed to load profiles from %s: %s", abs_path, e)
+
+        logger.warning("EQ_NVDA_MACRO: no cascade profiles found, strategy will produce 0 signals")
+
+    def evaluate(self, features, bar_idx, symbols, close_prices):
+        """Evaluate at current bar. Returns signals for laggard cascade assets."""
+        signals = []
+
+        if self._profiles is None:
+            return signals
+
+        # Get current bar date from timestamps
+        timestamps = features.get("_timestamps")
+        if timestamps is None:
+            return signals
+
+        current_ts = timestamps[bar_idx]
+        current_date = _to_date(current_ts)
+        current_date_str = str(current_date)
+
+        # Check if today is a reaction date
+        if current_date_str not in self._reaction_dates:
+            return signals
+
+        logger.info("EQ_NVDA_MACRO: reaction day detected (%s)", current_date_str)
+
+        T, N = close_prices.shape
+
+        # Build symbol index
+        sym_idx = {s: i for i, s in enumerate(symbols)}
+
+        # Get NVDA and SPY indices
+        nvda_idx = sym_idx.get("NVDA")
+        spy_idx = sym_idx.get("SPY")
+        if nvda_idx is None or spy_idx is None:
+            logger.warning("EQ_NVDA_MACRO: NVDA or SPY not in symbol list")
+            return signals
+
+        # NVDA ret_1d (close-to-close, already computed in features)
+        ret_1d = features.get("ret_1d")
+        if ret_1d is None:
+            return signals
+
+        nvda_ret = ret_1d[bar_idx, nvda_idx]
+        if not np.isfinite(nvda_ret):
+            logger.warning("EQ_NVDA_MACRO: NVDA ret_1d is NaN")
+            return signals
+
+        # LONG-only v1: skip negative NVDA reactions
+        if nvda_ret < 0:
+            logger.info("EQ_NVDA_MACRO: NVDA ret_1d = %.2f%% (negative), skipping (LONG-only v1)",
+                        nvda_ret * 100)
+            return signals
+
+        # Minimum reaction threshold
+        if nvda_ret < MIN_NVDA_RET:
+            logger.info("EQ_NVDA_MACRO: NVDA ret_1d = %.2f%% (below %.0f%% threshold), skipping",
+                        nvda_ret * 100, MIN_NVDA_RET * 100)
+            return signals
+
+        logger.info("EQ_NVDA_MACRO: NVDA ret_1d = %+.2f%%, evaluating cascade", nvda_ret * 100)
+
+        # SPY return and beta
+        spy_ret = ret_1d[bar_idx, spy_idx]
+        spy_beta_feat = features.get("spy_beta_60")
+
+        # Cascade asset profiles from D1
+        asset_profiles = self._profiles.get("assets", {})
+
+        candidates = []
+        for sym, profile in asset_profiles.items():
+            if not profile.get("cascade_eligible"):
+                continue
+            if profile.get("direction_consistency", 0) < MIN_DIRECTION_CONSISTENCY:
+                continue
+
+            n = sym_idx.get(sym)
+            if n is None:
+                continue
+
+            close = close_prices[bar_idx, n]
+            if not np.isfinite(close) or close <= 0:
+                continue
+
+            asset_ret = ret_1d[bar_idx, n]
+            if not np.isfinite(asset_ret):
+                continue
+
+            # SPY beta for this asset
+            beta = spy_beta_feat[bar_idx, n] if spy_beta_feat is not None else 0.0
+            if not np.isfinite(beta):
+                beta = 0.0
+
+            # Expected market return = beta * SPY_ret
+            exp_market = beta * spy_ret if np.isfinite(spy_ret) else 0.0
+
+            # Excess return (the real cascade signal)
+            excess_ret = asset_ret - exp_market
+
+            # Divergence check: if asset excess is opposite to NVDA AND material → skip
+            if excess_ret < -DIVERGENCE_THRESHOLD and nvda_ret > 0:
+                logger.debug("EQ_NVDA_MACRO: %s divergence (excess=%.2f%%), skipping", sym, excess_ret * 100)
+                continue
+
+            # Laggard detection: compare actual excess to historical average
+            avg_excess_1d = profile.get("avg_excess_day1")
+            if avg_excess_1d is None or avg_excess_1d <= 0:
+                continue
+
+            lag_depth = excess_ret / avg_excess_1d
+
+            # Asset is a laggard if lag_depth below recommended threshold
+            if lag_depth >= self._recommended_threshold:
+                continue  # Not a laggard — already moved
+
+            # Compute confidence
+            direction_consistency = profile.get("direction_consistency", 0)
+            n_events = profile.get("n_events_valid", 8)
+            avg_excess_day1 = avg_excess_1d
+
+            confidence = (
+                0.15                                                      # floor (tiny sample)
+                + 0.35 * (direction_consistency - 6) / 2.0               # 0 at 6, 0.35 at 8
+                + 0.25 * min(abs(nvda_ret) / 0.10, 1.0)                  # reaction magnitude
+                + 0.15 * min(avg_excess_day1 / 0.02, 1.0)                # historical strength
+                + 0.10 * (1.0 - min(max(lag_depth, 0.0), 1.0))           # lag depth
+            )
+            confidence = min(0.80, max(0.15, confidence))
+
+            # Overnight gap (informational for explain)
+            overnight = features.get("overnight_gap")
+            gap_str = ""
+            if overnight is not None:
+                gap = overnight[bar_idx, n]
+                if np.isfinite(gap):
+                    gap_str = f", overnight gap={gap:+.2%}"
+
+            explain = [
+                f"NVDA post-earnings: ret_1d = {nvda_ret:+.2%} (above {MIN_NVDA_RET:.0%} threshold)",
+                f"{sym} direction consistency: {direction_consistency}/{n_events} events ({direction_consistency/max(n_events,1):.0%})",
+                f"{sym} excess return today: {excess_ret:+.2%} vs historical avg {avg_excess_day1:+.2%}",
+                f"SPY contribution removed: SPY {spy_ret:+.2%}, {sym} beta {beta:.2f} -> {exp_market:+.2%} expected from market",
+                f"Lag depth: {lag_depth:.2f} (threshold: {self._recommended_threshold:.2f}){gap_str}",
+            ]
+
+            candidates.append((confidence, EquitiesSignal(
+                strategy_id=self.strategy_id,
+                symbol=sym,
+                direction="LONG",
+                horizon_days=self.horizon_days,
+                expected_return_bps=self.EXPECTED_RETURN_BPS,
+                confidence=round(confidence, 4),
+                entry_price=close,
+                reason=f"NVDA_MACRO LONG {sym}: NVDA {nvda_ret:+.1%} post-earnings, {sym} lagging in excess returns",
+                explain=explain,
+                features={
+                    "nvda_ret_1d": round(nvda_ret, 5),
+                    "asset_ret_1d": round(asset_ret, 5),
+                    "excess_ret_1d": round(excess_ret, 5),
+                    "spy_beta": round(beta, 4),
+                    "lag_depth": round(lag_depth, 4),
+                    "direction_consistency": direction_consistency,
+                    "avg_excess_day1": round(avg_excess_day1, 5),
+                },
+            )))
+
+        # Sort by confidence descending, take top MAX_SIGNALS
+        candidates.sort(key=lambda x: x[0], reverse=True)
+        signals = [sig for _, sig in candidates[:MAX_SIGNALS]]
+
+        logger.info("EQ_NVDA_MACRO: %d signals from %d candidates", len(signals), len(candidates))
+        return signals
+
+
+def _to_date(ts) -> date:
+    """Convert a timestamp value to a date object."""
+    if isinstance(ts, date) and not isinstance(ts, datetime):
+        return ts
+    if isinstance(ts, datetime):
+        return ts.date()
+    if isinstance(ts, (int, float)):
+        return datetime.fromtimestamp(ts, tz=timezone.utc).date()
+    return date.fromisoformat(str(ts)[:10])

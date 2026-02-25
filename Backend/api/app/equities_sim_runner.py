@@ -36,7 +36,7 @@ router = APIRouter(prefix="/runs", tags=["equities-simulation"])
 
 _r = redis.Redis.from_url(REDIS_URL, decode_responses=True)
 
-EQ_SETUP_IDS = ["EQ_TSMOM", "EQ_XSMOM", "EQ_REV1A", "EQ_REV1B", "EQ_VPD"]
+EQ_SETUP_IDS = ["EQ_TSMOM", "EQ_XSMOM", "EQ_REV1A", "EQ_REV1B", "EQ_VPD", "EQ_ATC", "EQ_NVDA_MACRO"]
 
 # Round-trip cost: 1.5 bps each side (equities commission via IBKR-style)
 DEFAULT_COST_BPS = 3.0

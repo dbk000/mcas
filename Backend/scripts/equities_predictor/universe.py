@@ -65,6 +65,12 @@ UNIVERSE: tuple[EquitySymbol, ...] = (
     EquitySymbol("LMT", "Lockheed Martin Corp.", "Industrials"),
     EquitySymbol("NEE", "NextEra Energy Inc.", "Utilities"),
     EquitySymbol("DUK", "Duke Energy Corp.", "Utilities"),
+    EquitySymbol("MU", "Micron Technology Inc.", "Technology"),
+    EquitySymbol("MRVL", "Marvell Technology Inc.", "Technology"),
+    EquitySymbol("LRCX", "Lam Research Corp.", "Technology"),
+    EquitySymbol("KLAC", "KLA Corporation", "Technology"),
+    EquitySymbol("AMAT", "Applied Materials Inc.", "Technology"),
+    EquitySymbol("TSM", "Taiwan Semiconductor ADR", "Technology"),
     EquitySymbol("SPY", "SPDR S&P 500 ETF Trust", "Index ETF", True),
     EquitySymbol("QQQ", "Invesco QQQ Trust", "Index ETF", True),
     EquitySymbol("XLK", "Technology Select Sector SPDR Fund", "Sector ETF", True),
@@ -77,6 +83,8 @@ UNIVERSE: tuple[EquitySymbol, ...] = (
     EquitySymbol("XLU", "Utilities Select Sector SPDR Fund", "Sector ETF", True),
     EquitySymbol("XLB", "Materials Select Sector SPDR Fund", "Sector ETF", True),
     EquitySymbol("XLRE", "Real Estate Select Sector SPDR Fund", "Sector ETF", True),
+    EquitySymbol("SMH", "VanEck Semiconductor ETF", "Sector ETF", True),
+    EquitySymbol("SOXX", "iShares Semiconductor ETF", "Sector ETF", True),
 )
 
 
