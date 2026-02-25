@@ -1,5 +1,5 @@
 """
-EQ_NVDA_MACRO - NVDA Earnings Cascade Strategy (v1.1)
+EQ_NVDA_MACRO - NVDA Earnings Cascade Strategy (v1.2)
 =====================================================
 Event-driven strategy that detects laggard equities after NVDA earnings.
 
@@ -11,9 +11,8 @@ This strategy (close-phase evaluation):
   1. Detects NVDA earnings reaction days (next trading day after AMC report)
   2. Measures NVDA's close-to-close return (ret_1d)
   3. For each cascade-eligible asset (direction_consistency >= 6/N from D1):
-     - Computes SPY-controlled excess return
+     - Computes SPY-controlled excess return (decontaminated for NVDA weight)
      - Identifies laggards (excess return below D1-derived threshold)
-     - Skips divergent assets (sign of excess opposite to NVDA)
      - Skips NVDA itself (can't be a laggard of itself)
   4. Generates LONG signals for laggards on positive NVDA reactions
 
@@ -23,9 +22,14 @@ gap, 4/7 close) and XLK (7/7 gap, 3/7 close) reverse by close and are
 NOT captured by this strategy. Manual gap trades at open are a separate
 play documented in the D1 cascade report.
 
-Close-phase candidates (v1.1): META (6/7 close, 7/7 gap), AVGO (6/7
+Close-phase candidates (v1.2): META (6/7 close, 7/7 gap), AVGO (6/7
 close, 6/7 gap). TMO excluded (negative avg excess). NVDA excluded
 (can't lag itself).
+
+v1.2 changes:
+  - SPY decontamination (removes NVDA weight from SPY return)
+  - Removed divergence filter (was mutually exclusive with laggard detection)
+  - EXPECTED_RETURN_BPS=0 (close-to-close catch-up is exploratory)
 
 v1 constraints:
   - LONG-only (positive NVDA reactions only)
@@ -69,16 +73,16 @@ MAX_SIGNALS = 10
 # making the strategy circular. At 6: META (6/7) and AVGO (6/7) qualify.
 MIN_DIRECTION_CONSISTENCY = 6
 
-# Minimum excess return divergence to skip (not lag — divergence)
-DIVERGENCE_THRESHOLD = 0.005
+# NVDA's approximate weight in SPY (for decontamination)
+NVDA_SPY_WEIGHT = 0.06
 
 
 class EqNvdaMacro(EquitiesStrategy):
     strategy_id = "EQ_NVDA_MACRO"
     horizon_days = 3
-    version = "EQ_NVDA_MACRO_v1.1"
+    version = "EQ_NVDA_MACRO_v1.2"
 
-    EXPECTED_RETURN_BPS = 50  # Placeholder pending D1 calibration
+    EXPECTED_RETURN_BPS = 0  # Close-to-close laggard catch-up is exploratory (not validated)
 
     def __init__(self):
         self._profiles = None
@@ -186,6 +190,8 @@ class EqNvdaMacro(EquitiesStrategy):
 
         # SPY return and beta
         spy_ret = ret_1d[bar_idx, spy_idx]
+        # Decontaminate SPY: remove NVDA's index weight (same formula as D1 analyzer)
+        spy_ret_clean = (spy_ret - NVDA_SPY_WEIGHT * nvda_ret) / (1 - NVDA_SPY_WEIGHT) if np.isfinite(spy_ret) else spy_ret
         spy_beta_feat = features.get("spy_beta_60")
 
         # Cascade asset profiles from D1
@@ -218,16 +224,11 @@ class EqNvdaMacro(EquitiesStrategy):
             if not np.isfinite(beta):
                 beta = 0.0
 
-            # Expected market return = beta * SPY_ret
-            exp_market = beta * spy_ret if np.isfinite(spy_ret) else 0.0
+            # Expected market return = beta * decontaminated SPY_ret
+            exp_market = beta * spy_ret_clean if np.isfinite(spy_ret_clean) else 0.0
 
             # Excess return (the real cascade signal)
             excess_ret = asset_ret - exp_market
-
-            # Divergence check: if asset excess is opposite to NVDA AND material → skip
-            if excess_ret < -DIVERGENCE_THRESHOLD and nvda_ret > 0:
-                logger.debug("EQ_NVDA_MACRO: %s divergence (excess=%.2f%%), skipping", sym, excess_ret * 100)
-                continue
 
             # Laggard detection: compare actual excess to historical average
             avg_excess_1d = profile.get("avg_excess_day1")
@@ -267,8 +268,9 @@ class EqNvdaMacro(EquitiesStrategy):
                 f"NVDA post-earnings: ret_1d = {nvda_ret:+.2%} (above {MIN_NVDA_RET:.0%} threshold)",
                 f"{sym} close consistency: {direction_consistency}/{n_events} | gap consistency: {gap_direction_consistency}/{n_events}",
                 f"{sym} excess return today: {excess_ret:+.2%} vs historical avg {avg_excess_day1:+.2%}",
-                f"SPY contribution removed: SPY {spy_ret:+.2%}, {sym} beta {beta:.2f} -> {exp_market:+.2%} expected from market",
+                f"SPY decontaminated: raw {spy_ret:+.2%} -> clean {spy_ret_clean:+.2%} (NVDA weight {NVDA_SPY_WEIGHT:.0%}), {sym} beta {beta:.2f} -> {exp_market:+.2%} expected",
                 f"Lag depth: {lag_depth:.2f} (threshold: {self._recommended_threshold:.2f}){gap_str}",
+                "Note: close-to-close laggard catch-up is exploratory (20-33% at percentile cuts, n=7 events). Not a validated edge.",
             ]
 
             candidates.append((confidence, EquitiesSignal(

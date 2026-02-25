@@ -328,6 +328,7 @@ def evaluate_once(conn, r) -> dict:
 
     # 6. Evaluate all strategies at latest bar
     bar_idx = T - 1
+    logger.info("Evaluating bar %d: date=%s", bar_idx, ohlcv["timestamps"][bar_idx])
     all_signals = []
     strategy_counts = {}
 

@@ -268,6 +268,24 @@ services:
     networks:
       - backend
 
+  equities_strategy_worker:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      SERVICE_NAME: equities_strategy_worker
+    command: ["python", "-u", "/app/equities_strategy_worker.py"]
+    volumes:
+      - ./scripts:/scripts
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - backend
+
   equities_task_worker:
     build:
       context: ./worker
