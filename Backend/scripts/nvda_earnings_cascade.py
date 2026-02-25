@@ -202,6 +202,18 @@ def find_next_trading_day(cal: list[date], ref: date) -> date | None:
     return None
 
 
+def _fallback_next_trading_day(ref: date) -> str:
+    """When calendar doesn't extend past ref (future earnings), estimate next trading day.
+
+    Skips weekends. Doesn't handle holidays but close enough for profile generation.
+    """
+    from datetime import timedelta
+    candidate = ref + timedelta(days=1)
+    while candidate.weekday() >= 5:  # 5=Saturday, 6=Sunday
+        candidate += timedelta(days=1)
+    return str(candidate)
+
+
 def find_trading_day_offset(cal: list[date], ref: date, offset: int) -> date | None:
     """Find the trading day at +offset from ref (ref itself is offset 0)."""
     try:
@@ -554,7 +566,7 @@ def analyze_cascade(conn) -> dict[str, Any]:
         "nvda_earnings_dates": [str(d) for d in earnings_dates],
         "reaction_dates": reaction_dates_list,
         "next_earnings": str(NEXT_EARNINGS),
-        "next_reaction_date": str(find_next_trading_day(cal, NEXT_EARNINGS) or ""),
+        "next_reaction_date": str(find_next_trading_day(cal, NEXT_EARNINGS) or _fallback_next_trading_day(NEXT_EARNINGS)),
         "events": events,
         "assets": asset_profiles,
         "laggard_distribution": laggard_analysis.get("distribution", {}),
