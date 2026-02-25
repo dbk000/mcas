@@ -65,8 +65,8 @@ When anything affecting signal generation, evaluation, or simulation changes, ex
 2. Provide exact server commands using current backfill pipeline
 3. Remind that in-flight simulation results from before regeneration are based on old opportunities
 
-## 1.5 Production Database Access
-Claude Code runs on the same machine as production (65.109.7.49). No SSH tunnel is needed.
+## 1.5 Production Database & Deploy Access
+Dev and production run on the same machine (65.109.7.49). No SSH needed — all commands run locally. The dev workspace is at `/home/darren/Desktop/MCAS`, production is at `/srv/mcas`. Docker provides permission isolation between the two.
 
 **Ad-hoc SQL queries:**
 ```bash
@@ -82,6 +82,16 @@ Scripts write output to `/scripts/` inside the container, which is bind-mounted 
 For heavy/long-running scripts that shouldn't compete with the live worker, spin up a fresh container instead:
 ```bash
 cd /srv/mcas/Backend && docker compose -f docker-compose.yml run --rm -T worker python3 /scripts/my_script.py
+```
+
+**Deploy workflow (no SSH):**
+```bash
+# 1. Pull in production path
+cd /srv/mcas && git pull origin main
+# 2. Build & restart only changed services (never bare `up`)
+cd /srv/mcas/Backend && docker compose -f docker-compose.yml build <service> && docker compose -f docker-compose.yml up -d --no-deps <service>
+# 3. Frontend rebuild
+cd /srv/mcas/Frontend && npm install && npm run build
 ```
 
 **Container names:**
@@ -154,7 +164,7 @@ Every plan that creates or modifies a script must address:
 ## Infrastructure / Deploy
 - NEVER use bare `docker compose up` on production — always `-f docker-compose.yml`
 - NEVER use heredocs with `docker compose exec` — use `-T` + `-c` or pipe
-- NEVER run deploy commands directly — always ask user (Claude Code runs on dev, not server)
+- NEVER deploy without user approval — dev and prod share the same machine but are separate git worktrees
 - NEVER recreate infra services during code-only deploy — use `--no-deps`
 - NEVER hardcode import paths — detect execution context at runtime
 
@@ -213,8 +223,10 @@ cd Backend && docker compose up -d
 cd Backend && docker compose up -d --build  # after code changes
 cd Frontend && npm install && npm run dev
 
-# Production deploy (ALWAYS ask user to execute)
-cd /srv/mcas/Backend && docker compose -f docker-compose.yml build && docker compose -f docker-compose.yml up -d --no-deps
+# Production deploy (same machine, no SSH — get user approval first)
+cd /srv/mcas && git pull origin main
+cd /srv/mcas/Backend && docker compose -f docker-compose.yml build <service> && docker compose -f docker-compose.yml up -d --no-deps <service>
+cd /srv/mcas/Frontend && npm install && npm run build
 
 # View logs
 cd Backend && docker compose logs -f worker
