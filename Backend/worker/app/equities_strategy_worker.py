@@ -231,7 +231,7 @@ def _write_signals_to_redis(r, signals: list[EquitiesSignal]):
             "as_of_ts": time.time(),
         }
 
-        pipe.zadd(zset_key, {sig.symbol: sig.confidence})
+        pipe.zadd(zset_key, {sig.symbol: float(sig.confidence)})
         pipe.set(sig_key, json.dumps(payload), ex=REDIS_SIGNAL_TTL_S)
         pipe.hset(meta_key, mapping={
             "as_of_ts": str(time.time()),
