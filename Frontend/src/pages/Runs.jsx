@@ -60,6 +60,7 @@ export default function Runs() {
               { value: '', label: 'All Types' },
               { value: 'SCAN', label: 'Scan' },
               { value: 'BACKTEST', label: 'Backtest' },
+              { value: 'SIMULATION', label: 'Simulation' },
               { value: 'PAPER', label: 'Paper Trading' },
             ]}
             className="w-36"
@@ -124,10 +125,11 @@ function RunCard({ run }) {
       <Card hover>
         <CardContent className="flex items-center gap-4">
           {/* Type badge */}
-          <Badge 
+          <Badge
             variant={
-              run.run_type === 'SCAN' ? 'info' : 
-              run.run_type === 'BACKTEST' ? 'warning' : 
+              run.run_type === 'SCAN' ? 'info' :
+              run.run_type === 'BACKTEST' ? 'warning' :
+              run.run_type === 'SIMULATION' ? 'info' :
               'default'
             }
             className="w-24 justify-center"

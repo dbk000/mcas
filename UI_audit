@@ -1,0 +1,338 @@
+  MCAS UI — Exhaustive QA Test Report                                                                                                                                                         
+                                                                                
+  PAGE: Opportunities
+
+  CRITICAL Issues
+
+  PAGE: Opportunities
+  ELEMENT: EQFP opportunities (38 of 90 active)
+  EXPECTED: EQFP should either (a) not exist as active opportunities, or (b) be filterable and properly rendered
+  ACTUAL: 38 EQFP opportunities appear in unfiltered view, but filtering by setup_id=EQFP returns 0 results (API routes to redis_live which has no EQFP). EQFP is written by
+  equities_forward_predictor.py to Postgres only, not Redis.
+  SEVERITY: CRITICAL
+  SCREENSHOT: Cards show "EQFP" badge, but selecting any filter hides them. Users see ghost opportunities they can't filter for.
+
+  PAGE: Opportunities
+  ELEMENT: EQFP opportunity cards — direction display
+  EXPECTED: Direction badge (LONG/SHORT) should show for all opportunities
+  ACTUAL: EQFP opportunities have "direction": null in the API response. The direction is in "decision" field instead. DirectionBadge renders nothing. Cards show no direction indicator.
+  SEVERITY: CRITICAL
+  FILES: Frontend/src/pages/Opportunities.jsx:742 — uses opportunity.direction, but EQFP uses opportunity.decision
+
+  PAGE: Opportunities
+  ELEMENT: EQFP card layout — wrong template used
+  EXPECTED: EQFP is an equities strategy; should use equities card layout (direction, horizon, confidence)
+  ACTUAL: Uses crypto card layout (entry, stop, TP1, R-value) because line 764 checks setup_id?.startsWith('EQ_') — EQFP doesn't start with "EQ_". EQFP payload has
+  confidence/predicted_return but crypto template expects stop_price/tp1_price/r_value (all undefined → shows "$—" everywhere)
+  SEVERITY: CRITICAL
+  FILES: Frontend/src/pages/Opportunities.jsx:764, OpportunityDetail.jsx:242
+
+  PAGE: Opportunities
+  ELEMENT: EQFP duplicates
+  EXPECTED: Each symbol should appear once per strategy
+  ACTUAL: Most EQFP symbols appear 3x (AMD: 5x). 38 EQFP opps = ~13 unique symbols × 3 runs. equities_forward_predictor.py writes without dedup to legacy opportunities table. Unique
+  deterministic_opp_ids: 14 across all 90 opps.
+  SEVERITY: CRITICAL
+
+  PAGE: Opportunities
+  ELEMENT: EQ_VPD opportunity data quality
+  EXPECTED: Feature values should be realistic for SPY at ~$687
+  ACTUAL: "5d range: [100.00, 100.00], position: 5873499755859.4%" — high_5d and low_5d are 100.00 (should be ~$680-690), producing an astronomically wrong position percentage. Backend
+  feature engineering bug in EQ_VPD.
+  SEVERITY: CRITICAL
+  FILES: Backend/worker/app/equities_strategies/ (EQ_VPD feature computation)
+
+  HIGH Issues
+
+  PAGE: Opportunities
+  ELEMENT: Score scale inconsistency
+  EXPECTED: Scores should be on a consistent scale
+  ACTUAL: EQ_VPD score=0.9999 (0-1 scale), EQ_ATC score=0.78 (0-1), S9/S6 scores=0.36-0.54 (0-1), EQFP scores=43-44.5 (0-100 scale). Mixed scales displayed side-by-side. Score "44.5" for
+  EQFP vs "1.0" for EQ_VPD. Users can't meaningfully compare or sort.
+  SEVERITY: HIGH
+
+  PAGE: Opportunities
+  ELEMENT: Setup filter dropdown — missing strategies
+  EXPECTED: All active strategies should be in the dropdown
+  ACTUAL: Dropdown (line 314-326) has S9, U1, S10, EQ_TSMOM-EQ_ATC but MISSING:
+    - EQFP (38 active opps — largest strategy!)
+    - EQ_NVDA_MACRO (newly deployed)
+    - S1 (1 active opp)
+    - S2 (1 active opp)
+    - S6 (15-19 active opps!)
+  SEVERITY: HIGH
+  FILES: Frontend/src/pages/Opportunities.jsx:314-326
+
+  PAGE: Opportunities
+  ELEMENT: Simulation modal setup list — missing strategies
+  EXPECTED: All strategies available for simulation
+  ACTUAL: Lines 467-475 list S9, U1, S10, EQ_TSMOM-EQ_ATC — missing EQFP, EQ_NVDA_MACRO, S1, S2, S6
+  SEVERITY: HIGH
+  FILES: Frontend/src/pages/Opportunities.jsx:467-475
+
+  ---
+  PAGE: Correlation Analysis
+
+  HIGH Issues
+
+  PAGE: Correlation Analysis
+  ELEMENT: Setup filter dropdown — completely stale
+  EXPECTED: Current strategy list
+  ACTUAL: Lists S1-S7 + U1 (line 230-239). Missing ALL current strategies: S9, S10, EQFP, EQ_TSMOM, EQ_XSMOM, EQ_REV1A, EQ_REV1B, EQ_VPD, EQ_ATC, EQ_NVDA_MACRO. Only S1 and S2 from the
+  dropdown actually exist in expired data. S3-S5, S7 have expired opps but S4/S5 may be deprecated.
+  SEVERITY: HIGH
+  FILES: Frontend/src/pages/CorrelationAnalysis.jsx:230-239
+
+  PAGE: Correlation Analysis
+  ELEMENT: "Insufficient trades: found 0, need 30" error
+  EXPECTED: Error message should match reality — runs showing trade counts should have trades
+  ACTUAL: The API checks run_trades table for status='CLOSED' and exit_reason IS NOT NULL. Periodic SCAN runs show trade_count in summary (e.g., 27 trades) but these are SIGNAL trades, not
+  CLOSED paper/backtest trades with exit_reason. The correlation analysis counts differently than the run list display, causing misleading discrepancy.
+  SEVERITY: HIGH
+  FILES: Backend/api/app/analytics_api.py:101-113 — counts only CLOSED trades with exit_reason
+
+  PAGE: Correlation Analysis
+  ELEMENT: Run selector — only shows BACKTEST and SIMULATION runs
+  EXPECTED: Should show runs that have actual closed trades
+  ACTUAL: Filters for run_type=BACKTEST and run_type=SIMULATION (lines 51-60). Most runs are SCAN type (all 50 visible runs are periodic scans). If no BACKTEST/SIMULATION runs exist, the run
+   selector is empty. "No backtest runs available" message appears.
+  SEVERITY: HIGH
+  FILES: Frontend/src/pages/CorrelationAnalysis.jsx:51-60
+
+  ---
+  PAGE: Control Plane
+
+  HIGH Issues
+
+  PAGE: Control Plane
+  ELEMENT: Scan form setup list — missing strategies
+  EXPECTED: All active strategies available
+  ACTUAL: Only S9, U1, S10 (lines 107-109). Missing all EQ_ strategies, EQFP.
+  SEVERITY: HIGH
+  FILES: Frontend/src/pages/ControlPlane.jsx:107-109
+
+  PAGE: Control Plane
+  ELEMENT: Backtest form setup list — same issue
+  EXPECTED: All active strategies
+  ACTUAL: Only S9, U1, S10 (line 402). Hardcoded list.
+  SEVERITY: HIGH
+  FILES: Frontend/src/pages/ControlPlane.jsx:402
+
+  PAGE: Control Plane
+  ELEMENT: Paper Trading form setup list — same issue
+  EXPECTED: All active strategies
+  ACTUAL: Only S9, U1, S10 (line 538). Can't paper trade with EQ_ strategies.
+  SEVERITY: HIGH
+  FILES: Frontend/src/pages/ControlPlane.jsx:538
+
+  ---
+  PAGE: Layout / Navigation
+
+  HIGH Issues
+
+  PAGE: Layout (global)
+  ELEMENT: Quick Scan button (top bar)
+  EXPECTED: Uses current active strategies
+  ACTUAL: Hardcodes S1, S2, S3, S4, S5, S6, S7 (line 245 of Layout.jsx) — completely stale list from original system. S3, S4, S5, S7 are deprecated. None of the current active strategies
+  (S9, S10, U1, EQ_*) are included.
+  SEVERITY: HIGH
+  FILES: Frontend/src/components/Layout.jsx:245
+
+  ---
+  PAGE: Dashboard
+
+  MEDIUM Issues
+
+  PAGE: Dashboard
+  ELEMENT: Top Signals panel
+  EXPECTED: Shows top 3 signals with correct badges
+  ACTUAL: Shows signals with setup_id badge (line 269). Same score display issue — EQ_ scores show "1.0" or "0.8" while crypto show "44.5". No normalization.
+  SEVERITY: MEDIUM
+  FILES: Frontend/src/pages/Dashboard.jsx:274
+
+  PAGE: Dashboard
+  ELEMENT: Paper Trading panel — zero activity
+  EXPECTED: Paper trading should show activity after 21 days running
+  ACTUAL: Running since Feb 4, 0 trades, $10,000 capital unchanged, 0.0% win rate, 0.0 PF. Either paper trading engine is not consuming signals, or auto_trade is not working. 21 days of
+  inactivity = effectively dead feature.
+  SEVERITY: MEDIUM (functional, not displaying wrong data)
+
+  ---
+  PAGE: Paper Trading
+
+  MEDIUM Issues
+
+  PAGE: Paper Trading
+  ELEMENT: Paper trading session
+  EXPECTED: Active session with trades
+  ACTUAL: Session "paper_20260204_131412" running since Feb 4, 0 positions, 0 trades. Positions list empty. Trade history empty. The entire paper trading system appears non-functional
+  despite being "active".
+  SEVERITY: MEDIUM
+
+  ---
+  PAGE: Opportunity Detail
+
+  MEDIUM Issues
+
+  PAGE: Opportunity Detail
+  ELEMENT: EQFP opportunity detail view
+  EXPECTED: Equities-style detail layout
+  ACTUAL: Same startsWith('EQ_') check at line 242 sends EQFP through crypto layout path. Shows "Trade Levels" instead of "Signal Details". Shows Entry/Stop/TP1/TP2 boxes (all undefined)
+  instead of Entry/Direction/Horizon/Confidence.
+  SEVERITY: MEDIUM (same root cause as card issue)
+  FILES: Frontend/src/pages/OpportunityDetail.jsx:239-242
+
+  PAGE: Opportunity Detail
+  ELEMENT: "View Chart" link for equities symbols
+  EXPECTED: Chart view for GOOGL, META, etc.
+  ACTUAL: Links to /markets/GOOGL — Markets page shows crypto USDT pairs only. Equities symbols won't have chart data. Dead link for all equities opportunities.
+  SEVERITY: MEDIUM
+  FILES: Frontend/src/pages/OpportunityDetail.jsx:216-219
+
+  ---
+  API Issues (Backend)
+
+  CRITICAL
+
+  PAGE: API
+  ELEMENT: GET /v1/opportunities?setup_id=EQFP — filter fails
+  EXPECTED: Returns 38 EQFP opportunities
+  ACTUAL: Returns 0 (source: redis_live). The API routes EQFP to Redis-only lookup, but EQFP only exists in Postgres. Unfiltered query merges both sources and shows EQFP. setup_id filter
+  silently breaks for Postgres-only strategies.
+  SEVERITY: CRITICAL
+
+  PAGE: API
+  ELEMENT: GET /v1/opportunities limit validation
+  EXPECTED: Supports pagination up to reasonable limits
+  ACTUAL: Max limit=200 (returns validation error for limit>200). But the Opportunities page dropdown goes up to 100, so this only affects API direct users. The 200 cap also means if there
+  are >200 active opps, some are invisible.
+  SEVERITY: MEDIUM
+
+  PAGE: API
+  ELEMENT: /v1/signals/{signal_id} path collision
+  EXPECTED: Equities signals accessible at some endpoint
+  ACTUAL: GET /v1/signals/equities returns validation error ("Input should be a valid integer") because {signal_id} is expected to be an integer. No separate equities signals endpoint
+  exists.
+  SEVERITY: MEDIUM
+
+  ---
+  Cross-Page Consistency Issues
+
+  HIGH
+
+  PAGE: Cross-Page
+  ELEMENT: Strategy list — 6 different hardcoded lists across the app
+  EXPECTED: Single source of truth for strategy list
+  ACTUAL: At least 6 different hardcoded strategy lists:
+    1. Layout.jsx:245 → S1,S2,S3,S4,S5,S6,S7 (ancient)
+    2. ControlPlane.jsx:107,402,538 → S9,U1,S10
+    3. Opportunities.jsx:314 → S9,U1,S10,EQ_TSMOM-EQ_ATC
+    4. Opportunities.jsx:467 → S9,U1,S10,EQ_TSMOM-EQ_ATC
+    5. CorrelationAnalysis.jsx:230 → S1-S7,U1
+    6. None include EQFP or EQ_NVDA_MACRO
+    None of these derive from registry/env var (violates CLAUDE.md §2: "NEVER hardcode setup ID lists")
+  SEVERITY: HIGH
+
+  ---
+  Summary
+
+  ┌──────────┬───────┐
+  │ Severity │ Count │
+  ├──────────┼───────┤
+  │ CRITICAL │ 6     │
+  ├──────────┼───────┤
+  │ HIGH     │ 10    │
+  ├──────────┼───────┤
+  │ MEDIUM   │ 6     │
+  ├──────────┼───────┤
+  │ LOW      │ 0     │
+  ├──────────┼───────┤
+  │ Total    │ 22    │
+  └──────────┴───────┘
+
+  Root Causes (Fix These to Clear Multiple Bugs)
+
+  1. Strategy registry: Create a single source of truth for active strategies (API endpoint or shared config). All 6 hardcoded lists should derive from it. This clears ~6 HIGH bugs.
+  2. EQFP identity crisis: EQFP doesn't follow the EQ_ naming convention, so all startsWith('EQ_') checks fail. Either rename to EQ_FP in the forward predictor, or add EQFP to the
+  conditional checks. This clears ~3 CRITICAL bugs.
+  3. EQFP direction field: Forward predictor writes to decision instead of direction. The frontend reads direction. Map decision → direction in the API response or fix the writer.
+  4. API setup_id filter routing: When setup_id is specified, the API should check both Redis AND Postgres, not just Redis. This clears the filter-returns-0 bug.
+  5. EQFP dedup: Forward predictor needs a dedup check (UPSERT or delete-before-insert) to prevent 3x duplicate opportunities per symbol.
+  6. EQ_VPD feature engineering: The 5d high/low values of 100.00 for SPY at ~$687 indicates a bug in the OHLCV feature matrix for equities — likely array initialization or indexing error.
+
+✻ Sautéed for 5m 43s                 
+
+● Agent "Explore frontend code for bugs" completed                                                                                                                                            
+   
+● The frontend audit agent found additional bugs. Let me read the full report and add the new findings.                                                                                       
+                                                                                     
+● Read 1 file (ctrl+o to expand)                                                                                                                                                              
+                                
+● Good, the frontend audit confirms and adds to my findings. Let me add the new issues to the report:                                                                                         
+                                                                                                                                                                                            
+  ---                                                                                                                                                                                         
+  Additional Issues from Frontend Code Audit                                                                                                                                                  
+                                                                                                                                                                                              
+  HIGH                                                                                                                                                                                        
+                                                                                                                                                                                              
+  PAGE: Runs
+  ELEMENT: Run type filter dropdown
+  EXPECTED: Includes all run types
+  ACTUAL: Lists SCAN, BACKTEST, PAPER — missing SIMULATION. Users can't filter to find simulation runs.
+  SEVERITY: HIGH
+  FILES: Frontend/src/pages/Runs.jsx:60-64
+
+  PAGE: Correlation Analysis
+  ELEMENT: SIMULATION runs in selector → "found 0" error
+  EXPECTED: Selecting a simulation run with 100+ simulated trades should work
+  ACTUAL: Frontend fetches both BACKTEST and SIMULATION runs. But the backend
+    _check_runs_have_trades() queries run_trades table. Simulation results
+    live in simulation_results table. So selecting a SIMULATION run always
+    returns trade_count=0 → "Insufficient trades: found 0, need 30".
+  SEVERITY: HIGH (this is the confirmed root cause of the known bug)
+  FILES: Backend/api/app/analytics_api.py:101-113, Frontend/src/pages/CorrelationAnalysis.jsx:51-60
+
+  MEDIUM
+
+  PAGE: Paper Trading
+  ELEMENT: Exit reason badge colors — "STOP" vs "STOP_LOSS"
+  EXPECTED: STOP_LOSS exits show red
+  ACTUAL: PaperTrading.jsx:416-420 checks for "STOP" instead of "STOP_LOSS".
+    Backend returns "STOP_LOSS", so it falls through to default 'warning' (yellow)
+    instead of 'error' (red). TRAIL_STOP is 'success' in SimulationResults
+    but 'warning' in RunDetail.
+  SEVERITY: MEDIUM
+  FILES: PaperTrading.jsx:416-420, SimulationResults.jsx:33-43, RunDetail.jsx:664-668
+
+  PAGE: Dashboard
+  ELEMENT: Paper Trading panel — NaN% display
+  EXPECTED: Shows "0%" when win_rate is null
+  ACTUAL: data.performance?.win_rate * 100 → undefined * 100 = NaN → displays "NaN%"
+  SEVERITY: MEDIUM
+  FILES: Frontend/src/pages/Dashboard.jsx:349
+
+  ---
+  Updated Summary
+
+  ┌──────────┬───────┐
+  │ Severity │ Count │
+  ├──────────┼───────┤
+  │ CRITICAL │ 6     │
+  ├──────────┼───────┤
+  │ HIGH     │ 12    │
+  ├──────────┼───────┤
+  │ MEDIUM   │ 8     │
+  ├──────────┼───────┤
+  │ LOW      │ 0     │
+  ├──────────┼───────┤
+  │ Total    │ 26    │
+  └──────────┴───────┘
+
+  Priority Fix Order
+
+  1. Strategy registry API endpoint — Create GET /v1/strategies that returns all active strategies with labels. Replace all 7 hardcoded lists. Clears ~8 bugs.
+  2. EQFP naming — Rename to EQ_FP in equities_forward_predictor.py (fixes card layout, filter, direction). Or add || setup_id === 'EQFP' to the startsWith('EQ_') checks.
+  3. EQFP dedup + direction — Fix equities_forward_predictor.py to (a) write direction field instead of only decision, (b) deduplicate by deterministic_opportunity_id before insert.
+  4. API filter routing — Fix setup_id=EQFP filter to also check Postgres, not just Redis.
+  5. Correlation analysis — Either (a) exclude SIMULATION runs from the selector, or (b) make _check_runs_have_trades also query simulation_results.
+  6. EQ_VPD feature data — Fix the 5d high/low feature computation that returns 100.00 for SPY at ~$687.

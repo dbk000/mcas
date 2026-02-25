@@ -92,6 +92,28 @@ API_KEY = os.getenv("API_KEY", "")
 DEFAULT_TIMEFRAMES = os.getenv("DEFAULT_TIMEFRAMES", "1m,5m,15m,1h,4h,1d").split(",")
 SIGNAL_MAX_AGE_S = 3600  # Signals older than this are considered expired
 
+# Strategy registry: single source of truth for all active strategies.
+# Frontend fetches this via GET /v1/strategies and derives all dropdown lists from it.
+STRATEGY_REGISTRY = {
+    "S1": {"label": "S1 (BB Squeeze)", "type": "crypto", "status": "legacy"},
+    "S2": {"label": "S2 (Golden Cross)", "type": "crypto", "status": "legacy"},
+    "S6": {"label": "S6 (Trend Pullback)", "type": "crypto", "status": "legacy"},
+    "S9": {"label": "S9 (Short Reversion)", "type": "crypto", "status": "active"},
+    "S10": {"label": "S10 (MACD Scalp)", "type": "crypto", "status": "active"},
+    "U1": {"label": "U1 (Unicorn)", "type": "crypto", "status": "active"},
+    "EQFP": {"label": "EQ: Forward Predictor", "type": "equities", "status": "active"},
+    "EQ_TSMOM": {"label": "EQ: TSMOM (20d)", "type": "equities", "status": "active"},
+    "EQ_XSMOM": {"label": "EQ: XS Momentum (20d)", "type": "equities", "status": "active"},
+    "EQ_REV1A": {"label": "EQ: Reversion 1a (10d)", "type": "equities", "status": "active"},
+    "EQ_REV1B": {"label": "EQ: Reversion 1b (10d)", "type": "equities", "status": "active"},
+    "EQ_VPD": {"label": "EQ: Vol-Price Div (1d)", "type": "equities", "status": "active"},
+    "EQ_ATC": {"label": "EQ: After-Trading Chatter (1d)", "type": "equities", "status": "active"},
+    "EQ_NVDA_MACRO": {"label": "EQ: NVDA Macro Cascade (3d)", "type": "equities", "status": "active"},
+}
+
+# Setup IDs that are cached in Redis (signal_worker and equities_strategy_worker)
+REDIS_SETUP_IDS = [sid for sid, info in STRATEGY_REGISTRY.items() if sid != "EQFP"]
+
 r = redis.Redis.from_url(REDIS_URL, decode_responses=True)
 
 # DEPRECATED: hardcoded fallback only. Ingestor builds universe dynamically
@@ -215,6 +237,23 @@ def auth_ping():
     """Validate API key."""
     t0 = time.time()
     return envelope({"authenticated": True}, t0)
+
+
+# -------------------------
+# Strategy Registry
+# -------------------------
+@router.get("/strategies")
+def list_strategies():
+    """Return all known strategies with labels and types.
+
+    Single source of truth — frontend derives all dropdown lists from this.
+    """
+    t0 = time.time()
+    strategies = [
+        {"id": sid, **info}
+        for sid, info in STRATEGY_REGISTRY.items()
+    ]
+    return envelope({"strategies": strategies, "count": len(strategies)}, t0)
 
 
 # -------------------------
@@ -490,7 +529,7 @@ def _read_opportunities_from_redis(min_score: float = 0.0, limit: int = 50, setu
         if cache_ready != "1":
             return None
 
-        setup_ids = [setup_id] if setup_id else ["S9", "U1", "S10", "EQ_TSMOM", "EQ_XSMOM", "EQ_REV1A", "EQ_REV1B", "EQ_VPD", "EQ_ATC", "EQ_NVDA_MACRO"]
+        setup_ids = [setup_id] if setup_id else REDIS_SETUP_IDS
         timeframes = list(r.smembers("cache:timeframes")) or DEFAULT_TIMEFRAMES
         results = []
         seen = set()
@@ -575,18 +614,21 @@ def list_opportunities(
     For other statuses, queries Postgres directly.
     """
     t0 = time.time()
+    redis_items = None
 
-    # Only use Redis for active signals (Redis only stores active signals)
+    # For active signals: merge Redis (live) + Postgres (EQFP and others not in Redis).
+    # Redis is the fast path for strategies that write to it; Postgres catches the rest.
     if status == "active":
         redis_items = _read_opportunities_from_redis(min_score, limit, setup_id=setup_id)
-        if redis_items is not None:
+        if redis_items is not None and len(redis_items) > 0 and setup_id and setup_id in REDIS_SETUP_IDS:
+            # Fast path: specific Redis-tracked setup with results
             return envelope({
                 "opportunities": redis_items,
                 "count": len(redis_items),
                 "source": "redis_live",
             }, t0)
 
-    # Fallback to Postgres (or primary source for non-active statuses)
+    # Postgres query (primary source for non-active, fallback/merge for active)
     if not DATABASE_URL:
         raise HTTPException(status_code=500, detail="Database not configured")
 
@@ -623,10 +665,10 @@ def list_opportunities(
             cur.execute(query, params_list)
             rows = cur.fetchall()
 
-    items = []
+    pg_items = []
     for r_ in rows:
         payload = json.loads(r_[8]) if r_[8] else None
-        items.append({
+        pg_items.append({
             "id": r_[0],
             "signal_id": r_[1],
             "symbol": r_[2],
@@ -642,9 +684,31 @@ def list_opportunities(
             "source": "postgres",
         })
 
+    # For active status: merge Redis + Postgres, Redis takes priority
+    if status == "active" and redis_items:
+        seen = set()
+        merged = []
+        for item in redis_items:
+            key = f"{item['setup_id']}:{item['symbol']}:{item.get('timeframe', '')}"
+            if key not in seen:
+                seen.add(key)
+                merged.append(item)
+        for item in pg_items:
+            key = f"{item['setup_id']}:{item['symbol']}:{item.get('timeframe', '')}"
+            if key not in seen:
+                seen.add(key)
+                merged.append(item)
+        merged.sort(key=lambda x: x.get("score", 0) or 0, reverse=True)
+        final = merged[:limit]
+        return envelope({
+            "opportunities": final,
+            "count": len(final),
+            "source": "merged",
+        }, t0)
+
     return envelope({
-        "opportunities": items,
-        "count": len(items),
+        "opportunities": pg_items,
+        "count": len(pg_items),
         "source": "postgres",
     }, t0)
 

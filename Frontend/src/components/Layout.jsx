@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import { useApi } from '../context/ApiContext'
 import { useToast } from '../context/ToastContext'
+import { useStrategies } from '../hooks/useData'
 import { formatRelativeTime } from '../utils/formatters'
 import { getLogger } from '../utils/logger'
 
@@ -235,14 +236,19 @@ function QuickScanButton() {
   const { addToast } = useToast()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
+  const { data: strategyData } = useStrategies()
 
   const handleScan = async () => {
     if (!isConnected || loading) return
-    
+
     setLoading(true)
     try {
+      // Use active strategies from registry (exclude legacy)
+      const activeIds = (strategyData?.strategies || [])
+        .filter(s => s.status === 'active')
+        .map(s => s.id)
       const result = await post('/v1/control/runs/scan', {
-        setup_ids: ['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7'],
+        setup_ids: activeIds.length > 0 ? activeIds : ['S9', 'U1', 'S10'],
         top_n: 10,
         priority: 5,
       })

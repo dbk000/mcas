@@ -21,7 +21,8 @@ import {
   formatDateTime,
   formatRelativeTime,
   formatTradePlan,
-  copyToClipboard
+  copyToClipboard,
+  isEquitiesStrategy
 } from '../utils/formatters'
 
 function parseCompositeId(id) {
@@ -203,7 +204,7 @@ export default function OpportunityDetail() {
               <h1 className="text-2xl font-bold text-terminal-100 font-mono">{opp.symbol}</h1>
               <Badge>{opp.timeframe}</Badge>
               <Badge variant="info">{opp.setup_id}</Badge>
-              <DirectionBadge direction={opp.direction} />
+              <DirectionBadge direction={opp.direction || opp.decision} />
             </div>
             <p className="text-sm text-terminal-400 mt-1">
               {isLive ? 'Live Signal' : `Opportunity #${opp.id}`}
@@ -236,10 +237,10 @@ export default function OpportunityDetail() {
           {/* Trade levels */}
           <Card>
             <CardHeader>
-              <CardTitle>{opp.setup_id?.startsWith('EQ_') ? 'Signal Details' : 'Trade Levels'}</CardTitle>
+              <CardTitle>{isEquitiesStrategy(opp.setup_id) ? 'Signal Details' : 'Trade Levels'}</CardTitle>
             </CardHeader>
             <CardContent>
-              {opp.setup_id?.startsWith('EQ_') ? (
+              {isEquitiesStrategy(opp.setup_id) ? (
                 <>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <LevelBox

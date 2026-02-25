@@ -346,7 +346,7 @@ function PaperTradingPanel() {
             <div className="grid grid-cols-3 gap-3 pt-3 border-t border-terminal-600">
               <div className="text-center">
                 <p className="text-lg font-bold font-mono text-terminal-100">
-                  {formatPercent(data.performance?.win_rate * 100, 0)}
+                  {formatPercent((data.performance?.win_rate ?? 0) * 100, 0)}
                 </p>
                 <p className="text-xs text-terminal-400">Win Rate</p>
               </div>

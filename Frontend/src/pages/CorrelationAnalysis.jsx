@@ -13,7 +13,7 @@ import {
 } from 'lucide-react'
 import { useApi } from '../context/ApiContext'
 import { useToast } from '../context/ToastContext'
-import { useFetch } from '../hooks/useData'
+import { useFetch, useStrategies } from '../hooks/useData'
 import {
   Card,
   CardContent,
@@ -46,6 +46,9 @@ export default function CorrelationAnalysis() {
   const [analysisData, setAnalysisData] = useState(null)
   const [loading, setLoading] = useState(false)
   const [polling, setPolling] = useState(false)
+
+  // Fetch strategy registry for dropdown
+  const { data: strategyData } = useStrategies()
 
   // Fetch available backtest and simulation runs
   const { data: backtestData, loading: backtestLoading } = useFetch('/v1/runs', {
@@ -229,14 +232,7 @@ export default function CorrelationAnalysis() {
                 onChange={(e) => setSetupFilter(e.target.value)}
                 options={[
                   { value: '', label: 'All Setups' },
-                  { value: 'S1', label: 'S1 (BB Squeeze)' },
-                  { value: 'S2', label: 'S2 (Golden Cross)' },
-                  { value: 'S3', label: 'S3 (RSI Divergence)' },
-                  { value: 'S4', label: 'S4 (VWAP Reversion)' },
-                  { value: 'S5', label: 'S5 (S/R Breakout)' },
-                  { value: 'S6', label: 'S6 (Trend Pullback)' },
-                  { value: 'S7', label: 'S7 (Donchian Breakout)' },
-                  { value: 'U1', label: 'U1 (Unicorn Ignition)' },
+                  ...(strategyData?.strategies || []).map(s => ({ value: s.id, label: s.label })),
                 ]}
                 className="w-40"
               />

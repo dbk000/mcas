@@ -412,13 +412,15 @@ function TradesTab({ isActive }) {
                 {formatPrice(trade.exit_price)}
               </td>
               <td className="px-3 py-2">
-                <Badge 
+                <Badge
                   variant={
-                    trade.exit_reason === 'TP1' || trade.exit_reason === 'TP2' 
-                      ? 'success' 
-                      : trade.exit_reason === 'STOP' 
-                        ? 'error' 
-                        : 'warning'
+                    trade.exit_reason === 'TP1' || trade.exit_reason === 'TP2'
+                      ? 'success'
+                      : trade.exit_reason === 'STOP_LOSS' || trade.exit_reason === 'FAIL_FAST'
+                        ? 'error'
+                        : trade.exit_reason === 'TRAIL_STOP' || trade.exit_reason === 'TRAILING_STOP'
+                          ? 'warning'
+                          : 'warning'
                   }
                 >
                   {trade.exit_reason}

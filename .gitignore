@@ -33,6 +33,7 @@ docker-compose.override.yml
 
 # Nested repo clones (have their own .git, push independently)
 MCAS_sentiment/
+MCAS_Codex/
 
 # Archives
 *.zip

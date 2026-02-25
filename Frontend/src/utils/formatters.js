@@ -187,3 +187,12 @@ export function extractBase(symbol) {
   if (!symbol) return ''
   return symbol.replace('USDT', '').replace('BUSD', '').replace('BTC', '')
 }
+
+/**
+ * Check if a setup_id is an equities strategy.
+ * Matches EQ_ prefix and also 'EQFP' which doesn't follow the prefix convention.
+ */
+export function isEquitiesStrategy(setupId) {
+  if (!setupId) return false
+  return setupId.startsWith('EQ_') || setupId === 'EQFP'
+}

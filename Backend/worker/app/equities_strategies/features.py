@@ -501,8 +501,14 @@ def engineer_features(ohlcv: dict, news_mat: np.ndarray, atc_mat: np.ndarray = N
             # Combined conviction: direction strength × breadth
             features["atc_tone_strength"] = np.abs(tone_avg) * breadth
 
-    # Clip all features
+    # Clip return-based and ratio-based features to [-100, 100].
+    # Skip price-level features (high_5d, low_5d), cumulative features (obv),
+    # and count features that can legitimately exceed 100.
+    _NO_CLIP = {"high_5d", "low_5d", "obv", "atc_event_count", "atc_unique_pubs",
+                "atc_tone_eligible_count", "atc_tone_nonzero_count"}
     for k in features:
+        if k.startswith("_") or k in _NO_CLIP:
+            continue
         features[k] = np.clip(features[k], -100, 100)
 
     return features

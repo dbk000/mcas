@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useApi } from '../context/ApiContext'
 import { useToast } from '../context/ToastContext'
-import { useQueueStatus, useMarkets, useTimeframes, usePaperStatus, useDataAvailability } from '../hooks/useData'
+import { useQueueStatus, useMarkets, useTimeframes, usePaperStatus, useDataAvailability, useStrategies } from '../hooks/useData'
 import { getLogger } from '../utils/logger'
 import {
   Card, CardHeader, CardTitle, CardContent,
@@ -75,7 +75,7 @@ function QueueItem({ item, onCancel }) {
 }
 
 // Scan form component
-function ScanForm({ onSubmit, loading, markets, timeframes }) {
+function ScanForm({ onSubmit, loading, markets, timeframes, strategies }) {
   const [name, setName] = useState('')
   const [setupIds, setSetupIds] = useState(['S9', 'U1', 'S10'])
   const [topN, setTopN] = useState(10)
@@ -103,11 +103,7 @@ function ScanForm({ onSubmit, loading, markets, timeframes }) {
       
       <FormField label="Setups">
         <div className="flex flex-wrap gap-3">
-          {[
-            { id: 'S9', label: 'S9 (Short Reversion)' },
-            { id: 'U1', label: 'U1 (Unicorn)' },
-            { id: 'S10', label: 'S10 (MACD Scalp)' },
-          ].map(s => (
+          {(strategies || []).map(s => (
             <label key={s.id} className="flex items-center gap-2 cursor-pointer">
               <input
                 type="checkbox"
@@ -314,7 +310,7 @@ function DataAvailabilityInfo({ symbols, timeframes, startDate, endDate }) {
 }
 
 // Backtest form component
-function BacktestForm({ onSubmit, loading, markets }) {
+function BacktestForm({ onSubmit, loading, markets, strategies }) {
   const [name, setName] = useState('')
   const [symbols, setSymbols] = useState(['BTCUSDT', 'ETHUSDT'])
   const [timeframeList, setTimeframeList] = useState('1h,4h')
@@ -399,18 +395,18 @@ function BacktestForm({ onSubmit, loading, markets }) {
 
       <FormField label="Setups">
         <div className="flex flex-wrap gap-3">
-          {['S9', 'U1', 'S10'].map(s => (
-            <label key={s} className="flex items-center gap-2 cursor-pointer">
+          {(strategies || []).map(s => (
+            <label key={s.id} className="flex items-center gap-2 cursor-pointer">
               <input
                 type="checkbox"
-                checked={setupIds.includes(s)}
+                checked={setupIds.includes(s.id)}
                 onChange={(e) => {
-                  if (e.target.checked) setSetupIds([...setupIds, s])
-                  else setSetupIds(setupIds.filter(x => x !== s))
+                  if (e.target.checked) setSetupIds([...setupIds, s.id])
+                  else setSetupIds(setupIds.filter(x => x !== s.id))
                 }}
                 className="rounded border-terminal-600 bg-terminal-800 text-amber-500 focus:ring-amber-500"
               />
-              <span className="text-sm">{s}</span>
+              <span className="text-sm">{s.label}</span>
             </label>
           ))}
         </div>
@@ -462,7 +458,7 @@ function BacktestForm({ onSubmit, loading, markets }) {
 }
 
 // Paper trading form component
-function PaperForm({ onSubmit, onStop, loading, paperStatus }) {
+function PaperForm({ onSubmit, onStop, loading, paperStatus, strategies }) {
   const [name, setName] = useState('')
   const [setupIds, setSetupIds] = useState(['S9', 'U1', 'S10'])
   const [initialCapital, setInitialCapital] = useState(10000)
@@ -535,18 +531,18 @@ function PaperForm({ onSubmit, onStop, loading, paperStatus }) {
       
       <FormField label="Setups">
         <div className="flex flex-wrap gap-3">
-          {['S9', 'U1', 'S10'].map(s => (
-            <label key={s} className="flex items-center gap-2 cursor-pointer">
+          {(strategies || []).map(s => (
+            <label key={s.id} className="flex items-center gap-2 cursor-pointer">
               <input
                 type="checkbox"
-                checked={setupIds.includes(s)}
+                checked={setupIds.includes(s.id)}
                 onChange={(e) => {
-                  if (e.target.checked) setSetupIds([...setupIds, s])
-                  else setSetupIds(setupIds.filter(x => x !== s))
+                  if (e.target.checked) setSetupIds([...setupIds, s.id])
+                  else setSetupIds(setupIds.filter(x => x !== s.id))
                 }}
                 className="rounded border-terminal-600 bg-terminal-800 text-amber-500 focus:ring-amber-500"
               />
-              <span className="text-sm">{s}</span>
+              <span className="text-sm">{s.label}</span>
             </label>
           ))}
         </div>
@@ -650,6 +646,8 @@ export default function ControlPlane() {
   const { data: markets } = useMarkets()
   const { data: timeframes } = useTimeframes()
   const { data: paperStatus, refetch: refetchPaper } = usePaperStatus()
+  const { data: strategyData } = useStrategies()
+  const strategies = (strategyData?.strategies || []).map(s => ({ id: s.id, label: s.label }))
   
   const handleScan = async (data) => {
     setLoading(true)
@@ -759,6 +757,7 @@ export default function ControlPlane() {
                   loading={loading}
                   markets={markets}
                   timeframes={timeframes}
+                  strategies={strategies}
                 />
               )}
               {activeTab === 'backtest' && (
@@ -766,6 +765,7 @@ export default function ControlPlane() {
                   onSubmit={handleBacktest}
                   loading={loading}
                   markets={markets}
+                  strategies={strategies}
                 />
               )}
               {activeTab === 'paper' && (
@@ -774,6 +774,7 @@ export default function ControlPlane() {
                   onStop={handlePaperStop}
                   loading={loading}
                   paperStatus={paperStatus}
+                  strategies={strategies}
                 />
               )}
             </CardContent>

@@ -1,0 +1,130 @@
+# CC Instruction: Fix All 26 QA Bugs
+
+## Context
+
+Claude Code (via Chrome agent) just completed a full-stack QA audit of the MCAS UI + API. Found 26 bugs across 6 critical, 12 high, 8 medium. Full report is in the chat transcript. Fix them all in priority order below.
+
+**Constraint:** EQ_NVDA_MACRO v1.2 was just deployed and is armed for Feb 26. Do NOT touch `eq_nvda_macro.py`, `equities_strategy_worker.py`, `docker-compose.yml`, or `nvda_cascade_profiles.json`. Those are frozen until after the earnings event.
+
+---
+
+## Priority 1 — Strategy Registry (clears ~8 bugs)
+
+Create `GET /v1/strategies` endpoint that returns all active strategies with labels. Single source of truth.
+
+```python
+# Backend/api/app/main.py (or wherever routes live)
+STRATEGY_REGISTRY = {
+    "S1": "S1 (Legacy)",
+    "S2": "S2 (Legacy)",
+    "S6": "S6 (Legacy)",
+    "S9": "S9 (Short Reversion)",
+    "S10": "S10 (MACD Scalp)",
+    "U1": "U1 (Unicorn)",
+    "EQFP": "EQ: Forward Predictor",
+    "EQ_TSMOM": "EQ: TSMOM (20d)",
+    "EQ_XSMOM": "EQ: XS Momentum (20d)",
+    "EQ_REV1A": "EQ: Reversion 1a (10d)",
+    "EQ_REV1B": "EQ: Reversion 1b (10d)",
+    "EQ_VPD": "EQ: Vol-Price Div (1d)",
+    "EQ_ATC": "EQ: After-Trading Chatter (1d)",
+    "EQ_NVDA_MACRO": "EQ: NVDA Macro Cascade (3d)",
+}
+```
+
+Frontend: replace ALL hardcoded strategy lists (the QA report found 7 of them) with a single fetch from this endpoint on app load. Store in React context or a top-level state.
+
+Files to update:
+- `Frontend/src/pages/Opportunities.jsx` — setup filter dropdown
+- `Frontend/src/pages/CorrelationAnalysis.jsx` — setup filter
+- `Frontend/src/pages/Runs.jsx` — setup filter
+- `Frontend/src/pages/Dashboard.jsx` — strategy references
+- Any other file with a hardcoded strategy list
+
+---
+
+## Priority 2 — EQFP Data Bugs
+
+### 2a. Naming
+The strategy ID in the database is `EQFP`. Either:
+- Rename to `EQ_FP` everywhere (DB migration + code), OR
+- Keep `EQFP` and ensure all frontend `startsWith('EQ_')` checks also handle `EQFP`
+
+Pick whichever is less disruptive. The registry endpoint from P1 handles the display label either way.
+
+### 2b. Deduplication
+`equities_forward_predictor.py` is writing duplicate opportunities. Fix:
+- Add `deterministic_opportunity_id` or equivalent unique constraint
+- Deduplicate before insert (same symbol + setup_id + timeframe + date = one record)
+
+### 2c. Direction field
+EQFP opportunities are missing `direction` (LONG/SHORT). They only have `decision`. Fix the writer to populate direction. The frontend opportunity cards need direction to display correctly.
+
+### 2d. API filter routing
+When filtering by `setup_id=EQFP`, the API checks Redis but EQFP signals are only in Postgres. Fix the filter to check both, or ensure EQFP signals are also cached in Redis.
+
+---
+
+## Priority 3 — Correlation Analysis
+
+The root cause: frontend fetches both BACKTEST and SIMULATION runs for the selector. But `_check_runs_have_trades()` only queries `run_trades` table. Simulation results live in `simulation_results` table.
+
+Fix options (pick one):
+- **Option A (simpler):** Exclude SIMULATION runs from the correlation selector
+- **Option B (better):** Make `_check_runs_have_trades()` also query `simulation_results` when `run_type = 'SIMULATION'`
+
+Also: add SIMULATION to the run type filter dropdown in `Runs.jsx:60-64`.
+
+---
+
+## Priority 4 — EQ_VPD Feature Clipping
+
+In `features.py:506`:
+```python
+features[k] = np.clip(features[k], -100, 100)
+```
+
+This clips ALL features including `high_5d` and `low_5d` which are raw prices (~$687 for SPY). These get clipped to 100, which is garbage.
+
+Fix: only clip return-based and ratio-based features, not price-level features. Either:
+- Maintain a whitelist of features that should be clipped, or
+- Skip clipping for features with names containing `high`, `low`, `obv`, `close`, `open`, `volume`
+
+**NOTE:** This changes feature values for EQ_VPD. Do NOT redeploy the equities_pipeline until after Feb 26 market close. Just commit the fix.
+
+---
+
+## Priority 5 — Frontend Display Bugs
+
+### 5a. Dashboard NaN%
+`Dashboard.jsx:349` — `data.performance?.win_rate * 100` when win_rate is null = NaN.
+Fix: `(data.performance?.win_rate ?? 0) * 100`
+
+### 5b. Paper Trading exit reason badges
+`PaperTrading.jsx:416-420` checks for `"STOP"` but backend returns `"STOP_LOSS"`.
+Fix: change to check for `"STOP_LOSS"`.
+Also: align `TRAIL_STOP` color between `SimulationResults.jsx:33-43` and `RunDetail.jsx:664-668`.
+
+### 5c. Any other display bugs from the QA report
+Fix all remaining medium-severity items.
+
+---
+
+## Deploy Rules
+
+1. Commit all fixes in a single branch or sequential commits
+2. Push to main
+3. On production: `git pull`, rebuild frontend, rebuild API
+4. Do NOT rebuild or restart `equities_strategy_worker` or `equities_pipeline` until after Feb 26 market close
+5. Frontend and API can be redeployed safely — they don't affect strategy evaluation
+
+---
+
+## Verification
+
+After deploy, re-run the QA audit (or spot-check the critical items):
+1. `GET /v1/strategies` returns all strategies
+2. Opportunities page shows correct strategy names (not EQFP with broken cards)
+3. Correlation analysis works on BACKTEST runs
+4. Dashboard shows 0% not NaN%
+5. No duplicate opportunities for same symbol/setup/timeframe/date

@@ -99,9 +99,13 @@ def _validate_run_ids(run_ids: list[str]) -> list[str]:
 
 
 def _check_runs_have_trades(run_ids: list[str]) -> int:
-    """Check that at least some runs have closed trades."""
+    """Check that at least some runs have closed trades.
+
+    Checks both run_trades (BACKTEST/PAPER) and simulation_results (SIMULATION).
+    """
     with _get_conn() as conn:
         with conn.cursor() as cur:
+            # Count closed trades from run_trades (backtests, paper)
             cur.execute("""
                 SELECT COUNT(*)
                 FROM run_trades
@@ -110,7 +114,19 @@ def _check_runs_have_trades(run_ids: list[str]) -> int:
                   AND exit_reason IS NOT NULL;
             """, (run_ids,))
             row = cur.fetchone()
-            return row[0] if row else 0
+            trade_count = row[0] if row else 0
+
+            # Also count simulation results (simulations store in a separate table)
+            cur.execute("""
+                SELECT COUNT(*)
+                FROM simulation_results
+                WHERE run_id = ANY(%s)
+                  AND exit_reason IS NOT NULL;
+            """, (run_ids,))
+            row = cur.fetchone()
+            sim_count = row[0] if row else 0
+
+            return trade_count + sim_count
 
 
 def _find_cached_analysis(config_hash: str) -> Optional[dict]:

@@ -147,6 +147,11 @@ export function useTimeframes() {
   return useFetch('/v1/timeframes')
 }
 
+// Strategies hook — single source of truth for all strategy dropdowns
+export function useStrategies() {
+  return useFetch('/v1/strategies')
+}
+
 // Opportunities hook with polling
 export function useOpportunities(params = {}, enabled = true) {
   return usePolling('/v1/opportunities', params, 15000, { enabled })

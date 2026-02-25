@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Target, Filter, Copy, Check, Clock, RefreshCw, PlayCircle, ChevronDown, ChevronRight, X, Plus, Download } from 'lucide-react'
-import { useOpportunities } from '../hooks/useData'
+import { useOpportunities, useStrategies } from '../hooks/useData'
 import { useToast } from '../context/ToastContext'
 import { useApi } from '../context/ApiContext'
 import {
@@ -24,7 +24,8 @@ import {
   formatRelativeTime,
   formatDateTime,
   formatTradePlan,
-  copyToClipboard
+  copyToClipboard,
+  isEquitiesStrategy
 } from '../utils/formatters'
 
 function ExpiryBadge({ expiresAt }) {
@@ -178,6 +179,13 @@ export default function Opportunities() {
   const [excludeDateInput, setExcludeDateInput] = useState('')
   const [includeDateInput, setIncludeDateInput] = useState('')
 
+  // Fetch strategy registry for dropdown options
+  const { data: strategyData } = useStrategies()
+  const setupOptions = [
+    { value: '', label: 'All Setups' },
+    ...(strategyData?.strategies || []).map(s => ({ value: s.id, label: s.label })),
+  ]
+
   // Build API params — omit setup_id if empty
   const apiParams = { status: filters.status, min_score: filters.min_score, limit: filters.limit }
   if (filters.setup_id) apiParams.setup_id = filters.setup_id
@@ -311,18 +319,7 @@ export default function Opportunities() {
           <Select
             value={filters.setup_id}
             onChange={(e) => setFilters({ ...filters, setup_id: e.target.value })}
-            options={[
-              { value: '', label: 'All Setups' },
-              { value: 'S9', label: 'S9 (Short Reversion)' },
-              { value: 'U1', label: 'U1 (Unicorn)' },
-              { value: 'S10', label: 'S10 (MACD Scalp)' },
-              { value: 'EQ_TSMOM', label: 'EQ: TSMOM (20d)' },
-              { value: 'EQ_XSMOM', label: 'EQ: XS Momentum (20d)' },
-              { value: 'EQ_REV1A', label: 'EQ: Reversion 1a (10d)' },
-              { value: 'EQ_REV1B', label: 'EQ: Reversion 1b (10d)' },
-              { value: 'EQ_VPD', label: 'EQ: Vol-Price Div (1d)' },
-              { value: 'EQ_ATC', label: 'EQ: After-Trading Chatter (1d)' },
-            ]}
+            options={setupOptions}
             className="w-32"
           />
 
@@ -463,17 +460,7 @@ export default function Opportunities() {
                   <MultiSelect
                     value={simConfig.setup_ids}
                     onChange={(vals) => setSimConfig({ ...simConfig, setup_ids: vals })}
-                    options={[
-                      { value: 'S9', label: 'S9' },
-                      { value: 'U1', label: 'U1' },
-                      { value: 'S10', label: 'S10' },
-                      { value: 'EQ_TSMOM', label: 'EQ_TSMOM' },
-                      { value: 'EQ_XSMOM', label: 'EQ_XSMOM' },
-                      { value: 'EQ_REV1A', label: 'EQ_REV1A' },
-                      { value: 'EQ_REV1B', label: 'EQ_REV1B' },
-                      { value: 'EQ_VPD', label: 'EQ_VPD' },
-                      { value: 'EQ_ATC', label: 'EQ_ATC' },
-                    ]}
+                    options={(strategyData?.strategies || []).map(s => ({ value: s.id, label: s.id }))}
                     placeholder="All"
                   />
                 </div>
@@ -739,7 +726,7 @@ function OpportunityCard({ opportunity, onCopy }) {
               </span>
               <Badge>{opportunity.timeframe}</Badge>
             </div>
-            <DirectionBadge direction={opportunity.direction} />
+            <DirectionBadge direction={opportunity.direction || opportunity.decision} />
           </div>
 
           {/* Setup and score */}
@@ -761,7 +748,7 @@ function OpportunityCard({ opportunity, onCopy }) {
           {/* Price levels — equities vs crypto */}
           {payload.entry_price && (
             <div className="border-t border-terminal-600 pt-3">
-              {opportunity.setup_id?.startsWith('EQ_') ? (
+              {isEquitiesStrategy(opportunity.setup_id) ? (
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
                     <DirectionBadge direction={payload.direction} />
