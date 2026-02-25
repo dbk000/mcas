@@ -1,5 +1,5 @@
 """
-EQ_NVDA_MACRO - NVDA Earnings Cascade Strategy (v1.0)
+EQ_NVDA_MACRO - NVDA Earnings Cascade Strategy (v1.1)
 =====================================================
 Event-driven strategy that detects laggard equities after NVDA earnings.
 
@@ -7,14 +7,25 @@ Core thesis: when NVDA reports strong earnings, correlated equities move
 in sympathy — but some lag behind. Those laggards tend to catch up over
 the following 2-5 trading days.
 
-This strategy:
+This strategy (close-phase evaluation):
   1. Detects NVDA earnings reaction days (next trading day after AMC report)
   2. Measures NVDA's close-to-close return (ret_1d)
-  3. For each cascade-eligible asset (direction_consistency >= 7/8 from D1):
+  3. For each cascade-eligible asset (direction_consistency >= 6/N from D1):
      - Computes SPY-controlled excess return
      - Identifies laggards (excess return below D1-derived threshold)
      - Skips divergent assets (sign of excess opposite to NVDA)
+     - Skips NVDA itself (can't be a laggard of itself)
   4. Generates LONG signals for laggards on positive NVDA reactions
+
+Key limitation (v1): evaluates at close (~4:30 PM). The strongest cascade
+signal lives in the overnight gap (open). Gap-phase assets like QQQ (7/7
+gap, 4/7 close) and XLK (7/7 gap, 3/7 close) reverse by close and are
+NOT captured by this strategy. Manual gap trades at open are a separate
+play documented in the D1 cascade report.
+
+Close-phase candidates (v1.1): META (6/7 close, 7/7 gap), AVGO (6/7
+close, 6/7 gap). TMO excluded (negative avg excess). NVDA excluded
+(can't lag itself).
 
 v1 constraints:
   - LONG-only (positive NVDA reactions only)
@@ -25,7 +36,7 @@ v1 constraints:
 Cascade profiles loaded from D1 output:
   /scripts/output/nvda_cascade_profiles.json
 
-Status: exploratory (8-event sample, no backtest possible).
+Status: exploratory (7-event sample, no backtest possible).
 """
 
 import json
@@ -54,7 +65,9 @@ MIN_NVDA_RET = 0.03
 MAX_SIGNALS = 10
 
 # Minimum direction consistency for cascade eligibility
-MIN_DIRECTION_CONSISTENCY = 7
+# D1 analyzer uses 6 (86%). At 7, only NVDA itself passes at close-to-close,
+# making the strategy circular. At 6: META (6/7) and AVGO (6/7) qualify.
+MIN_DIRECTION_CONSISTENCY = 6
 
 # Minimum excess return divergence to skip (not lag — divergence)
 DIVERGENCE_THRESHOLD = 0.005
@@ -63,7 +76,7 @@ DIVERGENCE_THRESHOLD = 0.005
 class EqNvdaMacro(EquitiesStrategy):
     strategy_id = "EQ_NVDA_MACRO"
     horizon_days = 3
-    version = "EQ_NVDA_MACRO_v1.0"
+    version = "EQ_NVDA_MACRO_v1.1"
 
     EXPECTED_RETURN_BPS = 50  # Placeholder pending D1 calibration
 
@@ -180,6 +193,9 @@ class EqNvdaMacro(EquitiesStrategy):
 
         candidates = []
         for sym, profile in asset_profiles.items():
+            # NVDA can't be a laggard of itself
+            if sym == "NVDA":
+                continue
             if not profile.get("cascade_eligible"):
                 continue
             if profile.get("direction_consistency", 0) < MIN_DIRECTION_CONSISTENCY:
@@ -226,6 +242,7 @@ class EqNvdaMacro(EquitiesStrategy):
 
             # Compute confidence
             direction_consistency = profile.get("direction_consistency", 0)
+            gap_direction_consistency = profile.get("gap_direction_consistency", 0)
             n_events = profile.get("n_events_valid", 8)
             avg_excess_day1 = avg_excess_1d
 
@@ -248,7 +265,7 @@ class EqNvdaMacro(EquitiesStrategy):
 
             explain = [
                 f"NVDA post-earnings: ret_1d = {nvda_ret:+.2%} (above {MIN_NVDA_RET:.0%} threshold)",
-                f"{sym} direction consistency: {direction_consistency}/{n_events} events ({direction_consistency/max(n_events,1):.0%})",
+                f"{sym} close consistency: {direction_consistency}/{n_events} | gap consistency: {gap_direction_consistency}/{n_events}",
                 f"{sym} excess return today: {excess_ret:+.2%} vs historical avg {avg_excess_day1:+.2%}",
                 f"SPY contribution removed: SPY {spy_ret:+.2%}, {sym} beta {beta:.2f} -> {exp_market:+.2%} expected from market",
                 f"Lag depth: {lag_depth:.2f} (threshold: {self._recommended_threshold:.2f}){gap_str}",
@@ -271,6 +288,7 @@ class EqNvdaMacro(EquitiesStrategy):
                     "spy_beta": round(beta, 4),
                     "lag_depth": round(lag_depth, 4),
                     "direction_consistency": direction_consistency,
+                    "gap_direction_consistency": gap_direction_consistency,
                     "avg_excess_day1": round(avg_excess_day1, 5),
                 },
             )))
