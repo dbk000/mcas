@@ -252,7 +252,7 @@ def _expire_old_equities_signals(conn):
             WHERE setup_id LIKE 'EQ_%%'
               AND status = 'active'
               AND created_ts < NOW() - (
-                  COALESCE((payload_json->>'horizon_days')::int, 20) * 1.5
+                  COALESCE((payload_json::jsonb->>'horizon_days')::int, 20) * 1.5
               ) * INTERVAL '1 day';
         """)
         expired = cur.rowcount
