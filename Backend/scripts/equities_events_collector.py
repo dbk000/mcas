@@ -86,9 +86,17 @@ def collect(
     try:
         upsert_universe(conn, get_universe_rows())
 
-        sec_map = fetch_sec_ticker_map(conn)
-        update_symbol_cik(conn, {sym: sec_map[sym]["cik"] for sym in sec_map})
-        conn.commit()
+        try:
+            sec_map = fetch_sec_ticker_map(conn)
+            update_symbol_cik(conn, {sym: sec_map[sym]["cik"] for sym in sec_map})
+            conn.commit()
+        except Exception as e:
+            print(f"[WARN] SEC ticker map fetch failed (non-fatal): {e}")
+            try:
+                conn.rollback()
+            except Exception:
+                pass
+            sec_map = {}
 
         symbol_cik = get_symbol_cik_map(conn)
         target_symbols = symbols or list_symbols(conn)

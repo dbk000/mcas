@@ -169,7 +169,12 @@ def _run_stage(stage_name: str, fn: Callable[[], Any]) -> Any:
 
     logger.info("Running %s", stage_name)
     t0 = time.monotonic()
-    out = fn()
+    try:
+        out = fn()
+    except Exception:
+        elapsed = time.monotonic() - t0
+        logger.exception("FAILED %s after %.1fs", stage_name, elapsed)
+        return {"failed": True, "stage": stage_name}
     elapsed = time.monotonic() - t0
     LAST_RUN_BY_STAGE[stage_name] = datetime.now(timezone.utc)
     logger.info("Completed %s in %.1fs", stage_name, elapsed)
@@ -234,29 +239,31 @@ def run_cycle(
         },
     )
 
-    predictions = _run_stage(
+    predictions_1d = _run_stage(
         "run_predictor",
-        lambda: {
-            "1h": run_predictor(
-                database_url=database_url,
-                actor=actor,
-                symbols=symbols,
-                timeframe="1h",
-                lookback_days=lookback_days,
-                model_version=f"{model_version}_1h",
-                min_confidence=min_confidence,
-            ),
-            "1d": run_predictor(
-                database_url=database_url,
-                actor=actor,
-                symbols=symbols,
-                timeframe="1d",
-                lookback_days=lookback_days,
-                model_version=f"{model_version}_1d",
-                min_confidence=min_confidence,
-            ),
-        },
+        lambda: run_predictor(
+            database_url=database_url,
+            actor=actor,
+            symbols=symbols,
+            timeframe="1d",
+            lookback_days=lookback_days,
+            model_version=f"{model_version}_1d",
+            min_confidence=min_confidence,
+        ),
     )
+    predictions_1h = _run_stage(
+        "run_predictor_1h",
+        lambda: run_predictor(
+            database_url=database_url,
+            actor=actor,
+            symbols=symbols,
+            timeframe="1h",
+            lookback_days=lookback_days,
+            model_version=f"{model_version}_1h",
+            min_confidence=min_confidence,
+        ),
+    )
+    predictions = {"1d": predictions_1d, "1h": predictions_1h}
 
     outcomes = _run_stage(
         "run_settlement",
