@@ -407,6 +407,7 @@ class SignalWorker:
             "participation_score": signal.participation_score,
             "compression_score": signal.compression_score,
             "embryo_active_score": signal.embryo_active_score,
+            "trigger_path": getattr(signal, "trigger_path", "traditional"),
         }
 
         if signal.explain:
@@ -425,12 +426,13 @@ class SignalWorker:
 
         logger.info(
             f"Signal: U1 {signal.direction.value} {symbol}:{tf} "
-            f"score={signal.setup_score:.3f} rel_vol={signal.rel_volume:.1f}x"
+            f"score={signal.setup_score:.3f} rel_vol={signal.rel_volume:.1f}x "
+            f"path={getattr(signal, 'trigger_path', 'traditional')}"
         )
 
     # Setup version mapping for live signals
     SETUP_VERSIONS = {
-        "U1": "U1_v1.0",
+        "U1": "U1_v3.0",
         "S9": "S9_v1.0",
         "S10": "S10_v1.0",
     }

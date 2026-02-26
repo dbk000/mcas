@@ -326,7 +326,7 @@ class UnicornPipeline:
     """Runs the Unicorn pipeline on schedule. Self-contained: fetches candles,
     evaluates gates + triggers, emits signals."""
 
-    SETUP_VERSIONS = {"U1": "U1_v2.0"}
+    SETUP_VERSIONS = {"U1": "U1_v3.0"}
 
     def __init__(self):
         self.r = redis.Redis.from_url(REDIS_URL, decode_responses=True)
@@ -545,6 +545,7 @@ class UnicornPipeline:
             "participation_score": signal.participation_score,
             "compression_score": signal.compression_score,
             "embryo_active_score": signal.embryo_active_score,
+            "trigger_path": getattr(signal, "trigger_path", "traditional"),
         }
 
         if signal.explain:

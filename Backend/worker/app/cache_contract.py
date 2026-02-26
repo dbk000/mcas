@@ -676,7 +676,7 @@ def get_timeframes(r) -> list[str]:
 # =============================================================================
 
 # TTLs for Unicorn state
-UNICORN_STATE_TTL_S = 86400 * 14  # 14 days (2× T_ACTIVE_MAX of 7 days)
+UNICORN_STATE_TTL_S = 86400 * 28  # 28 days (2× T_ACTIVE_MAX of 14 days)
 UNICORN_METRICS_TTL_S = 3600     # 1 hour
 
 
@@ -752,7 +752,7 @@ def read_unicorn_metrics(r, symbol: str) -> dict:
     return result
 
 
-def get_embryo_active_symbols(r, limit: int = 100) -> list[tuple[str, float]]:
+def get_embryo_active_symbols(r, limit: int = 300) -> list[tuple[str, float]]:
     """Get EMBRYO_ACTIVE symbols with scores (highest first)."""
     key = unicorn_active_key()
     return [(b2s(m), s) for m, s in r.zrevrange(key, 0, limit - 1, withscores=True)]

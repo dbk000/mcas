@@ -1,9 +1,22 @@
 """
-U1 - Unicorn Ignition v2.0 (Data-Driven)
-==========================================
+U1 - Unicorn Ignition v3.0 (Loosened Filters + Express Lane)
+==============================================================
 
 Identifies low-volume pennycoins transitioning from dead -> discoverable -> ignition
 before they appear on normal "active assets" lists.
+
+v3.0 Changes (loosen filters + creative additions):
+- All critical thresholds env-var configurable (U1_* prefixed)
+- Volume band widened: 75K-3M USD (was 100K-1M)
+- Gate sub-thresholds loosened (tradability 0.85, participation 1.2, range 0.10)
+- Confirmations: 1-of-3 (was 2-of-3), configurable via U1_MIN_CONFIRMATIONS
+- Express Lane trigger path: extreme momentum bypass (5x vol, 5% ret, 0.8 CLV)
+- min_vol_z_3 feature: sustained volume floor (replaces redundant vol acceleration)
+- MAX_EMBRYO_ACTIVE: 200 (was 50), T_ACTIVE_MAX_HOURS: 336h (was 168h)
+- Social silence filter disabled by default
+- SHIBUSDT removed from MAJOR_SYMBOLS exclusion (volume band handles it)
+- trigger_path field in signal payload for attribution
+- Setup version: U1_v3.0
 
 v2.0 Changes (data-driven rebuild):
 - Feature weights derived from u1_ignition_profiler.py logistic regression
@@ -96,7 +109,36 @@ _social_cache_ts: dict[str, float] = {}   # symbol -> last query epoch
 _SOCIAL_CACHE_TTL: float = 1800.0         # 30 minutes
 
 # Env-var toggle: "1" = enabled (default), "0" = disabled
-U1_SOCIAL_SILENCE_FILTER = os.getenv("U1_SOCIAL_SILENCE_FILTER", "1") == "1"
+U1_SOCIAL_SILENCE_FILTER = os.getenv("U1_SOCIAL_SILENCE_FILTER", "0") == "1"
+
+# Express Lane env toggle (default enabled)
+U1_EXPRESS_LANE = os.getenv("U1_EXPRESS_LANE", "1") == "1"
+
+
+# =============================================================================
+# Env-var helpers (runtime overrides for U1Config constants)
+# =============================================================================
+
+def _env_float(name: str, default: float) -> float:
+    """Read an env var as float, falling back to default."""
+    raw = os.getenv(name)
+    if raw is None:
+        return default
+    try:
+        return float(raw)
+    except (ValueError, TypeError):
+        return default
+
+
+def _env_int(name: str, default: int) -> int:
+    """Read an env var as int, falling back to default."""
+    raw = os.getenv(name)
+    if raw is None:
+        return default
+    try:
+        return int(raw)
+    except (ValueError, TypeError):
+        return default
 
 
 def has_social_mentions_30d(symbol: str, database_url: str) -> bool:
@@ -139,8 +181,8 @@ class U1Config:
     """Unicorn configuration — profiler-derived defaults where applicable."""
 
     # Universe (MVP: Spot USDT only)
-    MIN_VOLUME_USD = 100_000
-    MAX_VOLUME_USD = 1_000_000
+    MIN_VOLUME_USD = _env_float("U1_MIN_VOLUME_USD", 75_000)
+    MAX_VOLUME_USD = _env_float("U1_MAX_VOLUME_USD", 3_000_000)
     MAX_MIN_NOTIONAL = 100
     HYPE_REL_VOL_CAP = 20.0
     HYPE_RANGE_CAP = 0.50
@@ -152,15 +194,15 @@ class U1Config:
     MAJOR_SYMBOLS = {
         "BTCUSDT", "ETHUSDT", "BNBUSDT", "SOLUSDT", "XRPUSDT",
         "DOGEUSDT", "ADAUSDT", "AVAXUSDT", "DOTUSDT", "LINKUSDT",
-        "MATICUSDT", "LTCUSDT", "SHIBUSDT", "TRXUSDT", "ATOMUSDT",
+        "MATICUSDT", "LTCUSDT", "TRXUSDT", "ATOMUSDT",
     }
 
     # Gates
     GATE_WINDOW_BARS = 48
     GATE_TIMEFRAME = "5m"
-    TRADABILITY_IMPROVEMENT_FACTOR = 0.7
-    PARTICIPATION_GROWTH_FACTOR = 1.5
-    RANGE_PCT_THRESHOLD = 0.05
+    TRADABILITY_IMPROVEMENT_FACTOR = _env_float("U1_TRADABILITY_IMPROVE", 0.85)
+    PARTICIPATION_GROWTH_FACTOR = _env_float("U1_PARTICIPATION_GROWTH", 1.2)
+    RANGE_PCT_THRESHOLD = _env_float("U1_RANGE_PCT_THRESHOLD", 0.10)
     REL_VOL_IGNITION_MIN = 3.0
 
     # Baseline volume fallback windows (bars on 5m)
@@ -176,10 +218,10 @@ class U1Config:
     COMPRESSION_BOX_LOOKBACK = 48
 
     # Ignition — profiler-derived defaults (overridden by profiler output)
-    REL_VOL_IGNITION = 5.0
+    REL_VOL_IGNITION = _env_float("U1_REL_VOL_IGNITION", 3.0)
     BREAKOUT_ACCEPTANCE_BARS = 2
-    VOL_Z_MIN = 2.0                 # Minimum vol_z to consider ignition
-    IGNITION_SCORE_THRESHOLD = 0.55  # Default; profiler F1-maximized threshold
+    VOL_Z_MIN = _env_float("U1_VOL_Z_MIN", 1.5)
+    IGNITION_SCORE_THRESHOLD = _env_float("U1_IGNITION_SCORE_THRESHOLD", 0.40)
 
     # Ignition scoring weights — profiler-derived defaults
     # These are normalized logistic regression coefficients from the profiler.
@@ -190,8 +232,9 @@ class U1Config:
     W_BB_COMPRESS = 0.15
     W_RANGE_PCT = 0.10
     W_RETURN_12 = 0.10
-    W_CLV = 0.08
-    W_BODY_RATIO = 0.07
+    W_CLV = 0.05
+    W_BODY_RATIO = 0.04
+    W_VOL_Z_FLOOR = 0.06  # min_vol_z_3: sustained volume floor
 
     # Universe temperature weight (0 = disabled)
     W_UNIVERSE_TEMP = 0.15
@@ -205,8 +248,8 @@ class U1Config:
     TIME_STOP_BARS_1H = 4
 
     # Cap
-    MAX_EMBRYO_ACTIVE = 50
-    T_ACTIVE_MAX_HOURS = 168  # 7 days
+    MAX_EMBRYO_ACTIVE = _env_int("U1_MAX_EMBRYO_ACTIVE", 200)
+    T_ACTIVE_MAX_HOURS = _env_int("U1_T_ACTIVE_MAX_HOURS", 336)  # 14 days
 
     # Legacy scoring weights (gate scoring — kept for backwards compat)
     W_TRADABILITY = 0.25
@@ -422,6 +465,9 @@ class U1Signal:
     trap_risk_score: float = 0.0
     embryo_active_score: float = 0.0
 
+    # Trigger path attribution (v3.0)
+    trigger_path: str = "traditional"  # "traditional", "score_based", or "express_lane"
+
     # Explainability
     explain: Optional[ExplainPayload] = None
 
@@ -633,6 +679,15 @@ def compute_ignition_features(candles: list[OHLCV], baseline_vol: float) -> dict
     # Relative volume
     rel_vol = volumes[-1] / baseline_vol if baseline_vol > 0 else 0
 
+    # Volume floor: minimum vol_z over last 3 bars (sustained volume indicator)
+    if n >= 23 and vol_std > 0:  # need 20-bar window + 3 bars
+        vol_z_1 = (volumes[-1] - vol_mean) / vol_std
+        vol_z_2 = (volumes[-2] - vol_mean) / vol_std
+        vol_z_3 = (volumes[-3] - vol_mean) / vol_std
+        min_vol_z_3 = min(vol_z_1, vol_z_2, vol_z_3)
+    else:
+        min_vol_z_3 = 0.0
+
     return {
         "vol_z": float(vol_z),
         "vol_z_max_6": float(vol_z_max_6),
@@ -644,6 +699,7 @@ def compute_ignition_features(candles: list[OHLCV], baseline_vol: float) -> dict
         "clv": float(clv),
         "return_12": float(return_12),
         "rel_volume": float(rel_vol),
+        "min_vol_z_3": float(min_vol_z_3),
     }
 
 
@@ -662,6 +718,7 @@ def compute_ignition_score(features: dict, universe_temp: dict = None) -> tuple[
     s_return = min(1.0, max(0, features.get("return_12", 0) * 5))
     s_clv = features.get("clv", 0.5)
     s_body = features.get("body_ratio", 0.5)
+    s_vol_z_floor = min(1.0, max(0, features.get("min_vol_z_3", 0)) / 3.0)
 
     per_coin = (
         U1Config.W_VOL_Z * s_vol_z +
@@ -671,7 +728,8 @@ def compute_ignition_score(features: dict, universe_temp: dict = None) -> tuple[
         U1Config.W_RANGE_PCT * s_range +
         U1Config.W_RETURN_12 * s_return +
         U1Config.W_CLV * s_clv +
-        U1Config.W_BODY_RATIO * s_body
+        U1Config.W_BODY_RATIO * s_body +
+        U1Config.W_VOL_Z_FLOOR * s_vol_z_floor
     )
 
     # Universe temperature component
@@ -701,19 +759,19 @@ def evaluate_gate1_tradability_proxy(
     spread_values_prev = [_candle_range(c) / c.close for c in candles_prev_n if c.close > 0]
     spread_proxy_last = _safe_median(spread_values_last)
     spread_proxy_prev = _safe_median(spread_values_prev)
-    spread_improving = spread_proxy_last <= 0.7 * spread_proxy_prev if spread_proxy_prev > 0 else False
+    spread_improving = spread_proxy_last <= U1Config.TRADABILITY_IMPROVEMENT_FACTOR * spread_proxy_prev if spread_proxy_prev > 0 else False
 
     # Metric 2: Volume coefficient of variation
     mean_vol_last = _safe_mean([c.volume for c in candles_last_n])
     mean_vol_prev = _safe_mean([c.volume for c in candles_prev_n])
     vol_cv_last = _safe_std([c.volume for c in candles_last_n]) / mean_vol_last if mean_vol_last > 0 else float('inf')
     vol_cv_prev = _safe_std([c.volume for c in candles_prev_n]) / mean_vol_prev if mean_vol_prev > 0 else float('inf')
-    volume_stabilizing = vol_cv_last <= 0.8 * vol_cv_prev if vol_cv_prev < float('inf') else False
+    volume_stabilizing = vol_cv_last <= 0.9 * vol_cv_prev if vol_cv_prev < float('inf') else False
 
     # Metric 3: ATR% compression
     atr_pct_last = compute_atr_pct(candles_last_n)
     atr_pct_prev = compute_atr_pct(candles_prev_n)
-    atr_compressing = atr_pct_last <= 0.7 * atr_pct_prev if atr_pct_prev > 0 else False
+    atr_compressing = atr_pct_last <= U1Config.TRADABILITY_IMPROVEMENT_FACTOR * atr_pct_prev if atr_pct_prev > 0 else False
 
     checks = [spread_improving, volume_stabilizing, atr_compressing]
     passed = sum(checks) >= 2
@@ -740,12 +798,12 @@ def evaluate_gate2_participation_proxy(
     # Metric 1: Volume sum rising
     vol_sum_last = sum(c.volume for c in candles_last_n)
     vol_sum_prev = sum(c.volume for c in candles_prev_n)
-    volume_rising = vol_sum_last >= 1.5 * vol_sum_prev if vol_sum_prev > 0 else False
+    volume_rising = vol_sum_last >= U1Config.PARTICIPATION_GROWTH_FACTOR * vol_sum_prev if vol_sum_prev > 0 else False
 
     # Metric 2: Active bars proxy
     active_bars_last = sum(1 for c in candles_last_n if c.volume > 0)
     active_bars_prev = sum(1 for c in candles_prev_n if c.volume > 0)
-    activity_rising = active_bars_last >= 1.3 * active_bars_prev if active_bars_prev > 0 else False
+    activity_rising = active_bars_last >= 1.1 * active_bars_prev if active_bars_prev > 0 else False
 
     # Metric 3: No whale dominance
     volumes_last = [c.volume for c in candles_last_n if c.volume > 0]
@@ -1262,11 +1320,39 @@ class U1Evaluator:
                 and ign_features.get("vol_z", 0) >= U1Config.VOL_Z_MIN
             )
 
-        # Must pass either traditional triggers OR score-based trigger
+        # v3.0: Express Lane — extreme momentum trigger path
+        express_lane = False
         if not triggers_passed and not score_check:
+            if U1_EXPRESS_LANE and ign_features:
+                now_utc = datetime.now(timezone.utc)
+                hours_active = (now_utc - state.promoted_at).total_seconds() / 3600 if state.promoted_at else 0
+                ign = ign_features
+                # Pump guard: check spread not widening (reuse demotion Rule 1 threshold)
+                spread_ok = True
+                window_chk = U1Config.GATE_WINDOW_BARS
+                if len(candles) >= window_chk * 2:
+                    sp_last = [_candle_range(c) / c.close for c in candles[-window_chk:] if c.close > 0]
+                    sp_prev = [_candle_range(c) / c.close for c in candles[-(window_chk * 2):-window_chk] if c.close > 0]
+                    if sp_last and sp_prev:
+                        spread_ok = _safe_median(sp_last) <= 1.5 * _safe_median(sp_prev)
+
+                if (ign.get("rel_volume", 0) >= 5.0
+                        and ign.get("return_12", 0) >= 0.05
+                        and ign.get("clv", 0) >= 0.80
+                        and ign.get("body_ratio", 0) >= 0.70
+                        and ign.get("vol_z", 0) >= 1.0
+                        and hours_active >= 1.0
+                        and spread_ok):
+                    express_lane = True
+                    logger.info("U1 EXPRESS_LANE triggered: %s rel_vol=%.1f ret12=%.3f clv=%.2f hours_active=%.1f",
+                                symbol, ign.get("rel_volume", 0), ign.get("return_12", 0),
+                                ign.get("clv", 0), hours_active)
+
+        # Must pass traditional triggers, score-based trigger, OR express lane
+        if not triggers_passed and not score_check and not express_lane:
             return None
 
-        # Check confirmations
+        # Check confirmations — required for ALL paths (including express lane)
         window = U1Config.GATE_WINDOW_BARS
         if len(candles) < window * 2:
             return None
@@ -1275,15 +1361,19 @@ class U1Evaluator:
         candles_prev_n = candles[-(window * 2):-window]
 
         confirmations_passed, confirm_metrics = check_ignition_confirmations(candles_last_n, candles_prev_n)
-        if not confirmations_passed:
+        min_confirmations = _env_int("U1_MIN_CONFIRMATIONS", 1)
+        if confirm_metrics["confirmations_met"] < min_confirmations:
             return None
 
-        # Social silence filter (v2.2) — coins with no social mentions in 30d
-        # are more likely to produce genuine ignition. Reject if social presence found.
-        if U1_SOCIAL_SILENCE_FILTER and database_url:
-            if has_social_mentions_30d(symbol, database_url):
-                logger.info("U1 social_silence_filter REJECT %s — social mentions found in 30d", symbol)
-                return None
+        # Social silence filter (v2.2) — skip for express lane (disabled by default anyway)
+        if not express_lane:
+            if U1_SOCIAL_SILENCE_FILTER and database_url:
+                if has_social_mentions_30d(symbol, database_url):
+                    logger.info("U1 social_silence_filter REJECT %s — social mentions found in 30d", symbol)
+                    return None
+
+        # Determine trigger path for attribution
+        trigger_path = "traditional" if triggers_passed else ("score_based" if score_check else "express_lane")
 
         # All conditions met - generate signal
         current = candles[-1]
@@ -1321,6 +1411,7 @@ class U1Evaluator:
 
         # Build explainability
         why_items = [
+            f"Trigger path: {trigger_path}",
             f"Ignition score: {state.ignition_score:.3f} (threshold: {U1Config.IGNITION_SCORE_THRESHOLD})",
             f"Vol z-score: {state.vol_z_at_trigger:.1f} (min: {U1Config.VOL_Z_MIN})",
         ]
@@ -1330,6 +1421,11 @@ class U1Evaluator:
             )
             why_items.append(
                 f"Breakout accepted: {trigger_metrics.get('acceptance_bars_checked', 0)} bars above box"
+            )
+        if express_lane:
+            why_items.append(
+                f"Express lane: rel_vol={ign_features.get('rel_volume', 0):.1f}x "
+                f"ret12={ign_features.get('return_12', 0):.3f} clv={ign_features.get('clv', 0):.2f}"
             )
         if funding_mult > 1.0:
             why_items.append(
@@ -1373,4 +1469,5 @@ class U1Evaluator:
             embryo_active_score=state.embryo_active_score,
             explain=explain,
             state=state,
+            trigger_path=trigger_path,
         )
