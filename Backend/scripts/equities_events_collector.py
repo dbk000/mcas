@@ -21,6 +21,7 @@ from equities_predictor.db import (
 from equities_predictor.ids import deterministic_uuid, stable_hash
 from equities_predictor.sources import (
     fetch_google_news_rss,
+    fetch_yahoo_news_rss,
     fetch_sec_filings_atom,
     fetch_sec_ticker_map,
     polite_sleep,
@@ -164,24 +165,87 @@ def collect(
                         }
                     )
 
-            query = f"{symbol} stock"
+            # Multi-query Google News: rotate through query patterns for broader coverage
+            google_queries = [
+                f'"{symbol} stock"',
+                f'"{symbol} earnings OR revenue OR guidance"',
+                f'"{symbol} shares OR trading OR analyst"',
+            ]
+            for query in google_queries:
+                try:
+                    news_events = fetch_google_news_rss(conn, query=query, max_items=max_news_items)
+                except Exception as exc:
+                    log_pipeline_event(
+                        conn,
+                        actor=actor,
+                        event_type="SOURCE_ERROR",
+                        message=f"Google News RSS failed for {symbol}",
+                        data={"symbol": symbol, "source": "google_news", "query": query, "error": str(exc)},
+                    )
+                    conn.commit()
+                    news_events = []
+
+                for ev in news_events:
+                    published_ts = _normalize_published_ts(ev.get("published_ts"))
+                    title = ev.get("title") or "news"
+                    publisher = ev.get("publisher") or "GoogleNews"
+                    dedupe = content_hash(symbol, title, publisher)
+                    if event_hash_exists(conn, symbol=symbol, dedupe_hash=dedupe, lookback_days=7):
+                        skipped_exact += 1
+                        continue
+
+                    tokens = tokenize(title)
+                    sim = simhash_64(tokens)
+                    recent = find_recent_simhashes(conn, symbol=symbol, source="OPEN_NEWS", lookback_hours=36)
+                    if _is_near_duplicate(sim, recent, max_distance=2):
+                        skipped_near += 1
+                        continue
+
+                    source_event_id = str(ev.get("source_event_id") or stable_hash(symbol, title, published_ts.isoformat()))
+                    event_id = deterministic_uuid("equities_event", "OPEN_NEWS", source_event_id, symbol)
+                    emitted.append(
+                        {
+                            "id": event_id,
+                            "source": "OPEN_NEWS",
+                            "source_event_id": source_event_id,
+                            "symbol": symbol,
+                            "publisher": publisher,
+                            "title": title,
+                            "url": ev.get("url"),
+                            "published_ts": published_ts,
+                            "available_at_ts": published_ts,
+                            "event_type": _classify_news_event(title),
+                            "session_relation": session_relation(published_ts),
+                            "sentiment_score": simple_sentiment_score(title),
+                            "anti_bot_score": anti_bot_score(title, publisher),
+                            "dedupe_hash": dedupe,
+                            "simhash": sim,
+                            "payload": {
+                                "query": query,
+                            },
+                        }
+                    )
+
+                polite_sleep(0.15)
+
+            # Yahoo Finance News RSS — complementary source for unique_pubs diversity
             try:
-                news_events = fetch_google_news_rss(conn, query=query, max_items=max_news_items)
+                yahoo_events = fetch_yahoo_news_rss(conn, symbol, max_items=max_news_items)
             except Exception as exc:
                 log_pipeline_event(
                     conn,
                     actor=actor,
                     event_type="SOURCE_ERROR",
-                    message=f"Google News RSS failed for {symbol}",
-                    data={"symbol": symbol, "source": "google_news", "error": str(exc)},
+                    message=f"Yahoo News RSS failed for {symbol}",
+                    data={"symbol": symbol, "source": "yahoo_news", "error": str(exc)},
                 )
                 conn.commit()
-                news_events = []
+                yahoo_events = []
 
-            for ev in news_events:
+            for ev in yahoo_events:
                 published_ts = _normalize_published_ts(ev.get("published_ts"))
                 title = ev.get("title") or "news"
-                publisher = ev.get("publisher") or "GoogleNews"
+                publisher = ev.get("publisher") or "YahooFinance"
                 dedupe = content_hash(symbol, title, publisher)
                 if event_hash_exists(conn, symbol=symbol, dedupe_hash=dedupe, lookback_days=7):
                     skipped_exact += 1
@@ -189,17 +253,17 @@ def collect(
 
                 tokens = tokenize(title)
                 sim = simhash_64(tokens)
-                recent = find_recent_simhashes(conn, symbol=symbol, source="OPEN_NEWS", lookback_hours=36)
+                recent = find_recent_simhashes(conn, symbol=symbol, source="YAHOO_NEWS", lookback_hours=36)
                 if _is_near_duplicate(sim, recent, max_distance=2):
                     skipped_near += 1
                     continue
 
                 source_event_id = str(ev.get("source_event_id") or stable_hash(symbol, title, published_ts.isoformat()))
-                event_id = deterministic_uuid("equities_event", "OPEN_NEWS", source_event_id, symbol)
+                event_id = deterministic_uuid("equities_event", "YAHOO_NEWS", source_event_id, symbol)
                 emitted.append(
                     {
                         "id": event_id,
-                        "source": "OPEN_NEWS",
+                        "source": "YAHOO_NEWS",
                         "source_event_id": source_event_id,
                         "symbol": symbol,
                         "publisher": publisher,
@@ -214,7 +278,7 @@ def collect(
                         "dedupe_hash": dedupe,
                         "simhash": sim,
                         "payload": {
-                            "query": query,
+                            "source": "yahoo_finance",
                         },
                     }
                 )

@@ -42,8 +42,8 @@ class SimulationConfig:
     fee_taker_bps: float = 4.0
     max_bars_forward: int = 100  # Max bars to simulate forward
     time_stop_bars: int = 50    # Default time stop if not specified
-    max_fee_r_ratio: float = 0.3    # Skip trades where fees > this fraction of risk
-    min_r_preservation: float = 0.5  # Skip trades where gap consumed > 50% of original R
+    max_fee_r_ratio: float = _env_float("SIM_MAX_FEE_R_RATIO", 0.3)    # Skip trades where fees > this fraction of risk
+    min_r_preservation: float = _env_float("SIM_MIN_R_PRESERVATION", 0.5)  # Skip trades where gap consumed > 50% of original R
 
     # Stop distance factor (Experiment B: tighter stops at simulation time)
     stop_distance_factor: float = 1.0  # Global multiplier (1.0 = unchanged)

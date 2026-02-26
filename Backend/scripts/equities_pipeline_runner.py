@@ -52,9 +52,9 @@ _WINDOW_RULES = {
     },
     "collect_events": {
         "kind": "weekday_window",
-        "start": (13, 30),
-        "end": (21, 0),
-        "next": "13:30 UTC Mon-Fri",
+        "start": (10, 0),
+        "end": (23, 30),
+        "next": "10:00 UTC Mon-Fri",
     },
     "build_features": {"kind": "always"},
     "run_predictor": {"kind": "always"},
@@ -211,7 +211,7 @@ def run_cycle(
             actor=actor,
             symbols=symbols,
             max_sec_items=15,
-            max_news_items=8,
+            max_news_items=20,
         ),
     )
 

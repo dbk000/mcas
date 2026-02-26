@@ -182,7 +182,7 @@ def fetch_google_news_rss(conn, query: str, *, max_items: int = 25) -> list[dict
         source=f"google_news_{query}",
         url=url,
         params=params,
-        ttl_seconds=900,
+        ttl_seconds=300,
     )
 
     root = ET.fromstring(xml_text)
@@ -208,6 +208,50 @@ def fetch_google_news_rss(conn, query: str, *, max_items: int = 25) -> list[dict
                 "url": link,
                 "published_ts": published_ts,
                 "publisher": source,
+            }
+        )
+
+    return items
+
+
+def fetch_yahoo_news_rss(conn, symbol: str, *, max_items: int = 25) -> list[dict[str, Any]]:
+    """Fetch Yahoo Finance news RSS for a symbol without auth."""
+    url = "https://feeds.finance.yahoo.com/rss/2.0/headline"
+    params = {
+        "s": symbol,
+        "region": "US",
+        "lang": "en-US",
+    }
+    xml_text = _request_text(
+        conn,
+        source=f"yahoo_news_{symbol}",
+        url=url,
+        params=params,
+        ttl_seconds=300,
+    )
+
+    root = ET.fromstring(xml_text)
+    items = []
+    for item in root.findall("./channel/item")[:max_items]:
+        title = item.findtext("title", default="")
+        link = item.findtext("link", default="")
+        pub_date_text = item.findtext("pubDate", default="")
+
+        published_ts = None
+        if pub_date_text:
+            try:
+                published_ts = parsedate_to_datetime(pub_date_text).astimezone(timezone.utc)
+            except Exception:
+                published_ts = None
+
+        guid = item.findtext("guid", default=link)
+        items.append(
+            {
+                "source_event_id": guid,
+                "title": title,
+                "url": link,
+                "published_ts": published_ts,
+                "publisher": "YahooFinance",
             }
         )
 
