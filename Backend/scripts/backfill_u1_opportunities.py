@@ -230,6 +230,7 @@ def process_symbol_timeframe(
                 "time_stop_bars": signal.time_stop_bars,
                 "bar_start_ts": bar_ts_ms,
                 "as_of_ts": bar_ts_ms / 1000,
+                "trigger_path": getattr(signal, "trigger_path", "traditional"),
             }
             if signal.explain:
                 payload["why_items"] = signal.explain.why_items
@@ -290,8 +291,8 @@ def main():
         help="Number of days to evaluate (default: 7)"
     )
     parser.add_argument(
-        "--setup-version", type=str, default="U1_v2.0",
-        help="U1 setup version tag (default: U1_v2.0)"
+        "--setup-version", type=str, default="U1_v3.0",
+        help="U1 setup version tag (default: U1_v3.0)"
     )
     parser.add_argument(
         "--symbols", type=str, default=None,

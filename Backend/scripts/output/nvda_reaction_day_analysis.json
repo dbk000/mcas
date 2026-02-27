@@ -1,0 +1,2157 @@
+{
+  "generated_at": "2026-02-25T23:35:43.304957+00:00",
+  "reaction_events": [
+    {
+      "reaction_date": "2024-02-22",
+      "earnings_date": "2024-02-21",
+      "timeframe": "1h",
+      "profiles": {},
+      "cascade_sequence": []
+    },
+    {
+      "reaction_date": "2024-05-23",
+      "earnings_date": "2024-05-22",
+      "timeframe": "1h",
+      "profiles": {
+        "NVDA": {
+          "symbol": "NVDA",
+          "timeframe": "1h",
+          "n_bars": 7,
+          "open_price": 102.0,
+          "peak": {
+            "price": 106.32,
+            "return_pct": 4.235,
+            "minutes_from_open": 240.0,
+            "time_et": "13:30 ET",
+            "bar_index": 4
+          },
+          "trough": {
+            "price": 101.52,
+            "return_pct": -0.471,
+            "minutes_from_open": 0.0,
+            "time_et": "09:30 ET",
+            "bar_index": 0
+          },
+          "close": {
+            "price": 103.82,
+            "return_pct": 1.785
+          },
+          "volume_profile": {
+            "total": 79326705.0,
+            "first_30m_pct": 35.7
+          },
+          "mfe_curve": {
+            "5m": 2.223,
+            "10m": 2.223,
+            "15m": 2.223,
+            "30m": 2.223,
+            "60m": 2.674,
+            "120m": 3.133,
+            "180m": 3.896,
+            "390m": 4.235
+          },
+          "mae_curve": {
+            "5m": -0.471,
+            "10m": -0.471,
+            "15m": -0.471,
+            "30m": -0.471,
+            "60m": -0.471,
+            "120m": -0.471,
+            "180m": -0.471,
+            "390m": -0.471
+          },
+          "vwap_cross_below_minute": 240.0
+        }
+      },
+      "cascade_sequence": [
+        {
+          "symbol": "NVDA",
+          "peak_minute": 240.0,
+          "peak_time_et": "13:30 ET",
+          "peak_return_pct": 4.235
+        }
+      ]
+    },
+    {
+      "reaction_date": "2024-08-29",
+      "earnings_date": "2024-08-28",
+      "timeframe": "1h",
+      "profiles": {
+        "NVDA": {
+          "symbol": "NVDA",
+          "timeframe": "1h",
+          "n_bars": 7,
+          "open_price": 121.36,
+          "peak": {
+            "price": 124.11,
+            "return_pct": 2.27,
+            "minutes_from_open": 0.0,
+            "time_et": "09:30 ET",
+            "bar_index": 0
+          },
+          "trough": {
+            "price": 116.72,
+            "return_pct": -3.819,
+            "minutes_from_open": 300.0,
+            "time_et": "14:30 ET",
+            "bar_index": 5
+          },
+          "close": {
+            "price": 117.59,
+            "return_pct": -3.102
+          },
+          "volume_profile": {
+            "total": 418440590.0,
+            "first_30m_pct": 38.5
+          },
+          "mfe_curve": {
+            "5m": 2.27,
+            "10m": 2.27,
+            "15m": 2.27,
+            "30m": 2.27,
+            "60m": 2.27,
+            "120m": 2.27,
+            "180m": 2.27,
+            "390m": 2.27
+          },
+          "mae_curve": {
+            "5m": -1.751,
+            "10m": -1.751,
+            "15m": -1.751,
+            "30m": -1.751,
+            "60m": -1.751,
+            "120m": -1.751,
+            "180m": -1.751,
+            "390m": -3.819
+          },
+          "vwap_cross_below_minute": 180.0
+        }
+      },
+      "cascade_sequence": [
+        {
+          "symbol": "NVDA",
+          "peak_minute": 0.0,
+          "peak_time_et": "09:30 ET",
+          "peak_return_pct": 2.27
+        }
+      ]
+    },
+    {
+      "reaction_date": "2024-11-21",
+      "earnings_date": "2024-11-20",
+      "timeframe": "1h",
+      "profiles": {
+        "NVDA": {
+          "symbol": "NVDA",
+          "timeframe": "1h",
+          "n_bars": 7,
+          "open_price": 149.32,
+          "peak": {
+            "price": 152.89,
+            "return_pct": 2.394,
+            "minutes_from_open": 0.0,
+            "time_et": "09:30 ET",
+            "bar_index": 0
+          },
+          "trough": {
+            "price": 140.7,
+            "return_pct": -5.77,
+            "minutes_from_open": 60.0,
+            "time_et": "10:30 ET",
+            "bar_index": 1
+          },
+          "close": {
+            "price": 146.63,
+            "return_pct": -1.798
+          },
+          "volume_profile": {
+            "total": 375149521.0,
+            "first_30m_pct": 43.0
+          },
+          "mfe_curve": {
+            "5m": 2.394,
+            "10m": 2.394,
+            "15m": 2.394,
+            "30m": 2.394,
+            "60m": 2.394,
+            "120m": 2.394,
+            "180m": 2.394,
+            "390m": 2.394
+          },
+          "mae_curve": {
+            "5m": -5.555,
+            "10m": -5.555,
+            "15m": -5.555,
+            "30m": -5.555,
+            "60m": -5.77,
+            "120m": -5.77,
+            "180m": -5.77,
+            "390m": -5.77
+          },
+          "vwap_cross_below_minute": null
+        }
+      },
+      "cascade_sequence": [
+        {
+          "symbol": "NVDA",
+          "peak_minute": 0.0,
+          "peak_time_et": "09:30 ET",
+          "peak_return_pct": 2.394
+        }
+      ]
+    },
+    {
+      "reaction_date": "2025-02-27",
+      "earnings_date": "2025-02-26",
+      "timeframe": "1h",
+      "profiles": {
+        "NVDA": {
+          "symbol": "NVDA",
+          "timeframe": "1h",
+          "n_bars": 7,
+          "open_price": 135.0,
+          "peak": {
+            "price": 135.0,
+            "return_pct": 0.0,
+            "minutes_from_open": 0.0,
+            "time_et": "09:30 ET",
+            "bar_index": 0
+          },
+          "trough": {
+            "price": 120.01,
+            "return_pct": -11.104,
+            "minutes_from_open": 360.0,
+            "time_et": "15:30 ET",
+            "bar_index": 6
+          },
+          "close": {
+            "price": 120.01,
+            "return_pct": -11.104
+          },
+          "volume_profile": {
+            "total": 396469978.0,
+            "first_30m_pct": 35.2
+          },
+          "mfe_curve": {
+            "5m": 0.0,
+            "10m": 0.0,
+            "15m": 0.0,
+            "30m": 0.0,
+            "60m": 0.0,
+            "120m": 0.0,
+            "180m": 0.0,
+            "390m": 0.0
+          },
+          "mae_curve": {
+            "5m": -7.2,
+            "10m": -7.2,
+            "15m": -7.2,
+            "30m": -7.2,
+            "60m": -7.2,
+            "120m": -7.2,
+            "180m": -7.2,
+            "390m": -11.104
+          },
+          "vwap_cross_below_minute": 60.0
+        }
+      },
+      "cascade_sequence": [
+        {
+          "symbol": "NVDA",
+          "peak_minute": 0.0,
+          "peak_time_et": "09:30 ET",
+          "peak_return_pct": 0.0
+        }
+      ]
+    },
+    {
+      "reaction_date": "2025-05-29",
+      "earnings_date": "2025-05-28",
+      "timeframe": "1h",
+      "profiles": {
+        "NVDA": {
+          "symbol": "NVDA",
+          "timeframe": "1h",
+          "n_bars": 7,
+          "open_price": 142.24,
+          "peak": {
+            "price": 143.49,
+            "return_pct": 0.879,
+            "minutes_from_open": 0.0,
+            "time_et": "09:30 ET",
+            "bar_index": 0
+          },
+          "trough": {
+            "price": 137.91,
+            "return_pct": -3.044,
+            "minutes_from_open": 240.0,
+            "time_et": "13:30 ET",
+            "bar_index": 4
+          },
+          "close": {
+            "price": 139.18,
+            "return_pct": -2.151
+          },
+          "volume_profile": {
+            "total": 349946372.0,
+            "first_30m_pct": 42.7
+          },
+          "mfe_curve": {
+            "5m": 0.879,
+            "10m": 0.879,
+            "15m": 0.879,
+            "30m": 0.879,
+            "60m": 0.879,
+            "120m": 0.879,
+            "180m": 0.879,
+            "390m": 0.879
+          },
+          "mae_curve": {
+            "5m": -2.074,
+            "10m": -2.074,
+            "15m": -2.074,
+            "30m": -2.074,
+            "60m": -2.074,
+            "120m": -2.074,
+            "180m": -2.074,
+            "390m": -3.044
+          },
+          "vwap_cross_below_minute": 120.0
+        }
+      },
+      "cascade_sequence": [
+        {
+          "symbol": "NVDA",
+          "peak_minute": 0.0,
+          "peak_time_et": "09:30 ET",
+          "peak_return_pct": 0.879
+        }
+      ]
+    },
+    {
+      "reaction_date": "2025-08-28",
+      "earnings_date": "2025-08-27",
+      "timeframe": "1h",
+      "profiles": {
+        "NVDA": {
+          "symbol": "NVDA",
+          "timeframe": "1h",
+          "n_bars": 7,
+          "open_price": 180.82,
+          "peak": {
+            "price": 184.47,
+            "return_pct": 2.019,
+            "minutes_from_open": 0.0,
+            "time_et": "09:30 ET",
+            "bar_index": 0
+          },
+          "trough": {
+            "price": 176.41,
+            "return_pct": -2.439,
+            "minutes_from_open": 0.0,
+            "time_et": "09:30 ET",
+            "bar_index": 0
+          },
+          "close": {
+            "price": 180.2,
+            "return_pct": -0.343
+          },
+          "volume_profile": {
+            "total": 0.0,
+            "first_30m_pct": 0
+          },
+          "mfe_curve": {
+            "5m": 2.019,
+            "10m": 2.019,
+            "15m": 2.019,
+            "30m": 2.019,
+            "60m": 2.019,
+            "120m": 2.019,
+            "180m": 2.019,
+            "390m": 2.019
+          },
+          "mae_curve": {
+            "5m": -2.439,
+            "10m": -2.439,
+            "15m": -2.439,
+            "30m": -2.439,
+            "60m": -2.439,
+            "120m": -2.439,
+            "180m": -2.439,
+            "390m": -2.439
+          },
+          "vwap_cross_below_minute": null
+        },
+        "META": {
+          "symbol": "META",
+          "timeframe": "1h",
+          "n_bars": 7,
+          "open_price": 743.85,
+          "peak": {
+            "price": 753.05,
+            "return_pct": 1.237,
+            "minutes_from_open": 120.0,
+            "time_et": "11:30 ET",
+            "bar_index": 2
+          },
+          "trough": {
+            "price": 740.79,
+            "return_pct": -0.411,
+            "minutes_from_open": 0.0,
+            "time_et": "09:30 ET",
+            "bar_index": 0
+          },
+          "close": {
+            "price": 751.28,
+            "return_pct": 0.999
+          },
+          "volume_profile": {
+            "total": 0.0,
+            "first_30m_pct": 0
+          },
+          "mfe_curve": {
+            "5m": 1.184,
+            "10m": 1.184,
+            "15m": 1.184,
+            "30m": 1.184,
+            "60m": 1.184,
+            "120m": 1.237,
+            "180m": 1.237,
+            "390m": 1.237
+          },
+          "mae_curve": {
+            "5m": -0.411,
+            "10m": -0.411,
+            "15m": -0.411,
+            "30m": -0.411,
+            "60m": -0.411,
+            "120m": -0.411,
+            "180m": -0.411,
+            "390m": -0.411
+          },
+          "vwap_cross_below_minute": null
+        },
+        "AVGO": {
+          "symbol": "AVGO",
+          "timeframe": "1h",
+          "n_bars": 7,
+          "open_price": 302.93,
+          "peak": {
+            "price": 311.0,
+            "return_pct": 2.665,
+            "minutes_from_open": 300.0,
+            "time_et": "14:30 ET",
+            "bar_index": 5
+          },
+          "trough": {
+            "price": 302.33,
+            "return_pct": -0.196,
+            "minutes_from_open": 0.0,
+            "time_et": "09:30 ET",
+            "bar_index": 0
+          },
+          "close": {
+            "price": 308.62,
+            "return_pct": 1.879
+          },
+          "volume_profile": {
+            "total": 0.0,
+            "first_30m_pct": 0
+          },
+          "mfe_curve": {
+            "5m": 1.99,
+            "10m": 1.99,
+            "15m": 1.99,
+            "30m": 1.99,
+            "60m": 2.292,
+            "120m": 2.292,
+            "180m": 2.292,
+            "390m": 2.665
+          },
+          "mae_curve": {
+            "5m": -0.196,
+            "10m": -0.196,
+            "15m": -0.196,
+            "30m": -0.196,
+            "60m": -0.196,
+            "120m": -0.196,
+            "180m": -0.196,
+            "390m": -0.196
+          },
+          "vwap_cross_below_minute": null
+        },
+        "QQQ": {
+          "symbol": "QQQ",
+          "timeframe": "1h",
+          "n_bars": 7,
+          "open_price": 574.07,
+          "peak": {
+            "price": 577.99,
+            "return_pct": 0.683,
+            "minutes_from_open": 360.0,
+            "time_et": "15:30 ET",
+            "bar_index": 6
+          },
+          "trough": {
+            "price": 572.46,
+            "return_pct": -0.28,
+            "minutes_from_open": 0.0,
+            "time_et": "09:30 ET",
+            "bar_index": 0
+          },
+          "close": {
+            "price": 577.07,
+            "return_pct": 0.523
+          },
+          "volume_profile": {
+            "total": 0.0,
+            "first_30m_pct": 0
+          },
+          "mfe_curve": {
+            "5m": 0.429,
+            "10m": 0.429,
+            "15m": 0.429,
+            "30m": 0.429,
+            "60m": 0.469,
+            "120m": 0.526,
+            "180m": 0.526,
+            "390m": 0.683
+          },
+          "mae_curve": {
+            "5m": -0.28,
+            "10m": -0.28,
+            "15m": -0.28,
+            "30m": -0.28,
+            "60m": -0.28,
+            "120m": -0.28,
+            "180m": -0.28,
+            "390m": -0.28
+          },
+          "vwap_cross_below_minute": null
+        },
+        "XLK": {
+          "symbol": "XLK",
+          "timeframe": "1h",
+          "n_bars": 7,
+          "open_price": 132.38,
+          "peak": {
+            "price": 133.55,
+            "return_pct": 0.884,
+            "minutes_from_open": 360.0,
+            "time_et": "15:30 ET",
+            "bar_index": 6
+          },
+          "trough": {
+            "price": 131.73,
+            "return_pct": -0.499,
+            "minutes_from_open": 0.0,
+            "time_et": "09:30 ET",
+            "bar_index": 0
+          },
+          "close": {
+            "price": 133.26,
+            "return_pct": 0.657
+          },
+          "volume_profile": {
+            "total": 0.0,
+            "first_30m_pct": 0
+          },
+          "mfe_curve": {
+            "5m": 0.483,
+            "10m": 0.483,
+            "15m": 0.483,
+            "30m": 0.483,
+            "60m": 0.483,
+            "120m": 0.533,
+            "180m": 0.559,
+            "390m": 0.884
+          },
+          "mae_curve": {
+            "5m": -0.499,
+            "10m": -0.499,
+            "15m": -0.499,
+            "30m": -0.499,
+            "60m": -0.499,
+            "120m": -0.499,
+            "180m": -0.499,
+            "390m": -0.499
+          },
+          "vwap_cross_below_minute": null
+        }
+      },
+      "cascade_sequence": [
+        {
+          "symbol": "NVDA",
+          "peak_minute": 0.0,
+          "peak_time_et": "09:30 ET",
+          "peak_return_pct": 2.019
+        },
+        {
+          "symbol": "META",
+          "peak_minute": 120.0,
+          "peak_time_et": "11:30 ET",
+          "peak_return_pct": 1.237
+        },
+        {
+          "symbol": "AVGO",
+          "peak_minute": 300.0,
+          "peak_time_et": "14:30 ET",
+          "peak_return_pct": 2.665
+        },
+        {
+          "symbol": "QQQ",
+          "peak_minute": 360.0,
+          "peak_time_et": "15:30 ET",
+          "peak_return_pct": 0.683
+        },
+        {
+          "symbol": "XLK",
+          "peak_minute": 360.0,
+          "peak_time_et": "15:30 ET",
+          "peak_return_pct": 0.884
+        }
+      ]
+    },
+    {
+      "reaction_date": "2025-11-20",
+      "earnings_date": "2025-11-19",
+      "timeframe": "1h",
+      "profiles": {
+        "NVDA": {
+          "symbol": "NVDA",
+          "timeframe": "1h",
+          "n_bars": 7,
+          "open_price": 195.95,
+          "peak": {
+            "price": 196.0,
+            "return_pct": 0.026,
+            "minutes_from_open": 0.0,
+            "time_et": "09:30 ET",
+            "bar_index": 0
+          },
+          "trough": {
+            "price": 179.85,
+            "return_pct": -8.216,
+            "minutes_from_open": 360.0,
+            "time_et": "15:30 ET",
+            "bar_index": 6
+          },
+          "close": {
+            "price": 180.94,
+            "return_pct": -7.66
+          },
+          "volume_profile": {
+            "total": 232359452.0,
+            "first_30m_pct": 26.7
+          },
+          "mfe_curve": {
+            "5m": 0.026,
+            "10m": 0.026,
+            "15m": 0.026,
+            "30m": 0.026,
+            "60m": 0.026,
+            "120m": 0.026,
+            "180m": 0.026,
+            "390m": 0.026
+          },
+          "mae_curve": {
+            "5m": -1.868,
+            "10m": -1.868,
+            "15m": -1.868,
+            "30m": -1.868,
+            "60m": -3.807,
+            "120m": -6.941,
+            "180m": -7.231,
+            "390m": -8.216
+          },
+          "vwap_cross_below_minute": 60.0
+        },
+        "META": {
+          "symbol": "META",
+          "timeframe": "1h",
+          "n_bars": 7,
+          "open_price": 602.95,
+          "peak": {
+            "price": 606.72,
+            "return_pct": 0.626,
+            "minutes_from_open": 0.0,
+            "time_et": "09:30 ET",
+            "bar_index": 0
+          },
+          "trough": {
+            "price": 583.35,
+            "return_pct": -3.25,
+            "minutes_from_open": 240.0,
+            "time_et": "13:30 ET",
+            "bar_index": 4
+          },
+          "close": {
+            "price": 589.2,
+            "return_pct": -2.28
+          },
+          "volume_profile": {
+            "total": 13150786.0,
+            "first_30m_pct": 31.2
+          },
+          "mfe_curve": {
+            "5m": 0.626,
+            "10m": 0.626,
+            "15m": 0.626,
+            "30m": 0.626,
+            "60m": 0.626,
+            "120m": 0.626,
+            "180m": 0.626,
+            "390m": 0.626
+          },
+          "mae_curve": {
+            "5m": -1.004,
+            "10m": -1.004,
+            "15m": -1.004,
+            "30m": -1.004,
+            "60m": -1.678,
+            "120m": -2.956,
+            "180m": -3.228,
+            "390m": -3.25
+          },
+          "vwap_cross_below_minute": 60.0
+        },
+        "AVGO": {
+          "symbol": "AVGO",
+          "timeframe": "1h",
+          "n_bars": 7,
+          "open_price": 366.0,
+          "peak": {
+            "price": 376.08,
+            "return_pct": 2.754,
+            "minutes_from_open": 60.0,
+            "time_et": "10:30 ET",
+            "bar_index": 1
+          },
+          "trough": {
+            "price": 345.18,
+            "return_pct": -5.689,
+            "minutes_from_open": 360.0,
+            "time_et": "15:30 ET",
+            "bar_index": 6
+          },
+          "close": {
+            "price": 347.02,
+            "return_pct": -5.186
+          },
+          "volume_profile": {
+            "total": 17271334.0,
+            "first_30m_pct": 27.9
+          },
+          "mfe_curve": {
+            "5m": 2.555,
+            "10m": 2.555,
+            "15m": 2.555,
+            "30m": 2.555,
+            "60m": 2.754,
+            "120m": 2.754,
+            "180m": 2.754,
+            "390m": 2.754
+          },
+          "mae_curve": {
+            "5m": -0.126,
+            "10m": -0.126,
+            "15m": -0.126,
+            "30m": -0.126,
+            "60m": -0.126,
+            "120m": -3.649,
+            "180m": -3.795,
+            "390m": -5.689
+          },
+          "vwap_cross_below_minute": 60.0
+        },
+        "QQQ": {
+          "symbol": "QQQ",
+          "timeframe": "1h",
+          "n_bars": 7,
+          "open_price": 611.63,
+          "peak": {
+            "price": 614.02,
+            "return_pct": 0.391,
+            "minutes_from_open": 60.0,
+            "time_et": "10:30 ET",
+            "bar_index": 1
+          },
+          "trough": {
+            "price": 584.75,
+            "return_pct": -4.395,
+            "minutes_from_open": 360.0,
+            "time_et": "15:30 ET",
+            "bar_index": 6
+          },
+          "close": {
+            "price": 585.56,
+            "return_pct": -4.262
+          },
+          "volume_profile": {
+            "total": 70398414.0,
+            "first_30m_pct": 18.1
+          },
+          "mfe_curve": {
+            "5m": 0.353,
+            "10m": 0.353,
+            "15m": 0.353,
+            "30m": 0.353,
+            "60m": 0.391,
+            "120m": 0.391,
+            "180m": 0.391,
+            "390m": 0.391
+          },
+          "mae_curve": {
+            "5m": -0.249,
+            "10m": -0.249,
+            "15m": -0.249,
+            "30m": -0.249,
+            "60m": -1.274,
+            "120m": -3.384,
+            "180m": -3.564,
+            "390m": -4.395
+          },
+          "vwap_cross_below_minute": 60.0
+        },
+        "XLK": {
+          "symbol": "XLK",
+          "timeframe": "1h",
+          "n_bars": 7,
+          "open_price": 143.72,
+          "peak": {
+            "price": 144.26,
+            "return_pct": 0.374,
+            "minutes_from_open": 0.0,
+            "time_et": "09:30 ET",
+            "bar_index": 0
+          },
+          "trough": {
+            "price": 135.76,
+            "return_pct": -5.539,
+            "minutes_from_open": 360.0,
+            "time_et": "15:30 ET",
+            "bar_index": 6
+          },
+          "close": {
+            "price": 136.09,
+            "return_pct": -5.309
+          },
+          "volume_profile": {
+            "total": 27923413.0,
+            "first_30m_pct": 11.8
+          },
+          "mfe_curve": {
+            "5m": 0.374,
+            "10m": 0.374,
+            "15m": 0.374,
+            "30m": 0.374,
+            "60m": 0.374,
+            "120m": 0.374,
+            "180m": 0.374,
+            "390m": 0.374
+          },
+          "mae_curve": {
+            "5m": -0.411,
+            "10m": -0.411,
+            "15m": -0.411,
+            "30m": -0.411,
+            "60m": -1.816,
+            "120m": -4.272,
+            "180m": -4.425,
+            "390m": -5.539
+          },
+          "vwap_cross_below_minute": 60.0
+        }
+      },
+      "cascade_sequence": [
+        {
+          "symbol": "NVDA",
+          "peak_minute": 0.0,
+          "peak_time_et": "09:30 ET",
+          "peak_return_pct": 0.026
+        },
+        {
+          "symbol": "META",
+          "peak_minute": 0.0,
+          "peak_time_et": "09:30 ET",
+          "peak_return_pct": 0.626
+        },
+        {
+          "symbol": "XLK",
+          "peak_minute": 0.0,
+          "peak_time_et": "09:30 ET",
+          "peak_return_pct": 0.374
+        },
+        {
+          "symbol": "AVGO",
+          "peak_minute": 60.0,
+          "peak_time_et": "10:30 ET",
+          "peak_return_pct": 2.754
+        },
+        {
+          "symbol": "QQQ",
+          "peak_minute": 60.0,
+          "peak_time_et": "10:30 ET",
+          "peak_return_pct": 0.391
+        }
+      ]
+    }
+  ],
+  "control_days": [
+    {
+      "date": "2025-10-01",
+      "timeframe": "1h",
+      "profiles": {
+        "NVDA": {
+          "symbol": "NVDA",
+          "timeframe": "1h",
+          "n_bars": 7,
+          "open_price": 186.0,
+          "peak": {
+            "price": 188.14,
+            "return_pct": 1.151,
+            "minutes_from_open": 180.0,
+            "time_et": "12:30 ET",
+            "bar_index": 3
+          },
+          "trough": {
+            "price": 183.9,
+            "return_pct": -1.129,
+            "minutes_from_open": 0.0,
+            "time_et": "09:30 ET",
+            "bar_index": 0
+          },
+          "close": {
+            "price": 187.17,
+            "return_pct": 0.629
+          },
+          "volume_profile": {
+            "total": 152324018.0,
+            "first_30m_pct": 23.7
+          },
+          "mfe_curve": {
+            "5m": 0.36,
+            "10m": 0.36,
+            "15m": 0.36,
+            "30m": 0.36,
+            "60m": 1.003,
+            "120m": 1.003,
+            "180m": 1.151,
+            "390m": 1.151
+          },
+          "mae_curve": {
+            "5m": -1.129,
+            "10m": -1.129,
+            "15m": -1.129,
+            "30m": -1.129,
+            "60m": -1.129,
+            "120m": -1.129,
+            "180m": -1.129,
+            "390m": -1.129
+          },
+          "vwap_cross_below_minute": 60.0
+        },
+        "META": {
+          "symbol": "META",
+          "timeframe": "1h",
+          "n_bars": 7,
+          "open_price": 720.0,
+          "peak": {
+            "price": 721.85,
+            "return_pct": 0.257,
+            "minutes_from_open": 0.0,
+            "time_et": "09:30 ET",
+            "bar_index": 0
+          },
+          "trough": {
+            "price": 710.2,
+            "return_pct": -1.361,
+            "minutes_from_open": 0.0,
+            "time_et": "09:30 ET",
+            "bar_index": 0
+          },
+          "close": {
+            "price": 717.33,
+            "return_pct": -0.371
+          },
+          "volume_profile": {
+            "total": 18315171.0,
+            "first_30m_pct": 26.3
+          },
+          "mfe_curve": {
+            "5m": 0.257,
+            "10m": 0.257,
+            "15m": 0.257,
+            "30m": 0.257,
+            "60m": 0.257,
+            "120m": 0.257,
+            "180m": 0.257,
+            "390m": 0.257
+          },
+          "mae_curve": {
+            "5m": -1.361,
+            "10m": -1.361,
+            "15m": -1.361,
+            "30m": -1.361,
+            "60m": -1.361,
+            "120m": -1.361,
+            "180m": -1.361,
+            "390m": -1.361
+          },
+          "vwap_cross_below_minute": 60.0
+        },
+        "AVGO": {
+          "symbol": "AVGO",
+          "timeframe": "1h",
+          "n_bars": 7,
+          "open_price": 325.36,
+          "peak": {
+            "price": 337.95,
+            "return_pct": 3.87,
+            "minutes_from_open": 180.0,
+            "time_et": "12:30 ET",
+            "bar_index": 3
+          },
+          "trough": {
+            "price": 324.53,
+            "return_pct": -0.255,
+            "minutes_from_open": 0.0,
+            "time_et": "09:30 ET",
+            "bar_index": 0
+          },
+          "close": {
+            "price": 333.3,
+            "return_pct": 2.44
+          },
+          "volume_profile": {
+            "total": 14814620.0,
+            "first_30m_pct": 20.1
+          },
+          "mfe_curve": {
+            "5m": 1.352,
+            "10m": 1.352,
+            "15m": 1.352,
+            "30m": 1.352,
+            "60m": 2.407,
+            "120m": 3.747,
+            "180m": 3.87,
+            "390m": 3.87
+          },
+          "mae_curve": {
+            "5m": -0.255,
+            "10m": -0.255,
+            "15m": -0.255,
+            "30m": -0.255,
+            "60m": -0.255,
+            "120m": -0.255,
+            "180m": -0.255,
+            "390m": -0.255
+          },
+          "vwap_cross_below_minute": 300.0
+        },
+        "QQQ": {
+          "symbol": "QQQ",
+          "timeframe": "1h",
+          "n_bars": 7,
+          "open_price": 596.75,
+          "peak": {
+            "price": 603.79,
+            "return_pct": 1.18,
+            "minutes_from_open": 360.0,
+            "time_et": "15:30 ET",
+            "bar_index": 6
+          },
+          "trough": {
+            "price": 596.34,
+            "return_pct": -0.069,
+            "minutes_from_open": 0.0,
+            "time_et": "09:30 ET",
+            "bar_index": 0
+          },
+          "close": {
+            "price": 603.29,
+            "return_pct": 1.096
+          },
+          "volume_profile": {
+            "total": 43807155.0,
+            "first_30m_pct": 13.9
+          },
+          "mfe_curve": {
+            "5m": 0.603,
+            "10m": 0.603,
+            "15m": 0.603,
+            "30m": 0.603,
+            "60m": 0.716,
+            "120m": 0.828,
+            "180m": 0.995,
+            "390m": 1.18
+          },
+          "mae_curve": {
+            "5m": -0.069,
+            "10m": -0.069,
+            "15m": -0.069,
+            "30m": -0.069,
+            "60m": -0.069,
+            "120m": -0.069,
+            "180m": -0.069,
+            "390m": -0.069
+          },
+          "vwap_cross_below_minute": null
+        },
+        "XLK": {
+          "symbol": "XLK",
+          "timeframe": "1h",
+          "n_bars": 7,
+          "open_price": 140.25,
+          "peak": {
+            "price": 142.41,
+            "return_pct": 1.54,
+            "minutes_from_open": 360.0,
+            "time_et": "15:30 ET",
+            "bar_index": 6
+          },
+          "trough": {
+            "price": 140.17,
+            "return_pct": -0.057,
+            "minutes_from_open": 0.0,
+            "time_et": "09:30 ET",
+            "bar_index": 0
+          },
+          "close": {
+            "price": 142.3,
+            "return_pct": 1.465
+          },
+          "volume_profile": {
+            "total": 8469635.0,
+            "first_30m_pct": 29.1
+          },
+          "mfe_curve": {
+            "5m": 0.752,
+            "10m": 0.752,
+            "15m": 0.752,
+            "30m": 0.752,
+            "60m": 0.97,
+            "120m": 1.005,
+            "180m": 1.152,
+            "390m": 1.54
+          },
+          "mae_curve": {
+            "5m": -0.057,
+            "10m": -0.057,
+            "15m": -0.057,
+            "30m": -0.057,
+            "60m": -0.057,
+            "120m": -0.057,
+            "180m": -0.057,
+            "390m": -0.057
+          },
+          "vwap_cross_below_minute": null
+        }
+      }
+    },
+    {
+      "date": "2025-10-08",
+      "timeframe": "1h",
+      "profiles": {
+        "NVDA": {
+          "symbol": "NVDA",
+          "timeframe": "1h",
+          "n_bars": 7,
+          "open_price": 186.63,
+          "peak": {
+            "price": 189.42,
+            "return_pct": 1.495,
+            "minutes_from_open": 0.0,
+            "time_et": "09:30 ET",
+            "bar_index": 0
+          },
+          "trough": {
+            "price": 186.54,
+            "return_pct": -0.048,
+            "minutes_from_open": 0.0,
+            "time_et": "09:30 ET",
+            "bar_index": 0
+          },
+          "close": {
+            "price": 189.07,
+            "return_pct": 1.307
+          },
+          "volume_profile": {
+            "total": 116248143.0,
+            "first_30m_pct": 39.4
+          },
+          "mfe_curve": {
+            "5m": 1.495,
+            "10m": 1.495,
+            "15m": 1.495,
+            "30m": 1.495,
+            "60m": 1.495,
+            "120m": 1.495,
+            "180m": 1.495,
+            "390m": 1.495
+          },
+          "mae_curve": {
+            "5m": -0.048,
+            "10m": -0.048,
+            "15m": -0.048,
+            "30m": -0.048,
+            "60m": -0.048,
+            "120m": -0.048,
+            "180m": -0.048,
+            "390m": -0.048
+          },
+          "vwap_cross_below_minute": 60.0
+        },
+        "META": {
+          "symbol": "META",
+          "timeframe": "1h",
+          "n_bars": 7,
+          "open_price": 713.51,
+          "peak": {
+            "price": 719.65,
+            "return_pct": 0.861,
+            "minutes_from_open": 240.0,
+            "time_et": "13:30 ET",
+            "bar_index": 4
+          },
+          "trough": {
+            "price": 707.81,
+            "return_pct": -0.799,
+            "minutes_from_open": 0.0,
+            "time_et": "09:30 ET",
+            "bar_index": 0
+          },
+          "close": {
+            "price": 717.83,
+            "return_pct": 0.605
+          },
+          "volume_profile": {
+            "total": 9106807.0,
+            "first_30m_pct": 32.2
+          },
+          "mfe_curve": {
+            "5m": 0.392,
+            "10m": 0.392,
+            "15m": 0.392,
+            "30m": 0.392,
+            "60m": 0.664,
+            "120m": 0.681,
+            "180m": 0.681,
+            "390m": 0.861
+          },
+          "mae_curve": {
+            "5m": -0.799,
+            "10m": -0.799,
+            "15m": -0.799,
+            "30m": -0.799,
+            "60m": -0.799,
+            "120m": -0.799,
+            "180m": -0.799,
+            "390m": -0.799
+          },
+          "vwap_cross_below_minute": null
+        },
+        "AVGO": {
+          "symbol": "AVGO",
+          "timeframe": "1h",
+          "n_bars": 7,
+          "open_price": 333.97,
+          "peak": {
+            "price": 346.53,
+            "return_pct": 3.761,
+            "minutes_from_open": 360.0,
+            "time_et": "15:30 ET",
+            "bar_index": 6
+          },
+          "trough": {
+            "price": 332.62,
+            "return_pct": -0.404,
+            "minutes_from_open": 0.0,
+            "time_et": "09:30 ET",
+            "bar_index": 0
+          },
+          "close": {
+            "price": 345.55,
+            "return_pct": 3.467
+          },
+          "volume_profile": {
+            "total": 16092759.0,
+            "first_30m_pct": 33.3
+          },
+          "mfe_curve": {
+            "5m": 3.236,
+            "10m": 3.236,
+            "15m": 3.236,
+            "30m": 3.236,
+            "60m": 3.236,
+            "120m": 3.236,
+            "180m": 3.236,
+            "390m": 3.761
+          },
+          "mae_curve": {
+            "5m": -0.404,
+            "10m": -0.404,
+            "15m": -0.404,
+            "30m": -0.404,
+            "60m": -0.404,
+            "120m": -0.404,
+            "180m": -0.404,
+            "390m": -0.404
+          },
+          "vwap_cross_below_minute": 60.0
+        },
+        "QQQ": {
+          "symbol": "QQQ",
+          "timeframe": "1h",
+          "n_bars": 7,
+          "open_price": 605.3,
+          "peak": {
+            "price": 611.75,
+            "return_pct": 1.065,
+            "minutes_from_open": 360.0,
+            "time_et": "15:30 ET",
+            "bar_index": 6
+          },
+          "trough": {
+            "price": 605.28,
+            "return_pct": -0.003,
+            "minutes_from_open": 0.0,
+            "time_et": "09:30 ET",
+            "bar_index": 0
+          },
+          "close": {
+            "price": 611.44,
+            "return_pct": 1.014
+          },
+          "volume_profile": {
+            "total": 46207323.0,
+            "first_30m_pct": 29.5
+          },
+          "mfe_curve": {
+            "5m": 0.601,
+            "10m": 0.601,
+            "15m": 0.601,
+            "30m": 0.601,
+            "60m": 0.668,
+            "120m": 0.786,
+            "180m": 0.786,
+            "390m": 1.065
+          },
+          "mae_curve": {
+            "5m": -0.003,
+            "10m": -0.003,
+            "15m": -0.003,
+            "30m": -0.003,
+            "60m": -0.003,
+            "120m": -0.003,
+            "180m": -0.003,
+            "390m": -0.003
+          },
+          "vwap_cross_below_minute": null
+        },
+        "XLK": {
+          "symbol": "XLK",
+          "timeframe": "1h",
+          "n_bars": 7,
+          "open_price": 143.17,
+          "peak": {
+            "price": 145.35,
+            "return_pct": 1.523,
+            "minutes_from_open": 360.0,
+            "time_et": "15:30 ET",
+            "bar_index": 6
+          },
+          "trough": {
+            "price": 143.09,
+            "return_pct": -0.054,
+            "minutes_from_open": 0.0,
+            "time_et": "09:30 ET",
+            "bar_index": 0
+          },
+          "close": {
+            "price": 145.32,
+            "return_pct": 1.498
+          },
+          "volume_profile": {
+            "total": 6887888.0,
+            "first_30m_pct": 29.8
+          },
+          "mfe_curve": {
+            "5m": 0.946,
+            "10m": 0.946,
+            "15m": 0.946,
+            "30m": 0.946,
+            "60m": 1.041,
+            "120m": 1.149,
+            "180m": 1.149,
+            "390m": 1.523
+          },
+          "mae_curve": {
+            "5m": -0.054,
+            "10m": -0.054,
+            "15m": -0.054,
+            "30m": -0.054,
+            "60m": -0.054,
+            "120m": -0.054,
+            "180m": -0.054,
+            "390m": -0.054
+          },
+          "vwap_cross_below_minute": null
+        }
+      }
+    },
+    {
+      "date": "2025-10-15",
+      "timeframe": "1h",
+      "profiles": {
+        "NVDA": {
+          "symbol": "NVDA",
+          "timeframe": "1h",
+          "n_bars": 7,
+          "open_price": 184.84,
+          "peak": {
+            "price": 184.87,
+            "return_pct": 0.016,
+            "minutes_from_open": 0.0,
+            "time_et": "09:30 ET",
+            "bar_index": 0
+          },
+          "trough": {
+            "price": 177.29,
+            "return_pct": -4.085,
+            "minutes_from_open": 180.0,
+            "time_et": "12:30 ET",
+            "bar_index": 3
+          },
+          "close": {
+            "price": 179.87,
+            "return_pct": -2.689
+          },
+          "volume_profile": {
+            "total": 190540357.0,
+            "first_30m_pct": 27.8
+          },
+          "mfe_curve": {
+            "5m": 0.016,
+            "10m": 0.016,
+            "15m": 0.016,
+            "30m": 0.016,
+            "60m": 0.016,
+            "120m": 0.016,
+            "180m": 0.016,
+            "390m": 0.016
+          },
+          "mae_curve": {
+            "5m": -2.067,
+            "10m": -2.067,
+            "15m": -2.067,
+            "30m": -2.067,
+            "60m": -2.067,
+            "120m": -2.694,
+            "180m": -4.085,
+            "390m": -4.085
+          },
+          "vwap_cross_below_minute": 60.0
+        },
+        "META": {
+          "symbol": "META",
+          "timeframe": "1h",
+          "n_bars": 7,
+          "open_price": 716.86,
+          "peak": {
+            "price": 723.9,
+            "return_pct": 0.982,
+            "minutes_from_open": 60.0,
+            "time_et": "10:30 ET",
+            "bar_index": 1
+          },
+          "trough": {
+            "price": 709.51,
+            "return_pct": -1.025,
+            "minutes_from_open": 180.0,
+            "time_et": "12:30 ET",
+            "bar_index": 3
+          },
+          "close": {
+            "price": 717.78,
+            "return_pct": 0.128
+          },
+          "volume_profile": {
+            "total": 7913711.0,
+            "first_30m_pct": 33.1
+          },
+          "mfe_curve": {
+            "5m": 0.863,
+            "10m": 0.863,
+            "15m": 0.863,
+            "30m": 0.863,
+            "60m": 0.982,
+            "120m": 0.982,
+            "180m": 0.982,
+            "390m": 0.982
+          },
+          "mae_curve": {
+            "5m": -0.504,
+            "10m": -0.504,
+            "15m": -0.504,
+            "30m": -0.504,
+            "60m": -0.504,
+            "120m": -0.504,
+            "180m": -1.025,
+            "390m": -1.025
+          },
+          "vwap_cross_below_minute": 60.0
+        },
+        "AVGO": {
+          "symbol": "AVGO",
+          "timeframe": "1h",
+          "n_bars": 7,
+          "open_price": 354.37,
+          "peak": {
+            "price": 359.4,
+            "return_pct": 1.419,
+            "minutes_from_open": 60.0,
+            "time_et": "10:30 ET",
+            "bar_index": 1
+          },
+          "trough": {
+            "price": 347.5,
+            "return_pct": -1.939,
+            "minutes_from_open": 180.0,
+            "time_et": "12:30 ET",
+            "bar_index": 3
+          },
+          "close": {
+            "price": 351.39,
+            "return_pct": -0.841
+          },
+          "volume_profile": {
+            "total": 15572545.0,
+            "first_30m_pct": 31.2
+          },
+          "mfe_curve": {
+            "5m": 1.024,
+            "10m": 1.024,
+            "15m": 1.024,
+            "30m": 1.024,
+            "60m": 1.419,
+            "120m": 1.419,
+            "180m": 1.419,
+            "390m": 1.419
+          },
+          "mae_curve": {
+            "5m": -1.656,
+            "10m": -1.656,
+            "15m": -1.656,
+            "30m": -1.656,
+            "60m": -1.656,
+            "120m": -1.656,
+            "180m": -1.939,
+            "390m": -1.939
+          },
+          "vwap_cross_below_minute": 60.0
+        },
+        "QQQ": {
+          "symbol": "QQQ",
+          "timeframe": "1h",
+          "n_bars": 7,
+          "open_price": 604.01,
+          "peak": {
+            "price": 606.7,
+            "return_pct": 0.445,
+            "minutes_from_open": 60.0,
+            "time_et": "10:30 ET",
+            "bar_index": 1
+          },
+          "trough": {
+            "price": 595.94,
+            "return_pct": -1.336,
+            "minutes_from_open": 180.0,
+            "time_et": "12:30 ET",
+            "bar_index": 3
+          },
+          "close": {
+            "price": 602.16,
+            "return_pct": -0.306
+          },
+          "volume_profile": {
+            "total": 59765946.0,
+            "first_30m_pct": 27.3
+          },
+          "mfe_curve": {
+            "5m": 0.44,
+            "10m": 0.44,
+            "15m": 0.44,
+            "30m": 0.44,
+            "60m": 0.445,
+            "120m": 0.445,
+            "180m": 0.445,
+            "390m": 0.445
+          },
+          "mae_curve": {
+            "5m": -0.414,
+            "10m": -0.414,
+            "15m": -0.414,
+            "30m": -0.414,
+            "60m": -0.414,
+            "120m": -0.494,
+            "180m": -1.336,
+            "390m": -1.336
+          },
+          "vwap_cross_below_minute": 60.0
+        },
+        "XLK": {
+          "symbol": "XLK",
+          "timeframe": "1h",
+          "n_bars": 7,
+          "open_price": 142.37,
+          "peak": {
+            "price": 143.29,
+            "return_pct": 0.65,
+            "minutes_from_open": 60.0,
+            "time_et": "10:30 ET",
+            "bar_index": 1
+          },
+          "trough": {
+            "price": 140.4,
+            "return_pct": -1.382,
+            "minutes_from_open": 180.0,
+            "time_et": "12:30 ET",
+            "bar_index": 3
+          },
+          "close": {
+            "price": 142.16,
+            "return_pct": -0.144
+          },
+          "volume_profile": {
+            "total": 10343223.0,
+            "first_30m_pct": 23.6
+          },
+          "mfe_curve": {
+            "5m": 0.639,
+            "10m": 0.639,
+            "15m": 0.639,
+            "30m": 0.639,
+            "60m": 0.65,
+            "120m": 0.65,
+            "180m": 0.65,
+            "390m": 0.65
+          },
+          "mae_curve": {
+            "5m": -0.302,
+            "10m": -0.302,
+            "15m": -0.302,
+            "30m": -0.302,
+            "60m": -0.302,
+            "120m": -0.467,
+            "180m": -1.382,
+            "390m": -1.382
+          },
+          "vwap_cross_below_minute": 60.0
+        }
+      }
+    },
+    {
+      "date": "2025-10-22",
+      "timeframe": "1h",
+      "profiles": {
+        "NVDA": {
+          "symbol": "NVDA",
+          "timeframe": "1h",
+          "n_bars": 7,
+          "open_price": 181.13,
+          "peak": {
+            "price": 183.44,
+            "return_pct": 1.275,
+            "minutes_from_open": 0.0,
+            "time_et": "09:30 ET",
+            "bar_index": 0
+          },
+          "trough": {
+            "price": 176.77,
+            "return_pct": -2.407,
+            "minutes_from_open": 240.0,
+            "time_et": "13:30 ET",
+            "bar_index": 4
+          },
+          "close": {
+            "price": 180.29,
+            "return_pct": -0.464
+          },
+          "volume_profile": {
+            "total": 146571416.0,
+            "first_30m_pct": 23.3
+          },
+          "mfe_curve": {
+            "5m": 1.275,
+            "10m": 1.275,
+            "15m": 1.275,
+            "30m": 1.275,
+            "60m": 1.275,
+            "120m": 1.275,
+            "180m": 1.275,
+            "390m": 1.275
+          },
+          "mae_curve": {
+            "5m": -0.464,
+            "10m": -0.464,
+            "15m": -0.464,
+            "30m": -0.464,
+            "60m": -1.292,
+            "120m": -1.783,
+            "180m": -2.153,
+            "390m": -2.407
+          },
+          "vwap_cross_below_minute": 60.0
+        },
+        "META": {
+          "symbol": "META",
+          "timeframe": "1h",
+          "n_bars": 7,
+          "open_price": 733.4,
+          "peak": {
+            "price": 740.59,
+            "return_pct": 0.98,
+            "minutes_from_open": 0.0,
+            "time_et": "09:30 ET",
+            "bar_index": 0
+          },
+          "trough": {
+            "price": 724.03,
+            "return_pct": -1.278,
+            "minutes_from_open": 240.0,
+            "time_et": "13:30 ET",
+            "bar_index": 4
+          },
+          "close": {
+            "price": 733.3,
+            "return_pct": -0.014
+          },
+          "volume_profile": {
+            "total": 7081939.0,
+            "first_30m_pct": 30.5
+          },
+          "mfe_curve": {
+            "5m": 0.98,
+            "10m": 0.98,
+            "15m": 0.98,
+            "30m": 0.98,
+            "60m": 0.98,
+            "120m": 0.98,
+            "180m": 0.98,
+            "390m": 0.98
+          },
+          "mae_curve": {
+            "5m": -0.319,
+            "10m": -0.319,
+            "15m": -0.319,
+            "30m": -0.319,
+            "60m": -0.514,
+            "120m": -0.69,
+            "180m": -1.163,
+            "390m": -1.278
+          },
+          "vwap_cross_below_minute": 60.0
+        },
+        "AVGO": {
+          "symbol": "AVGO",
+          "timeframe": "1h",
+          "n_bars": 7,
+          "open_price": 347.36,
+          "peak": {
+            "price": 348.01,
+            "return_pct": 0.187,
+            "minutes_from_open": 0.0,
+            "time_et": "09:30 ET",
+            "bar_index": 0
+          },
+          "trough": {
+            "price": 335.51,
+            "return_pct": -3.411,
+            "minutes_from_open": 240.0,
+            "time_et": "13:30 ET",
+            "bar_index": 4
+          },
+          "close": {
+            "price": 340.53,
+            "return_pct": -1.966
+          },
+          "volume_profile": {
+            "total": 12736044.0,
+            "first_30m_pct": 24.0
+          },
+          "mfe_curve": {
+            "5m": 0.187,
+            "10m": 0.187,
+            "15m": 0.187,
+            "30m": 0.187,
+            "60m": 0.187,
+            "120m": 0.187,
+            "180m": 0.187,
+            "390m": 0.187
+          },
+          "mae_curve": {
+            "5m": -2.335,
+            "10m": -2.335,
+            "15m": -2.335,
+            "30m": -2.335,
+            "60m": -2.862,
+            "120m": -2.919,
+            "180m": -3.207,
+            "390m": -3.411
+          },
+          "vwap_cross_below_minute": 60.0
+        },
+        "QQQ": {
+          "symbol": "QQQ",
+          "timeframe": "1h",
+          "n_bars": 7,
+          "open_price": 610.82,
+          "peak": {
+            "price": 611.41,
+            "return_pct": 0.097,
+            "minutes_from_open": 0.0,
+            "time_et": "09:30 ET",
+            "bar_index": 0
+          },
+          "trough": {
+            "price": 599.74,
+            "return_pct": -1.814,
+            "minutes_from_open": 240.0,
+            "time_et": "13:30 ET",
+            "bar_index": 4
+          },
+          "close": {
+            "price": 605.41,
+            "return_pct": -0.886
+          },
+          "volume_profile": {
+            "total": 58205579.0,
+            "first_30m_pct": 22.0
+          },
+          "mfe_curve": {
+            "5m": 0.097,
+            "10m": 0.097,
+            "15m": 0.097,
+            "30m": 0.097,
+            "60m": 0.097,
+            "120m": 0.097,
+            "180m": 0.097,
+            "390m": 0.097
+          },
+          "mae_curve": {
+            "5m": -0.584,
+            "10m": -0.584,
+            "15m": -0.584,
+            "30m": -0.584,
+            "60m": -0.956,
+            "120m": -1.035,
+            "180m": -1.559,
+            "390m": -1.814
+          },
+          "vwap_cross_below_minute": 60.0
+        },
+        "XLK": {
+          "symbol": "XLK",
+          "timeframe": "1h",
+          "n_bars": 7,
+          "open_price": 143.87,
+          "peak": {
+            "price": 144.42,
+            "return_pct": 0.385,
+            "minutes_from_open": 0.0,
+            "time_et": "09:30 ET",
+            "bar_index": 0
+          },
+          "trough": {
+            "price": 140.95,
+            "return_pct": -2.028,
+            "minutes_from_open": 240.0,
+            "time_et": "13:30 ET",
+            "bar_index": 4
+          },
+          "close": {
+            "price": 142.76,
+            "return_pct": -0.77
+          },
+          "volume_profile": {
+            "total": 10107174.0,
+            "first_30m_pct": 12.1
+          },
+          "mfe_curve": {
+            "5m": 0.385,
+            "10m": 0.385,
+            "15m": 0.385,
+            "30m": 0.385,
+            "60m": 0.385,
+            "120m": 0.385,
+            "180m": 0.385,
+            "390m": 0.385
+          },
+          "mae_curve": {
+            "5m": -0.544,
+            "10m": -0.544,
+            "15m": -0.544,
+            "30m": -0.544,
+            "60m": -1.145,
+            "120m": -1.253,
+            "180m": -1.687,
+            "390m": -2.028
+          },
+          "vwap_cross_below_minute": 60.0
+        }
+      }
+    },
+    {
+      "date": "2025-10-29",
+      "timeframe": "1h",
+      "profiles": {
+        "NVDA": {
+          "symbol": "NVDA",
+          "timeframe": "1h",
+          "n_bars": 7,
+          "open_price": 207.98,
+          "peak": {
+            "price": 212.19,
+            "return_pct": 2.024,
+            "minutes_from_open": 0.0,
+            "time_et": "09:30 ET",
+            "bar_index": 0
+          },
+          "trough": {
+            "price": 204.78,
+            "return_pct": -1.539,
+            "minutes_from_open": 300.0,
+            "time_et": "14:30 ET",
+            "bar_index": 5
+          },
+          "close": {
+            "price": 207.05,
+            "return_pct": -0.447
+          },
+          "volume_profile": {
+            "total": 285136713.0,
+            "first_30m_pct": 39.9
+          },
+          "mfe_curve": {
+            "5m": 2.024,
+            "10m": 2.024,
+            "15m": 2.024,
+            "30m": 2.024,
+            "60m": 2.024,
+            "120m": 2.024,
+            "180m": 2.024,
+            "390m": 2.024
+          },
+          "mae_curve": {
+            "5m": -0.428,
+            "10m": -0.428,
+            "15m": -0.428,
+            "30m": -0.428,
+            "60m": -0.428,
+            "120m": -1.418,
+            "180m": -1.418,
+            "390m": -1.539
+          },
+          "vwap_cross_below_minute": 60.0
+        },
+        "META": {
+          "symbol": "META",
+          "timeframe": "1h",
+          "n_bars": 7,
+          "open_price": 754.75,
+          "peak": {
+            "price": 759.16,
+            "return_pct": 0.584,
+            "minutes_from_open": 0.0,
+            "time_et": "09:30 ET",
+            "bar_index": 0
+          },
+          "trough": {
+            "price": 742.51,
+            "return_pct": -1.622,
+            "minutes_from_open": 300.0,
+            "time_et": "14:30 ET",
+            "bar_index": 5
+          },
+          "close": {
+            "price": 752.0,
+            "return_pct": -0.364
+          },
+          "volume_profile": {
+            "total": 14262686.0,
+            "first_30m_pct": 29.6
+          },
+          "mfe_curve": {
+            "5m": 0.584,
+            "10m": 0.584,
+            "15m": 0.584,
+            "30m": 0.584,
+            "60m": 0.584,
+            "120m": 0.584,
+            "180m": 0.584,
+            "390m": 0.584
+          },
+          "mae_curve": {
+            "5m": -1.273,
+            "10m": -1.273,
+            "15m": -1.273,
+            "30m": -1.273,
+            "60m": -1.273,
+            "120m": -1.273,
+            "180m": -1.273,
+            "390m": -1.622
+          },
+          "vwap_cross_below_minute": 60.0
+        },
+        "AVGO": {
+          "symbol": "AVGO",
+          "timeframe": "1h",
+          "n_bars": 7,
+          "open_price": 373.2,
+          "peak": {
+            "price": 386.48,
+            "return_pct": 3.558,
+            "minutes_from_open": 360.0,
+            "time_et": "15:30 ET",
+            "bar_index": 6
+          },
+          "trough": {
+            "price": 373.2,
+            "return_pct": 0.0,
+            "minutes_from_open": 0.0,
+            "time_et": "09:30 ET",
+            "bar_index": 0
+          },
+          "close": {
+            "price": 386.11,
+            "return_pct": 3.459
+          },
+          "volume_profile": {
+            "total": 18649004.0,
+            "first_30m_pct": 29.1
+          },
+          "mfe_curve": {
+            "5m": 2.258,
+            "10m": 2.258,
+            "15m": 2.258,
+            "30m": 2.258,
+            "60m": 2.712,
+            "120m": 2.795,
+            "180m": 2.795,
+            "390m": 3.558
+          },
+          "mae_curve": {
+            "5m": 0.0,
+            "10m": 0.0,
+            "15m": 0.0,
+            "30m": 0.0,
+            "60m": 0.0,
+            "120m": 0.0,
+            "180m": 0.0,
+            "390m": 0.0
+          },
+          "vwap_cross_below_minute": 120.0
+        },
+        "QQQ": {
+          "symbol": "QQQ",
+          "timeframe": "1h",
+          "n_bars": 7,
+          "open_price": 635.59,
+          "peak": {
+            "price": 637.01,
+            "return_pct": 0.223,
+            "minutes_from_open": 0.0,
+            "time_et": "09:30 ET",
+            "bar_index": 0
+          },
+          "trough": {
+            "price": 630.25,
+            "return_pct": -0.84,
+            "minutes_from_open": 300.0,
+            "time_et": "14:30 ET",
+            "bar_index": 5
+          },
+          "close": {
+            "price": 635.9,
+            "return_pct": 0.049
+          },
+          "volume_profile": {
+            "total": 63481010.0,
+            "first_30m_pct": 23.6
+          },
+          "mfe_curve": {
+            "5m": 0.223,
+            "10m": 0.223,
+            "15m": 0.223,
+            "30m": 0.223,
+            "60m": 0.223,
+            "120m": 0.223,
+            "180m": 0.223,
+            "390m": 0.223
+          },
+          "mae_curve": {
+            "5m": -0.044,
+            "10m": -0.044,
+            "15m": -0.044,
+            "30m": -0.044,
+            "60m": -0.112,
+            "120m": -0.244,
+            "180m": -0.244,
+            "390m": -0.84
+          },
+          "vwap_cross_below_minute": 60.0
+        },
+        "XLK": {
+          "symbol": "XLK",
+          "timeframe": "1h",
+          "n_bars": 7,
+          "open_price": 152.25,
+          "peak": {
+            "price": 152.99,
+            "return_pct": 0.489,
+            "minutes_from_open": 0.0,
+            "time_et": "09:30 ET",
+            "bar_index": 0
+          },
+          "trough": {
+            "price": 150.93,
+            "return_pct": -0.864,
+            "minutes_from_open": 300.0,
+            "time_et": "14:30 ET",
+            "bar_index": 5
+          },
+          "close": {
+            "price": 152.15,
+            "return_pct": -0.066
+          },
+          "volume_profile": {
+            "total": 10309815.0,
+            "first_30m_pct": 21.6
+          },
+          "mfe_curve": {
+            "5m": 0.489,
+            "10m": 0.489,
+            "15m": 0.489,
+            "30m": 0.489,
+            "60m": 0.489,
+            "120m": 0.489,
+            "180m": 0.489,
+            "390m": 0.489
+          },
+          "mae_curve": {
+            "5m": -0.03,
+            "10m": -0.03,
+            "15m": -0.03,
+            "30m": -0.03,
+            "60m": -0.03,
+            "120m": -0.411,
+            "180m": -0.411,
+            "390m": -0.864
+          },
+          "vwap_cross_below_minute": 60.0
+        }
+      }
+    }
+  ]
+}
