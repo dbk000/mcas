@@ -1,9 +1,20 @@
 """
-U1 - Unicorn Ignition v3.0 (Loosened Filters + Express Lane)
-==============================================================
+U1 - Unicorn Ignition v4.0 (WS2 Audit-Driven Refactor)
+========================================================
 
 Identifies low-volume pennycoins transitioning from dead -> discoverable -> ignition
 before they appear on normal "active assets" lists.
+
+v4.0 Changes (WS2 audit-driven — data-validated gates):
+- Daily volume regime hard gate: volume_z_1d >= 4.0 (strongest WS2 predictor)
+- Volatility regime hard gate: bb_width >= threshold (5m: 0.07, 15m: 0.10)
+  Only validated TF+threshold pairs gated; unvalidated TFs skip gate.
+- BB squeeze scoring zeroed: W_BB_COMPRESS = 0.0 (dead weight, r=-0.009)
+- Funding rate boost removed entirely (was conditioned on squeeze)
+- Mean reversion soft score: price_change_4h/1h decline + low bb_position_1h
+  REVERSION_SCORE_WEIGHT (0.05) is an invented starting point, requires validation.
+- reversion_score field added to U1Signal
+- Setup version: U1_v4.0
 
 v3.0 Changes (loosen filters + creative additions):
 - All critical thresholds env-var configurable (U1_* prefixed)
@@ -229,7 +240,7 @@ class U1Config:
     W_VOL_Z = 0.25
     W_VOL_Z_MAX_6 = 0.15
     W_VOL_SLOPE = 0.10
-    W_BB_COMPRESS = 0.15
+    W_BB_COMPRESS = 0.0   # v4.0: zeroed (WS2 audit: dead weight, r=-0.009). Other weights unchanged.
     W_RANGE_PCT = 0.10
     W_RETURN_12 = 0.10
     W_CLV = 0.05
@@ -263,6 +274,20 @@ class U1Config:
     MIN_STOP_PCT = 0.005           # Floor: 0.5% minimum stop distance (clears fee burden)
     TP1_R = 1.0
     TP2_R = 2.0
+
+    # v4.0: Daily volume regime gate (HARD)
+    VOLUME_Z_1D_MIN = _env_float("U1_VOLUME_Z_1D_MIN", 4.0)
+
+    # v4.0: Volatility regime gate (replaces BB squeeze)
+    # Only validated TF+threshold pairs — no generic fallback
+    BB_WIDTH_MIN_5M = _env_float("U1_BB_WIDTH_MIN_5M", 0.07)
+    BB_WIDTH_MIN_15M = _env_float("U1_BB_WIDTH_MIN_15M", 0.10)
+
+    # v4.0: Mean reversion soft score thresholds
+    REVERSION_PC_4H = _env_float("U1_REVERSION_PC_4H", -0.0065)
+    REVERSION_PC_1H = _env_float("U1_REVERSION_PC_1H", -0.0048)
+    REVERSION_BB_POS = _env_float("U1_REVERSION_BB_POS", 0.258)
+    REVERSION_SCORE_WEIGHT = _env_float("U1_REVERSION_WEIGHT", 0.05)  # NOT from WS2 — invented starting point, requires validation
 
 
 # =============================================================================
@@ -468,6 +493,9 @@ class U1Signal:
     # Trigger path attribution (v3.0)
     trigger_path: str = "traditional"  # "traditional", "score_based", or "express_lane"
 
+    # v4.0: Mean reversion score (0-3)
+    reversion_score: int = 0
+
     # Explainability
     explain: Optional[ExplainPayload] = None
 
@@ -596,13 +624,101 @@ def compute_slope(values: list) -> float:
 
 
 # =============================================================================
+# v4.0 Helpers
+# =============================================================================
+
+def compute_volume_z_1d_from_daily(daily_volumes: list[float], lookback: int = 20) -> float:
+    """Z-score of last completed day's volume vs prior lookback days.
+
+    daily_volumes: list of daily volume values, oldest first.
+    Uses last completed day (index -1) vs prior `lookback` days.
+    Returns 0.0 if insufficient data.
+    """
+    if len(daily_volumes) < lookback + 1:
+        return 0.0
+
+    last_day_vol = daily_volumes[-1]
+    prior = daily_volumes[-(lookback + 1):-1]
+    m = np.mean(prior)
+    s = np.std(prior)
+    if s <= 0:
+        return 0.0
+    return float((last_day_vol - m) / s)
+
+
+def aggregate_candles_to_1h(candles: list[OHLCV], native_tf: str) -> list[OHLCV]:
+    """Aggregate sub-hourly candles into synthetic 1h candles.
+
+    Groups by UTC hour boundary. Returns synthetic OHLCV with proper
+    OHLC (first open, max high, min low, last close, sum volume).
+    """
+    if native_tf == "1h":
+        return candles
+
+    # Bars per hour for grouping
+    bph = {"5m": 12, "15m": 4, "1m": 60}.get(native_tf)
+    if bph is None or len(candles) < bph:
+        return []
+
+    # Group by UTC hour boundary (truncate timestamp to hour)
+    hourly: dict[int, list[OHLCV]] = {}
+    for c in candles:
+        # Truncate ms timestamp to hour boundary
+        hour_ts = (c.timestamp // 3_600_000) * 3_600_000
+        if hour_ts not in hourly:
+            hourly[hour_ts] = []
+        hourly[hour_ts].append(c)
+
+    result = []
+    for hour_ts in sorted(hourly.keys()):
+        group = hourly[hour_ts]
+        if len(group) < bph:
+            continue  # incomplete hour
+        result.append(OHLCV(
+            timestamp=hour_ts,
+            open=group[0].open,
+            high=max(c.high for c in group),
+            low=min(c.low for c in group),
+            close=group[-1].close,
+            volume=sum(c.volume for c in group),
+        ))
+    return result
+
+
+def compute_bb_position_1h(candles: list[OHLCV], native_tf: str) -> float:
+    """Compute 1h BB position by aggregating to synthetic 1h candles.
+
+    Returns (close - lower) / (upper - lower), or 0.5 if insufficient data.
+    """
+    hourly = aggregate_candles_to_1h(candles, native_tf)
+    if len(hourly) < 20:
+        return 0.5
+
+    closes = np.array([c.close for c in hourly[-20:]])
+    sma = np.mean(closes)
+    std = np.std(closes)
+    if std <= 0:
+        return 0.5
+
+    upper = sma + 2 * std
+    lower = sma - 2 * std
+    bb_range = upper - lower
+    if bb_range <= 0:
+        return 0.5
+
+    return float((hourly[-1].close - lower) / bb_range)
+
+
+# =============================================================================
 # Data-Driven Feature Extraction (v2.0)
 # =============================================================================
 
-def compute_ignition_features(candles: list[OHLCV], baseline_vol: float) -> dict:
+def compute_ignition_features(candles: list[OHLCV], baseline_vol: float, timeframe: str = "5m") -> dict:
     """
     Extract the profiler-derived features from OHLCV candles.
     Returns dict of feature values for ignition scoring.
+
+    v4.0: Adds price_change_1h, price_change_4h, bb_position, bb_position_1h.
     """
     if len(candles) < 25:
         return {}
@@ -688,6 +804,30 @@ def compute_ignition_features(candles: list[OHLCV], baseline_vol: float) -> dict
     else:
         min_vol_z_3 = 0.0
 
+    # v4.0: Price change lookback (in bars) based on timeframe
+    bars_per_1h = {"5m": 12, "15m": 4, "1h": 1, "4h": 1}.get(timeframe, 12)
+    bars_per_4h = {"5m": 48, "15m": 16, "1h": 4, "4h": 1}.get(timeframe, 48)
+
+    price_change_1h = 0.0
+    if n > bars_per_1h and closes[-(bars_per_1h + 1)] > 0:
+        price_change_1h = (closes[-1] - closes[-(bars_per_1h + 1)]) / closes[-(bars_per_1h + 1)]
+
+    price_change_4h = 0.0
+    if n > bars_per_4h and closes[-(bars_per_4h + 1)] > 0:
+        price_change_4h = (closes[-1] - closes[-(bars_per_4h + 1)]) / closes[-(bars_per_4h + 1)]
+
+    # v4.0: BB position on native TF
+    bb_position = 0.5
+    if n >= 20 and std_20 > 0:
+        upper = sma_20 + 2 * std_20
+        lower = sma_20 - 2 * std_20
+        bb_range = upper - lower
+        if bb_range > 0:
+            bb_position = (closes[-1] - lower) / bb_range
+
+    # v4.0: BB position on 1h (aggregated from sub-hourly candles)
+    bb_position_1h = compute_bb_position_1h(candles, timeframe)
+
     return {
         "vol_z": float(vol_z),
         "vol_z_max_6": float(vol_z_max_6),
@@ -700,6 +840,10 @@ def compute_ignition_features(candles: list[OHLCV], baseline_vol: float) -> dict
         "return_12": float(return_12),
         "rel_volume": float(rel_vol),
         "min_vol_z_3": float(min_vol_z_3),
+        "price_change_1h": float(price_change_1h),
+        "price_change_4h": float(price_change_4h),
+        "bb_position": float(bb_position),
+        "bb_position_1h": float(bb_position_1h),
     }
 
 
@@ -1267,13 +1411,15 @@ class U1Evaluator:
         is_final: bool = True,
         funding_rates: dict = None,
         database_url: str = None,
+        volume_z_1d: float = None,
     ) -> Optional[U1Signal]:
         """
         Evaluate ignition trigger (Signal worker calls this for EMBRYO_ACTIVE symbols).
 
         v2.0: Uses data-driven ignition scoring alongside traditional triggers.
-        v2.1: funding_rates dict enables post-scoring multiplier when compressed + negative funding.
         v2.2: Social silence filter — reject signals for coins with social mentions in last 30d.
+        v4.0: volume_z_1d hard gate, bb_width hard gate, funding boost removed,
+              mean reversion soft score added.
         Returns U1Signal if triggered, None otherwise.
         """
         # Canon §1.8: Anti-lookahead — only trigger on closed/final candles
@@ -1285,30 +1431,37 @@ class U1Evaluator:
         if state.phase not in (U1Phase.EMBRYO_ACTIVE, U1Phase.SCANNING, U1Phase.IGNITION_WATCH):
             return None
 
+        # v4.0: Daily volume regime gate (HARD)
+        if volume_z_1d is not None and volume_z_1d < U1Config.VOLUME_Z_1D_MIN:
+            return None
+
+        # Compute features early — needed for bb_width gate + scoring
+        ign_features = compute_ignition_features(candles, state.rel_volume_baseline, timeframe=timeframe)
+
+        # v4.0: Volatility regime gate (HARD) — replaces BB squeeze
+        # Only gate on bb_width for validated TF+threshold pairs.
+        # bb_width is structurally different across timeframes (20-period BB covers
+        # different wall-clock spans), so each TF needs its own validated threshold.
+        # Unvalidated TFs skip this gate entirely rather than guessing.
+        _BB_WIDTH_THRESHOLDS = {"5m": U1Config.BB_WIDTH_MIN_5M, "15m": U1Config.BB_WIDTH_MIN_15M}
+        if ign_features and timeframe in _BB_WIDTH_THRESHOLDS:
+            bb_width = ign_features.get("bb_width", 0)
+            if bb_width < _BB_WIDTH_THRESHOLDS[timeframe]:
+                return None
+
         # Check traditional triggers
         triggers_passed, trigger_metrics = check_ignition_triggers(state, candles)
 
         # v2.0: Also check if ignition score alone is high enough
-        ign_features = compute_ignition_features(candles, state.rel_volume_baseline)
         score_check = False
-        funding_mult = 1.0
         if ign_features:
             total, per_coin, temp = compute_ignition_score(ign_features)
 
-            # v2.1: Funding rate conditioning — boost score when compressed + negative funding
-            bb_pctile = ign_features.get("bb_width_pctile", 50.0)
+            # v4.0: Funding rate — still track for data but no score boost
             fr = (funding_rates or {}).get(symbol, None)
             if fr is not None:
                 state.funding_rate = fr
                 state.funding_rate_updated = True
-                if bb_pctile < 10 and fr < -0.0001:
-                    funding_mult = 1.8
-                elif bb_pctile < 10 and fr < 0:
-                    funding_mult = 1.5
-                if funding_mult > 1.0:
-                    logger.info("Funding boost: %s funding_rate=%.6f multiplier=%.1f",
-                                symbol, fr, funding_mult)
-                    total *= funding_mult
 
             state.ignition_score = total
             state.per_coin_score = per_coin
@@ -1406,6 +1559,22 @@ class U1Evaluator:
             state.trap_risk_score,
         )
 
+        # v4.0: Mean reversion soft score
+        reversion_score = 0
+        if ign_features:
+            if ign_features.get("price_change_4h", 0) < U1Config.REVERSION_PC_4H:
+                reversion_score += 1
+            if ign_features.get("price_change_1h", 0) < U1Config.REVERSION_PC_1H:
+                reversion_score += 1
+            if ign_features.get("bb_position_1h", 0.5) < U1Config.REVERSION_BB_POS:
+                reversion_score += 1
+
+        # REVERSION_SCORE_WEIGHT (0.05) is an invented starting point, NOT validated by WS2.
+        # WS2 validated the thresholds but did not produce a calibrated weight.
+        # Backfill will report precision with and without this boost to validate it.
+        confidence += reversion_score * U1Config.REVERSION_SCORE_WEIGHT
+        confidence = max(0.0, min(1.0, confidence))
+
         # Update state phase
         state.phase = U1Phase.IGNITION
 
@@ -1415,6 +1584,14 @@ class U1Evaluator:
             f"Ignition score: {state.ignition_score:.3f} (threshold: {U1Config.IGNITION_SCORE_THRESHOLD})",
             f"Vol z-score: {state.vol_z_at_trigger:.1f} (min: {U1Config.VOL_Z_MIN})",
         ]
+        if volume_z_1d is not None:
+            why_items.append(
+                f"Volume regime: volume_z_1d={volume_z_1d:.1f} (min: {U1Config.VOLUME_Z_1D_MIN})"
+            )
+        if ign_features and timeframe in _BB_WIDTH_THRESHOLDS:
+            why_items.append(
+                f"Volatility regime: bb_width={ign_features.get('bb_width', 0):.4f} (min: {_BB_WIDTH_THRESHOLDS[timeframe]:.2f})"
+            )
         if triggers_passed:
             why_items.append(
                 f"Rel volume ignition: {trigger_metrics.get('rel_volume', 0):.1f}x baseline"
@@ -1427,9 +1604,12 @@ class U1Evaluator:
                 f"Express lane: rel_vol={ign_features.get('rel_volume', 0):.1f}x "
                 f"ret12={ign_features.get('return_12', 0):.3f} clv={ign_features.get('clv', 0):.2f}"
             )
-        if funding_mult > 1.0:
+        if reversion_score > 0:
             why_items.append(
-                f"Funding boost: {funding_mult:.1f}x (funding_rate={state.funding_rate:.6f})"
+                f"Reversion boost: {reversion_score}/3 "
+                f"(pc4h={ign_features.get('price_change_4h', 0):.4f}, "
+                f"pc1h={ign_features.get('price_change_1h', 0):.4f}, "
+                f"bbpos1h={ign_features.get('bb_position_1h', 0.5):.3f})"
             )
         why_items.extend([
             f"Per-coin score: {state.per_coin_score:.3f}, Universe temp: {state.universe_temp_score:.3f}",
@@ -1470,4 +1650,5 @@ class U1Evaluator:
             explain=explain,
             state=state,
             trigger_path=trigger_path,
+            reversion_score=reversion_score,
         )

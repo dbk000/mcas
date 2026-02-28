@@ -1,0 +1,871 @@
+#!/usr/bin/env python3
+"""
+Backfill U1 (Unicorn Ignition) opportunities v2 — Proper Temporal Simulation.
+
+Fixes all structural problems from v1:
+1. No cutoff boundary — gates + triggers evaluated every bar from bar 96 onwards.
+   Warmup signals fire and consume primed state (no dam burst).
+2. State reset with cooldown — after IGNITION fires, state resets to EMBRYO.
+   Cooldown configurable in hours, converted to bars per timeframe.
+3. Universe filtering — rolling 24h quote volume band (75K-3M USD).
+   Symbol exclusion list (stablecoins, equities, leverage tokens, etc).
+4. Historical funding rates — loaded from Step 1b JSON output.
+   Binary search per bar for most recent funding rate before bar_start_ts.
+5. Bar-time timeout demotion — elapsed time computed from bar timestamps,
+   not wall clock. Manually checks before evaluate_gates().
+
+Usage:
+    python scripts/backfill_u1_opportunities_v2.py \\
+        --start-date 2025-09-01 --end-date 2026-02-27 \\
+        --timeframes 5m,1h --cooldown-hours 24 \\
+        --workers 12 --clear-expired
+
+Requires DATABASE_URL env var (reads from .env if available).
+"""
+
+import bisect
+import hashlib
+import json
+import logging
+import multiprocessing
+import os
+import sys
+import time
+import argparse
+from collections import defaultdict
+from datetime import datetime, timezone, timedelta
+from pathlib import Path
+
+import numpy as np
+
+# Load .env if available
+env_path = os.path.join(os.path.dirname(__file__), '..', '.env')
+if os.path.exists(env_path):
+    with open(env_path) as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith('#') and '=' in line:
+                key, val = line.split('=', 1)
+                os.environ.setdefault(key.strip(), val.strip())
+
+# Add worker/app to path for imports
+# In Docker: script at /scripts/, worker code at /app/
+# On host: script at Backend/scripts/, worker code at Backend/worker/app/
+worker_app_dir = os.path.join(os.path.dirname(__file__), '..', 'worker', 'app')
+if os.path.isdir('/app') and os.path.exists('/app/indicators.py'):
+    worker_app_dir = '/app'
+sys.path.insert(0, os.path.abspath(worker_app_dir))
+setups_dir = os.path.join(worker_app_dir, 'setups')
+sys.path.insert(0, os.path.abspath(setups_dir))
+
+import psycopg
+from indicators import OHLCV
+from setups.u1_unicorn_ignition import (
+    U1Evaluator, U1Signal, U1State, U1Phase, U1Config,
+    is_stablecoin_base, is_wrapped, is_leverage_token,
+)
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s %(levelname)s %(message)s',
+    datefmt='%H:%M:%S',
+)
+logger = logging.getLogger(__name__)
+
+DATABASE_URL = os.environ.get('DATABASE_URL')
+
+# Execution context
+IN_DOCKER = os.path.isdir("/app")
+if IN_DOCKER:
+    SCRIPTS_DIR = Path("/scripts")
+else:
+    SCRIPTS_DIR = Path(__file__).resolve().parent
+OUTPUT_DIR = SCRIPTS_DIR / "output"
+
+# U1 needs GATE_WINDOW_BARS * 2 = 96 candles minimum
+U1_MIN_BARS = 96
+
+# Bars per hour per timeframe
+BARS_PER_HOUR = {
+    "1m": 60,
+    "5m": 12,
+    "15m": 4,
+    "1h": 1,
+    "4h": 0.25,
+}
+
+# Active phases that get evaluated for triggers
+ACTIVE_PHASES = {U1Phase.EMBRYO_ACTIVE, U1Phase.SCANNING, U1Phase.IGNITION_WATCH}
+
+# Volume band for U1 universe
+MIN_VOL_USD = U1Config.MIN_VOLUME_USD   # 75K
+MAX_VOL_USD = U1Config.MAX_VOLUME_USD   # 3M
+
+# Module-level shared data — set before Pool fork, inherited via copy-on-write
+_ALL_DATA = None          # {(symbol, tf): [OHLCV, ...]}
+_VOL_24H = None           # {(symbol, tf): np.array of rolling 24h quote vol}
+_VOL_Z_1D = None          # {(symbol, tf): np.array of volume_z_1d per bar}
+_FUNDING_TS = None         # {symbol: [(ts_ms, rate), ...]} sorted by ts
+_WORKER_ARGS = None        # dict of shared args
+_EXCLUSION_SET = None      # set of excluded symbols
+
+
+# =========================================================================
+# Exclusion List
+# =========================================================================
+
+# Known non-crypto or contamination symbols
+EXTRA_EXCLUSIONS = {
+    # Stablecoins not caught by is_stablecoin_base
+    "USDCUSDT", "TUSDUSDT", "FDUSDUSDT", "USDPUSDT", "RLUSDUSDT",
+    "BFUSDUSDT", "USD1USDT", "USDEUSDT", "USTCUSDT", "FRAXUSDT",
+    "XUSDUSDT", "UUSDT",
+    # Fiat-pegged
+    "EURUSDT", "AEURUSDT",
+    # Gold-backed
+    "PAXGUSDT",
+    # Equities (tokenized stocks)
+    "AVGOUSDT", "METAUSDT", "NVDAUSDT", "QQQUSDT", "XLKUSDT",
+}
+
+
+def build_exclusion_set(symbols: list[str]) -> set[str]:
+    """Build symbol exclusion set using U1's own filtering + extras."""
+    excluded = set()
+    for sym in symbols:
+        if sym in EXTRA_EXCLUSIONS:
+            excluded.add(sym)
+        elif sym in U1Config.MAJOR_SYMBOLS:
+            excluded.add(sym)
+        elif is_stablecoin_base(sym):
+            excluded.add(sym)
+        elif is_wrapped(sym):
+            excluded.add(sym)
+        elif is_leverage_token(sym):
+            excluded.add(sym)
+        elif not sym.endswith("USDT"):
+            excluded.add(sym)
+    return excluded
+
+
+# =========================================================================
+# Data Loading
+# =========================================================================
+
+def load_ohlcv_from_db(
+    start_date: datetime,
+    end_date: datetime,
+    extra_warmup_days: int,
+    timeframes: list[str],
+) -> dict[tuple[str, str], list[OHLCV]]:
+    """Load OHLCV data from Postgres, grouped by (symbol, timeframe).
+
+    Fetches from (start_date - extra_warmup_days) to end_date.
+    Batches by 50 symbols at a time to limit memory per query.
+    """
+    warmup_start = start_date - timedelta(days=extra_warmup_days)
+
+    logger.info(f"Loading OHLCV: {warmup_start.date()} to {end_date.date()} "
+                f"for timeframes {timeframes}")
+
+    # Get distinct symbols first
+    with psycopg.connect(DATABASE_URL) as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT DISTINCT symbol FROM ohlcv
+                WHERE timeframe = ANY(%s)
+                  AND bar_start_ts >= %s AND bar_start_ts < %s
+                  AND is_final = TRUE
+            """, (timeframes, warmup_start, end_date))
+            all_symbols = sorted([r[0] for r in cur.fetchall()])
+
+    logger.info(f"Found {len(all_symbols)} symbols with OHLCV data")
+
+    data = {}
+    t0 = time.time()
+    batch_size = 50
+
+    for batch_start in range(0, len(all_symbols), batch_size):
+        batch_syms = all_symbols[batch_start:batch_start + batch_size]
+
+        with psycopg.connect(DATABASE_URL) as conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    SELECT symbol, timeframe, bar_start_ts,
+                           open, high, low, close, volume
+                    FROM ohlcv
+                    WHERE symbol = ANY(%s)
+                      AND timeframe = ANY(%s)
+                      AND bar_start_ts >= %s AND bar_start_ts < %s
+                      AND is_final = TRUE
+                    ORDER BY symbol, timeframe, bar_start_ts ASC
+                """, (batch_syms, timeframes, warmup_start, end_date))
+
+                for row in cur:
+                    symbol, tf, bar_start_ts, o, h, l, c, v = row
+                    ts_ms = int(bar_start_ts.timestamp() * 1000)
+                    key = (symbol, tf)
+                    if key not in data:
+                        data[key] = []
+                    data[key].append(OHLCV(
+                        timestamp=ts_ms,
+                        open=o, high=h, low=l, close=c, volume=v,
+                    ))
+
+        loaded = min(batch_start + batch_size, len(all_symbols))
+        if loaded % 200 == 0 or loaded == len(all_symbols):
+            elapsed = time.time() - t0
+            total_bars = sum(len(v) for v in data.values())
+            logger.info(f"  OHLCV load: {loaded}/{len(all_symbols)} symbols, "
+                        f"{total_bars:,} bars | {elapsed:.0f}s")
+
+    total_bars = sum(len(v) for v in data.values())
+    logger.info(f"Loaded {total_bars:,} bars across {len(data)} symbol/timeframe combos "
+                f"in {time.time()-t0:.1f}s")
+    return data
+
+
+def precompute_rolling_volume(
+    data: dict[tuple[str, str], list[OHLCV]],
+) -> dict[tuple[str, str], np.ndarray]:
+    """Precompute rolling 24h quote volume for each (symbol, tf) as numpy array.
+
+    For each bar i, compute sum(volume[j] * close[j]) for the 24h window ending at i.
+    """
+    t0 = time.time()
+    vol_24h = {}
+
+    # Bars in 24h per timeframe
+    bars_24h = {
+        "1m": 1440, "5m": 288, "15m": 96, "1h": 24, "4h": 6, "1d": 1,
+    }
+
+    for (sym, tf), candles in data.items():
+        n = len(candles)
+        window = bars_24h.get(tf, 24)
+
+        if n < window:
+            vol_24h[(sym, tf)] = np.zeros(n)
+            continue
+
+        # Quote volume = volume * close (approximation)
+        volumes = np.array([c.volume for c in candles])
+        closes = np.array([c.close for c in candles])
+        qvol = volumes * closes
+
+        # Rolling sum using cumsum trick
+        cumsum = np.cumsum(qvol)
+        rolling = np.zeros(n)
+        rolling[window - 1:] = cumsum[window - 1:] - np.concatenate([[0], cumsum[:n - window]])
+        # For bars before the window is full, use partial sum
+        for i in range(min(window - 1, n)):
+            rolling[i] = cumsum[i]
+
+        vol_24h[(sym, tf)] = rolling
+
+    logger.info(f"Precomputed rolling 24h volume for {len(vol_24h)} series "
+                f"in {time.time()-t0:.1f}s")
+    return vol_24h
+
+
+def precompute_volume_z_1d(
+    data: dict[tuple[str, str], list[OHLCV]],
+) -> dict[tuple[str, str], np.ndarray]:
+    """Precompute daily volume z-score for each (symbol, tf) as numpy array.
+
+    For each bar i, volume_z_1d = z-score of last completed day's total volume
+    vs prior 20 completed days. The z-score is broadcast to all bars in the
+    NEXT day (the day after the completed day being scored).
+
+    Returns {(symbol, tf): np.array of volume_z_1d per bar index}.
+    """
+    t0 = time.time()
+    vol_z_1d = {}
+
+    bars_per_day = {
+        "1m": 1440, "5m": 288, "15m": 96, "1h": 24, "4h": 6, "1d": 1,
+    }
+    lookback = 20  # 20 completed days for z-score baseline
+
+    for (sym, tf), candles in data.items():
+        n = len(candles)
+        bpd = bars_per_day.get(tf, 288)
+
+        result = np.full(n, np.nan)
+
+        if n < bpd * (lookback + 2):
+            # Not enough data for meaningful z-scores
+            vol_z_1d[(sym, tf)] = result
+            continue
+
+        # Sum volume per day
+        volumes = np.array([c.volume for c in candles])
+        n_full_days = n // bpd
+        trimmed = volumes[:n_full_days * bpd]
+        daily_vols = trimmed.reshape(n_full_days, bpd).sum(axis=1)
+
+        # For each completed day d (starting from day lookback),
+        # compute z-score of day d vs days [d-lookback, d)
+        # then broadcast to all bars in day d+1
+        for d in range(lookback, n_full_days):
+            prior = daily_vols[d - lookback:d]
+            m = np.mean(prior)
+            s = np.std(prior)
+            if s > 0:
+                z = (daily_vols[d] - m) / s
+            else:
+                z = 0.0
+
+            # Broadcast to bars in the next day (d+1)
+            next_day_start = (d + 1) * bpd
+            next_day_end = min((d + 2) * bpd, n)
+            if next_day_start < n:
+                result[next_day_start:next_day_end] = z
+
+        vol_z_1d[(sym, tf)] = result
+
+    logger.info(f"Precomputed volume_z_1d for {len(vol_z_1d)} series "
+                f"in {time.time()-t0:.1f}s")
+    return vol_z_1d
+
+
+def load_funding_rates(json_path: Path) -> dict[str, list[tuple[int, float]]]:
+    """Load funding rates from JSON export.
+
+    Returns {symbol: [(ts_ms, rate), ...]} sorted by ts_ms.
+    """
+    if not json_path.exists():
+        logger.warning(f"Funding rates JSON not found: {json_path}")
+        return {}
+
+    with open(json_path, 'r') as f:
+        raw = json.load(f)
+
+    # Convert to tuples, ensure sorted
+    result = {}
+    for sym, entries in raw.items():
+        sorted_entries = sorted(entries, key=lambda x: x[0])
+        result[sym] = [(int(e[0]), float(e[1])) for e in sorted_entries]
+
+    logger.info(f"Loaded funding rates for {len(result)} symbols from {json_path}")
+    return result
+
+
+# =========================================================================
+# Funding Rate Lookup (O(log N) per bar)
+# =========================================================================
+
+def bisect_funding_rate(
+    symbol: str,
+    bar_ts_ms: int,
+    funding_ts: dict[str, list[tuple[int, float]]],
+) -> float | None:
+    """Find most recent funding rate at or before bar_ts_ms.
+
+    Uses bisect for O(log N) lookup.
+    """
+    rates = funding_ts.get(symbol)
+    if not rates:
+        return None
+
+    # bisect_right on (bar_ts_ms,) finds insertion point after all entries <= bar_ts_ms
+    # We use a helper: extract just timestamps for bisect
+    # Since rates is sorted by ts_ms, we can binary search on first element
+    timestamps = [r[0] for r in rates]
+    idx = bisect.bisect_right(timestamps, bar_ts_ms) - 1
+    if idx >= 0:
+        return rates[idx][1]
+    return None
+
+
+# =========================================================================
+# Per-Symbol Worker
+# =========================================================================
+
+def _worker_process_symbol(symbol: str) -> tuple[str, list[dict], dict]:
+    """Multiprocessing worker: process one symbol (all timeframes).
+
+    Uses fork-inherited globals (COW). Zero DB calls.
+    Returns (symbol, opportunities, stats).
+    """
+    all_data = _ALL_DATA
+    vol_24h_data = _VOL_24H
+    vol_z_1d_data = _VOL_Z_1D
+    funding_ts = _FUNDING_TS
+    args = _WORKER_ARGS
+    exclusion_set = _EXCLUSION_SET
+
+    output_start_ms = args["output_start_ms"]
+    cooldown_hours = args["cooldown_hours"]
+    setup_version = args["setup_version"]
+    batch_id = args["batch_id"]
+    tfs = args["symbol_tfs"].get(symbol, [])
+
+    opportunities = []
+    stats = {"signals": 0, "bars_processed": 0, "timeouts": 0}
+
+    # Skip excluded symbols entirely
+    if symbol in exclusion_set:
+        return symbol, [], stats
+
+    evaluator = U1Evaluator()
+
+    for tf in tfs:
+        candles = all_data.get((symbol, tf), [])
+        vol_arr = vol_24h_data.get((symbol, tf))
+        vol_z_1d_arr = vol_z_1d_data.get((symbol, tf)) if vol_z_1d_data else None
+
+        if len(candles) < U1_MIN_BARS or vol_arr is None:
+            continue
+
+        cooldown_bars = int(cooldown_hours * BARS_PER_HOUR.get(tf, 1))
+
+        u1_state = None
+        cooldown_until_idx = -1
+        promoted_bar_ts_ms = 0  # bar-time tracking for timeout
+
+        for i in range(U1_MIN_BARS, len(candles)):
+            stats["bars_processed"] += 1
+
+            # Cooldown check
+            if i < cooldown_until_idx:
+                continue
+
+            current_bar = candles[i]
+
+            # Volume band check (precomputed array)
+            current_vol = vol_arr[i]
+            if not (MIN_VOL_USD <= current_vol <= MAX_VOL_USD):
+                # Outside volume band — reset active state
+                if u1_state and u1_state.phase in ACTIVE_PHASES:
+                    u1_state = None
+                    promoted_bar_ts_ms = 0
+                continue
+
+            # Bar-time timeout check (replaces wall-clock timeout in evaluate_gates)
+            if (u1_state and u1_state.phase in ACTIVE_PHASES
+                    and promoted_bar_ts_ms > 0):
+                bar_hours = (current_bar.timestamp - promoted_bar_ts_ms) / (3600 * 1000)
+                if bar_hours > U1Config.T_ACTIVE_MAX_HOURS:
+                    u1_state = None
+                    promoted_bar_ts_ms = 0
+                    stats["timeouts"] += 1
+                    continue
+
+            # Build window for evaluator (up to 500 bars lookback)
+            window = candles[max(0, i - 500 + 1):i + 1]
+            prev_phase = u1_state.phase if u1_state else None
+
+            # Gates — every bar
+            try:
+                u1_state = evaluator.evaluate_gates(window, u1_state)
+            except Exception:
+                continue
+
+            # Track promotion bar timestamp (bar-time, not wall clock)
+            if u1_state and u1_state.phase == U1Phase.EMBRYO_ACTIVE:
+                if prev_phase is None or prev_phase == U1Phase.EMBRYO:
+                    promoted_bar_ts_ms = current_bar.timestamp
+
+            # Trigger — every bar when in active phase, no cutoff
+            signal = None
+            if u1_state and u1_state.phase in ACTIVE_PHASES:
+                # Look up historical funding rate at this bar's timestamp
+                fr = bisect_funding_rate(symbol, current_bar.timestamp, funding_ts)
+                fr_dict = {symbol: fr} if fr is not None else {}
+                vol_z_1d = float(vol_z_1d_arr[i]) if vol_z_1d_arr is not None and not np.isnan(vol_z_1d_arr[i]) else None
+                try:
+                    signal = evaluator.evaluate_trigger(
+                        window, u1_state, symbol, tf, funding_rates=fr_dict,
+                        volume_z_1d=vol_z_1d)
+                except Exception:
+                    pass
+
+            if signal:
+                # Only record if after output start date
+                if current_bar.timestamp >= output_start_ms:
+                    opportunities.append(
+                        _build_opportunity(signal, current_bar, symbol, tf,
+                                           setup_version, batch_id))
+                    stats["signals"] += 1
+
+                # Reset state + enter cooldown regardless of whether we recorded
+                u1_state = None
+                promoted_bar_ts_ms = 0
+                cooldown_until_idx = i + cooldown_bars
+
+    return symbol, opportunities, stats
+
+
+def _build_opportunity(
+    signal: U1Signal,
+    current_bar: OHLCV,
+    symbol: str,
+    tf: str,
+    setup_version: str,
+    batch_id: str,
+) -> dict:
+    """Build opportunity dict from U1Signal."""
+    bar_ts_ms = current_bar.timestamp
+    bar_dt = datetime.fromtimestamp(bar_ts_ms / 1000, tz=timezone.utc)
+    reason = "; ".join(signal.explain.why_items) if signal.explain else None
+
+    payload = {
+        "setup_id": "U1",
+        "symbol": symbol,
+        "timeframe": tf,
+        "direction": signal.direction.value,
+        "setup_score": signal.setup_score,
+        "entry_price": signal.entry_price,
+        "stop_price": signal.stop_price,
+        "tp1_price": signal.tp1_price,
+        "tp2_price": signal.tp2_price,
+        "r_value": signal.r_value,
+        "time_stop_bars": signal.time_stop_bars,
+        "bar_start_ts": bar_ts_ms,
+        "as_of_ts": bar_ts_ms / 1000,
+        "trigger_path": getattr(signal, "trigger_path", "traditional"),
+        "rel_volume": signal.rel_volume,
+        "compression_box_high": signal.compression_box_high,
+        "compression_box_low": signal.compression_box_low,
+        "confirmations_met": signal.confirmations_met,
+        "ignition_score": signal.state.ignition_score if signal.state else 0,
+        "per_coin_score": signal.state.per_coin_score if signal.state else 0,
+        "universe_temp_score": signal.state.universe_temp_score if signal.state else 0,
+        "vol_z_at_trigger": signal.state.vol_z_at_trigger if signal.state else 0,
+        "reversion_score": signal.reversion_score,
+    }
+    if signal.explain:
+        payload["why_items"] = signal.explain.why_items
+
+    return {
+        "created_ts": bar_dt,
+        "symbol": symbol,
+        "timeframe": tf,
+        "setup_id": "U1",
+        "decision": "SIGNAL",
+        "score": signal.setup_score,
+        "reason": reason,
+        "payload": payload,
+        "setup_version": setup_version,
+        "batch_id": batch_id,
+    }
+
+
+# =========================================================================
+# DB Operations
+# =========================================================================
+
+def insert_opportunities(opportunities: list[dict], batch_size: int = 500) -> int:
+    """Bulk insert opportunities into Postgres. Returns count inserted."""
+    if not opportunities:
+        return 0
+
+    inserted = 0
+    with psycopg.connect(DATABASE_URL) as conn:
+        with conn.cursor() as cur:
+            for i in range(0, len(opportunities), batch_size):
+                batch = opportunities[i:i + batch_size]
+                values = []
+                for opp in batch:
+                    values.append((
+                        opp["created_ts"],
+                        opp["symbol"],
+                        opp["timeframe"],
+                        opp["setup_id"],
+                        opp["decision"],
+                        opp["score"],
+                        opp["reason"],
+                        json.dumps(opp["payload"]),
+                        "expired",
+                        opp["setup_version"],
+                        opp["batch_id"],
+                    ))
+
+                cur.executemany("""
+                    INSERT INTO opportunities
+                        (created_ts, symbol, timeframe, setup_id, decision,
+                         score, reason, payload_json, status,
+                         setup_version, batch_id)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """, values)
+                inserted += len(batch)
+        conn.commit()
+
+    return inserted
+
+
+def clear_old_backfill_opps(timeframes: list[str], start_date: datetime, end_date: datetime):
+    """Delete stale U1 backfill opportunities in the date range."""
+    with psycopg.connect(DATABASE_URL) as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                DELETE FROM opportunities
+                WHERE status = 'expired'
+                  AND batch_id LIKE 'backfill_%%'
+                  AND setup_id = 'U1'
+                  AND timeframe = ANY(%s)
+                  AND created_ts >= %s
+                  AND created_ts < %s
+            """, (timeframes, start_date, end_date))
+            deleted = cur.rowcount
+        conn.commit()
+    return deleted
+
+
+# =========================================================================
+# Helpers
+# =========================================================================
+
+def _format_duration(seconds: float) -> str:
+    """Format seconds as human-readable duration."""
+    if seconds < 60:
+        return f"{seconds:.0f}s"
+    m, s = divmod(int(seconds), 60)
+    h, m = divmod(m, 60)
+    if h > 0:
+        return f"{h}h{m:02d}m{s:02d}s"
+    return f"{m}m{s:02d}s"
+
+
+# =========================================================================
+# Main
+# =========================================================================
+
+def main():
+    global _ALL_DATA, _VOL_24H, _VOL_Z_1D, _FUNDING_TS, _WORKER_ARGS, _EXCLUSION_SET
+
+    parser = argparse.ArgumentParser(
+        description="Backfill U1 opportunities v2 — proper temporal simulation"
+    )
+    parser.add_argument("--start-date", type=str, required=True,
+                        help="Output start date (YYYY-MM-DD)")
+    parser.add_argument("--end-date", type=str, default=None,
+                        help="Output end date (YYYY-MM-DD, default: today)")
+    parser.add_argument("--timeframes", type=str, default="5m,1h",
+                        help="U1 evaluation timeframes (default: 5m,1h)")
+    parser.add_argument("--cooldown-hours", type=int, default=24,
+                        help="Cooldown between signals per symbol/tf (default: 24)")
+    parser.add_argument("--workers", type=int, default=12,
+                        help="Pool workers (default: 12)")
+    parser.add_argument("--clear-expired", action="store_true",
+                        help="Delete old backfill U1 opps before inserting")
+    parser.add_argument("--setup-version", type=str, default="U1_v4.0",
+                        help="Version tag (default: U1_v4.0)")
+    parser.add_argument("--extra-warmup-days", type=int, default=90,
+                        help="OHLCV loaded before start-date for warmup (default: 90)")
+    parser.add_argument("--funding-rates-json", type=str, default=None,
+                        help="Path to funding_rates_historical.json (default: auto-detect)")
+    args = parser.parse_args()
+
+    if not DATABASE_URL:
+        logger.error("DATABASE_URL not set. Set it in .env or environment.")
+        sys.exit(1)
+
+    # Parse dates
+    start_date = datetime.strptime(args.start_date, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+    if args.end_date:
+        end_date = datetime.strptime(args.end_date, "%Y-%m-%d").replace(
+            hour=23, minute=59, second=59, tzinfo=timezone.utc)
+    else:
+        end_date = datetime.now(timezone.utc)
+
+    timeframes = [t.strip() for t in args.timeframes.split(",")]
+    n_workers = min(args.workers, 12)
+
+    # Generate batch ID
+    batch_hash = hashlib.sha256(
+        f"{datetime.now(timezone.utc).isoformat()}U1v2{args.setup_version}".encode()
+    ).hexdigest()[:8]
+    batch_id = f"backfill_{datetime.now(timezone.utc).strftime('%Y%m%d')}_U1v2_{batch_hash}"
+
+    output_start_ms = int(start_date.timestamp() * 1000)
+
+    logger.info("=" * 60)
+    logger.info("MCAS U1 Opportunity Backfill v2 — Temporal Simulation")
+    logger.info("=" * 60)
+    logger.info(f"  Output window: {start_date.date()} to {end_date.date()}")
+    logger.info(f"  Warmup:        {args.extra_warmup_days} days before start")
+    logger.info(f"  Timeframes:    {timeframes}")
+    logger.info(f"  Cooldown:      {args.cooldown_hours}h")
+    logger.info(f"  Workers:       {n_workers}")
+    logger.info(f"  Setup version: {args.setup_version}")
+    logger.info(f"  Batch ID:      {batch_id}")
+    logger.info(f"  Clear expired: {args.clear_expired}")
+    logger.info("=" * 60)
+
+    # ---- Phase 1: Load data ----
+    t0 = time.time()
+
+    all_data = load_ohlcv_from_db(
+        start_date=start_date,
+        end_date=end_date,
+        extra_warmup_days=args.extra_warmup_days,
+        timeframes=timeframes,
+    )
+
+    if not all_data:
+        logger.error("No OHLCV data found. Run backfill_ohlcv.py first.")
+        sys.exit(1)
+
+    # ---- Phase 2: Precompute rolling volume ----
+    vol_24h = precompute_rolling_volume(all_data)
+
+    # ---- Phase 2b: Precompute daily volume z-scores (v4.0) ----
+    vol_z_1d = precompute_volume_z_1d(all_data)
+
+    # ---- Phase 3: Load funding rates ----
+    if args.funding_rates_json:
+        fr_path = Path(args.funding_rates_json)
+    else:
+        fr_path = OUTPUT_DIR / "funding_rates_historical.json"
+    funding_ts = load_funding_rates(fr_path)
+
+    # ---- Phase 4: Build exclusion set ----
+    all_symbols = sorted(set(sym for (sym, tf) in all_data.keys()))
+    exclusion_set = build_exclusion_set(all_symbols)
+    logger.info(f"Exclusion set: {len(exclusion_set)} symbols excluded, "
+                f"{len(all_symbols) - len(exclusion_set)} eligible")
+
+    # ---- Phase 5: Clear old opps if requested ----
+    if args.clear_expired:
+        logger.info("Clearing old backfill U1 opportunities...")
+        deleted = clear_old_backfill_opps(timeframes, start_date, end_date)
+        logger.info(f"  Deleted {deleted:,} stale U1 opportunities")
+
+    # ---- Phase 6: Process symbols in parallel ----
+    symbol_tfs_map = defaultdict(list)
+    for (sym, tf) in sorted(all_data.keys()):
+        if sym not in exclusion_set:
+            symbol_tfs_map[sym].append(tf)
+    work_symbols = sorted(symbol_tfs_map.keys())
+
+    # Sort heaviest-first (most bars) so the tail is short units
+    bar_counts = {
+        sym: sum(len(all_data.get((sym, tf), []))
+                 for tf in symbol_tfs_map[sym])
+        for sym in work_symbols
+    }
+    work_symbols_sorted = sorted(work_symbols, key=lambda s: bar_counts.get(s, 0), reverse=True)
+
+    heaviest = max(bar_counts.values()) if bar_counts else 0
+    lightest = min(bar_counts.values()) if bar_counts else 0
+    logger.info(f"Processing {len(work_symbols_sorted)} symbols × {len(timeframes)} timeframes")
+    logger.info(f"  Heaviest: {heaviest:,} bars, Lightest: {lightest:,} bars, "
+                f"Ratio: {heaviest/max(lightest, 1):.1f}×")
+
+    # Set module-level globals BEFORE fork
+    _ALL_DATA = all_data
+    _VOL_24H = vol_24h
+    _VOL_Z_1D = vol_z_1d
+    _FUNDING_TS = funding_ts
+    _EXCLUSION_SET = exclusion_set
+    _WORKER_ARGS = {
+        "symbol_tfs": dict(symbol_tfs_map),
+        "output_start_ms": output_start_ms,
+        "cooldown_hours": args.cooldown_hours,
+        "setup_version": args.setup_version,
+        "batch_id": batch_id,
+    }
+
+    t_process = time.time()
+    total_inserted = 0
+    total_found = 0
+    total_bars = 0
+    total_timeouts = 0
+    completed = 0
+
+    with multiprocessing.Pool(n_workers) as pool:
+        for symbol, opps, sym_stats in pool.imap_unordered(
+                _worker_process_symbol, work_symbols_sorted):
+            completed += 1
+            total_bars += sym_stats["bars_processed"]
+            total_timeouts += sym_stats["timeouts"]
+
+            if opps:
+                opps.sort(key=lambda o: (o["timeframe"], o["created_ts"]))
+                n_ins = insert_opportunities(opps)
+                total_inserted += n_ins
+                total_found += len(opps)
+
+            elapsed = time.time() - t_process
+            eta = (elapsed / completed) * (len(work_symbols_sorted) - completed) if completed > 0 else 0
+            if opps or completed % 100 == 0 or completed == len(work_symbols_sorted):
+                logger.info(
+                    "[%d/%d] %s: %d signals | %s total | %s elapsed | ~%s remaining",
+                    completed, len(work_symbols_sorted), symbol, len(opps),
+                    f"{total_found:,}",
+                    _format_duration(elapsed), _format_duration(eta),
+                )
+
+    # ---- Summary ----
+    elapsed_total = time.time() - t0
+    logger.info("=" * 60)
+    logger.info(f"U1 backfill v2 complete in {_format_duration(elapsed_total)}")
+    logger.info(f"  Signals found:        {total_found:,}")
+    logger.info(f"  Opportunities stored: {total_inserted:,}")
+    logger.info(f"  Bars processed:       {total_bars:,}")
+    logger.info(f"  Timeouts (demoted):   {total_timeouts:,}")
+    logger.info(f"  Excluded symbols:     {len(exclusion_set)}")
+    logger.info(f"  Batch ID:             {batch_id}")
+    logger.info(f"  Setup version:        {args.setup_version}")
+    logger.info("=" * 60)
+
+    # ---- Quick verification ----
+    if total_found > 0:
+        # Count by day
+        day_counts = defaultdict(int)
+        tf_counts = defaultdict(int)
+        sym_counts = defaultdict(int)
+        for (sym, tf) in all_data.keys():
+            if sym in exclusion_set:
+                continue
+        # Recount from DB
+        with psycopg.connect(DATABASE_URL) as conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    SELECT DATE(created_ts) as d, COUNT(*) as c
+                    FROM opportunities
+                    WHERE batch_id = %s
+                    GROUP BY d ORDER BY d
+                """, (batch_id,))
+                for row in cur:
+                    day_counts[str(row[0])] = row[1]
+
+                cur.execute("""
+                    SELECT timeframe, COUNT(*) FROM opportunities
+                    WHERE batch_id = %s GROUP BY timeframe
+                """, (batch_id,))
+                for row in cur:
+                    tf_counts[row[0]] = row[1]
+
+                cur.execute("""
+                    SELECT symbol, COUNT(*) FROM opportunities
+                    WHERE batch_id = %s GROUP BY symbol ORDER BY COUNT(*) DESC LIMIT 10
+                """, (batch_id,))
+                top_syms = cur.fetchall()
+
+        logger.info("\n--- Verification ---")
+        logger.info(f"  Days with signals: {len(day_counts)}")
+        if day_counts:
+            max_day = max(day_counts, key=day_counts.get)
+            logger.info(f"  Peak day: {max_day} ({day_counts[max_day]} signals)")
+            logger.info(f"  Avg per day: {sum(day_counts.values())/len(day_counts):.1f}")
+        logger.info(f"  By timeframe: {dict(tf_counts)}")
+        logger.info(f"  Top 10 symbols:")
+        for sym, cnt in top_syms:
+            logger.info(f"    {sym}: {cnt}")
+
+        # Check for single-day clustering
+        if day_counts:
+            max_count = max(day_counts.values())
+            total_opps = sum(day_counts.values())
+            if max_count / total_opps > 0.5:
+                logger.warning(f"  *** DAM BURST WARNING: {max_count}/{total_opps} "
+                               f"({max_count/total_opps:.0%}) signals on {max_day}")
+            else:
+                logger.info(f"  Distribution OK: max day has {max_count/total_opps:.0%} of signals")
+
+
+if __name__ == "__main__":
+    main()

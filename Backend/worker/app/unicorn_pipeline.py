@@ -45,6 +45,7 @@ from setups.u1_unicorn_ignition import (
     U1Config, U1State, U1Phase, U1Evaluator,
     base_asset, is_stablecoin_base, is_wrapped, is_leverage_token,
     check_demotion, load_funding_rates,
+    compute_volume_z_1d_from_daily,
 )
 
 logger = logging.getLogger("unicorn_pipeline")
@@ -326,7 +327,7 @@ class UnicornPipeline:
     """Runs the Unicorn pipeline on schedule. Self-contained: fetches candles,
     evaluates gates + triggers, emits signals."""
 
-    SETUP_VERSIONS = {"U1": "U1_v3.0"}
+    SETUP_VERSIONS = {"U1": "U1_v4.0"}
 
     def __init__(self):
         self.r = redis.Redis.from_url(REDIS_URL, decode_responses=True)
@@ -334,6 +335,9 @@ class UnicornPipeline:
         self.last_full_refresh: Optional[datetime] = None
         self._funding_rates: dict = {}
         self._funding_rates_ts: float = 0.0
+        # v4.0: Daily volume z-score cache {symbol: (z_score, cache_ts)}
+        self._daily_vol_z_cache: dict[str, tuple[float, float]] = {}
+        self._DAILY_VOL_Z_TTL: float = 3600.0  # 1h cache
 
     def run(self):
         """Main loop."""
@@ -456,6 +460,28 @@ class UnicornPipeline:
             time.time() - cycle_start,
         )
 
+    def _get_volume_z_1d(self, symbol: str) -> Optional[float]:
+        """Get daily volume z-score for symbol, with 1h cache.
+
+        Fetches 30 daily candles from Binance, computes z-score of last
+        completed day vs prior 20 days. Returns None if insufficient data.
+        """
+        now = time.time()
+        cached = self._daily_vol_z_cache.get(symbol)
+        if cached and (now - cached[1]) < self._DAILY_VOL_Z_TTL:
+            return cached[0]
+
+        candles = fetch_daily_candles(symbol, days=30)
+        if len(candles) < 22:  # need 20 lookback + 1 completed day + current
+            return None
+
+        # Use all but the last candle (which may be partial/current day)
+        daily_volumes = [c["volume"] for c in candles[:-1]]
+        z = compute_volume_z_1d_from_daily(daily_volumes, lookback=20)
+
+        self._daily_vol_z_cache[symbol] = (z, now)
+        return z
+
     def _evaluate_symbol(self, symbol: str, active_symbols: set) -> Optional[tuple]:
         """Evaluate a single symbol: fetch candles -> gates -> trigger -> signal.
 
@@ -502,10 +528,12 @@ class UnicornPipeline:
         trigger_fired = False
         if state.phase in (U1Phase.EMBRYO_ACTIVE, U1Phase.SCANNING,
                            U1Phase.IGNITION_WATCH):
+            volume_z_1d = self._get_volume_z_1d(symbol)
             signal = self.evaluator.evaluate_trigger(
                 candles, state, symbol, tf,
                 funding_rates=self._funding_rates,
                 database_url=DATABASE_URL,
+                volume_z_1d=volume_z_1d,
             )
             if signal:
                 self._store_u1_signal(signal, symbol, tf)
@@ -546,6 +574,7 @@ class UnicornPipeline:
             "compression_score": signal.compression_score,
             "embryo_active_score": signal.embryo_active_score,
             "trigger_path": getattr(signal, "trigger_path", "traditional"),
+            "reversion_score": getattr(signal, "reversion_score", 0),
         }
 
         if signal.explain:
