@@ -861,6 +861,80 @@ def mark_opportunities_settled(
         return cur.rowcount if cur.rowcount is not None else 0
 
 
+def load_raw_mentions(
+    conn: psycopg.Connection,
+    *,
+    symbols: list[str],
+    start_ts: datetime,
+    end_ts: datetime,
+) -> list[dict[str, Any]]:
+    """Bulk-load raw mentions for symbols in a time range."""
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT symbol, title, content, publisher, source,
+                   available_at_ts, mention_ts, session_relation,
+                   author, url, engagement_score, payload
+            FROM equities_raw_mentions
+            WHERE symbol = ANY(%s)
+              AND available_at_ts >= %s
+              AND available_at_ts <= %s
+            ORDER BY symbol, available_at_ts ASC, id ASC;
+            """,
+            (symbols, start_ts, end_ts),
+        )
+        return list(cur.fetchall())
+
+
+def load_earnings_calendar(
+    conn: psycopg.Connection,
+    *,
+    symbols: list[str] | None = None,
+) -> list[dict[str, Any]]:
+    """Load earnings calendar entries, optionally filtered by symbols."""
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT symbol, fiscal_quarter, report_date, report_time,
+                   confirmed, source
+            FROM equities_earnings_calendar
+            WHERE (%s::text[] IS NULL OR symbol = ANY(%s::text[]))
+            ORDER BY symbol, report_date ASC;
+            """,
+            (symbols, symbols),
+        )
+        return list(cur.fetchall())
+
+
+def upsert_earnings_calendar(
+    conn: psycopg.Connection,
+    rows: list[dict[str, Any]],
+) -> int:
+    """Upsert earnings calendar entries. PK = (symbol, fiscal_quarter)."""
+    if not rows:
+        return 0
+    with conn.cursor() as cur:
+        cur.executemany(
+            """
+            INSERT INTO equities_earnings_calendar (
+                symbol, fiscal_quarter, report_date, report_time,
+                confirmed, source
+            )
+            VALUES (
+                %(symbol)s, %(fiscal_quarter)s, %(report_date)s, %(report_time)s,
+                %(confirmed)s, %(source)s
+            )
+            ON CONFLICT (symbol, fiscal_quarter) DO UPDATE SET
+                report_date = EXCLUDED.report_date,
+                report_time = EXCLUDED.report_time,
+                confirmed = EXCLUDED.confirmed,
+                source = EXCLUDED.source;
+            """,
+            rows,
+        )
+    return len(rows)
+
+
 def get_cache(conn: psycopg.Connection, cache_key: str) -> str | None:
     with conn.cursor() as cur:
         cur.execute(
