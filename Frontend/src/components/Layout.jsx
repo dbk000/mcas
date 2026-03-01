@@ -12,7 +12,8 @@ import {
   WifiOff,
   RefreshCw,
   Zap,
-  GitBranch
+  GitBranch,
+  Network
 } from 'lucide-react'
 import { useApi } from '../context/ApiContext'
 import { useToast } from '../context/ToastContext'
@@ -30,6 +31,7 @@ const navigation = [
   { name: 'Control Plane', href: '/control', icon: Terminal },
   { name: 'Paper Trading', href: '/paper', icon: Wallet },
   { name: 'Correlations', href: '/analytics/correlations', icon: GitBranch },
+  { name: 'Pipeline', href: '/pipeline', icon: Network },
 ]
 
 export default function Layout({ children }) {

@@ -22,7 +22,7 @@ import uuid
 
 import psycopg
 
-from exit_checker import check_exit_simple
+from exit_checker import check_exit_simple, ExitConfig
 from ohlcv_backfill import backfill_for_simulation
 
 logger = logging.getLogger(__name__)
@@ -53,6 +53,9 @@ class SimulationConfig:
     # Matches S6 evaluator defaults — protects against microcap shorts & wide stops
     min_short_price: float = _env_float("SIM_MIN_SHORT_PRICE", 1.00)
     max_stop_pct: float = _env_float("SIM_MAX_STOP_PCT", 0.10)
+
+    # Exit config override (None = use defaults from exit_checker.py)
+    exit_config: Optional[ExitConfig] = None
 
 
 @dataclass
@@ -592,6 +595,7 @@ class OpportunitySimulator:
                 max_bars=time_stop_bars,
                 high_water_mark=hwm,
                 half_r_touched=half_r_touched,
+                config=self.config.exit_config,
             )
 
             hwm = new_hwm

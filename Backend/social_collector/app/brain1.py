@@ -4,13 +4,40 @@ Brain 1 — Hourly social feature aggregation.
 Runs at :05 past each hour. Aggregates social_posts for the hour that just
 ended into social_features_1h rows (one per symbol). Computes velocity,
 acceleration, author novelty, first-mention flags, and mention-volume divergence.
+
+Social Promotion Gate (disabled by default):
+  When SOCIAL_PROMOTION_ENABLED=true, Brain 1 writes candidate symbols to
+  Redis ZSET `universe:social_candidates` (scored by unix timestamp for TTL
+  pruning). The ingestor reads this ZSET to temporarily promote symbols into
+  the Monitored Universe.
+
+  NOTE: U1's social silence filter (U1_SOCIAL_SILENCE_FILTER) REJECTS signals
+  on symbols with social mentions, which is contradictory to social promotion
+  ADDING socially-active symbols. The silence filter must be replaced by WS2's
+  nuanced social quality scoring before promotion is activated.
+  See: Backend/worker/app/ingestor.py (social promotion consumer)
+  See: Backend/worker/app/cache_contract.py (ZSET key constant)
 """
 
+import os
 import logging
+import time as _time
 from datetime import datetime, timedelta, timezone
 from collections import defaultdict
 
+import redis as _redis
+
 from db import get_connection, upsert_social_features
+
+# ---------------------------------------------------------------------------
+# Social promotion config (disabled by default — master toggle)
+# ---------------------------------------------------------------------------
+SOCIAL_PROMOTION_ENABLED = os.getenv("SOCIAL_PROMOTION_ENABLED", "false").lower() == "true"
+SOCIAL_PROMOTION_VELOCITY_THRESHOLD = float(os.getenv("SOCIAL_PROMOTION_VELOCITY_THRESHOLD", "3.0"))
+SOCIAL_PROMOTION_ACCEL_THRESHOLD = float(os.getenv("SOCIAL_PROMOTION_ACCEL_THRESHOLD", "2.0"))
+# Redis key — hardcoded here AND in cache_contract.py (cross-reference)
+_SOCIAL_CANDIDATES_KEY = "universe:social_candidates"
+_SOCIAL_CANDIDATES_TTL_S = 86400  # 24h
 
 logger = logging.getLogger("brain1")
 
@@ -103,8 +130,65 @@ def aggregate_hour(hour_start: datetime) -> int:
     if rows:
         upsert_social_features(rows)
 
+    # --- Social Promotion Gate ---
+    # Writes candidate symbols to Redis ZSET for ingestor to pick up.
+    # Disabled by default (SOCIAL_PROMOTION_ENABLED=false).
+    if SOCIAL_PROMOTION_ENABLED and rows:
+        _publish_social_candidates(rows)
+
     logger.info("Brain 1: aggregated %d symbols for %s", len(rows), hour_start)
     return len(rows)
+
+
+def _publish_social_candidates(rows: list[tuple]):
+    """Write qualifying symbols to Redis ZSET universe:social_candidates.
+
+    Criteria: mention_velocity > threshold AND (first_mention OR
+    mention_acceleration > accel_threshold).
+
+    ZSET scored by unix timestamp — ingestor prunes entries older than 24h.
+    Brain 1 also prunes stale entries each cycle.
+
+    Redis key is hardcoded here (social_collector container) and in
+    cache_contract.py (worker container) — cross-referenced by comment.
+    """
+    redis_url = os.getenv("REDIS_URL", "redis://redis:6379/0")
+    try:
+        r = _redis.Redis.from_url(redis_url, decode_responses=True)
+    except Exception as e:
+        logger.warning("Social promotion: Redis connection failed: %s", e)
+        return
+
+    now = _time.time()
+    promoted = 0
+
+    for row in rows:
+        # row: (symbol, hour_start, mention_count, unique_authors, platform_count,
+        #        engagement_sum, mention_velocity, mention_acceleration,
+        #        author_novelty_ratio, first_mention, mention_volume_ratio)
+        symbol = row[0]
+        mention_velocity = row[6]
+        mention_acceleration = row[7]
+        first_mention = row[9]
+
+        if mention_velocity is None:
+            continue
+        if mention_velocity <= SOCIAL_PROMOTION_VELOCITY_THRESHOLD:
+            continue
+        if not (first_mention or (mention_acceleration is not None
+                                  and mention_acceleration > SOCIAL_PROMOTION_ACCEL_THRESHOLD)):
+            continue
+
+        r.zadd(_SOCIAL_CANDIDATES_KEY, {symbol: now})
+        promoted += 1
+
+    # Prune stale entries (older than 24h)
+    cutoff = now - _SOCIAL_CANDIDATES_TTL_S
+    r.zremrangebyscore(_SOCIAL_CANDIDATES_KEY, 0, cutoff)
+
+    if promoted:
+        logger.info("Social promotion: %d candidates published to %s",
+                     promoted, _SOCIAL_CANDIDATES_KEY)
 
 
 def _compute_mention_volume_ratio(cur, symbol: str, hour_start: datetime,

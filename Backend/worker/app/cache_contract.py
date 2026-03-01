@@ -652,6 +652,28 @@ def get_universe(r, key: str = "universe:monitored") -> list[str]:
     return [b2s(m) for m in members]
 
 
+# ---------------------------------------------------------------------------
+# Social Promotion Gate (disabled by default)
+# ---------------------------------------------------------------------------
+# ZSET of symbols nominated by Brain 1 for temporary monitored-universe
+# promotion. Scored by unix timestamp for TTL pruning.
+# Key is hardcoded in brain1.py (social_collector container) — cross-reference.
+# See: Backend/social_collector/app/brain1.py (_publish_social_candidates)
+SOCIAL_CANDIDATES_KEY = "universe:social_candidates"
+SOCIAL_CANDIDATES_TTL_S = 86400  # 24h
+
+
+def get_social_candidates(r, max_age_s: int = SOCIAL_CANDIDATES_TTL_S) -> list[str]:
+    """Read current social promotion candidates from ZSET.
+
+    Returns symbols added within max_age_s (default 24h).
+    """
+    import time
+    cutoff = time.time() - max_age_s
+    members = r.zrangebyscore(SOCIAL_CANDIDATES_KEY, cutoff, "+inf")
+    return [b2s(m) for m in members]
+
+
 def get_known_universe(r) -> list[str]:
     """Read Known Universe set from Redis (Canon §1.4C).
 

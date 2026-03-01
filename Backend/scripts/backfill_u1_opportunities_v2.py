@@ -157,26 +157,48 @@ def load_ohlcv_from_db(
     end_date: datetime,
     extra_warmup_days: int,
     timeframes: list[str],
+    source_exclude: list[str] | None = None,
 ) -> dict[tuple[str, str], list[OHLCV]]:
     """Load OHLCV data from Postgres, grouped by (symbol, timeframe).
 
     Fetches from (start_date - extra_warmup_days) to end_date.
     Batches by 50 symbols at a time to limit memory per query.
+
+    If source_exclude is set, symbols with ANY data from those sources are skipped.
     """
     warmup_start = start_date - timedelta(days=extra_warmup_days)
 
     logger.info(f"Loading OHLCV: {warmup_start.date()} to {end_date.date()} "
                 f"for timeframes {timeframes}")
+    if source_exclude:
+        logger.info(f"  Excluding symbols with source in: {source_exclude}")
 
     # Get distinct symbols first
     with psycopg.connect(DATABASE_URL) as conn:
         with conn.cursor() as cur:
-            cur.execute("""
-                SELECT DISTINCT symbol FROM ohlcv
-                WHERE timeframe = ANY(%s)
-                  AND bar_start_ts >= %s AND bar_start_ts < %s
-                  AND is_final = TRUE
-            """, (timeframes, warmup_start, end_date))
+            if source_exclude:
+                # Get symbols to exclude (any symbol that has data from excluded sources)
+                cur.execute("""
+                    SELECT DISTINCT symbol FROM ohlcv
+                    WHERE source = ANY(%s) AND is_final = TRUE
+                """, (source_exclude,))
+                excluded_symbols = {r[0] for r in cur.fetchall()}
+                logger.info(f"  Excluding {len(excluded_symbols)} symbols from sources {source_exclude}")
+
+                cur.execute("""
+                    SELECT DISTINCT symbol FROM ohlcv
+                    WHERE timeframe = ANY(%s)
+                      AND bar_start_ts >= %s AND bar_start_ts < %s
+                      AND is_final = TRUE
+                      AND NOT (symbol = ANY(%s))
+                """, (timeframes, warmup_start, end_date, list(excluded_symbols)))
+            else:
+                cur.execute("""
+                    SELECT DISTINCT symbol FROM ohlcv
+                    WHERE timeframe = ANY(%s)
+                      AND bar_start_ts >= %s AND bar_start_ts < %s
+                      AND is_final = TRUE
+                """, (timeframes, warmup_start, end_date))
             all_symbols = sorted([r[0] for r in cur.fetchall()])
 
     logger.info(f"Found {len(all_symbols)} symbols with OHLCV data")
@@ -486,7 +508,8 @@ def _worker_process_symbol(symbol: str) -> tuple[str, list[dict], dict]:
                 if current_bar.timestamp >= output_start_ms:
                     opportunities.append(
                         _build_opportunity(signal, current_bar, symbol, tf,
-                                           setup_version, batch_id))
+                                           setup_version, batch_id,
+                                           volume_z_1d=vol_z_1d))
                     stats["signals"] += 1
 
                 # Reset state + enter cooldown regardless of whether we recorded
@@ -504,6 +527,7 @@ def _build_opportunity(
     tf: str,
     setup_version: str,
     batch_id: str,
+    volume_z_1d: float = None,
 ) -> dict:
     """Build opportunity dict from U1Signal."""
     bar_ts_ms = current_bar.timestamp
@@ -533,6 +557,7 @@ def _build_opportunity(
         "per_coin_score": signal.state.per_coin_score if signal.state else 0,
         "universe_temp_score": signal.state.universe_temp_score if signal.state else 0,
         "vol_z_at_trigger": signal.state.vol_z_at_trigger if signal.state else 0,
+        "volume_z_1d": volume_z_1d,
         "reversion_score": signal.reversion_score,
     }
     if signal.explain:
@@ -656,6 +681,9 @@ def main():
                         help="OHLCV loaded before start-date for warmup (default: 90)")
     parser.add_argument("--funding-rates-json", type=str, default=None,
                         help="Path to funding_rates_historical.json (default: auto-detect)")
+    parser.add_argument("--source-exclude", type=str, default=None,
+                        help="Comma-separated OHLCV sources to exclude (e.g. 'binance,ws'). "
+                             "Symbols with ANY data from these sources are skipped.")
     args = parser.parse_args()
 
     if not DATABASE_URL:
@@ -697,11 +725,16 @@ def main():
     # ---- Phase 1: Load data ----
     t0 = time.time()
 
+    source_exclude = None
+    if args.source_exclude:
+        source_exclude = [s.strip() for s in args.source_exclude.split(",")]
+
     all_data = load_ohlcv_from_db(
         start_date=start_date,
         end_date=end_date,
         extra_warmup_days=args.extra_warmup_days,
         timeframes=timeframes,
+        source_exclude=source_exclude,
     )
 
     if not all_data:

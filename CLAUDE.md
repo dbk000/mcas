@@ -32,6 +32,8 @@ Use quantitative validation methods (walk-forward, holdout, DSR) because those a
 
 5. **Honest reporting always.** The most valuable output is sometimes "there is no predictable structure in this data that survives validation." That finding is worth as much as finding an edge, because it tells us to stop looking here and look somewhere else.
 
+6. **Before any --clear-expired backfill run, snapshot existing results to /scripts/output/snapshots/{setup_version}_{date}/.
+
 ## 0.3 How to Work
 
 - **Think longer, implement less, prove before scaling.** Reason about the solution before writing code. Design sweeps and matrix tests that explore the space in parallel rather than iterating sequentially. Extract strategic implications from data — model theoretical bounds, identify the highest-leverage intervention, and say what you'd do and why.
@@ -372,3 +374,8 @@ deep, invisible from reading _process_fold alone. The correct audit question is:
   Rule: ALL queries against simulation_results must use `DISTINCT ON (opportunity_id) ORDER BY opportunity_id, created_ts DESC` to get the latest run's result per opportunity, or filter by a specific `run_id`. Raw `COUNT(*)` or `SUM(pnl_net)` without deduplication is NEVER valid. The table is a run-log (multiple sim configs × same opportunities), not a trade-log.
   What happened: Multiple simulation runs (auto-runs Feb 13-16 + Phase3/4/5 config variants) each re-simulated the same opportunities. 72,713 rows = 25,219 unique opportunities = 2.88x avg inflation. S1/5m was inflated 11.4x. S2-15m "809 trades" was actually 97 unique (67% from one day). All S2 hunting analyses used raw counts — directional findings survived but magnitudes were ~2.5x overstated.
   Key insight: The duplication was roughly uniform across exit types, so ratios (FF rate, TP1 rate, win rate) and directional comparisons (A > B) were preserved. But absolute PnL, trade counts, and sample size confidence were all inflated. Any finding that relied on "large sample" confidence (like the S2-15m hour filter at "809 trades") collapsed when deduped.
+
+2026-03-01 — Theory-first feature engineering despite data-first instruction
+  Rule: When a prompt says "look at the data before designing features," the feature set must be derived from observed patterns, not pre-engineered from theory. Hardcoded dictionaries (MEME_TOKENS, TECH_TOKENS, etc.) and theory-driven categories are anchors. Mechanical string features are acceptable (they make no semantic claim). External metadata (CoinGecko categories) is acceptable because it's empirical data, not theory. Also: don't reimplement simulation logic that already exists — import it.
+  What happened: First version of u1_ticker_name_analysis.py pre-engineered 22 features from theory with hardcoded token dictionaries, reimplemented 120 lines of Config A simulator instead of importing from sim_u1v4_matrix, and called a "numerology proxy" (letter_sum) a feature.
+  Key insight: The difference between "data first" and "theory first" is whether the feature set was designed before or after looking at the data. Mechanical features (string length, vowel ratio) are data-first because they make no prediction about what matters. Hardcoded MEME_TOKENS = ["DOGE", "SHIB", ...] is theory-first because it assumes meme coins behave differently before checking.

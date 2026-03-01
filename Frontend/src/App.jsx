@@ -19,6 +19,7 @@ import PaperTrading from './pages/PaperTrading'
 import SimulationResults from './pages/SimulationResults'
 import CorrelationAnalysis from './pages/CorrelationAnalysis'
 import Settings from './pages/Settings'
+import Pipeline from './pages/Pipeline'
 
 const log = getLogger('router')
 
@@ -187,6 +188,12 @@ export default function App() {
           <Route path="/analytics/correlations" element={
             <ProtectedRoute>
               <CorrelationAnalysis />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/pipeline" element={
+            <ProtectedRoute>
+              <Pipeline />
             </ProtectedRoute>
           } />
 

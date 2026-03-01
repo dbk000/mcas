@@ -32,6 +32,7 @@ from cache_contract import (
     candle_meta_key, b2s, b2f,
     WS_MAX_STREAMS_PER_CONN, TF_SECONDS, RING_BUFFER_SIZE,
     symbol_partition,
+    get_social_candidates, SOCIAL_CANDIDATES_KEY,
 )
 
 logger = logging.getLogger("ingestor")
@@ -52,6 +53,16 @@ KNOWN_UNIVERSE_SIZE = int(os.getenv("KNOWN_UNIVERSE_SIZE", "1024"))
 MIN_24H_QUOTE_VOLUME_USD = float(os.getenv("MIN_24H_QUOTE_VOLUME_USD", "5000000"))
 DEMOTION_FACTOR = 0.8  # Hysteresis: demote at 80% of promote threshold
 REFRESH_INTERVAL_S = 3600  # Hourly universe refresh
+
+# Social promotion gate (disabled by default — all caps default to 0)
+# Brain 1 writes candidates to Redis ZSET universe:social_candidates.
+# When enabled, ingestor picks up candidates and adds them to monitored.
+# NOTE: U1_SOCIAL_SILENCE_FILTER rejects signals on symbols WITH social mentions,
+# which contradicts social promotion ADDING socially-active symbols. The silence
+# filter must be replaced by WS2's nuanced social quality scoring before
+# enabling promotion. See: Backend/social_collector/app/brain1.py
+MAX_SOCIAL_PROMOTIONS_PER_CYCLE = int(os.getenv("MAX_SOCIAL_PROMOTIONS_PER_CYCLE", "0"))
+MAX_SOCIAL_PROMOTIONS_ACTIVE = int(os.getenv("MAX_SOCIAL_PROMOTIONS_ACTIVE", "0"))
 
 TIMEFRAMES = [t.strip() for t in DEFAULT_TIMEFRAMES_STR.split(",") if t.strip()]
 
@@ -455,6 +466,40 @@ def _filter_monitored_universe(
     return sorted(monitored)
 
 
+def _get_social_promoted_symbols(r) -> list[str]:
+    """Read social promotion candidates from Redis ZSET.
+
+    Returns up to MAX_SOCIAL_PROMOTIONS_PER_CYCLE symbols, capped at
+    MAX_SOCIAL_PROMOTIONS_ACTIVE total. Both default to 0 (disabled).
+
+    Brain 1 publishes candidates to universe:social_candidates ZSET.
+    See: Backend/social_collector/app/brain1.py (_publish_social_candidates)
+    See: Backend/worker/app/cache_contract.py (SOCIAL_CANDIDATES_KEY)
+    """
+    if MAX_SOCIAL_PROMOTIONS_PER_CYCLE <= 0 or MAX_SOCIAL_PROMOTIONS_ACTIVE <= 0:
+        return []
+
+    try:
+        candidates = get_social_candidates(r)
+    except Exception as e:
+        logger.warning("Social promotion: failed to read candidates: %s", e)
+        return []
+
+    if not candidates:
+        return []
+
+    # Cap per cycle and total active
+    promoted = candidates[:min(MAX_SOCIAL_PROMOTIONS_PER_CYCLE, MAX_SOCIAL_PROMOTIONS_ACTIVE)]
+
+    if promoted:
+        logger.info("Social promotion: %d candidates available, promoting %d "
+                     "(per_cycle=%d, max_active=%d)",
+                     len(candidates), len(promoted),
+                     MAX_SOCIAL_PROMOTIONS_PER_CYCLE, MAX_SOCIAL_PROMOTIONS_ACTIVE)
+
+    return promoted
+
+
 # ---------------------------------------------------------------------------
 # Ingestor main class
 # ---------------------------------------------------------------------------
@@ -509,6 +554,14 @@ class Ingestor:
             self.monitored.insert(0, "BTCUSDT")
         if "BTCUSDT" not in self.known:
             self.known.insert(0, "BTCUSDT")
+
+        # Social promotion: merge candidates into monitored universe
+        social_promoted = _get_social_promoted_symbols(self.r)
+        if social_promoted:
+            before = len(self.monitored)
+            self.monitored = sorted(set(self.monitored) | set(social_promoted))
+            logger.info(f"Social promotion: added {len(self.monitored) - before} "
+                        f"symbols to monitored universe")
 
         self.symbols = self.monitored  # backward compat alias
 
@@ -695,6 +748,15 @@ class Ingestor:
                     new_monitored.insert(0, "BTCUSDT")
                 if "BTCUSDT" not in new_known:
                     new_known.insert(0, "BTCUSDT")
+
+                # Social promotion: merge candidates into refreshed monitored
+                social_promoted = _get_social_promoted_symbols(self.r)
+                if social_promoted:
+                    before = len(new_monitored)
+                    new_monitored = sorted(set(new_monitored) | set(social_promoted))
+                    if len(new_monitored) > before:
+                        logger.info(f"Social promotion (refresh): added "
+                                    f"{len(new_monitored) - before} symbols")
 
                 # Ingest 1h OHLCV for Known Universe to Postgres (Task 2)
                 self._ingest_known_ohlcv(new_known)

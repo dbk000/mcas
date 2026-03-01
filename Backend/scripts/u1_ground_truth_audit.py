@@ -61,11 +61,11 @@ def get_conn():
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
-AUDIT_START = datetime(2025, 12, 28, tzinfo=timezone.utc)
+AUDIT_START = datetime(2025, 9, 1, tzinfo=timezone.utc)
 AUDIT_END = datetime(2026, 2, 27, 23, 59, 59, tzinfo=timezone.utc)
 FORWARD_WINDOW_HOURS = 168  # 7 days
 PRE_ENTRY_HOURS = 72
-SOCIAL_WINDOW_HOURS = 168  # ±7 days
+SOCIAL_WINDOW_HOURS = 336  # ±14 days (widened from ±7d to avoid boundary artifact)
 OHLCV_BATCH_SIZE = 50
 OPP_PROGRESS_INTERVAL = 25
 SYMBOL_PROGRESS_INTERVAL = 50
@@ -429,8 +429,8 @@ def load_ohlcv_batched(conn, symbols, timeframe="1h", start_ts=None, end_ts=None
 def load_social_features(conn):
     """Bulk load social_features_1h for audit date range. Returns {symbol: [rows]}."""
     t0 = time.time()
-    start = AUDIT_START - timedelta(days=8)
-    end = AUDIT_END + timedelta(days=8)
+    start = AUDIT_START - timedelta(days=15)   # ±14d window + 1d buffer
+    end = AUDIT_END + timedelta(days=15)
     with conn.cursor() as cur:
         cur.execute("""
             SELECT symbol, bar_start_ts, mention_count, unique_authors,
@@ -456,8 +456,8 @@ def load_social_features(conn):
 def load_social_posts(conn):
     """Bulk load social_posts for audit date range. Returns {symbol: [posts]}."""
     t0 = time.time()
-    start = AUDIT_START - timedelta(days=8)
-    end = AUDIT_END + timedelta(days=8)
+    start = AUDIT_START - timedelta(days=15)   # ±14d window + 1d buffer
+    end = AUDIT_END + timedelta(days=15)
     with conn.cursor() as cur:
         cur.execute("""
             SELECT channel, post_ts, ingested_ts, content, symbols
@@ -1138,13 +1138,19 @@ def compute_stop_heatmap(opp_results, thresholds):
                 else:
                     pnl_1r_sum += o["mfe_7d"] * 0.5  # partial capture estimate
 
+            hit_rate = hits / total if total > 0 else 0
+            # avg_pnl already IS the EV per trade: it sums gains (TP hits),
+            # losses (stop hits), and partial captures across all trades,
+            # then divides by total. No further weighting by hit_rate needed.
+            ev_per_trade = pnl_1r_sum / total * 100 if total > 0 else 0
+
             key = f"{floor:.3f}_{mult}"
             heatmap[key] = {
                 "stop_floor_pct": floor * 100,
                 "range_mult": mult,
                 "n_opps": total,
-                "hit_rate": hits / total if total > 0 else 0,
-                "avg_pnl_1r_pct": pnl_1r_sum / total * 100 if total > 0 else 0,
+                "hit_rate": hit_rate,
+                "ev_per_trade_pct": ev_per_trade,
             }
 
     return heatmap
@@ -1461,11 +1467,22 @@ def generate_report(opp_results, thresholds, exclusions, pumps, stop_heatmap, so
     p_line(f"\nWick-based diagnostic: p50={thresholds['wick_percentiles']['p50']:.2%}, p95={thresholds['wick_percentiles']['p95']:.2%}")
     p_line(f"Headline threshold (p95): **{headline:.2%}**")
     if thresholds["non_stationary"]:
-        p_line("**WARNING**: Per-2-week p95 variance > 2× mean — threshold may be non-stationary.")
+        p_line("**FINDING — NON-STATIONARY THRESHOLD**: Per-2-week p95 coefficient of variation "
+               "exceeds 2× mean. The p95 pump threshold varies significantly across sub-periods, "
+               "suggesting regime-dependent thresholds would outperform a fixed threshold. "
+               "**WS2 input**: implement regime-adaptive pump threshold (e.g., rolling 30-day p95).")
+    else:
+        p_line("Per-2-week p95 is stable (CV < 2× mean) — fixed threshold is appropriate.")
     blank()
-    p_line("Per-2-week p95 stability:")
-    for bucket, val in sorted(thresholds.get("per_period_p95", {}).items()):
+    p_line("**Per-2-week p95 stability** (elevated from diagnostic to finding):")
+    period_p95 = thresholds.get("per_period_p95", {})
+    for bucket, val in sorted(period_p95.items()):
         p_line(f"  - {bucket}: {val:.2%}")
+    if len(period_p95) >= 2:
+        p95_vals = list(period_p95.values())
+        p_line(f"\n  p95 range: {min(p95_vals):.2%} to {max(p95_vals):.2%} "
+               f"(ratio: {max(p95_vals)/max(min(p95_vals), 0.001):.1f}×)")
+        p_line(f"  p95 std: {np.std(p95_vals):.4f}, mean: {np.mean(p95_vals):.4f}")
 
     # -------------------------------------------------------------------
     # 4. Contamination Audit
@@ -1609,13 +1626,14 @@ def generate_report(opp_results, thresholds, exclusions, pumps, stop_heatmap, so
     # 11. Stop Calibration Heatmap
     # -------------------------------------------------------------------
     h2("11. Stop Calibration Heatmap")
-    p_line("Hit rate = TP reached before stop, on TP_MODERATE+ opps.")
+    p_line("Hit rate = TP reached before stop, on TP_MODERATE+ opps. "
+           "EV/trade = avg across all trades (wins + losses + partials).")
     p_line("")
-    p_line("| Stop Floor | Range Mult | N | Hit Rate | Avg PnL % |")
-    p_line("|-----------|-----------|---|----------|-----------|")
+    p_line("| Stop Floor | Range Mult | N | Hit Rate | EV/Trade % |")
+    p_line("|-----------|-----------|---|----------|------------|")
     for key in sorted(stop_heatmap.keys()):
         h = stop_heatmap[key]
-        p_line(f"| {h['stop_floor_pct']:.1f}% | {h['range_mult']}× | {h['n_opps']} | {h['hit_rate']:.1%} | {h['avg_pnl_1r_pct']:.2f}% |")
+        p_line(f"| {h['stop_floor_pct']:.1f}% | {h['range_mult']}× | {h['n_opps']} | {h['hit_rate']:.1%} | {h.get('ev_per_trade_pct', 0):.2f}% |")
 
     # -------------------------------------------------------------------
     # 12. Social Correlation Matrix
@@ -1803,14 +1821,14 @@ def generate_report(opp_results, thresholds, exclusions, pumps, stop_heatmap, so
     h2("21. SOP Change Proposals")
     proposals = []
 
-    # Stop floor
+    # Stop floor — select by EV per trade (already the correct metric)
     if stop_heatmap:
-        best_config = max(stop_heatmap.values(), key=lambda x: x["avg_pnl_1r_pct"])
+        best_config = max(stop_heatmap.values(), key=lambda x: x.get("ev_per_trade_pct", 0))
         proposals.append(
             f"1. **Increase MIN_STOP_PCT** from 0.5% to {best_config['stop_floor_pct']:.1f}% "
             f"with {best_config['range_mult']}× range multiplier. "
             f"(Stop heatmap shows {best_config['hit_rate']:.0%} hit rate, "
-            f"{best_config['avg_pnl_1r_pct']:.2f}% avg PnL on TP opps)"
+            f"{best_config['ev_per_trade_pct']:.2f}% EV per trade on TP opps)"
         )
 
     nm_count = fm_counts.get("NO_MOVE", 0) + fm_counts.get("WRONG_DIRECTION", 0)

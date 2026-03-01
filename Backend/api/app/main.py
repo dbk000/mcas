@@ -969,3 +969,10 @@ try:
     app.include_router(eq_sim_router, prefix="/v1", dependencies=[Depends(require_api_key)])
 except ImportError:
     pass
+
+# Mount Pipeline Introspection API
+try:
+    from meta_api import router as meta_router
+    app.include_router(meta_router, prefix="/v1", dependencies=[Depends(require_api_key)])
+except ImportError:
+    pass
