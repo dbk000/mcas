@@ -21,19 +21,30 @@ export default function Settings() {
   const { config, updateConfig, connectionStatus, testConnection, isConnected } = useApi()
   
   const [baseUrl, setBaseUrl] = useState(config.baseUrl)
-  const [apiKey, setApiKey] = useState(config.apiKey)
-  const [showKey, setShowKey] = useState(false)
+  // Never pre-populate the actual API key — only show that one is saved
+  const hasExistingKey = !!config.apiKey
+  const [apiKey, setApiKey] = useState('')
+  const [keyTouched, setKeyTouched] = useState(false)
   const [testing, setTesting] = useState(false)
 
   const handleSave = () => {
     log.info('Settings saved', { event: 'settings_saved' })
-    updateConfig({ baseUrl, apiKey })
+    // Only update API key if the user actually typed a new one
+    const updates = { baseUrl }
+    if (keyTouched && apiKey) {
+      updates.apiKey = apiKey
+    }
+    updateConfig(updates)
   }
 
   const handleTest = async () => {
     log.info('Connection test initiated', { event: 'settings_test_start' })
-    // Save first
-    updateConfig({ baseUrl, apiKey })
+    // Save first — only update key if user typed a new one
+    const updates = { baseUrl }
+    if (keyTouched && apiKey) {
+      updates.apiKey = apiKey
+    }
+    updateConfig(updates)
     setTesting(true)
     const success = await testConnection()
     setTesting(false)
@@ -94,22 +105,18 @@ export default function Settings() {
             </label>
             <div className="relative">
               <input
-                type={showKey ? 'text' : 'password'}
+                type="password"
                 value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-                placeholder="Enter your API key"
-                className="w-full pr-20"
+                onChange={(e) => { setApiKey(e.target.value); setKeyTouched(true) }}
+                placeholder={hasExistingKey && !keyTouched ? '••••••••••••••••  (key saved)' : 'Enter your API key'}
+                className="w-full"
               />
-              <button
-                type="button"
-                onClick={() => setShowKey(!showKey)}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-terminal-400 hover:text-terminal-200"
-              >
-                {showKey ? 'Hide' : 'Show'}
-              </button>
             </div>
             <p className="text-xs text-terminal-500 mt-1">
-              Your API key is stored locally and never transmitted except to your backend
+              {hasExistingKey && !keyTouched
+                ? 'API key is saved. Type a new key to replace it.'
+                : 'Your API key is stored locally and never transmitted except to your backend'
+              }
             </p>
           </div>
 
