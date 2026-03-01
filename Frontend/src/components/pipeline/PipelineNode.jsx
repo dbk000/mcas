@@ -27,7 +27,7 @@ function PipelineNode({ data, selected }) {
   return (
     <div
       className={`
-        relative bg-terminal-800 border-2 rounded-lg px-3 py-2.5 min-w-[200px]
+        relative bg-terminal-800 border-2 rounded-xl px-5 py-4 min-w-[280px]
         transition-all duration-200 cursor-pointer
         ${selected ? 'shadow-lg shadow-amber-500/20 scale-105' : 'hover:shadow-md hover:shadow-white/5'}
       `}
@@ -37,7 +37,7 @@ function PipelineNode({ data, selected }) {
     >
       {/* Top accent bar */}
       <div
-        className="absolute top-0 left-0 right-0 h-1 rounded-t-md"
+        className="absolute top-0 left-0 right-0 h-1.5 rounded-t-lg"
         style={{ backgroundColor: subsystemColor }}
       />
 
@@ -45,27 +45,27 @@ function PipelineNode({ data, selected }) {
       <Handle
         type="target"
         position={Position.Left}
-        className="!w-2.5 !h-2.5 !bg-terminal-500 !border-2 !border-terminal-700"
+        className="!w-3 !h-3 !bg-terminal-500 !border-2 !border-terminal-700"
       />
 
       {/* Header row */}
-      <div className="flex items-center justify-between mb-1.5 mt-0.5">
-        <div className="flex items-center gap-1.5 min-w-0">
-          <span className="text-sm flex-shrink-0">{icon}</span>
-          <span className="text-xs font-semibold text-terminal-100 truncate">{label}</span>
+      <div className="flex items-center justify-between mb-2 mt-0.5">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-base flex-shrink-0">{icon}</span>
+          <span className="text-sm font-semibold text-terminal-100 truncate">{label}</span>
         </div>
         {/* Status dot */}
         <div
-          className="w-2 h-2 rounded-full flex-shrink-0 ml-2"
+          className="w-2.5 h-2.5 rounded-full flex-shrink-0 ml-2"
           style={{ backgroundColor: statusColor }}
           title={currentVersion?.status || 'no version'}
         />
       </div>
 
       {/* Subsystem tag */}
-      <div className="flex items-center gap-2 mb-1.5">
+      <div className="flex items-center gap-2 mb-2">
         <span
-          className="text-[10px] px-1.5 py-0.5 rounded-full font-medium capitalize"
+          className="text-xs px-2 py-0.5 rounded-full font-medium capitalize"
           style={{
             backgroundColor: subsystemColor + '20',
             color: subsystemColor,
@@ -74,7 +74,7 @@ function PipelineNode({ data, selected }) {
           {subsystem}
         </span>
         {versionCount > 0 && (
-          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-terminal-700 text-terminal-400">
+          <span className="text-xs px-2 py-0.5 rounded-full bg-terminal-700 text-terminal-400">
             v{currentVersion?.version_number || '?'} ({versionCount})
           </span>
         )}
@@ -82,7 +82,7 @@ function PipelineNode({ data, selected }) {
 
       {/* Metric */}
       {aggPf != null && (
-        <div className="text-xs font-mono">
+        <div className="text-sm font-mono">
           <span className="text-terminal-500">PF </span>
           <span className={aggPf >= 1.0 ? 'text-green-400' : 'text-red-400'}>
             {aggPf.toFixed(2)}
@@ -94,7 +94,7 @@ function PipelineNode({ data, selected }) {
       <Handle
         type="source"
         position={Position.Right}
-        className="!w-2.5 !h-2.5 !bg-terminal-500 !border-2 !border-terminal-700"
+        className="!w-3 !h-3 !bg-terminal-500 !border-2 !border-terminal-700"
       />
     </div>
   )

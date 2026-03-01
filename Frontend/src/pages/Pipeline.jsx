@@ -43,10 +43,10 @@ const nodeTypes = { pipeline: PipelineNode }
 function getLayoutedElements(nodes, edges) {
   const g = new dagre.graphlib.Graph()
   g.setDefaultEdgeLabel(() => ({}))
-  g.setGraph({ rankdir: 'LR', nodesep: 60, ranksep: 120, marginx: 40, marginy: 40 })
+  g.setGraph({ rankdir: 'LR', nodesep: 80, ranksep: 160, marginx: 50, marginy: 50 })
 
   nodes.forEach((node) => {
-    g.setNode(node.id, { width: 240, height: 120 })
+    g.setNode(node.id, { width: 320, height: 150 })
   })
 
   edges.forEach((edge) => {
@@ -60,8 +60,8 @@ function getLayoutedElements(nodes, edges) {
     return {
       ...node,
       position: {
-        x: nodeWithPosition.x - 120,
-        y: nodeWithPosition.y - 60,
+        x: nodeWithPosition.x - 160,
+        y: nodeWithPosition.y - 75,
       },
     }
   })
@@ -189,8 +189,8 @@ function PipelineInner() {
       sourceHandle: e.sourceHandle,
       targetHandle: e.targetHandle,
       animated: true,
-      style: { stroke: '#475569', strokeWidth: 2 },
-      markerEnd: { type: MarkerType.ArrowClosed, color: '#475569', width: 16, height: 16 },
+      style: { stroke: '#475569', strokeWidth: 3 },
+      markerEnd: { type: MarkerType.ArrowClosed, color: '#475569', width: 20, height: 20 },
     }))
 
     const { nodes: layouted, edges: layoutedEdges } = getLayoutedElements(flowNodes, flowEdges)
@@ -264,12 +264,12 @@ function PipelineInner() {
 
           {/* Legend */}
           <Panel position="top-left">
-            <div className="bg-terminal-800/90 backdrop-blur border border-terminal-600 rounded-lg p-3 text-xs">
-              <div className="text-terminal-300 font-medium mb-2">Pipeline Subsystems</div>
-              <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+            <div className="bg-terminal-800/90 backdrop-blur border border-terminal-600 rounded-lg p-4 text-sm">
+              <div className="text-terminal-300 font-medium mb-2.5">Pipeline Subsystems</div>
+              <div className="grid grid-cols-2 gap-x-5 gap-y-1.5">
                 {SUBSYSTEM_ORDER.map(s => (
-                  <div key={s} className="flex items-center gap-1.5">
-                    <div className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: SUBSYSTEM_COLORS[s] }} />
+                  <div key={s} className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: SUBSYSTEM_COLORS[s] }} />
                     <span className="text-terminal-400 capitalize">{s}</span>
                   </div>
                 ))}
