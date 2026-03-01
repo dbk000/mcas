@@ -13,7 +13,9 @@ import {
   RefreshCw,
   Zap,
   GitBranch,
-  Network
+  Network,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react'
 import { useApi } from '../context/ApiContext'
 import { useToast } from '../context/ToastContext'
@@ -39,6 +41,15 @@ export default function Layout({ children }) {
   const { addToast } = useToast()
   const location = useLocation()
   const navigate = useNavigate()
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(
+    () => localStorage.getItem('sidebar_collapsed') === 'true'
+  )
+  const toggleSidebar = () => {
+    setSidebarCollapsed(prev => {
+      localStorage.setItem('sidebar_collapsed', String(!prev))
+      return !prev
+    })
+  }
 
   // Fix #2: Redirect to settings when auth becomes unauthorized
   useEffect(() => {
@@ -52,41 +63,61 @@ export default function Layout({ children }) {
   return (
     <div className="min-h-screen bg-terminal-900 flex">
       {/* Sidebar */}
-      <aside className="w-64 bg-terminal-800 border-r border-terminal-600 flex flex-col">
-        {/* Logo */}
-        <div className="h-16 flex items-center px-6 border-b border-terminal-600">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center">
-              <Zap className="w-5 h-5 text-white" />
+      <aside className={`${sidebarCollapsed ? 'w-16' : 'w-64'} bg-terminal-800 border-r border-terminal-600 flex flex-col transition-all duration-300 overflow-hidden`}>
+        {/* Logo / Toggle */}
+        <div className={`h-16 flex items-center border-b border-terminal-600 ${sidebarCollapsed ? 'justify-center' : 'px-6'}`}>
+          {sidebarCollapsed ? (
+            <button
+              onClick={toggleSidebar}
+              className="w-10 h-10 rounded bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center hover:from-amber-400 hover:to-amber-600 transition-colors"
+              title="Expand sidebar"
+            >
+              <ChevronRight className="w-5 h-5 text-white" />
+            </button>
+          ) : (
+            <div className="flex items-center justify-between w-full">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center">
+                  <Zap className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h1 className="font-bold text-terminal-100 tracking-tight">MCAS</h1>
+                  <p className="text-[10px] text-terminal-400 uppercase tracking-widest">Market Cognition</p>
+                </div>
+              </div>
+              <button
+                onClick={toggleSidebar}
+                className="p-1.5 rounded hover:bg-terminal-700 text-terminal-400 hover:text-terminal-200 transition-colors"
+                title="Collapse sidebar"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
             </div>
-            <div>
-              <h1 className="font-bold text-terminal-100 tracking-tight">MCAS</h1>
-              <p className="text-[10px] text-terminal-400 uppercase tracking-widest">Market Cognition</p>
-            </div>
-          </div>
+          )}
         </div>
 
         {/* Navigation */}
         <nav className="flex-1 py-4 px-3 space-y-1">
           {navigation.map((item) => {
-            const isActive = location.pathname === item.href || 
+            const isActive = location.pathname === item.href ||
               (item.href !== '/' && location.pathname.startsWith(item.href))
-            
+
             return (
               <NavLink
                 key={item.name}
                 to={item.href}
+                title={sidebarCollapsed ? item.name : undefined}
                 className={`
-                  flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium
+                  flex items-center ${sidebarCollapsed ? 'justify-center' : 'gap-3'} px-3 py-2.5 rounded-lg text-sm font-medium
                   transition-all duration-200
-                  ${isActive 
-                    ? 'bg-amber-600/20 text-amber-400 border-l-2 border-amber-500 ml-0.5' 
+                  ${isActive
+                    ? `bg-amber-600/20 text-amber-400${sidebarCollapsed ? '' : ' border-l-2 border-amber-500 ml-0.5'}`
                     : 'text-terminal-300 hover:text-terminal-100 hover:bg-terminal-700'
                   }
                 `}
               >
-                <item.icon className="w-5 h-5" />
-                {item.name}
+                <item.icon className="w-5 h-5 shrink-0" />
+                {!sidebarCollapsed && <span className="whitespace-nowrap">{item.name}</span>}
               </NavLink>
             )
           })}
@@ -96,8 +127,9 @@ export default function Layout({ children }) {
         <div className="px-3 pb-4">
           <NavLink
             to="/settings"
+            title={sidebarCollapsed ? 'Settings' : undefined}
             className={`
-              flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium
+              flex items-center ${sidebarCollapsed ? 'justify-center' : 'gap-3'} px-3 py-2.5 rounded-lg text-sm font-medium
               transition-all duration-200
               ${location.pathname === '/settings'
                 ? 'bg-amber-600/20 text-amber-400'
@@ -105,14 +137,14 @@ export default function Layout({ children }) {
               }
             `}
           >
-            <Settings className="w-5 h-5" />
-            Settings
+            <Settings className="w-5 h-5 shrink-0" />
+            {!sidebarCollapsed && <span className="whitespace-nowrap">Settings</span>}
           </NavLink>
         </div>
 
         {/* Connection status */}
-        <div className="border-t border-terminal-600 p-4">
-          <ConnectionIndicator />
+        <div className={`border-t border-terminal-600 ${sidebarCollapsed ? 'p-2' : 'p-4'}`}>
+          <ConnectionIndicator collapsed={sidebarCollapsed} />
         </div>
       </aside>
 
@@ -130,20 +162,20 @@ export default function Layout({ children }) {
   )
 }
 
-function ConnectionIndicator() {
+function ConnectionIndicator({ collapsed }) {
   const { config, connectionStatus, isConnected, testConnection } = useApi()
   const [retesting, setRetesting] = useState(false)
 
-  const statusColor = isConnected 
-    ? 'bg-green-500' 
-    : connectionStatus.health === 'unhealthy' 
-      ? 'bg-red-500' 
+  const statusColor = isConnected
+    ? 'bg-green-500'
+    : connectionStatus.health === 'unhealthy'
+      ? 'bg-red-500'
       : connectionStatus.health === 'error'
         ? 'bg-red-500'
         : 'bg-amber-500'
 
-  const statusText = isConnected 
-    ? 'Connected' 
+  const statusText = isConnected
+    ? 'Connected'
     : connectionStatus.health === 'unhealthy'
       ? 'Unhealthy'
       : connectionStatus.health === 'error'
@@ -161,6 +193,14 @@ function ConnectionIndicator() {
     setRetesting(false)
   }
 
+  if (collapsed) {
+    return (
+      <div className="flex justify-center" title={statusText}>
+        <div className={`w-3 h-3 rounded-full ${statusColor} ${isConnected ? 'animate-pulse-slow' : ''}`} />
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
@@ -174,7 +214,7 @@ function ConnectionIndicator() {
           <WifiOff className="w-4 h-4 text-terminal-400" />
         )}
       </div>
-      
+
       {config.baseUrl && (
         <p className="text-xs text-terminal-400 truncate" title={config.baseUrl}>
           {config.baseUrl.replace('https://', '').replace('http://', '')}
