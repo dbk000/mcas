@@ -109,6 +109,8 @@ export default function Settings() {
                 value={apiKey}
                 onChange={(e) => { setApiKey(e.target.value); setKeyTouched(true) }}
                 placeholder={hasExistingKey && !keyTouched ? '••••••••••••••••  (key saved)' : 'Enter your API key'}
+                autoComplete="off"
+                data-1p-ignore
                 className="w-full"
               />
             </div>
