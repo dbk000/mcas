@@ -105,12 +105,14 @@ export default function Settings() {
             </label>
             <div className="relative">
               <input
-                type="password"
+                type="text"
                 value={apiKey}
                 onChange={(e) => { setApiKey(e.target.value); setKeyTouched(true) }}
                 placeholder={hasExistingKey && !keyTouched ? '••••••••••••••••  (key saved)' : 'Enter your API key'}
                 autoComplete="off"
                 data-1p-ignore
+                data-lpignore="true"
+                style={{ WebkitTextSecurity: 'disc' }}
                 className="w-full"
               />
             </div>
