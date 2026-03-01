@@ -93,7 +93,7 @@ function PipelineGate() {
   return (
     <div className="flex items-center justify-center h-[calc(100vh-8rem)]">
       <form onSubmit={handleSubmit} className="bg-terminal-800 border border-terminal-600 rounded-lg p-8 w-80">
-        <h2 className="text-terminal-100 text-lg font-medium mb-1">Pipeline Introspection</h2>
+        <h2 className="text-terminal-100 text-lg font-medium mb-1">Pipeline</h2>
         <p className="text-terminal-500 text-xs mb-6">This section is access-restricted.</p>
         <input
           type="password"
