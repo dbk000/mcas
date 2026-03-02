@@ -76,7 +76,7 @@ function PipelineGate() {
   }
 
   return (
-    <div className="flex items-center justify-center h-[calc(100vh-8rem)]">
+    <div className="flex items-center justify-center h-[calc(100vh-3.5rem)]">
       <form onSubmit={handleSubmit} className="bg-terminal-800 border border-terminal-600 rounded-lg p-8 w-80">
         <h2 className="text-terminal-100 text-lg font-medium mb-1">Pipeline</h2>
         <p className="text-terminal-500 text-xs mb-6">This section is access-restricted.</p>
@@ -711,7 +711,7 @@ function PipelineInner() {
   const panelOpen = selectedNode || chatOpen || recentActivityOpen
 
   return (
-    <div className={`h-[calc(100vh-8rem)] flex ${tvMode ? 'pipeline-tv-mode' : ''} relative`} data-complexity-tier={complexityTier}>
+    <div className={`h-[calc(100vh-3.5rem)] flex ${tvMode ? 'pipeline-tv-mode' : ''} relative`} data-complexity-tier={complexityTier}>
       {/* Subsystem legend moved to Layout Header — only collapse controls remain here */}
 
       {/* React Flow Canvas */}

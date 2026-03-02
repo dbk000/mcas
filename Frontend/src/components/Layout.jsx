@@ -41,6 +41,7 @@ export default function Layout({ children }) {
   const { addToast } = useToast()
   const location = useLocation()
   const navigate = useNavigate()
+  const isPipeline = location.pathname === '/pipeline'
   const [sidebarCollapsed, setSidebarCollapsed] = useState(
     () => localStorage.getItem('sidebar_collapsed') === 'true'
   )
@@ -153,8 +154,8 @@ export default function Layout({ children }) {
         {/* Top header */}
         <Header />
         
-        {/* Content */}
-        <div className="flex-1 overflow-auto p-6">
+        {/* Content — no padding on Pipeline for full-bleed canvas */}
+        <div className={`flex-1 overflow-auto ${isPipeline ? '' : 'p-6'}`}>
           {children}
         </div>
       </main>
