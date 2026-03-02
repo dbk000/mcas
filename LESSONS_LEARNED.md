@@ -53,3 +53,57 @@ Hard-won operational lessons from building and deploying MCAS. Append-only.
 **What happened:** Navigating directly to CF Pages settings URLs (`/settings/builds-deployments`) repeatedly shows "Refresh the page to try again" error.
 
 **Workaround:** Navigate to the project page first (`Workers & Pages > mcas`) then click through to settings from there. Direct URL navigation to settings sub-pages is unreliable.
+
+---
+
+## 2026-03-02 — Fast layout iteration via SVG render sweep (not browser)
+
+**What happened:** Iterating on pipeline node sizing through the browser (edit → deploy to CF Pages → refresh → check) was taking minutes per iteration. Tried using Vite dev server + Chrome but hit CORS issues, password gates, and slow feedback loops.
+
+**Solution:** Built `Frontend/layout-tuner.cjs` — a Node.js script that uses dagre directly (same library as the React Flow pipeline) to compute layout with different parameter combinations, then renders to SVG files. No React, no browser, no Vite — pure dagre → SVG in milliseconds.
+
+**How it works:**
+1. Fetches topology data from the API once (`/tmp/topology.json`)
+2. Runs dagre layout with N parameter combos (nodeW, nodeH, nodesep, ranksep)
+3. For each combo, computes graph bounding box and aspect ratio
+4. Calculates viewport fill % against target display (e.g., 1920×1080)
+5. Renders SVG files to `/tmp/pipeline-layouts/` + an HTML gallery for comparison
+6. Reports best match (we hit 99% viewport fill for 16:9)
+
+**Usage:**
+```bash
+cd Frontend && node layout-tuner.cjs --width 1920 --height 1080
+# Then serve: cd /tmp/pipeline-layouts && python3 -m http.server 8888
+# Open: http://localhost:8888/gallery.html
+```
+
+**Key insight:** When optimising spatial layout, the bottleneck is visual feedback speed. Removing the browser from the loop (dagre → SVG → static file serve) made iteration ~100× faster. The dagre library is identical in Node.js and the browser, so parameters that work in the SVG sweep transfer directly to React Flow. This approach applies to any React Flow / dagre layout optimisation.
+
+**Rule:** For any future layout tuning (new nodes, different display ratios), use `layout-tuner.cjs` to sweep parameters first, then apply the winning params to Pipeline.jsx. Don't iterate through the browser.
+
+---
+
+## 2026-03-02 — Winning UI scaling process: plan → parallel build → visual verify
+
+**What happened:** Implemented a 7-phase pipeline operating surface (visual states, biography system, toolbar, control surface, chat integration, multi-pipeline) in a single session. 9 new files, 7 modified. Zero regressions on existing cards/metrics.
+
+**Process that worked:**
+1. **Deep exploration first** — read every file that would be touched, understand the full data model
+2. **Write the plan** — detailed spec with file changes, schema, endpoints, component contracts
+3. **Build in parallel** — schema + API + frontend hook simultaneously, not sequentially
+4. **Frontend-first for interactions** — the hook (`usePipelineGraph`) was designed before any component was modified, so all components shared the same state model
+5. **Backend scripts async** — auto_capture_commit.py and genesis_import.py are independent of the frontend work
+
+**Key insight:** The planning phase paid for itself 10x. By speccing every file change, endpoint, and component contract upfront, the implementation was mechanical — no design decisions at code time, just translating spec to code. The plan also caught dependency ordering issues (e.g., biography tab needs version events API, which needs version_event table) before they became blockers.
+
+**Rule:** For any multi-file feature (>5 files), write a full spec first. The plan should name every file, every endpoint, and every component prop. Implementation should be boring — if you're making design decisions while coding, the plan wasn't detailed enough.
+
+---
+
+## 2026-03-02 — Always run DB migrations on production, not dev
+
+**What happened:** Implemented composition guardrails (new migration, new API endpoints, frontend changes) and ran migrations only on the dev DB (`mcas-dev-postgres-1`). The production site (`mcasui.com`) points at the production API (`backend-api-1`) which uses `backend-postgres-1`. New endpoints returned 500s in production because the schema changes (pareto_status column, composition_constraint table, updated validation gate trigger) didn't exist there.
+
+**Root cause:** Defaulted to running migrations on dev DB because it's "safer." But the frontend deploys to Cloudflare Pages which hits the production API. Dev DB/API is only useful for local Vite dev server testing. Every migration that supports a feature being deployed to production MUST run on production.
+
+**Rule:** When implementing a plan that includes DB migrations, always run migrations on the production database (`backend-postgres-1`) — not the dev DB. The frontend auto-deploys to CF Pages which hits production. Dev-only migrations are useless for verifying deployed features. Run on production first, dev second (or skip dev entirely unless actively developing against the dev API).

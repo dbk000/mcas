@@ -101,6 +101,15 @@ cd /srv/mcas/Frontend && npm install && npm run build
 - `mcas-dev-postgres-1` / `mcas-dev-worker-1` = dev
 - Do not confuse them.
 
+**DB Migrations — ALWAYS production first:**
+DB migrations MUST run on **production** (`backend-postgres-1`), not dev. The frontend auto-deploys to CF Pages which hits the production API. Dev-only migrations are useless for verifying deployed features. Run on production, then optionally dev.
+```bash
+# Run migration on PRODUCTION:
+cat docs/db/migrations/XXXX.sql | docker exec -i backend-postgres-1 psql -U trading -d trading
+# Run migration on dev (optional, secondary):
+cat docs/db/migrations/XXXX.sql | docker exec -i mcas-dev-postgres-1 psql -U trading -d trading
+```
+
 ## 1.6 Resource Awareness & Agent Teams Protocol
 
 ### CPU Monitoring
@@ -169,6 +178,7 @@ Every plan that creates or modifies a script must address:
 - NEVER deploy without user approval — dev and prod share the same machine but are separate git worktrees
 - NEVER recreate infra services during code-only deploy — use `--no-deps`
 - NEVER hardcode import paths — detect execution context at runtime
+- NEVER run DB migrations on dev only — always run on production (`backend-postgres-1`) first, since the frontend deploys to CF Pages which hits the production API
 
 ## SQL / Query Patterns
 - NEVER use `!= ALL(array)` in Postgres — use `NOT (col = ANY(array))`

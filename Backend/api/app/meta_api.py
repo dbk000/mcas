@@ -1094,3 +1094,715 @@ def create_node_version(payload: CreateNodeVersion):
         "version_number": next_ver,
         "node_name": node[0],
     }, t0)
+
+
+# =============================================================================
+# VERSION EVENTS (Biography System)
+# =============================================================================
+
+@router.get("/version/{version_id}/events")
+def get_version_events(
+    version_id: str,
+    limit: int = Query(default=100, ge=1, le=500),
+):
+    """Version biography — all events for a version, ordered chronologically."""
+    t0 = time.time()
+
+    with _get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT version_id FROM meta.node_version WHERE version_id = %s",
+                (version_id,)
+            )
+            if not cur.fetchone():
+                raise HTTPException(status_code=404, detail=f"Version {version_id} not found")
+
+            cur.execute("""
+                SELECT event_id, version_id, event_type, event_detail, actor,
+                       caused_by_event_id, created_at
+                FROM meta.version_event
+                WHERE version_id = %s
+                ORDER BY created_at ASC
+                LIMIT %s
+            """, (version_id, limit))
+            rows = cur.fetchall()
+
+    events = []
+    for r in rows:
+        events.append({
+            "event_id": str(r[0]),
+            "version_id": str(r[1]),
+            "event_type": r[2],
+            "event_detail": r[3] or {},
+            "actor": r[4],
+            "caused_by_event_id": str(r[5]) if r[5] else None,
+            "created_at": r[6].isoformat() if r[6] else None,
+        })
+
+    return envelope({"events": events, "count": len(events)}, t0)
+
+
+class CreateVersionEvent(BaseModel):
+    event_type: str
+    event_detail: Optional[dict] = None
+    actor: str
+    caused_by_event_id: Optional[str] = None
+
+
+@router.post("/version/{version_id}/event")
+def log_version_event(version_id: str, payload: CreateVersionEvent):
+    """Log a version event (biography entry)."""
+    t0 = time.time()
+
+    VALID_EVENT_TYPES = {
+        'script_run', 'backtest', 'optimisation_started', 'optimisation_referenced',
+        'composition_included', 'composition_removed', 'decision_made', 'hypothesis_formed',
+        'referenced_in_experiment', 'abandoned', 'revived', 'revalidated',
+        'conversation_note', 'downstream_triggered', 'parameter_informed_by',
+        'manual_observation', 'code_change', 'pushed_to_live',
+    }
+    if payload.event_type not in VALID_EVENT_TYPES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid event_type '{payload.event_type}'. Valid: {sorted(VALID_EVENT_TYPES)}"
+        )
+
+    with _get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT version_id FROM meta.node_version WHERE version_id = %s",
+                (version_id,)
+            )
+            if not cur.fetchone():
+                raise HTTPException(status_code=404, detail=f"Version {version_id} not found")
+
+            if payload.caused_by_event_id:
+                cur.execute(
+                    "SELECT event_id FROM meta.version_event WHERE event_id = %s",
+                    (payload.caused_by_event_id,)
+                )
+                if not cur.fetchone():
+                    raise HTTPException(status_code=404, detail=f"Caused-by event {payload.caused_by_event_id} not found")
+
+            cur.execute("""
+                INSERT INTO meta.version_event (version_id, event_type, event_detail, actor, caused_by_event_id)
+                VALUES (%s, %s, %s, %s, %s)
+                RETURNING event_id, created_at
+            """, (
+                version_id, payload.event_type,
+                json.dumps(payload.event_detail or {}),
+                payload.actor, payload.caused_by_event_id,
+            ))
+            row = cur.fetchone()
+        conn.commit()
+
+    return envelope({
+        "event_id": str(row[0]),
+        "version_id": version_id,
+        "event_type": payload.event_type,
+        "created_at": row[1].isoformat() if row[1] else None,
+    }, t0)
+
+
+@router.get("/event/{event_id}/causal_chain")
+def get_causal_chain(event_id: str):
+    """Walk caused_by links in both directions to build full causal chain."""
+    t0 = time.time()
+
+    with _get_conn() as conn:
+        with conn.cursor() as cur:
+            # Verify event exists
+            cur.execute("""
+                SELECT event_id, version_id, event_type, event_detail, actor,
+                       caused_by_event_id, created_at
+                FROM meta.version_event WHERE event_id = %s
+            """, (event_id,))
+            root = cur.fetchone()
+            if not root:
+                raise HTTPException(status_code=404, detail=f"Event {event_id} not found")
+
+            def row_to_dict(r):
+                return {
+                    "event_id": str(r[0]),
+                    "version_id": str(r[1]),
+                    "event_type": r[2],
+                    "event_detail": r[3] or {},
+                    "actor": r[4],
+                    "caused_by_event_id": str(r[5]) if r[5] else None,
+                    "created_at": r[6].isoformat() if r[6] else None,
+                }
+
+            # Walk upstream (caused_by chain)
+            ancestors = []
+            current_id = root[5]  # caused_by_event_id
+            visited = {str(root[0])}
+            while current_id and str(current_id) not in visited:
+                visited.add(str(current_id))
+                cur.execute("""
+                    SELECT event_id, version_id, event_type, event_detail, actor,
+                           caused_by_event_id, created_at
+                    FROM meta.version_event WHERE event_id = %s
+                """, (str(current_id),))
+                ancestor = cur.fetchone()
+                if not ancestor:
+                    break
+                ancestors.append(row_to_dict(ancestor))
+                current_id = ancestor[5]
+
+            # Walk downstream (events caused by this one)
+            descendants = []
+            queue = [str(root[0])]
+            visited_down = {str(root[0])}
+            while queue:
+                cid = queue.pop(0)
+                cur.execute("""
+                    SELECT event_id, version_id, event_type, event_detail, actor,
+                           caused_by_event_id, created_at
+                    FROM meta.version_event WHERE caused_by_event_id = %s
+                """, (cid,))
+                for r in cur.fetchall():
+                    eid = str(r[0])
+                    if eid not in visited_down:
+                        visited_down.add(eid)
+                        descendants.append(row_to_dict(r))
+                        queue.append(eid)
+
+    return envelope({
+        "root": row_to_dict(root),
+        "ancestors": list(reversed(ancestors)),  # oldest first
+        "descendants": descendants,
+        "chain_length": len(ancestors) + 1 + len(descendants),
+    }, t0)
+
+
+# =============================================================================
+# EXPERIMENT UPDATE (Phase 3/5)
+# =============================================================================
+
+class UpdateExperiment(BaseModel):
+    status: Optional[str] = None
+    conclusion: Optional[str] = None
+    outcome_class: Optional[str] = None
+    failure_mode: Optional[str] = None
+    key_insight: Optional[str] = None
+
+
+@router.patch("/experiment/{experiment_id}")
+def update_experiment(experiment_id: str, payload: UpdateExperiment):
+    """Update experiment status, conclusion, outcome."""
+    t0 = time.time()
+
+    valid_statuses = {'planned', 'running', 'completed', 'abandoned'}
+    valid_outcomes = {'breakthrough', 'incremental', 'null', 'dead_end', 'invalidated_prior', None}
+    valid_failures = {
+        'overfitting', 'regime_dependent', 'cost_model_failure',
+        'insufficient_sample', 'confounded', 'implementation_bug', None
+    }
+
+    if payload.status and payload.status not in valid_statuses:
+        raise HTTPException(status_code=400, detail=f"Invalid status. Valid: {sorted(valid_statuses)}")
+    if payload.outcome_class not in valid_outcomes:
+        raise HTTPException(status_code=400, detail=f"Invalid outcome_class")
+    if payload.failure_mode not in valid_failures:
+        raise HTTPException(status_code=400, detail=f"Invalid failure_mode")
+
+    with _get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT experiment_id FROM meta.experiment WHERE experiment_id = %s", (experiment_id,))
+            if not cur.fetchone():
+                raise HTTPException(status_code=404, detail="Experiment not found")
+
+            updates = []
+            params = []
+            if payload.status:
+                updates.append("status = %s")
+                params.append(payload.status)
+            if payload.conclusion is not None:
+                updates.append("conclusion = %s")
+                params.append(payload.conclusion)
+            if payload.outcome_class is not None:
+                updates.append("outcome_class = %s")
+                params.append(payload.outcome_class)
+            if payload.failure_mode is not None:
+                updates.append("failure_mode = %s")
+                params.append(payload.failure_mode)
+            if payload.key_insight is not None:
+                updates.append("key_insight = %s")
+                params.append(payload.key_insight)
+
+            if not updates:
+                raise HTTPException(status_code=400, detail="No fields to update")
+
+            updates.append("updated_at = now()")
+            params.append(experiment_id)
+
+            cur.execute(
+                f"UPDATE meta.experiment SET {', '.join(updates)} WHERE experiment_id = %s",
+                params
+            )
+        conn.commit()
+
+    return envelope({"experiment_id": experiment_id, "updated_fields": len(updates) - 1}, t0)
+
+
+# =============================================================================
+# COMPOSITION CRUD + DEPLOY (Phase 3/4)
+# =============================================================================
+
+class CreateComposition(BaseModel):
+    name: str
+    description: Optional[str] = None
+    node_versions: dict  # {node_id: version_id}
+    experiment_id: Optional[str] = None
+    source: str = "manual"
+
+
+@router.post("/composition")
+def create_composition(payload: CreateComposition):
+    """Create a composition from a version map."""
+    t0 = time.time()
+
+    if not payload.node_versions:
+        raise HTTPException(status_code=400, detail="node_versions cannot be empty")
+
+    config_hash = compute_config_hash(payload.node_versions)
+
+    with _get_conn() as conn:
+        with conn.cursor() as cur:
+            # Check for duplicate
+            cur.execute(
+                "SELECT composition_id, name FROM meta.composition WHERE config_hash = %s",
+                (config_hash,)
+            )
+            existing = cur.fetchone()
+            if existing:
+                return envelope({
+                    "composition_id": str(existing[0]),
+                    "name": existing[1],
+                    "duplicate": True,
+                    "config_hash": config_hash,
+                }, t0)
+
+            # Compute integrity hash
+            version_ids = list(payload.node_versions.values())
+            integrity = compute_integrity_hash(version_ids)
+
+            cur.execute("""
+                INSERT INTO meta.composition
+                    (name, description, node_versions, config_hash, status, source,
+                     experiment_id, integrity_hash)
+                VALUES (%s, %s, %s, %s, 'proposed', %s, %s, %s)
+                RETURNING composition_id
+            """, (
+                payload.name, payload.description,
+                json.dumps(payload.node_versions), config_hash,
+                payload.source, payload.experiment_id, integrity,
+            ))
+            comp_id = str(cur.fetchone()[0])
+
+            # Insert composition_version junction rows
+            for node_id, version_id in payload.node_versions.items():
+                cur.execute("""
+                    INSERT INTO meta.composition_version (composition_id, node_id, version_id)
+                    VALUES (%s, %s, %s)
+                    ON CONFLICT DO NOTHING
+                """, (comp_id, node_id, version_id))
+
+        conn.commit()
+
+    return envelope({
+        "composition_id": comp_id,
+        "name": payload.name,
+        "config_hash": config_hash,
+        "duplicate": False,
+    }, t0)
+
+
+@router.patch("/composition/{composition_id}/deploy")
+def deploy_composition(composition_id: str):
+    """Promote composition to deployed status and set its versions as active.
+    Requires all 5 validation gates to pass (enforced by DB trigger too)."""
+    t0 = time.time()
+
+    with _get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT composition_id, name, node_versions, status, validation_gate
+                FROM meta.composition WHERE composition_id = %s
+            """, (composition_id,))
+            comp = cur.fetchone()
+            if not comp:
+                raise HTTPException(status_code=404, detail="Composition not found")
+
+            if comp[3] == 'deployed':
+                return envelope({"composition_id": composition_id, "already_deployed": True}, t0)
+
+            # Check validation gates before attempting deploy
+            val_gate = comp[4] or {}
+            gate_fields = ["walk_forward_pass", "holdout_pass", "dsr_positive",
+                           "slippage_1_5x_pass", "n_trials_corrected"]
+            failing = [g for g in gate_fields if not val_gate.get(g)]
+            if failing:
+                raise HTTPException(
+                    status_code=422,
+                    detail=f"Cannot deploy: failing validation gates: {', '.join(failing)}"
+                )
+
+            # Update composition status
+            cur.execute("""
+                UPDATE meta.composition SET status = 'deployed', updated_at = now()
+                WHERE composition_id = %s
+            """, (composition_id,))
+
+            # Promote each version to deployed
+            node_versions = comp[2] or {}
+            for node_id, version_id in node_versions.items():
+                # Retire other deployed versions for same node
+                cur.execute("""
+                    UPDATE meta.node_version SET status = 'tested'
+                    WHERE node_id = %s AND status = 'deployed' AND version_id != %s
+                """, (node_id, version_id))
+                # Deploy the selected version
+                cur.execute("""
+                    UPDATE meta.node_version SET status = 'deployed'
+                    WHERE version_id = %s
+                """, (version_id,))
+
+        conn.commit()
+
+    return envelope({
+        "composition_id": composition_id,
+        "name": comp[1],
+        "deployed_versions": len(node_versions),
+    }, t0)
+
+
+# =============================================================================
+# PIPELINE LIST (Phase 7)
+# =============================================================================
+
+@router.get("/pipelines")
+def list_pipelines(limit: int = Query(default=20, ge=1, le=100)):
+    """List pipeline definitions."""
+    t0 = time.time()
+
+    with _get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT pipeline_id, name, description, config, created_at
+                FROM meta.pipeline
+                ORDER BY created_at DESC
+                LIMIT %s
+            """, (limit,))
+            rows = cur.fetchall()
+
+    pipelines = [{
+        "pipeline_id": str(r[0]),
+        "name": r[1],
+        "description": r[2],
+        "config": r[3] or {},
+        "created_at": r[4].isoformat() if r[4] else None,
+    } for r in rows]
+
+    return envelope({"pipelines": pipelines, "count": len(pipelines)}, t0)
+
+
+class CreatePipeline(BaseModel):
+    name: str
+    description: Optional[str] = None
+    config: Optional[dict] = None
+    clone_from: Optional[str] = None  # pipeline_id to clone
+
+
+@router.post("/pipeline")
+def create_pipeline(payload: CreatePipeline):
+    """Create or clone a pipeline definition."""
+    t0 = time.time()
+
+    with _get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                INSERT INTO meta.pipeline (name, description, config)
+                VALUES (%s, %s, %s)
+                RETURNING pipeline_id
+            """, (payload.name, payload.description, json.dumps(payload.config or {})))
+            pid = str(cur.fetchone()[0])
+
+            # Clone nodes from source pipeline if specified
+            if payload.clone_from:
+                cur.execute("""
+                    INSERT INTO meta.pipeline_node (pipeline_id, node_id, ordinal)
+                    SELECT %s, node_id, ordinal
+                    FROM meta.pipeline_node
+                    WHERE pipeline_id = %s
+                """, (pid, payload.clone_from))
+
+        conn.commit()
+
+    return envelope({"pipeline_id": pid, "name": payload.name}, t0)
+
+
+# =============================================================================
+# COMPOSITION GUARDRAILS — Significance, Pareto Frontier, Space Estimation
+# =============================================================================
+
+@router.get("/composition/{composition_id}/significance")
+def check_composition_significance(composition_id: str):
+    """Return statistical context and validation gate status for a composition."""
+    t0 = time.time()
+
+    with _get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT composition_id, name, status, source,
+                       statistical_context, validation_gate, agg_pf
+                FROM meta.composition WHERE composition_id = %s
+            """, (composition_id,))
+            row = cur.fetchone()
+            if not row:
+                raise HTTPException(status_code=404, detail="Composition not found")
+
+            stat_ctx = row[4] or {}
+            val_gate = row[5] or {}
+
+            # Determine significance level
+            is_sig = stat_ctx.get("is_significant_after_correction", False)
+            raw_pf = row[6]
+            expected_null = stat_ctx.get("expected_max_null")
+
+            if is_sig:
+                significance_level = "significant"
+            elif raw_pf and expected_null and raw_pf > expected_null:
+                significance_level = "marginal"
+            else:
+                significance_level = "not_significant"
+
+            # Gate status
+            gate_fields = ["walk_forward_pass", "holdout_pass", "dsr_positive",
+                           "slippage_1_5x_pass", "n_trials_corrected"]
+            gates_passing = {g: val_gate.get(g, False) for g in gate_fields}
+            all_pass = all(gates_passing.values())
+            failing_gates = [g for g, v in gates_passing.items() if not v]
+
+    return envelope({
+        "composition_id": str(row[0]),
+        "name": row[1],
+        "status": row[2],
+        "significance_level": significance_level,
+        "statistical_context": stat_ctx,
+        "validation_gate": val_gate,
+        "gates_passing": gates_passing,
+        "all_gates_pass": all_pass,
+        "failing_gates": failing_gates,
+    }, t0)
+
+
+@router.get("/node/{node_id}/pareto_frontier")
+def find_pareto_frontier(node_id: str):
+    """Return the non-dominated versions for a node (Pareto frontier)."""
+    t0 = time.time()
+
+    with _get_conn() as conn:
+        with conn.cursor() as cur:
+            # Get all versions with metrics for this node
+            cur.execute("""
+                SELECT version_id, version_number, status, parameters,
+                       agg_pf, net_pnl, max_drawdown, win_rate, trade_count,
+                       pareto_status, superseded_by, change_reason, created_at
+                FROM meta.node_version
+                WHERE node_id = %s
+                ORDER BY version_number DESC
+            """, (node_id,))
+            rows = cur.fetchall()
+
+            if not rows:
+                return envelope({"frontier": [], "dominated": [], "total": 0}, t0)
+
+            versions = []
+            for r in rows:
+                versions.append({
+                    "version_id": str(r[0]),
+                    "version_number": r[1],
+                    "status": r[2],
+                    "parameters": r[3] or {},
+                    "agg_pf": r[4],
+                    "net_pnl": r[5],
+                    "max_drawdown": r[6],
+                    "win_rate": r[7],
+                    "trade_count": r[8],
+                    "pareto_status": r[9] or "active",
+                    "superseded_by": str(r[10]) if r[10] else None,
+                    "change_reason": r[11],
+                    "created_at": r[12].isoformat() if r[12] else None,
+                })
+
+            # Compute Pareto frontier from metrics
+            # A version is dominated if another version is >= on all metrics
+            metrics_keys = ["agg_pf", "net_pnl", "win_rate", "trade_count"]
+            # max_drawdown is better when LOWER, so invert for comparison
+
+            def get_metrics(v):
+                vals = []
+                for k in metrics_keys:
+                    val = v.get(k)
+                    vals.append(val if val is not None else float('-inf'))
+                dd = v.get("max_drawdown")
+                vals.append(-dd if dd is not None else float('-inf'))
+                return vals
+
+            frontier = []
+            dominated = []
+            for i, vi in enumerate(versions):
+                mi = get_metrics(vi)
+                is_dominated = False
+                for j, vj in enumerate(versions):
+                    if i == j:
+                        continue
+                    mj = get_metrics(vj)
+                    # vj dominates vi if vj >= vi on all metrics and vj > vi on at least one
+                    if all(mj[k] >= mi[k] for k in range(len(mi))) and \
+                       any(mj[k] > mi[k] for k in range(len(mi))):
+                        is_dominated = True
+                        break
+                if is_dominated:
+                    dominated.append(vi)
+                else:
+                    frontier.append(vi)
+
+    return envelope({
+        "node_id": node_id,
+        "frontier": frontier,
+        "dominated": dominated,
+        "frontier_count": len(frontier),
+        "dominated_count": len(dominated),
+        "total": len(versions),
+    }, t0)
+
+
+@router.get("/composition/space/estimate")
+def estimate_composition_space(
+    node_ids: str = Query(description="Comma-separated node IDs"),
+    include_dominated: bool = Query(default=False),
+):
+    """Estimate the size of the combinatorial composition space for a set of nodes."""
+    t0 = time.time()
+
+    ids = [nid.strip() for nid in node_ids.split(",") if nid.strip()]
+    if not ids:
+        raise HTTPException(status_code=400, detail="node_ids required")
+
+    with _get_conn() as conn:
+        with conn.cursor() as cur:
+            node_counts = {}
+            for nid in ids:
+                if include_dominated:
+                    cur.execute("""
+                        SELECT COUNT(*) FROM meta.node_version
+                        WHERE node_id = %s
+                    """, (nid,))
+                else:
+                    cur.execute("""
+                        SELECT COUNT(*) FROM meta.node_version
+                        WHERE node_id = %s AND (pareto_status IS NULL OR pareto_status = 'active')
+                    """, (nid,))
+                count = cur.fetchone()[0]
+                # Get node name
+                cur.execute("SELECT name FROM meta.node WHERE node_id = %s", (nid,))
+                name_row = cur.fetchone()
+                node_counts[nid] = {
+                    "name": name_row[0] if name_row else nid,
+                    "version_count": count,
+                }
+
+            # Check composition constraints
+            cur.execute("""
+                SELECT constraint_id, node_a_id, node_b_id, constraint_type, description
+                FROM meta.composition_constraint
+                WHERE node_a_id = ANY(%s) OR node_b_id = ANY(%s)
+            """, (ids, ids))
+            constraints = [{
+                "constraint_id": str(r[0]),
+                "node_a_id": str(r[1]),
+                "node_b_id": str(r[2]),
+                "constraint_type": r[3],
+                "description": r[4],
+            } for r in cur.fetchall()]
+
+    # Compute total space
+    total_space = 1
+    for info in node_counts.values():
+        total_space *= max(info["version_count"], 1)
+
+    return envelope({
+        "node_counts": node_counts,
+        "total_compositions": total_space,
+        "include_dominated": include_dominated,
+        "constraints": constraints,
+        "constraint_count": len(constraints),
+    }, t0)
+
+
+@router.patch("/node_version/{version_id}/pareto_status")
+def update_pareto_status(version_id: str, status: str = Query(description="active, dominated, or historical")):
+    """Update the Pareto status of a node version."""
+    t0 = time.time()
+
+    if status not in ("active", "dominated", "historical"):
+        raise HTTPException(status_code=400, detail="status must be active, dominated, or historical")
+
+    with _get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                UPDATE meta.node_version SET pareto_status = %s
+                WHERE version_id = %s
+                RETURNING version_id, node_id, version_number
+            """, (status, version_id))
+            row = cur.fetchone()
+            if not row:
+                raise HTTPException(status_code=404, detail="Version not found")
+        conn.commit()
+
+    return envelope({
+        "version_id": str(row[0]),
+        "node_id": str(row[1]),
+        "version_number": row[2],
+        "pareto_status": status,
+    }, t0)
+
+
+class CreateConstraint(BaseModel):
+    node_a_id: str
+    node_b_id: str
+    constraint_type: str
+    constraint_rule: dict
+    description: str
+
+
+@router.post("/composition/constraint")
+def create_composition_constraint(payload: CreateConstraint):
+    """Create a semantic constraint between two nodes for composition assembly."""
+    t0 = time.time()
+
+    valid_types = ["requires_compatible_timeframe", "requires_compatible_universe", "excludes"]
+    if payload.constraint_type not in valid_types:
+        raise HTTPException(status_code=400, detail=f"constraint_type must be one of {valid_types}")
+
+    with _get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                INSERT INTO meta.composition_constraint
+                    (node_a_id, node_b_id, constraint_type, constraint_rule, description)
+                VALUES (%s, %s, %s, %s, %s)
+                RETURNING constraint_id
+            """, (
+                payload.node_a_id, payload.node_b_id,
+                payload.constraint_type, json.dumps(payload.constraint_rule),
+                payload.description,
+            ))
+            cid = str(cur.fetchone()[0])
+        conn.commit()
+
+    return envelope({
+        "constraint_id": cid,
+        "constraint_type": payload.constraint_type,
+    }, t0)

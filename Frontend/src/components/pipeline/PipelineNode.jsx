@@ -1,5 +1,6 @@
 import { memo } from 'react'
 import { Handle, Position } from '@xyflow/react'
+import { AlertTriangle } from 'lucide-react'
 
 const NODE_TYPE_ICONS = {
   data_source: '\u{1F4E1}',
@@ -16,7 +17,6 @@ const NODE_TYPE_ICONS = {
   custom: '\u{2726}',
 }
 
-// Human-readable type labels (non-quant friendly)
 const NODE_TYPE_LABELS = {
   data_source: 'Data Feed',
   feature_engine: 'Calculator',
@@ -44,11 +44,40 @@ const STATUS_BG = {
   tested: 'bg-terminal-600 text-terminal-400',
 }
 
+// Visual state style configuration
+const VISUAL_STATE_STYLES = {
+  default: {
+    borderColor: (subsystemColor) => subsystemColor + '80',
+    opacity: 1,
+    extraClasses: '',
+  },
+  selected: {
+    borderColor: () => '#f59e0b',
+    opacity: 1,
+    extraClasses: 'shadow-lg shadow-amber-500/20 scale-105',
+  },
+  highlighted: {
+    borderColor: (subsystemColor) => subsystemColor,
+    opacity: 1,
+    extraClasses: 'animate-pulse-subtle',
+  },
+  dimmed: {
+    borderColor: (subsystemColor) => subsystemColor + '30',
+    opacity: 0.35,
+    extraClasses: '',
+  },
+  alert: {
+    borderColor: () => '#ef4444',
+    opacity: 1,
+    extraClasses: 'shadow-lg shadow-red-500/30 animate-pulse-subtle',
+  },
+}
+
 function PipelineNode({ data, selected }) {
   const {
     label, nodeType, subsystem, subsystemColor, statusColor,
     versionCount, aggPf, currentVersion, description, owner,
-    sourceFile, ports,
+    sourceFile, ports, visualState, pressureWaveDelay,
   } = data
 
   const icon = NODE_TYPE_ICONS[nodeType] || '\u{2726}'
@@ -56,24 +85,37 @@ function PipelineNode({ data, selected }) {
   const statusLabel = STATUS_LABELS[currentVersion?.status] || currentVersion?.status || ''
   const statusBg = STATUS_BG[currentVersion?.status] || STATUS_BG.tested
 
-  // Port counts
   const inputCount = ports?.inputs?.length || 0
   const outputCount = ports?.outputs?.length || 0
 
-  // Shorten source file
   const shortFile = sourceFile
     ? sourceFile.replace('worker/app/', '').replace('.py', '')
     : null
+
+  // Determine visual state styling
+  const vs = visualState || (selected ? 'selected' : 'default')
+  const stateStyle = VISUAL_STATE_STYLES[vs] || VISUAL_STATE_STYLES.default
+  const borderColor = stateStyle.borderColor(subsystemColor)
+  const nodeOpacity = stateStyle.opacity
+
+  // Pressure wave animation
+  const pressureStyle = pressureWaveDelay != null
+    ? { animation: `pressure-wave 600ms ease-out ${pressureWaveDelay}ms` }
+    : {}
 
   return (
     <div
       className={`
         relative bg-terminal-800 border-[3px] rounded-xl px-6 py-4 w-[460px] h-[300px]
         transition-all duration-200 cursor-pointer flex flex-col overflow-hidden
-        ${selected ? 'shadow-lg shadow-amber-500/20 scale-105' : 'hover:shadow-md hover:shadow-white/5'}
+        ${stateStyle.extraClasses}
+        ${!visualState && selected ? 'shadow-lg shadow-amber-500/20 scale-105' : ''}
+        ${!visualState && !selected ? 'hover:shadow-md hover:shadow-white/5' : ''}
       `}
       style={{
-        borderColor: selected ? '#f59e0b' : subsystemColor + '80',
+        borderColor,
+        opacity: nodeOpacity,
+        ...pressureStyle,
       }}
     >
       {/* Top accent bar */}
@@ -89,7 +131,7 @@ function PipelineNode({ data, selected }) {
         className="!w-5 !h-5 !bg-terminal-500 !border-2 !border-terminal-700"
       />
 
-      {/* Row 1: Icon + Name + Status badge */}
+      {/* Row 1: Icon + Name + Status badge + Alert */}
       <div className="flex items-center justify-between mt-1.5">
         <div className="flex items-center gap-3 min-w-0">
           <span className="text-3xl flex-shrink-0">{icon}</span>
@@ -98,12 +140,20 @@ function PipelineNode({ data, selected }) {
             <div className="text-xs text-terminal-500 mt-0.5">{typeLabel}</div>
           </div>
         </div>
-        {/* Status badge */}
-        {statusLabel && (
-          <span className={`text-sm font-semibold px-3 py-1 rounded-full flex-shrink-0 ml-2 ${statusBg}`}>
-            {statusLabel}
-          </span>
-        )}
+        <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+          {/* Alert badge */}
+          {vs === 'alert' && (
+            <span className="text-red-400" title="Stale metrics or failed validation">
+              <AlertTriangle className="w-5 h-5" />
+            </span>
+          )}
+          {/* Status badge */}
+          {statusLabel && (
+            <span className={`text-sm font-semibold px-3 py-1 rounded-full ${statusBg}`}>
+              {statusLabel}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Row 2: Subsystem + version + connections */}

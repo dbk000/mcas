@@ -15,6 +15,8 @@ import { useApi } from '../context/ApiContext'
 import PipelineNode from '../components/pipeline/PipelineNode'
 import NodeDetailPanel from '../components/pipeline/NodeDetailPanel'
 import ChatPanel from '../components/pipeline/ChatPanel'
+import PipelineToolbar from '../components/pipeline/PipelineToolbar'
+import usePipelineGraph from '../hooks/usePipelineGraph'
 
 // Subsystem colors
 const SUBSYSTEM_COLORS = {
@@ -39,14 +41,21 @@ const SUBSYSTEM_ORDER = [
 // Custom node types
 const nodeTypes = { pipeline: PipelineNode }
 
-// Dagre layout
+// Dagre layout with subsystem column ranking
 function getLayoutedElements(nodes, edges) {
   const g = new dagre.graphlib.Graph()
   g.setDefaultEdgeLabel(() => ({}))
   g.setGraph({ rankdir: 'LR', nodesep: 25, ranksep: 40, marginx: 25, marginy: 25 })
 
   nodes.forEach((node) => {
-    g.setNode(node.id, { width: 500, height: 320 })
+    const subsystem = node.data?.subsystem || ''
+    const rankIndex = SUBSYSTEM_ORDER.indexOf(subsystem)
+    // Assign rank from subsystem order for strict column layout
+    // Parameter nodes get same rank as strategy (cluster nearby)
+    const rank = subsystem === 'parameter'
+      ? SUBSYSTEM_ORDER.indexOf('strategy')
+      : (rankIndex >= 0 ? rankIndex : SUBSYSTEM_ORDER.length)
+    g.setNode(node.id, { width: 500, height: 320, rank })
   })
 
   edges.forEach((edge) => {
@@ -121,12 +130,20 @@ function PipelineInner() {
   const { get } = useApi()
   const [nodes, setNodes, onNodesChange] = useNodesState([])
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
-  const [selectedNode, setSelectedNode] = useState(null)
   const [topologyData, setTopologyData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [chatOpen, setChatOpen] = useState(false)
   const reactFlowRef = useRef(null)
+
+  // Pipeline graph state management
+  const graph = usePipelineGraph(topologyData)
+
+  // Derive selected node from graph state
+  const selectedNode = useMemo(() => {
+    if (!graph.selectedNodeId || !topologyData) return null
+    return topologyData.nodes?.find(n => n.id === graph.selectedNodeId) || null
+  }, [graph.selectedNodeId, topologyData])
 
   // Fetch topology
   useEffect(() => {
@@ -150,7 +167,7 @@ function PipelineInner() {
     return () => { cancelled = true }
   }, [get])
 
-  // Convert API data to React Flow nodes/edges
+  // Convert API data to React Flow nodes/edges with visual states
   useEffect(() => {
     if (!topologyData) return
 
@@ -159,9 +176,16 @@ function PipelineInner() {
 
     const flowNodes = apiNodes.map((n) => {
       const cv = n.current_version
-      let statusColor = '#6b7280' // grey: tested only
-      if (cv?.status === 'deployed') statusColor = '#22c55e' // green
-      else if (cv?.status === 'promising') statusColor = '#f59e0b' // amber
+      let statusColor = '#6b7280'
+      if (cv?.status === 'deployed') statusColor = '#22c55e'
+      else if (cv?.status === 'promising') statusColor = '#f59e0b'
+
+      // Get visual state from hook
+      const vs = graph.visualState.get(n.id) || 'default'
+
+      // Get pressure wave delay
+      const pwDist = graph.pressureWaveDistances.get(n.id)
+      const pressureWaveDelay = pwDist != null ? pwDist * 150 : null
 
       return {
         id: n.id,
@@ -179,44 +203,108 @@ function PipelineInner() {
           sourceFile: n.source_file,
           owner: n.owner,
           ports: n.ports,
+          visualState: vs,
+          pressureWaveDelay,
         },
       }
     })
 
-    const flowEdges = apiEdges.map((e) => ({
-      id: e.id,
-      source: e.source,
-      target: e.target,
-      sourceHandle: e.sourceHandle,
-      targetHandle: e.targetHandle,
-      animated: true,
-      style: { stroke: '#475569', strokeWidth: 3 },
-      markerEnd: { type: MarkerType.ArrowClosed, color: '#475569', width: 20, height: 20 },
+    const flowEdges = apiEdges.map((e) => {
+      const isHighlighted = graph.highlightedEdgeIds.has(e.id)
+      const hasSelection = graph.highlightedNodeIds.size > 0
+
+      return {
+        id: e.id,
+        source: e.source,
+        target: e.target,
+        sourceHandle: e.sourceHandle,
+        targetHandle: e.targetHandle,
+        animated: isHighlighted || !hasSelection,
+        style: {
+          stroke: isHighlighted ? '#94a3b8' : '#475569',
+          strokeWidth: isHighlighted ? 4 : 3,
+          opacity: hasSelection && !isHighlighted ? 0.15 : 1,
+        },
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+          color: isHighlighted ? '#94a3b8' : '#475569',
+          width: 20,
+          height: 20,
+        },
+      }
+    })
+
+    // Add causal arrows as overlay edges
+    const causalEdges = graph.causalArrows.map((arrow, i) => ({
+      id: `causal-${i}`,
+      source: arrow.from,
+      target: arrow.to,
+      type: 'default',
+      animated: false,
+      style: {
+        stroke: '#d97706',
+        strokeWidth: 2,
+        strokeDasharray: '8 4',
+        opacity: 0.8,
+      },
+      markerEnd: { type: MarkerType.ArrowClosed, color: '#d97706', width: 16, height: 16 },
+      label: arrow.label || '',
+      labelStyle: { fill: '#d97706', fontSize: 10 },
+      labelBgStyle: { fill: '#1e293b', fillOpacity: 0.8 },
     }))
 
     const { nodes: layouted, edges: layoutedEdges } = getLayoutedElements(flowNodes, flowEdges)
     setNodes(layouted)
-    setEdges(layoutedEdges)
+    setEdges([...layoutedEdges, ...causalEdges])
 
     // Trigger fitView after layout settles
     setTimeout(() => {
       reactFlowRef.current?.fitView({ padding: 0.15, duration: 300 })
     }, 100)
-  }, [topologyData, setNodes, setEdges])
+  }, [topologyData, setNodes, setEdges, graph.visualState, graph.highlightedEdgeIds, graph.highlightedNodeIds, graph.causalArrows, graph.pressureWaveDistances])
 
   const onNodeClick = useCallback((event, node) => {
-    const apiNode = topologyData?.nodes?.find(n => n.id === node.id)
-    setSelectedNode(apiNode || node.data)
-  }, [topologyData])
+    graph.selectNode(node.id)
+  }, [graph])
 
   const onPaneClick = useCallback(() => {
-    setSelectedNode(null)
-  }, [])
+    graph.clearSelection()
+  }, [graph])
 
   // Minimap node color
   const minimapNodeColor = useCallback((node) => {
     return node.data?.subsystemColor || '#6b7280'
   }, [])
+
+  // Chat/graph integration callbacks
+  const handleHighlightNodes = useCallback((nodeIds) => {
+    graph.highlightNodes(nodeIds)
+  }, [graph])
+
+  const handlePressureWave = useCallback((nodeId) => {
+    graph.triggerPressureWave(nodeId)
+  }, [graph])
+
+  const handleNavigateToNode = useCallback((nodeId) => {
+    graph.navigateToNode(nodeId)
+    // Scroll to node in ReactFlow
+    const node = nodes.find(n => n.id === nodeId)
+    if (node && reactFlowRef.current) {
+      reactFlowRef.current.setCenter(
+        node.position.x + 250,
+        node.position.y + 160,
+        { zoom: 1, duration: 500 }
+      )
+    }
+  }, [graph, nodes])
+
+  const handleExperimentOverlay = useCallback((experimentId, touchedNodeIds) => {
+    graph.setExperimentOverlay(experimentId, touchedNodeIds)
+  }, [graph])
+
+  const handleCompositionOverlay = useCallback((compositionId, nodeVersionMap) => {
+    graph.setCompositionOverlay(compositionId, nodeVersionMap)
+  }, [graph])
 
   if (loading) {
     return (
@@ -237,10 +325,12 @@ function PipelineInner() {
     )
   }
 
+  const panelOpen = selectedNode || chatOpen
+
   return (
     <div className="h-[calc(100vh-8rem)] flex">
       {/* React Flow Canvas */}
-      <div className={`flex-1 relative transition-all duration-300 ${selectedNode ? 'mr-[400px]' : ''} ${chatOpen ? 'mr-[400px]' : ''}`}>
+      <div className={`flex-1 relative transition-all duration-300 ${panelOpen ? 'mr-[400px]' : ''}`}>
         <ReactFlow
           nodes={nodes}
           edges={edges}
@@ -284,6 +374,14 @@ function PipelineInner() {
             </div>
           </Panel>
 
+          {/* Toolbar */}
+          <PipelineToolbar
+            topologyData={topologyData}
+            graph={graph}
+            onExperimentOverlay={handleExperimentOverlay}
+            onCompositionOverlay={handleCompositionOverlay}
+          />
+
           {/* Chat toggle */}
           <Panel position="top-right">
             <button
@@ -300,7 +398,8 @@ function PipelineInner() {
       {selectedNode && !chatOpen && (
         <NodeDetailPanel
           node={selectedNode}
-          onClose={() => setSelectedNode(null)}
+          onClose={() => graph.clearSelection()}
+          graph={graph}
         />
       )}
 
@@ -310,10 +409,12 @@ function PipelineInner() {
           selectedNode={selectedNode}
           topologyData={topologyData}
           onClose={() => setChatOpen(false)}
-          onNodeSelect={(nodeId) => {
-            const apiNode = topologyData?.nodes?.find(n => n.id === nodeId)
-            if (apiNode) setSelectedNode(apiNode)
-          }}
+          onNodeSelect={(nodeId) => graph.selectNode(nodeId)}
+          onHighlightNodes={handleHighlightNodes}
+          onPressureWave={handlePressureWave}
+          onNavigateToNode={handleNavigateToNode}
+          onExperimentOverlay={handleExperimentOverlay}
+          graph={graph}
         />
       )}
     </div>

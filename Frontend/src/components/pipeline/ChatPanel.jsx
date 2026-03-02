@@ -2,8 +2,9 @@ import { useState, useRef, useEffect } from 'react'
 import { X, Send, Loader2 } from 'lucide-react'
 import { useApi } from '../../context/ApiContext'
 
-// Tool definitions for the model
+// Tool definitions — read, visualization, and command tools
 const TOOL_DEFINITIONS = [
+  // === Data tools ===
   {
     name: 'get_node_versions',
     description: 'Fetch version history for any node. Returns versions with metrics, parameters, and change reasons.',
@@ -84,6 +85,109 @@ const TOOL_DEFINITIONS = [
     },
   },
   {
+    name: 'get_version_events',
+    description: 'Fetch the biography (event timeline) for a specific version. Returns chronological events: code changes, backtests, decisions, notes.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        version_id: { type: 'string', description: 'UUID of the version' },
+      },
+      required: ['version_id'],
+    },
+  },
+  {
+    name: 'trace_causal_chain',
+    description: 'Walk the causal chain from an event in both directions. Returns ancestors (what caused this) and descendants (what this caused).',
+    input_schema: {
+      type: 'object',
+      properties: {
+        event_id: { type: 'string', description: 'UUID of the event to trace from' },
+      },
+      required: ['event_id'],
+    },
+  },
+  // === Composition guardrail tools ===
+  {
+    name: 'check_composition_significance',
+    description: 'Check a composition\'s statistical significance and validation gate status. Returns significance level (significant/marginal/not_significant), statistical context (DSR, corrected Sharpe, p-value), and which validation gates pass/fail.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        composition_id: { type: 'string', description: 'UUID of the composition' },
+      },
+      required: ['composition_id'],
+    },
+  },
+  {
+    name: 'find_pareto_frontier',
+    description: 'Find the non-dominated (Pareto frontier) versions for a node. Returns frontier versions (worth including in compositions) and dominated versions (strictly inferior on all metrics).',
+    input_schema: {
+      type: 'object',
+      properties: {
+        node_id: { type: 'string', description: 'UUID of the node' },
+      },
+      required: ['node_id'],
+    },
+  },
+  {
+    name: 'estimate_composition_space',
+    description: 'Estimate the size of the combinatorial composition space for a set of nodes, accounting for Pareto pruning and constraints.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        node_ids: { type: 'array', items: { type: 'string' }, description: 'Array of node UUIDs' },
+        include_dominated: { type: 'boolean', description: 'Include dominated versions in count', default: false },
+      },
+      required: ['node_ids'],
+    },
+  },
+  // === Visualization tools (AI → canvas) ===
+  {
+    name: 'highlight_nodes',
+    description: 'Highlight specific nodes on the pipeline canvas. Other nodes dim. Use to show the user which nodes are relevant.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        node_ids: { type: 'array', items: { type: 'string' }, description: 'Array of node UUIDs to highlight' },
+      },
+      required: ['node_ids'],
+    },
+  },
+  {
+    name: 'show_pressure_wave',
+    description: 'Trigger a pressure wave animation from a node, cascading downstream. Shows impact propagation.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        node_id: { type: 'string', description: 'UUID of the origin node' },
+      },
+      required: ['node_id'],
+    },
+  },
+  {
+    name: 'navigate_to_node',
+    description: 'Select and scroll to a specific node on the canvas.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        node_id: { type: 'string', description: 'UUID of the node to navigate to' },
+      },
+      required: ['node_id'],
+    },
+  },
+  {
+    name: 'show_experiment_footprint',
+    description: 'Highlight all nodes touched by an experiment on the canvas.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        experiment_id: { type: 'string' },
+      },
+      required: ['experiment_id'],
+    },
+  },
+  // === Command tools ===
+  {
     name: 'create_experiment',
     description: 'Create a new experiment with name and hypothesis.',
     input_schema: {
@@ -110,11 +214,57 @@ const TOOL_DEFINITIONS = [
       required: ['node_id', 'swept_parameter', 'value_range'],
     },
   },
+  {
+    name: 'log_version_event',
+    description: 'Log a note, decision, or observation to a version biography. Creates an event record.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        version_id: { type: 'string' },
+        event_type: {
+          type: 'string',
+          enum: ['conversation_note', 'decision_made', 'manual_observation', 'hypothesis_formed'],
+        },
+        detail: { type: 'string', description: 'The note or observation text' },
+        actor: { type: 'string', description: 'Who is logging this', default: 'chat_ai' },
+      },
+      required: ['version_id', 'event_type', 'detail'],
+    },
+  },
+  {
+    name: 'create_version',
+    description: 'Create a new node version with specified parameters and change reason.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        node_id: { type: 'string' },
+        parameters: { type: 'object' },
+        change_reason: { type: 'string' },
+      },
+      required: ['node_id', 'parameters', 'change_reason'],
+    },
+  },
+  {
+    name: 'update_experiment',
+    description: 'Update experiment status, conclusion, outcome class.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        experiment_id: { type: 'string' },
+        status: { type: 'string', enum: ['planned', 'running', 'completed', 'abandoned'] },
+        conclusion: { type: 'string' },
+        outcome_class: { type: 'string', enum: ['breakthrough', 'incremental', 'null', 'dead_end', 'invalidated_prior'] },
+        key_insight: { type: 'string' },
+      },
+      required: ['experiment_id'],
+    },
+  },
 ]
 
-// Map tool calls to API endpoints
-async function executeTool(toolName, toolInput, apiGet, apiPost) {
+// Map tool calls to API endpoints or canvas actions
+async function executeTool(toolName, toolInput, apiGet, apiPost, canvasCallbacks) {
   switch (toolName) {
+    // Data tools
     case 'get_node_versions': {
       const params = new URLSearchParams()
       if (toolInput.limit) params.set('limit', toolInput.limit)
@@ -140,22 +290,92 @@ async function executeTool(toolName, toolInput, apiGet, apiPost) {
       if (toolInput.status) params.set('status', toolInput.status)
       return await apiGet(`/v1/meta/experiments?${params}`)
     }
+    case 'get_version_events':
+      return await apiGet(`/v1/meta/version/${toolInput.version_id}/events`)
+    case 'trace_causal_chain':
+      return await apiGet(`/v1/meta/event/${toolInput.event_id}/causal_chain`)
+    case 'check_composition_significance':
+      return await apiGet(`/v1/meta/composition/${toolInput.composition_id}/significance`)
+    case 'find_pareto_frontier':
+      return await apiGet(`/v1/meta/node/${toolInput.node_id}/pareto_frontier`)
+    case 'estimate_composition_space': {
+      const ids = toolInput.node_ids.join(',')
+      const params = new URLSearchParams({ node_ids: ids })
+      if (toolInput.include_dominated) params.set('include_dominated', 'true')
+      return await apiGet(`/v1/meta/composition/space/estimate?${params}`)
+    }
+
+    // Visualization tools (canvas actions)
+    case 'highlight_nodes':
+      canvasCallbacks?.onHighlightNodes?.(toolInput.node_ids)
+      return { success: true, action: 'highlighted_nodes', count: toolInput.node_ids.length }
+    case 'show_pressure_wave':
+      canvasCallbacks?.onPressureWave?.(toolInput.node_id)
+      return { success: true, action: 'pressure_wave_triggered', node_id: toolInput.node_id }
+    case 'navigate_to_node':
+      canvasCallbacks?.onNavigateToNode?.(toolInput.node_id)
+      return { success: true, action: 'navigated_to_node', node_id: toolInput.node_id }
+    case 'show_experiment_footprint': {
+      try {
+        const resp = await apiGet(`/v1/meta/experiment/${toolInput.experiment_id}`)
+        const detail = resp?.data || resp
+        const nodeIds = (detail.versions || []).map(v => v.node_id)
+        canvasCallbacks?.onExperimentOverlay?.(toolInput.experiment_id, nodeIds)
+        return { success: true, action: 'experiment_overlay', node_count: nodeIds.length }
+      } catch {
+        return { success: false, error: 'Failed to fetch experiment' }
+      }
+    }
+
+    // Command tools
     case 'create_experiment':
       return await apiPost('/v1/meta/experiment', toolInput)
     case 'register_sweep':
       return await apiPost('/v1/meta/sweep/register', toolInput)
+    case 'log_version_event':
+      return await apiPost(`/v1/meta/version/${toolInput.version_id}/event`, {
+        event_type: toolInput.event_type,
+        event_detail: { summary: toolInput.detail },
+        actor: toolInput.actor || 'chat_ai',
+      })
+    case 'create_version':
+      return await apiPost('/v1/meta/node/version', {
+        node_id: toolInput.node_id,
+        parameters: toolInput.parameters,
+        change_reason: toolInput.change_reason,
+        status: 'tested',
+      })
+    case 'update_experiment': {
+      const body = {}
+      if (toolInput.status) body.status = toolInput.status
+      if (toolInput.conclusion) body.conclusion = toolInput.conclusion
+      if (toolInput.outcome_class) body.outcome_class = toolInput.outcome_class
+      if (toolInput.key_insight) body.key_insight = toolInput.key_insight
+      // PATCH via post with method override or direct fetch
+      const resp = await fetch(`/v1/meta/experiment/${toolInput.experiment_id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+      return await resp.json()
+    }
     default:
       return { error: `Unknown tool: ${toolName}` }
   }
 }
 
-export default function ChatPanel({ selectedNode, topologyData, onClose, onNodeSelect }) {
+export default function ChatPanel({
+  selectedNode, topologyData, onClose, onNodeSelect,
+  onHighlightNodes, onPressureWave, onNavigateToNode, onExperimentOverlay, graph,
+}) {
   const { get: apiGet, post: apiPost } = useApi()
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [apiKeyInput, setApiKeyInput] = useState(() => localStorage.getItem('mcas_anthropic_key') || '')
   const messagesEndRef = useRef(null)
+
+  const canvasCallbacks = { onHighlightNodes, onPressureWave, onNavigateToNode, onExperimentOverlay }
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -164,11 +384,20 @@ export default function ChatPanel({ selectedNode, topologyData, onClose, onNodeS
   const anthropicKey = apiKeyInput || localStorage.getItem('mcas_anthropic_key')
 
   function buildSystemPrompt() {
-    let system = `You are the MCAS Pipeline Introspection assistant. You help users understand and navigate the MCAS trading pipeline — its nodes, versions, experiments, and compositions.
+    let system = `You are the MCAS Pipeline Introspection assistant. You help users understand, navigate, and control the MCAS trading pipeline — its nodes, versions, experiments, and compositions.
 
-You have access to tools that query the pipeline metadata database. Use them to answer questions about node versions, experiments, parameter sweeps, and compositions.
+You have access to tools that:
+1. **Query** pipeline metadata (versions, experiments, compositions, events, causal chains)
+2. **Visualize** on the canvas (highlight nodes, trigger pressure waves, navigate)
+3. **Command** the system (create versions, log events, update experiments, register sweeps)
 
-When referencing specific nodes, use the format [node_name](node:node_id) so the UI can make them clickable.`
+When referencing specific nodes, use the format [node_name](node:node_id) so the UI can make them clickable.
+
+When the user asks to highlight, show, or navigate to nodes — use the visualization tools to act on the canvas directly.
+When the user asks to log a note or record a decision — use log_version_event.
+When the user asks to create or update experiments — use the command tools.
+
+For destructive actions (deploying compositions), explain what will happen and ask for confirmation before proceeding.`
 
     if (selectedNode) {
       system += `\n\nCurrently selected node:\n${JSON.stringify({
@@ -205,7 +434,6 @@ When referencing specific nodes, use the format [node_name](node:node_id) so the
     setLoading(true)
 
     try {
-      // Build conversation for API
       const apiMessages = newMessages
         .filter(m => m.role === 'user' || m.role === 'assistant')
         .map(m => ({
@@ -213,7 +441,6 @@ When referencing specific nodes, use the format [node_name](node:node_id) so the
           content: m.content,
         }))
 
-      // Call Anthropic API
       const response = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: {
@@ -238,7 +465,6 @@ When referencing specific nodes, use the format [node_name](node:node_id) so the
 
       const data = await response.json()
 
-      // Process response — handle tool use
       let textContent = ''
       let toolCalls = []
 
@@ -250,12 +476,11 @@ When referencing specific nodes, use the format [node_name](node:node_id) so the
         }
       }
 
-      // If there are tool calls, execute them and get final response
       if (toolCalls.length > 0) {
         const toolResults = []
         for (const tc of toolCalls) {
           try {
-            const result = await executeTool(tc.name, tc.input, apiGet, apiPost)
+            const result = await executeTool(tc.name, tc.input, apiGet, apiPost, canvasCallbacks)
             toolResults.push({
               type: 'tool_result',
               tool_use_id: tc.id,
@@ -271,7 +496,6 @@ When referencing specific nodes, use the format [node_name](node:node_id) so the
           }
         }
 
-        // Second call with tool results
         const followupMessages = [
           ...apiMessages,
           { role: 'assistant', content: data.content },
@@ -303,7 +527,6 @@ When referencing specific nodes, use the format [node_name](node:node_id) so the
             .join('')
         }
 
-        // Show tool indicator
         const toolNames = toolCalls.map(tc => tc.name).join(', ')
         setMessages(prev => [
           ...prev,
@@ -365,7 +588,7 @@ When referencing specific nodes, use the format [node_name](node:node_id) so the
             <button
               onClick={() => {
                 localStorage.setItem('mcas_anthropic_key', apiKeyInput)
-                setApiKeyInput(apiKeyInput) // force re-render
+                setApiKeyInput(apiKeyInput)
               }}
               disabled={!apiKeyInput.startsWith('sk-')}
               className="w-full px-3 py-2 bg-amber-600 hover:bg-amber-500 disabled:bg-terminal-700 disabled:text-terminal-500 text-white text-xs font-medium rounded transition-colors"
@@ -401,8 +624,10 @@ When referencing specific nodes, use the format [node_name](node:node_id) so the
             <p className="mb-2">Ask about the pipeline, nodes, versions, or experiments.</p>
             <div className="space-y-1 text-terminal-600">
               <p>"Why did we change this node?"</p>
-              <p>"What experiments are running?"</p>
+              <p>"Highlight all signal nodes"</p>
+              <p>"Log a note on this version"</p>
               <p>"Compare the last two versions"</p>
+              <p>"Show the experiment footprint"</p>
             </div>
           </div>
         )}
