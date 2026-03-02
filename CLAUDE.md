@@ -110,6 +110,13 @@ cat docs/db/migrations/XXXX.sql | docker exec -i backend-postgres-1 psql -U trad
 cat docs/db/migrations/XXXX.sql | docker exec -i mcas-dev-postgres-1 psql -U trading -d trading
 ```
 
+**Deploy checklist — EVERYTHING targets production:**
+There is no staging environment. After every commit+push that touches backend code:
+1. Frontend: automatic via CF Pages (`git push origin main`)
+2. Backend API: `cd /srv/mcas && git pull origin main` then `docker compose -f docker-compose.yml build api && docker compose -f docker-compose.yml up -d --no-deps api`
+3. DB migrations: run on `backend-postgres-1` (see above)
+4. NEVER deploy only to dev containers (`mcas-dev-*`) and call it done — the live site won't see the changes
+
 ## 1.6 Resource Awareness & Agent Teams Protocol
 
 ### CPU Monitoring

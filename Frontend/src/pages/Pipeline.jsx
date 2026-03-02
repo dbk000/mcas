@@ -109,6 +109,7 @@ function PipelineInner() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [chatOpen, setChatOpen] = useState(false)
+  const [tvMode, setTvMode] = useState(false)
   const reactFlowRef = useRef(null)
 
   // Pipeline graph state management
@@ -687,9 +688,6 @@ function PipelineInner() {
   }
 
   const panelOpen = selectedNode || chatOpen
-
-  // TV mode toggle (Wave 1.4) — applies pipeline-tv-mode class to scale text
-  const [tvMode, setTvMode] = useState(false)
 
   return (
     <div className={`h-[calc(100vh-8rem)] flex ${tvMode ? 'pipeline-tv-mode' : ''}`} data-complexity-tier={complexityTier}>

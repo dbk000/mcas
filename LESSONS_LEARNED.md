@@ -107,3 +107,18 @@ cd Frontend && node layout-tuner.cjs --width 1920 --height 1080
 **Root cause:** Defaulted to running migrations on dev DB because it's "safer." But the frontend deploys to Cloudflare Pages which hits the production API. Dev DB/API is only useful for local Vite dev server testing. Every migration that supports a feature being deployed to production MUST run on production.
 
 **Rule:** When implementing a plan that includes DB migrations, always run migrations on the production database (`backend-postgres-1`) — not the dev DB. The frontend auto-deploys to CF Pages which hits production. Dev-only migrations are useless for verifying deployed features. Run on production first, dev second (or skip dev entirely unless actively developing against the dev API).
+
+---
+
+## 2026-03-02 — Deploy means production: backend API, DB, and frontend all target prod
+
+**What happened:** After committing and pushing Wave 0+1 pipeline changes, nearly forgot to deploy the backend API to production. The `meta_api.py` changes (recursive CTE rewrite for `get_causal_chain`) would have been dead code until the production API container was rebuilt.
+
+**The full deploy chain for any change touching both frontend and backend:**
+1. `git push origin main` — triggers CF Pages auto-deploy for frontend
+2. `cd /srv/mcas && git pull origin main` — pull to production path
+3. `cd /srv/mcas/Backend && docker compose -f docker-compose.yml build <service> && docker compose -f docker-compose.yml up -d --no-deps <service>` — rebuild + restart the changed backend service(s)
+4. DB migrations: `cat migration.sql | docker exec -i backend-postgres-1 psql -U trading -d trading`
+5. Verify: check CF deploy status, hit a production API endpoint, confirm no errors
+
+**Rule:** "Deploy" always means production. There is no staging environment. The dev containers (`mcas-dev-*`) are for local development only and are never part of the deploy chain. After every commit+push, mentally walk through: "Did I deploy everything that changed?" — frontend (automatic via CF), backend API (manual docker rebuild), DB migrations (manual psql).
