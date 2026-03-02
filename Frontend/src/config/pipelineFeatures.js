@@ -49,6 +49,6 @@ export const PIPELINE_FEATURES = {
   compositionDraftUI: true,     // 4.9: Composition draft lifecycle
 
   // Wave 5: Interoperability
-  openLineageAdapter: false,    // 5.1: OpenLineage event adapter
-  provenanceSearch: false,      // 5.2: Provenance search API
+  openLineageAdapter: true,     // 5.1: OpenLineage event adapter
+  provenanceSearch: true,       // 5.2: Provenance search API
 }

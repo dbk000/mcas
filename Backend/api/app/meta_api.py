@@ -2484,3 +2484,494 @@ async def update_composition_draft(composition_id: str, body: CompositionDraftUp
         "config_hash": new_hash,
         "node_count": len(body.node_versions),
     }, t0)
+
+
+# =======================================================
+# Wave 5: Interoperability & Scale
+# =======================================================
+
+# -------------------------------------------------------
+# Wave 5.1: OpenLineage event adapter
+# -------------------------------------------------------
+# One-way emitter: converts version_events to OpenLineage RunEvent format.
+# Does NOT change our schema — this is a read adapter for interop.
+
+OL_EVENT_TYPE_MAP = {
+    'code_change': 'START',
+    'backtest': 'COMPLETE',
+    'script_run': 'COMPLETE',
+    'decision_made': 'COMPLETE',
+    'hypothesis_formed': 'START',
+    'hypothesis_validated': 'COMPLETE',
+    'hypothesis_invalidated': 'FAIL',
+    'parameter_change': 'OTHER',
+    'manual_observation': 'OTHER',
+    'conversation_note': 'OTHER',
+    'downstream_triggered': 'OTHER',
+    'abandoned': 'ABORT',
+    'upstream_changed': 'OTHER',
+}
+
+
+def _to_openlineage_event(event: dict, node_info: dict) -> dict:
+    """Convert a version_event row to OpenLineage RunEvent format."""
+    ol_type = OL_EVENT_TYPE_MAP.get(event.get('event_type', ''), 'OTHER')
+    return {
+        "eventType": ol_type,
+        "eventTime": event.get("created_at", ""),
+        "run": {
+            "runId": event.get("version_id", ""),
+            "facets": {
+                "mcas_event": {
+                    "event_id": event.get("event_id", ""),
+                    "event_type": event.get("event_type", ""),
+                    "caused_by": event.get("caused_by_event_id"),
+                    "detail": event.get("event_detail", {}),
+                },
+            },
+        },
+        "job": {
+            "namespace": "mcas.pipeline",
+            "name": node_info.get("name", "unknown"),
+            "facets": {
+                "nodeType": node_info.get("type", ""),
+                "subsystem": node_info.get("subsystem", ""),
+                "sourceFile": node_info.get("source_file", ""),
+            },
+        },
+        "inputs": [],   # populated if port data available
+        "outputs": [],
+        "producer": "https://mcasui.com",
+        "schemaURL": "https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/RunEvent",
+    }
+
+
+@router.get("/openlineage/events")
+async def get_openlineage_events(
+    node_id: Optional[str] = Query(None),
+    after: Optional[str] = Query(None),
+    before: Optional[str] = Query(None),
+    limit: int = Query(50, ge=1, le=200),
+):
+    """Export version_events as OpenLineage RunEvents."""
+    t0 = time.time()
+    conditions = []
+    params = []
+
+    if node_id:
+        conditions.append("nv.node_id = %s")
+        params.append(node_id)
+    if after:
+        conditions.append("ve.created_at >= %s")
+        params.append(after)
+    if before:
+        conditions.append("ve.created_at <= %s")
+        params.append(before)
+
+    where = " AND ".join(conditions) if conditions else "TRUE"
+
+    with _get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(f"""
+                SELECT ve.event_id, ve.version_id, nv.node_id, ve.event_type,
+                       ve.caused_by_event_id, ve.event_detail, ve.created_at,
+                       n.name, n.type, n.subsystem, n.source_file
+                FROM meta.version_event ve
+                JOIN meta.node_version nv ON nv.version_id = ve.version_id
+                JOIN meta.node n ON n.node_id = nv.node_id
+                WHERE {where}
+                ORDER BY ve.created_at DESC
+                LIMIT %s
+            """, params + [limit])
+            rows = cur.fetchall()
+
+    ol_events = []
+    for r in rows:
+        event = {
+            "event_id": str(r[0]),
+            "version_id": str(r[1]),
+            "node_id": str(r[2]),
+            "event_type": r[3],
+            "caused_by_event_id": str(r[4]) if r[4] else None,
+            "event_detail": r[5] or {},
+            "created_at": r[6].isoformat() if r[6] else "",
+        }
+        node_info = {"name": r[7], "type": r[8], "subsystem": r[9], "source_file": r[10]}
+        ol_events.append(_to_openlineage_event(event, node_info))
+
+    return envelope({
+        "openlineage_events": ol_events,
+        "count": len(ol_events),
+        "schema_version": "2-0-2",
+    }, t0)
+
+
+# -------------------------------------------------------
+# Wave 5.2: Provenance search API
+# -------------------------------------------------------
+@router.get("/provenance/search")
+async def provenance_search(
+    q: Optional[str] = Query(None, description="Full-text search across events and versions"),
+    node_id: Optional[str] = Query(None),
+    event_type: Optional[str] = Query(None),
+    version_status: Optional[str] = Query(None),
+    min_pf: Optional[float] = Query(None),
+    after: Optional[str] = Query(None),
+    before: Optional[str] = Query(None),
+    include_chain: bool = Query(False, description="Include causal chain for each event"),
+    limit: int = Query(50, ge=1, le=500),
+    offset: int = Query(0, ge=0),
+):
+    """Provenance search: find events, versions, and their causal chains."""
+    t0 = time.time()
+
+    # Build event search
+    ev_conditions = []
+    ev_params = []
+    if q:
+        ev_conditions.append("(ve.event_detail::text ILIKE %s OR n.name ILIKE %s)")
+        ev_params.extend([f"%{q}%", f"%{q}%"])
+    if node_id:
+        ev_conditions.append("nv.node_id = %s")
+        ev_params.append(node_id)
+    if event_type:
+        types = [t.strip() for t in event_type.split(",")]
+        ev_conditions.append("ve.event_type = ANY(%s)")
+        ev_params.append(types)
+    if after:
+        ev_conditions.append("ve.created_at >= %s")
+        ev_params.append(after)
+    if before:
+        ev_conditions.append("ve.created_at <= %s")
+        ev_params.append(before)
+
+    ev_where = " AND ".join(ev_conditions) if ev_conditions else "TRUE"
+
+    # Build version search (for metric-based queries)
+    v_conditions = []
+    v_params = []
+    if node_id:
+        v_conditions.append("nv.node_id = %s")
+        v_params.append(node_id)
+    if version_status:
+        v_conditions.append("nv.status = %s")
+        v_params.append(version_status)
+    if min_pf is not None:
+        v_conditions.append("nv.agg_pf >= %s")
+        v_params.append(min_pf)
+    if q:
+        v_conditions.append("(nv.change_reason ILIKE %s OR n.name ILIKE %s)")
+        v_params.extend([f"%{q}%", f"%{q}%"])
+
+    v_where = " AND ".join(v_conditions) if v_conditions else "TRUE"
+
+    with _get_conn() as conn:
+        with conn.cursor() as cur:
+            # Event results
+            cur.execute(f"""
+                SELECT ve.event_id, ve.version_id, nv.node_id, ve.event_type,
+                       ve.caused_by_event_id, ve.event_detail, ve.created_at,
+                       n.name AS node_name, nv.version_number
+                FROM meta.version_event ve
+                JOIN meta.node_version nv ON nv.version_id = ve.version_id
+                JOIN meta.node n ON n.node_id = nv.node_id
+                WHERE {ev_where}
+                ORDER BY ve.created_at DESC
+                LIMIT %s OFFSET %s
+            """, ev_params + [limit, offset])
+            ev_cols = [d[0] for d in cur.description]
+            event_results = [dict(zip(ev_cols, r)) for r in cur.fetchall()]
+
+            # Count total events
+            cur.execute(f"""
+                SELECT COUNT(*) FROM meta.version_event ve
+                JOIN meta.node_version nv ON nv.version_id = ve.version_id
+                JOIN meta.node n ON n.node_id = nv.node_id
+                WHERE {ev_where}
+            """, ev_params)
+            total_events = cur.fetchone()[0]
+
+            # Version results (if metric filters active)
+            version_results = []
+            total_versions = 0
+            if min_pf is not None or version_status:
+                cur.execute(f"""
+                    SELECT nv.version_id, nv.node_id, nv.version_number, nv.status,
+                           nv.agg_pf, nv.win_rate, nv.trade_count, nv.change_reason,
+                           nv.created_at, n.name AS node_name
+                    FROM meta.node_version nv
+                    JOIN meta.node n ON n.node_id = nv.node_id
+                    WHERE {v_where}
+                    ORDER BY nv.created_at DESC
+                    LIMIT %s OFFSET %s
+                """, v_params + [limit, offset])
+                v_cols = [d[0] for d in cur.description]
+                version_results = [dict(zip(v_cols, r)) for r in cur.fetchall()]
+
+                cur.execute(f"""
+                    SELECT COUNT(*) FROM meta.node_version nv
+                    JOIN meta.node n ON n.node_id = nv.node_id
+                    WHERE {v_where}
+                """, v_params)
+                total_versions = cur.fetchone()[0]
+
+            # Optional: causal chains for each event
+            if include_chain and event_results:
+                for ev in event_results:
+                    eid = ev['event_id']
+                    cur.execute("""
+                        WITH RECURSIVE chain AS (
+                            SELECT event_id, caused_by_event_id, event_type, 0 AS depth
+                            FROM meta.version_event WHERE event_id = %s
+                            UNION ALL
+                            SELECT ve.event_id, ve.caused_by_event_id, ve.event_type, c.depth + 1
+                            FROM meta.version_event ve
+                            JOIN chain c ON ve.caused_by_event_id = c.event_id
+                            WHERE c.depth < 10
+                        )
+                        SELECT event_id, event_type, depth FROM chain WHERE depth > 0
+                        ORDER BY depth LIMIT 50
+                    """, (eid,))
+                    ev['causal_descendants'] = [
+                        {"event_id": str(r[0]), "event_type": r[1], "depth": r[2]}
+                        for r in cur.fetchall()
+                    ]
+
+    # Serialize
+    for r in event_results:
+        for k in ("event_id", "version_id", "node_id", "caused_by_event_id"):
+            if r.get(k) is not None:
+                r[k] = str(r[k])
+        if r.get("created_at"):
+            r["created_at"] = r["created_at"].isoformat()
+
+    for r in version_results:
+        for k in ("version_id", "node_id"):
+            if r.get(k) is not None:
+                r[k] = str(r[k])
+        if r.get("created_at"):
+            r["created_at"] = r["created_at"].isoformat()
+
+    return envelope({
+        "events": event_results,
+        "total_events": total_events,
+        "versions": version_results,
+        "total_versions": total_versions,
+        "limit": limit,
+        "offset": offset,
+    }, t0)
+
+
+# -------------------------------------------------------
+# Wave 5.3: Version reachability query
+# -------------------------------------------------------
+@router.get("/version/{version_id}/reachability")
+async def check_version_reachability(version_id: str):
+    """Check if a version is referenced by any active composition."""
+    t0 = time.time()
+    with _get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT c.composition_id, c.name, c.status
+                FROM meta.composition_version cv
+                JOIN meta.composition c ON c.composition_id = cv.composition_id
+                WHERE cv.version_id = %s
+                  AND c.status NOT IN ('pruned_early', 'dominated')
+                ORDER BY c.created_at DESC
+            """, (version_id,))
+            compositions = [
+                {"composition_id": str(r[0]), "name": r[1], "status": r[2]}
+                for r in cur.fetchall()
+            ]
+
+            # Also check if it's the current version of any node
+            cur.execute("""
+                SELECT n.node_id, n.name
+                FROM meta.node_version nv
+                JOIN meta.node n ON n.node_id = nv.node_id
+                WHERE nv.version_id = %s
+                  AND nv.version_number = (
+                      SELECT MAX(nv2.version_number)
+                      FROM meta.node_version nv2
+                      WHERE nv2.node_id = nv.node_id
+                  )
+            """, (version_id,))
+            current_of = cur.fetchone()
+
+    return envelope({
+        "version_id": version_id,
+        "is_reachable": len(compositions) > 0 or current_of is not None,
+        "referenced_by_compositions": compositions,
+        "is_current_version": current_of is not None,
+        "current_of_node": {
+            "node_id": str(current_of[0]),
+            "name": current_of[1],
+        } if current_of else None,
+    }, t0)
+
+
+# -------------------------------------------------------
+# Wave 5.4: Dependency audit mode
+# -------------------------------------------------------
+@router.get("/node/{node_id}/dependency-audit")
+async def dependency_audit(node_id: str):
+    """Audit declared vs actual dependencies for a node.
+    Compares declared port connections to what the node's source file imports/reads."""
+    t0 = time.time()
+    with _get_conn() as conn:
+        with conn.cursor() as cur:
+            # Declared upstream deps (from edges)
+            cur.execute("""
+                SELECT DISTINCT sp.node_id, n.name, n.type
+                FROM meta.edge e
+                JOIN meta.port tp ON tp.port_id = e.target_port_id
+                JOIN meta.port sp ON sp.port_id = e.source_port_id
+                JOIN meta.node n ON n.node_id = sp.node_id
+                WHERE tp.node_id = %s
+            """, (node_id,))
+            declared_upstream = [
+                {"node_id": str(r[0]), "name": r[1], "type": r[2]}
+                for r in cur.fetchall()
+            ]
+
+            # Declared downstream deps
+            cur.execute("""
+                SELECT DISTINCT tp.node_id, n.name, n.type
+                FROM meta.edge e
+                JOIN meta.port sp ON sp.port_id = e.source_port_id
+                JOIN meta.port tp ON tp.port_id = e.target_port_id
+                JOIN meta.node n ON n.node_id = tp.node_id
+                WHERE sp.node_id = %s
+            """, (node_id,))
+            declared_downstream = [
+                {"node_id": str(r[0]), "name": r[1], "type": r[2]}
+                for r in cur.fetchall()
+            ]
+
+            # File mappings
+            cur.execute("""
+                SELECT file_path, mapping_type, confidence
+                FROM meta.node_file_mapping
+                WHERE node_id = %s
+                ORDER BY confidence DESC
+            """, (node_id,))
+            file_mappings = [
+                {"file_path": r[0], "mapping_type": r[1], "confidence": float(r[2]) if r[2] else None}
+                for r in cur.fetchall()
+            ]
+
+            # Port contracts
+            cur.execute("""
+                SELECT port_id, name, direction, data_type, schema_def
+                FROM meta.port
+                WHERE node_id = %s
+                ORDER BY direction, name
+            """, (node_id,))
+            ports = [
+                {"port_id": str(r[0]), "name": r[1], "direction": r[2], "data_type": r[3], "schema": r[4]}
+                for r in cur.fetchall()
+            ]
+
+    return envelope({
+        "node_id": node_id,
+        "declared_upstream": declared_upstream,
+        "declared_downstream": declared_downstream,
+        "upstream_count": len(declared_upstream),
+        "downstream_count": len(declared_downstream),
+        "file_mappings": file_mappings,
+        "ports": ports,
+        "audit_notes": [
+            "Compare declared upstream to actual imports in source files",
+            "Nodes without file_mappings cannot be audited for discovered deps",
+            "Port schemas define the data contract — verify at runtime",
+        ] if not file_mappings else [],
+    }, t0)
+
+
+# -------------------------------------------------------
+# Wave 5.5: Dataset CRUD (OpenLineage-compatible)
+# -------------------------------------------------------
+class DatasetCreate(BaseModel):
+    name: str
+    namespace: str = "mcas.pipeline"
+    description: Optional[str] = None
+    node_id: Optional[str] = None
+    port_id: Optional[str] = None
+    facets: Optional[dict] = None
+    current_version: Optional[str] = None
+
+
+@router.post("/datasets")
+async def create_dataset(body: DatasetCreate):
+    """Register a dataset (OpenLineage-compatible identity)."""
+    t0 = time.time()
+    with _get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                INSERT INTO meta.dataset (namespace, name, description, node_id, port_id, facets, current_version)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT (namespace, name) DO UPDATE SET
+                    description = COALESCE(EXCLUDED.description, meta.dataset.description),
+                    node_id = COALESCE(EXCLUDED.node_id, meta.dataset.node_id),
+                    port_id = COALESCE(EXCLUDED.port_id, meta.dataset.port_id),
+                    facets = COALESCE(EXCLUDED.facets, meta.dataset.facets),
+                    current_version = COALESCE(EXCLUDED.current_version, meta.dataset.current_version),
+                    updated_at = NOW()
+                RETURNING dataset_id
+            """, (
+                body.namespace, body.name, body.description,
+                body.node_id, body.port_id,
+                json.dumps(body.facets) if body.facets else '{}',
+                body.current_version,
+            ))
+            dataset_id = str(cur.fetchone()[0])
+        conn.commit()
+
+    return envelope({
+        "dataset_id": dataset_id,
+        "namespace": body.namespace,
+        "name": body.name,
+    }, t0)
+
+
+@router.get("/datasets")
+async def list_datasets(
+    namespace: Optional[str] = Query(None),
+    node_id: Optional[str] = Query(None),
+    limit: int = Query(100, ge=1, le=500),
+):
+    """List registered datasets."""
+    t0 = time.time()
+    conditions = []
+    params = []
+    if namespace:
+        conditions.append("namespace = %s")
+        params.append(namespace)
+    if node_id:
+        conditions.append("node_id = %s")
+        params.append(node_id)
+
+    where = " AND ".join(conditions) if conditions else "TRUE"
+
+    with _get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(f"""
+                SELECT dataset_id, namespace, name, description, node_id, port_id,
+                       facets, current_version, created_at, updated_at
+                FROM meta.dataset
+                WHERE {where}
+                ORDER BY namespace, name
+                LIMIT %s
+            """, params + [limit])
+            cols = [d[0] for d in cur.description]
+            rows = [dict(zip(cols, r)) for r in cur.fetchall()]
+
+    for r in rows:
+        for k in ("dataset_id", "node_id", "port_id"):
+            if r.get(k) is not None:
+                r[k] = str(r[k])
+        for k in ("created_at", "updated_at"):
+            if r.get(k):
+                r[k] = r[k].isoformat()
+
+    return envelope({"datasets": rows, "count": len(rows)}, t0)
