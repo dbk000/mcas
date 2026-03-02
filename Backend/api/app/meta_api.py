@@ -2850,25 +2850,25 @@ async def dependency_audit(node_id: str):
 
             # File mappings
             cur.execute("""
-                SELECT file_path, mapping_type, confidence
+                SELECT file_pattern, mapping_type
                 FROM meta.node_file_mapping
                 WHERE node_id = %s
-                ORDER BY confidence DESC
+                ORDER BY mapping_type
             """, (node_id,))
             file_mappings = [
-                {"file_path": r[0], "mapping_type": r[1], "confidence": float(r[2]) if r[2] else None}
+                {"file_pattern": r[0], "mapping_type": r[1]}
                 for r in cur.fetchall()
             ]
 
             # Port contracts
             cur.execute("""
-                SELECT port_id, name, direction, data_type, schema_def
+                SELECT port_id, name, direction, data_type, schema_spec
                 FROM meta.port
                 WHERE node_id = %s
                 ORDER BY direction, name
             """, (node_id,))
             ports = [
-                {"port_id": str(r[0]), "name": r[1], "direction": r[2], "data_type": r[3], "schema": r[4]}
+                {"port_id": str(r[0]), "name": r[1], "direction": r[2], "data_type": r[3], "schema_spec": r[4]}
                 for r in cur.fetchall()
             ]
 
