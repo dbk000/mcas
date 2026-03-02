@@ -16,19 +16,26 @@ const NODE_TYPE_ICONS = {
   custom: '\u{2726}',
 }
 
+const STATUS_LABELS = {
+  deployed: 'Deployed',
+  promising: 'Promising',
+  tested: 'Tested',
+}
+
 function PipelineNode({ data, selected }) {
   const {
     label, nodeType, subsystem, subsystemColor, statusColor,
-    versionCount, aggPf, currentVersion,
+    versionCount, aggPf, currentVersion, description, owner,
   } = data
 
   const icon = NODE_TYPE_ICONS[nodeType] || '\u{2726}'
+  const statusLabel = STATUS_LABELS[currentVersion?.status] || currentVersion?.status || 'No version'
 
   return (
     <div
       className={`
-        relative bg-terminal-800 border-[3px] rounded-xl px-5 py-4 min-w-[320px]
-        transition-all duration-200 cursor-pointer
+        relative bg-terminal-800 border-[3px] rounded-xl px-6 py-5 min-w-[400px] min-h-[200px]
+        transition-all duration-200 cursor-pointer flex flex-col
         ${selected ? 'shadow-lg shadow-amber-500/20 scale-105' : 'hover:shadow-md hover:shadow-white/5'}
       `}
       style={{
@@ -37,7 +44,7 @@ function PipelineNode({ data, selected }) {
     >
       {/* Top accent bar */}
       <div
-        className="absolute top-0 left-0 right-0 h-2 rounded-t-lg"
+        className="absolute top-0 left-0 right-0 h-2.5 rounded-t-lg"
         style={{ backgroundColor: subsystemColor }}
       />
 
@@ -45,27 +52,29 @@ function PipelineNode({ data, selected }) {
       <Handle
         type="target"
         position={Position.Left}
-        className="!w-3 !h-3 !bg-terminal-500 !border-2 !border-terminal-700"
+        className="!w-4 !h-4 !bg-terminal-500 !border-2 !border-terminal-700"
       />
 
       {/* Header row */}
-      <div className="flex items-center justify-between mb-2.5 mt-1">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <span className="text-lg flex-shrink-0">{icon}</span>
-          <span className="text-base font-bold text-white truncate">{label}</span>
+      <div className="flex items-center justify-between mb-3 mt-1">
+        <div className="flex items-center gap-3 min-w-0">
+          <span className="text-2xl flex-shrink-0">{icon}</span>
+          <span className="text-xl font-bold text-white truncate">{label}</span>
         </div>
-        {/* Status dot */}
-        <div
-          className="w-3 h-3 rounded-full flex-shrink-0 ml-2"
-          style={{ backgroundColor: statusColor }}
-          title={currentVersion?.status || 'no version'}
-        />
+        {/* Status indicator */}
+        <div className="flex items-center gap-2 flex-shrink-0 ml-3">
+          <span className="text-xs font-medium text-terminal-400">{statusLabel}</span>
+          <div
+            className="w-4 h-4 rounded-full"
+            style={{ backgroundColor: statusColor }}
+          />
+        </div>
       </div>
 
-      {/* Subsystem tag */}
-      <div className="flex items-center gap-2 mb-2">
+      {/* Subsystem + version tags */}
+      <div className="flex items-center gap-2.5 mb-3">
         <span
-          className="text-xs px-2 py-0.5 rounded-full font-medium capitalize"
+          className="text-sm px-2.5 py-1 rounded-full font-semibold capitalize"
           style={{
             backgroundColor: subsystemColor + '20',
             color: subsystemColor,
@@ -74,27 +83,49 @@ function PipelineNode({ data, selected }) {
           {subsystem}
         </span>
         {versionCount > 0 && (
-          <span className="text-xs px-2 py-0.5 rounded-full bg-terminal-700 text-terminal-400">
+          <span className="text-sm px-2.5 py-1 rounded-full bg-terminal-700 text-terminal-300">
             v{currentVersion?.version_number || '?'} ({versionCount})
           </span>
         )}
       </div>
 
-      {/* Metric */}
-      {aggPf != null && (
-        <div className="text-base font-mono font-semibold">
-          <span className="text-terminal-500">PF </span>
-          <span className={aggPf >= 1.0 ? 'text-green-400' : 'text-red-400'}>
-            {aggPf.toFixed(2)}
-          </span>
-        </div>
+      {/* Description */}
+      {description && (
+        <p className="text-sm text-terminal-400 mb-3 line-clamp-2 leading-relaxed">
+          {description}
+        </p>
       )}
+
+      {/* Spacer to push metrics to bottom */}
+      <div className="flex-1" />
+
+      {/* Bottom metrics row */}
+      <div className="flex items-center justify-between">
+        {/* Profit Factor */}
+        {aggPf != null ? (
+          <div className="text-xl font-mono font-bold">
+            <span className="text-terminal-500">PF </span>
+            <span className={aggPf >= 1.0 ? 'text-green-400' : 'text-red-400'}>
+              {aggPf.toFixed(2)}
+            </span>
+          </div>
+        ) : (
+          <div />
+        )}
+
+        {/* Owner */}
+        {owner && (
+          <span className="text-xs text-terminal-500 font-mono">
+            {owner}
+          </span>
+        )}
+      </div>
 
       {/* Output handle */}
       <Handle
         type="source"
         position={Position.Right}
-        className="!w-3 !h-3 !bg-terminal-500 !border-2 !border-terminal-700"
+        className="!w-4 !h-4 !bg-terminal-500 !border-2 !border-terminal-700"
       />
     </div>
   )

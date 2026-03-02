@@ -225,10 +225,18 @@ cd Backend && docker compose up -d
 cd Backend && docker compose up -d --build  # after code changes
 cd Frontend && npm install && npm run dev
 
-# Production deploy (same machine, no SSH — get user approval first)
+# Backend production deploy (same machine, no SSH — get user approval first)
 cd /srv/mcas && git pull origin main
 cd /srv/mcas/Backend && docker compose -f docker-compose.yml build <service> && docker compose -f docker-compose.yml up -d --no-deps <service>
-cd /srv/mcas/Frontend && npm install && npm run build
+
+# Frontend production deploy — via Cloudflare Pages (auto-deploys from GitHub)
+# Just push to main — CF builds automatically. Do NOT run npm build on the VPS.
+git push origin main
+# Check deploy status:
+./scripts/cf-deploy.sh --status
+# Or via API directly:
+curl -s 'https://api.cloudflare.com/client/v4/accounts/0f25318d292c7b6fcd1eb5502ff85b8a/pages/projects/mcas/deployments' \
+  -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" | python3 -m json.tool
 
 # View logs
 cd Backend && docker compose logs -f worker
@@ -237,6 +245,8 @@ cd Backend && docker compose logs -f worker
 tmux new -s <name>
 docker compose -f docker-compose.yml run --rm -T worker python3 /scripts/<script>.py
 ```
+
+**Frontend hosting:** Cloudflare Pages project `mcas`. Domains: `mcasui.com`, `mcas.pages.dev`. Auto-deploys from `main` branch of `dbk000/mcas`. Build: `npm ci && npm run build` in `Frontend/` dir. CF API token stored at `/home/darren/.env.cloudflare` and in `~/.bashrc`. Deploy helper: `scripts/cf-deploy.sh`.
 
 ## 3.7 Environment
 Key variables: `DATABASE_URL`, `REDIS_URL`, `API_KEY` (secrets), `KNOWN_UNIVERSE_SIZE` (1024), `MIN_24H_QUOTE_VOLUME_USD` (5M), `DEFAULT_TIMEFRAMES`, `SETUP_IDS`.
