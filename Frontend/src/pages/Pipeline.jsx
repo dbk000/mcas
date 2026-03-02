@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import {
   ReactFlow,
   Background,
@@ -43,10 +43,10 @@ const nodeTypes = { pipeline: PipelineNode }
 function getLayoutedElements(nodes, edges) {
   const g = new dagre.graphlib.Graph()
   g.setDefaultEdgeLabel(() => ({}))
-  g.setGraph({ rankdir: 'LR', nodesep: 50, ranksep: 100, marginx: 40, marginy: 40 })
+  g.setGraph({ rankdir: 'LR', nodesep: 25, ranksep: 40, marginx: 25, marginy: 25 })
 
   nodes.forEach((node) => {
-    g.setNode(node.id, { width: 440, height: 260 })
+    g.setNode(node.id, { width: 500, height: 320 })
   })
 
   edges.forEach((edge) => {
@@ -60,8 +60,8 @@ function getLayoutedElements(nodes, edges) {
     return {
       ...node,
       position: {
-        x: nodeWithPosition.x - 220,
-        y: nodeWithPosition.y - 130,
+        x: nodeWithPosition.x - 250,
+        y: nodeWithPosition.y - 160,
       },
     }
   })
@@ -126,6 +126,7 @@ function PipelineInner() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [chatOpen, setChatOpen] = useState(false)
+  const reactFlowRef = useRef(null)
 
   // Fetch topology
   useEffect(() => {
@@ -196,6 +197,11 @@ function PipelineInner() {
     const { nodes: layouted, edges: layoutedEdges } = getLayoutedElements(flowNodes, flowEdges)
     setNodes(layouted)
     setEdges(layoutedEdges)
+
+    // Trigger fitView after layout settles
+    setTimeout(() => {
+      reactFlowRef.current?.fitView({ padding: 0.15, duration: 300 })
+    }, 100)
   }, [topologyData, setNodes, setEdges])
 
   const onNodeClick = useCallback((event, node) => {
@@ -243,8 +249,9 @@ function PipelineInner() {
           onNodeClick={onNodeClick}
           onPaneClick={onPaneClick}
           nodeTypes={nodeTypes}
+          onInit={(instance) => { reactFlowRef.current = instance }}
           fitView
-          fitViewOptions={{ padding: 0.2 }}
+          fitViewOptions={{ padding: 0.15 }}
           minZoom={0.3}
           maxZoom={2}
           proOptions={{ hideAttribution: true }}
