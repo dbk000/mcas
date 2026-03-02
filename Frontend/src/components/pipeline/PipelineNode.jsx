@@ -27,7 +27,7 @@ function PipelineNode({ data, selected }) {
   return (
     <div
       className={`
-        relative bg-terminal-800 border-2 rounded-xl px-5 py-4 min-w-[280px]
+        relative bg-terminal-800 border-[3px] rounded-xl px-5 py-4 min-w-[320px]
         transition-all duration-200 cursor-pointer
         ${selected ? 'shadow-lg shadow-amber-500/20 scale-105' : 'hover:shadow-md hover:shadow-white/5'}
       `}
@@ -37,7 +37,7 @@ function PipelineNode({ data, selected }) {
     >
       {/* Top accent bar */}
       <div
-        className="absolute top-0 left-0 right-0 h-1.5 rounded-t-lg"
+        className="absolute top-0 left-0 right-0 h-2 rounded-t-lg"
         style={{ backgroundColor: subsystemColor }}
       />
 
@@ -49,14 +49,14 @@ function PipelineNode({ data, selected }) {
       />
 
       {/* Header row */}
-      <div className="flex items-center justify-between mb-2 mt-0.5">
-        <div className="flex items-center gap-2 min-w-0">
-          <span className="text-base flex-shrink-0">{icon}</span>
-          <span className="text-sm font-semibold text-terminal-100 truncate">{label}</span>
+      <div className="flex items-center justify-between mb-2.5 mt-1">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <span className="text-lg flex-shrink-0">{icon}</span>
+          <span className="text-base font-bold text-white truncate">{label}</span>
         </div>
         {/* Status dot */}
         <div
-          className="w-2.5 h-2.5 rounded-full flex-shrink-0 ml-2"
+          className="w-3 h-3 rounded-full flex-shrink-0 ml-2"
           style={{ backgroundColor: statusColor }}
           title={currentVersion?.status || 'no version'}
         />
@@ -82,7 +82,7 @@ function PipelineNode({ data, selected }) {
 
       {/* Metric */}
       {aggPf != null && (
-        <div className="text-sm font-mono">
+        <div className="text-base font-mono font-semibold">
           <span className="text-terminal-500">PF </span>
           <span className={aggPf >= 1.0 ? 'text-green-400' : 'text-red-400'}>
             {aggPf.toFixed(2)}

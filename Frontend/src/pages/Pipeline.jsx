@@ -43,10 +43,10 @@ const nodeTypes = { pipeline: PipelineNode }
 function getLayoutedElements(nodes, edges) {
   const g = new dagre.graphlib.Graph()
   g.setDefaultEdgeLabel(() => ({}))
-  g.setGraph({ rankdir: 'LR', nodesep: 80, ranksep: 160, marginx: 50, marginy: 50 })
+  g.setGraph({ rankdir: 'LR', nodesep: 90, ranksep: 180, marginx: 60, marginy: 60 })
 
   nodes.forEach((node) => {
-    g.setNode(node.id, { width: 320, height: 150 })
+    g.setNode(node.id, { width: 360, height: 160 })
   })
 
   edges.forEach((edge) => {
@@ -60,8 +60,8 @@ function getLayoutedElements(nodes, edges) {
     return {
       ...node,
       position: {
-        x: nodeWithPosition.x - 160,
-        y: nodeWithPosition.y - 75,
+        x: nodeWithPosition.x - 180,
+        y: nodeWithPosition.y - 80,
       },
     }
   })
