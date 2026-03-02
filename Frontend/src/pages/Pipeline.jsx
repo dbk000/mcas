@@ -745,16 +745,6 @@ function PipelineInner() {
             position="bottom-right"
           />
 
-          {/* Toolbar */}
-          <PipelineErrorBoundary name="PipelineToolbar">
-            <PipelineToolbar
-              topologyData={topologyData}
-              graph={graph}
-              onExperimentOverlay={handleExperimentOverlay}
-              onCompositionOverlay={handleCompositionOverlay}
-            />
-          </PipelineErrorBoundary>
-
           {/* Chat toggle + TV mode + Fit View + Recent Activity */}
           <Panel position="top-right">
             <div className="flex gap-2">
@@ -820,6 +810,16 @@ function PipelineInner() {
             </Panel>
           )}
         </ReactFlow>
+
+        {/* Toolbar — positioned absolutely over canvas, tight to top */}
+        <PipelineErrorBoundary name="PipelineToolbar">
+          <PipelineToolbar
+            topologyData={topologyData}
+            graph={graph}
+            onExperimentOverlay={handleExperimentOverlay}
+            onCompositionOverlay={handleCompositionOverlay}
+          />
+        </PipelineErrorBoundary>
       </div>
 
       {/* Node Detail Panel */}

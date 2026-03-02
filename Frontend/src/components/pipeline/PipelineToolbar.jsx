@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Panel } from '@xyflow/react'
+// Panel removed — toolbar now positioned absolutely in Pipeline canvas container
 import { Beaker, Layers, BookOpen, X, ArrowRight, Play, ShieldCheck, ShieldAlert, ShieldX } from 'lucide-react'
 import { useApi } from '../../context/ApiContext'
 
@@ -134,7 +134,7 @@ export default function PipelineToolbar({ topologyData, graph, onExperimentOverl
   }
 
   return (
-    <Panel position="top-center">
+    <div className="absolute top-1 left-1/2 -translate-x-1/2 z-[5]">
       <div className="flex items-center gap-1.5">
         {/* Mode buttons */}
         {!mode && (
@@ -426,6 +426,6 @@ export default function PipelineToolbar({ topologyData, graph, onExperimentOverl
           </div>
         )}
       </div>
-    </Panel>
+    </div>
   )
 }
