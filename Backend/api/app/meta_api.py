@@ -184,7 +184,7 @@ def get_topology():
             # Fetch current deployed version per node (or latest promising/tested)
             cur.execute("""
                 SELECT DISTINCT ON (node_id) node_id, version_id, version_number,
-                       agg_pf, net_pnl, win_rate, trade_count, status
+                       agg_pf, net_pnl, win_rate, trade_count, status, parameters
                 FROM meta.node_version
                 ORDER BY node_id,
                     CASE status
@@ -204,6 +204,7 @@ def get_topology():
                 "win_rate": r[5],
                 "trade_count": r[6],
                 "status": r[7],
+                "parameters": r[8] or {},
             } for r in cur.fetchall()}
 
             # Version counts per node

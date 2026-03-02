@@ -66,13 +66,23 @@ export default function NodeDetailPanel({ node, onClose, graph }) {
   // Init edit params from current version
   useEffect(() => {
     const cv = node.current_version || node.currentVersion
-    if (cv?.parameters) {
+    if (cv?.parameters && Object.keys(cv.parameters).length > 0) {
       setEditParams({ ...cv.parameters })
     } else {
       setEditParams({})
     }
     setChangeReason('')
   }, [node])
+
+  // Also populate from versions list if editParams is empty (fallback)
+  useEffect(() => {
+    if (Object.keys(editParams).length > 0 || versions.length === 0) return
+    // Find the deployed/active version with parameters
+    const active = versions.find(v => v.status === 'deployed') || versions[0]
+    if (active?.parameters && Object.keys(active.parameters).length > 0) {
+      setEditParams({ ...active.parameters })
+    }
+  }, [versions])
 
   // Filter versions by significance
   const filteredVersions = showAll
