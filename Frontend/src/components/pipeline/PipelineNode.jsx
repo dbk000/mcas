@@ -143,8 +143,8 @@ function PipelineNode({ data, selected }) {
         <div className="flex items-center gap-3 min-w-0">
           <span className="text-3xl flex-shrink-0">{icon}</span>
           <div className="min-w-0">
-            <div className="text-xl font-bold text-white truncate leading-tight">{label}</div>
-            <div className={`text-xs text-terminal-500 mt-0.5 ${lodHideDetail}`}>{typeLabel}</div>
+            <div className="pipeline-text-lg font-bold text-white truncate leading-tight">{label}</div>
+            <div className={`pipeline-text-xs text-terminal-500 mt-0.5 ${lodHideDetail}`}>{typeLabel}</div>
           </div>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0 ml-2">
@@ -154,7 +154,7 @@ function PipelineNode({ data, selected }) {
             </span>
           )}
           {statusLabel && (
-            <span className={`text-sm font-semibold px-3 py-1 rounded-full ${statusBg}`}>
+            <span className={`pipeline-text-sm font-semibold px-3 py-1 rounded-full ${statusBg}`}>
               {statusLabel}
             </span>
           )}
@@ -172,7 +172,7 @@ function PipelineNode({ data, selected }) {
       {/* Row 2: Subsystem + version + connections — tier 1 & 2 */}
       <div className={`flex items-center gap-2 mt-2.5 ${lodHideDetail}`}>
         <span
-          className="text-sm px-2.5 py-0.5 rounded-full font-semibold capitalize"
+          className="pipeline-text-sm px-2.5 py-0.5 rounded-full font-semibold capitalize"
           style={{
             backgroundColor: subsystemColor + '20',
             color: subsystemColor,
@@ -181,12 +181,12 @@ function PipelineNode({ data, selected }) {
           {subsystem}
         </span>
         {versionCount > 0 && (
-          <span className="text-sm px-2.5 py-0.5 rounded-full bg-terminal-700 text-terminal-300 font-mono">
+          <span className="pipeline-text-sm px-2.5 py-0.5 rounded-full bg-terminal-700 text-terminal-300 font-mono">
             v{currentVersion?.version_number || '?'}
           </span>
         )}
         {(inputCount > 0 || outputCount > 0) && (
-          <span className="text-xs text-terminal-500 ml-auto">
+          <span className="pipeline-text-xs text-terminal-500 ml-auto">
             {inputCount > 0 && `${inputCount} in`}{inputCount > 0 && outputCount > 0 && ' / '}{outputCount > 0 && `${outputCount} out`}
           </span>
         )}
@@ -195,7 +195,7 @@ function PipelineNode({ data, selected }) {
       {/* Row 3: Description — tier 1 only */}
       <div className={lodHideDetail}>
         {description && (
-          <p className="text-sm text-terminal-400 mt-2.5 line-clamp-3 leading-snug">
+          <p className="pipeline-text-sm text-terminal-400 mt-2.5 line-clamp-3 leading-snug">
             {description}
           </p>
         )}
@@ -209,24 +209,24 @@ function PipelineNode({ data, selected }) {
         {(aggPf != null || currentVersion?.win_rate != null || currentVersion?.trade_count != null) && (
           <div className="flex items-center gap-4 mt-2 py-2 px-3 -mx-1 bg-terminal-900/60 rounded-lg">
             {aggPf != null && (
-              <div className="text-lg font-mono font-bold">
-                <span className="text-terminal-500 text-sm">PF </span>
+              <div className="pipeline-text-base font-mono font-bold">
+                <span className="text-terminal-500 pipeline-text-sm">PF </span>
                 <span className={aggPf >= 1.0 ? 'text-green-400' : 'text-red-400'}>
                   {aggPf.toFixed(2)}
                 </span>
               </div>
             )}
             {currentVersion?.win_rate != null && (
-              <div className="text-lg font-mono font-bold">
-                <span className="text-terminal-500 text-sm">Win </span>
+              <div className="pipeline-text-base font-mono font-bold">
+                <span className="text-terminal-500 pipeline-text-sm">Win </span>
                 <span className="text-terminal-200">
                   {(currentVersion.win_rate * 100).toFixed(0)}%
                 </span>
               </div>
             )}
             {currentVersion?.trade_count != null && (
-              <div className="text-lg font-mono font-bold">
-                <span className="text-terminal-500 text-sm">Trades </span>
+              <div className="pipeline-text-base font-mono font-bold">
+                <span className="text-terminal-500 pipeline-text-sm">Trades </span>
                 <span className="text-terminal-200">
                   {currentVersion.trade_count}
                 </span>
@@ -239,12 +239,12 @@ function PipelineNode({ data, selected }) {
       {/* Row 5: Footer — tier 1 only */}
       <div className={`flex items-center justify-between mt-2 ${lodHideDetail}`}>
         {shortFile && (
-          <span className="text-xs text-terminal-600 font-mono truncate max-w-[60%]" title={sourceFile}>
+          <span className="pipeline-text-xs text-terminal-600 font-mono truncate max-w-[60%]" title={sourceFile}>
             {shortFile}
           </span>
         )}
         {owner && (
-          <span className="text-xs text-terminal-500 font-mono ml-auto">
+          <span className="pipeline-text-xs text-terminal-500 font-mono ml-auto">
             {owner}
           </span>
         )}

@@ -722,39 +722,38 @@ function PipelineInner() {
             position="bottom-right"
           />
 
-          {/* Legend — double-click subsystem to collapse/expand group */}
+          {/* Legend — compact, double-click subsystem to collapse/expand group */}
           <Panel position="top-left">
-            <div className="bg-terminal-800/90 backdrop-blur border border-terminal-600 rounded-lg p-4 text-sm">
-              <div className="text-terminal-300 font-medium mb-2.5">Pipeline Subsystems</div>
-              <div className="grid grid-cols-2 gap-x-5 gap-y-1.5">
+            <div className="bg-terminal-800/90 backdrop-blur border border-terminal-600 rounded-lg px-2.5 py-2 text-xs">
+              <div className="flex flex-wrap gap-x-3 gap-y-1">
                 {SUBSYSTEM_ORDER.map(s => (
                   <div
                     key={s}
-                    className="flex items-center gap-2 cursor-pointer hover:bg-terminal-700/50 rounded px-1 -mx-1 pipeline-touch-target"
+                    className="flex items-center gap-1 cursor-pointer hover:bg-terminal-700/50 rounded px-1"
                     onDoubleClick={() => toggleGroupCollapse(s)}
-                    title="Double-click to collapse/expand group"
+                    title="Double-click to collapse/expand"
                   >
                     <div
-                      className="w-3 h-3 rounded-sm flex-shrink-0"
+                      className="w-2 h-2 rounded-sm flex-shrink-0"
                       style={{
                         backgroundColor: SUBSYSTEM_COLORS[s],
                         opacity: collapsedGroups.has(s) ? 0.4 : 1,
                       }}
                     />
-                    <span className={`capitalize ${collapsedGroups.has(s) ? 'text-terminal-600 line-through' : 'text-terminal-400'}`}>
+                    <span className={`capitalize ${collapsedGroups.has(s) ? 'text-terminal-600 line-through' : 'text-terminal-500'}`}>
                       {s}
                     </span>
                   </div>
                 ))}
+                {collapsedGroups.size > 0 && (
+                  <button
+                    onClick={() => setCollapsedGroups(new Set())}
+                    className="text-terminal-600 hover:text-terminal-300 ml-1"
+                  >
+                    reset
+                  </button>
+                )}
               </div>
-              {collapsedGroups.size > 0 && (
-                <button
-                  onClick={() => setCollapsedGroups(new Set())}
-                  className="text-xs text-terminal-500 hover:text-terminal-300 mt-2"
-                >
-                  Expand all
-                </button>
-              )}
             </div>
           </Panel>
 
