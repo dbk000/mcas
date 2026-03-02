@@ -22,17 +22,17 @@ export const PIPELINE_FEATURES = {
   urlState: false,              // 1.1: URL-driven state / deep linking
 
   // Wave 2: Timeline & Biography
-  eventTreeView: false,         // 2.1: Flat-to-tree builder with orphan handling
-  progressiveDisclosure: false, // 2.2: Depth-limited progressive disclosure
-  criticalPath: false,          // 2.3: Critical path computation
-  eventAdjusters: false,        // 2.4: Event adjuster pipeline
-  timeGapViz: false,            // 2.5: Time gap visualization
-  tableTreeToggle: false,       // 2.6: Table/tree view toggle
-  temporalSlider: false,        // 2.7: Temporal lineage slider
-  beforeAfterState: false,      // 2.8: Before/after state on events
-  configurableFacets: false,    // 2.12: Configurable node facets
-  pipelineSlicing: false,       // 2.13: Pipeline slicing
-  recentActivity: false,        // 2.14: Recent Activity summary
+  eventTreeView: true,          // 2.1: Flat-to-tree builder with orphan handling
+  progressiveDisclosure: true,  // 2.2: Depth-limited progressive disclosure
+  criticalPath: true,           // 2.3: Critical path computation
+  eventAdjusters: true,         // 2.4: Event adjuster pipeline
+  timeGapViz: true,             // 2.5: Time gap visualization
+  tableTreeToggle: true,        // 2.6: Table/tree view toggle
+  temporalSlider: true,         // 2.7: Temporal lineage slider
+  beforeAfterState: true,       // 2.8: Before/after state on events
+  configurableFacets: true,     // 2.12: Configurable node facets
+  pipelineSlicing: true,        // 2.13: Pipeline slicing
+  recentActivity: true,         // 2.14: Recent Activity summary
 
   // Wave 3: Dependency Hardening
   threeStateStaleness: false,   // 3.1: Three-state staleness

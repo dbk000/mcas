@@ -73,13 +73,28 @@ const VISUAL_STATE_STYLES = {
   },
 }
 
+// Default facet visibility (Wave 2.12: configurable node facets)
+const DEFAULT_FACETS = {
+  pf: true,
+  winRate: true,
+  trades: true,
+  status: true,
+  owner: true,
+  description: true,
+  connections: true,
+}
+
 function PipelineNode({ data, selected }) {
   const {
     label, nodeType, subsystem, subsystemColor, statusColor,
     versionCount, aggPf, currentVersion, description, owner,
     sourceFile, ports, visualState, pressureWaveDelay,
     lodTier = 1,
+    facets,
   } = data
+
+  // Merge with defaults — facets prop overrides
+  const f = facets ? { ...DEFAULT_FACETS, ...facets } : DEFAULT_FACETS
 
   const icon = NODE_TYPE_ICONS[nodeType] || '\u{2726}'
   const typeLabel = NODE_TYPE_LABELS[nodeType] || nodeType
@@ -185,16 +200,16 @@ function PipelineNode({ data, selected }) {
             v{currentVersion?.version_number || '?'}
           </span>
         )}
-        {(inputCount > 0 || outputCount > 0) && (
+        {f.connections && (inputCount > 0 || outputCount > 0) && (
           <span className="pipeline-text-xs text-terminal-500 ml-auto">
             {inputCount > 0 && `${inputCount} in`}{inputCount > 0 && outputCount > 0 && ' / '}{outputCount > 0 && `${outputCount} out`}
           </span>
         )}
       </div>
 
-      {/* Row 3: Description — tier 1 only */}
+      {/* Row 3: Description — tier 1 only, respects facets.description */}
       <div className={lodHideDetail}>
-        {description && (
+        {f.description && description && (
           <p className="pipeline-text-sm text-terminal-400 mt-2.5 line-clamp-3 leading-snug">
             {description}
           </p>
@@ -204,11 +219,11 @@ function PipelineNode({ data, selected }) {
       {/* Spacer — tier 1 only */}
       <div className={`flex-1 ${lodHideDetail}`} />
 
-      {/* Row 4: Metrics bar — tier 1 only */}
+      {/* Row 4: Metrics bar — tier 1 only, respects facet toggles */}
       <div className={lodHideDetail}>
-        {(aggPf != null || currentVersion?.win_rate != null || currentVersion?.trade_count != null) && (
+        {((f.pf && aggPf != null) || (f.winRate && currentVersion?.win_rate != null) || (f.trades && currentVersion?.trade_count != null)) && (
           <div className="flex items-center gap-4 mt-2 py-2 px-3 -mx-1 bg-terminal-900/60 rounded-lg">
-            {aggPf != null && (
+            {f.pf && aggPf != null && (
               <div className="pipeline-text-base font-mono font-bold">
                 <span className="text-terminal-500 pipeline-text-sm">PF </span>
                 <span className={aggPf >= 1.0 ? 'text-green-400' : 'text-red-400'}>
@@ -216,7 +231,7 @@ function PipelineNode({ data, selected }) {
                 </span>
               </div>
             )}
-            {currentVersion?.win_rate != null && (
+            {f.winRate && currentVersion?.win_rate != null && (
               <div className="pipeline-text-base font-mono font-bold">
                 <span className="text-terminal-500 pipeline-text-sm">Win </span>
                 <span className="text-terminal-200">
@@ -224,7 +239,7 @@ function PipelineNode({ data, selected }) {
                 </span>
               </div>
             )}
-            {currentVersion?.trade_count != null && (
+            {f.trades && currentVersion?.trade_count != null && (
               <div className="pipeline-text-base font-mono font-bold">
                 <span className="text-terminal-500 pipeline-text-sm">Trades </span>
                 <span className="text-terminal-200">
@@ -236,19 +251,19 @@ function PipelineNode({ data, selected }) {
         )}
       </div>
 
-      {/* Row 5: Footer — tier 1 only */}
+      {/* Row 5: Footer — tier 1 only, respects facets.owner */}
       <div className={`flex items-center justify-between mt-2 ${lodHideDetail}`}>
         {shortFile && (
           <span className="pipeline-text-xs text-terminal-600 font-mono truncate max-w-[60%]" title={sourceFile}>
             {shortFile}
           </span>
         )}
-        {owner && (
+        {f.owner && owner && (
           <span className="pipeline-text-xs text-terminal-500 font-mono ml-auto">
             {owner}
           </span>
         )}
-        {!shortFile && !owner && <div />}
+        {!shortFile && !(f.owner && owner) && <div />}
       </div>
 
       {/* Output handle — always visible */}

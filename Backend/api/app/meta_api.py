@@ -1105,8 +1105,14 @@ def create_node_version(payload: CreateNodeVersion):
 def get_version_events(
     version_id: str,
     limit: int = Query(default=100, ge=1, le=500),
+    detail: str = Query(default="full", regex="^(summary|full)$"),
 ):
-    """Version biography — all events for a version, ordered chronologically."""
+    """Version biography — all events for a version, ordered chronologically.
+
+    Wave 2.2: detail=summary returns compact events (no event_detail JSONB).
+    detail=full returns everything including event_detail.
+    Wave 2.11: includes causal_type field.
+    """
     t0 = time.time()
 
     with _get_conn() as conn:
@@ -1120,7 +1126,8 @@ def get_version_events(
 
             cur.execute("""
                 SELECT event_id, version_id, event_type, event_detail, actor,
-                       caused_by_event_id, created_at
+                       caused_by_event_id, created_at,
+                       causal_type
                 FROM meta.version_event
                 WHERE version_id = %s
                 ORDER BY created_at ASC
@@ -1130,15 +1137,18 @@ def get_version_events(
 
     events = []
     for r in rows:
-        events.append({
+        evt = {
             "event_id": str(r[0]),
             "version_id": str(r[1]),
             "event_type": r[2],
-            "event_detail": r[3] or {},
             "actor": r[4],
             "caused_by_event_id": str(r[5]) if r[5] else None,
             "created_at": r[6].isoformat() if r[6] else None,
-        })
+            "causal_type": r[7] or "blocking",
+        }
+        if detail == "full":
+            evt["event_detail"] = r[3] or {}
+        events.append(evt)
 
     return envelope({"events": events, "count": len(events)}, t0)
 
@@ -1148,6 +1158,7 @@ class CreateVersionEvent(BaseModel):
     event_detail: Optional[dict] = None
     actor: str
     caused_by_event_id: Optional[str] = None
+    causal_type: Optional[str] = "blocking"  # Wave 2.11: 'blocking' or 'informational'
 
 
 @router.post("/version/{version_id}/event")
@@ -1161,6 +1172,8 @@ def log_version_event(version_id: str, payload: CreateVersionEvent):
         'referenced_in_experiment', 'abandoned', 'revived', 'revalidated',
         'conversation_note', 'downstream_triggered', 'parameter_informed_by',
         'manual_observation', 'code_change', 'pushed_to_live',
+        # Wave 2.10: Topology change events
+        'node_added', 'node_retired', 'edge_added', 'edge_removed',
     }
     if payload.event_type not in VALID_EVENT_TYPES:
         raise HTTPException(
@@ -1185,14 +1198,20 @@ def log_version_event(version_id: str, payload: CreateVersionEvent):
                 if not cur.fetchone():
                     raise HTTPException(status_code=404, detail=f"Caused-by event {payload.caused_by_event_id} not found")
 
+            # Validate causal_type
+            valid_causal = {'blocking', 'informational'}
+            causal = payload.causal_type or 'blocking'
+            if causal not in valid_causal:
+                raise HTTPException(status_code=400, detail=f"Invalid causal_type '{causal}'. Valid: {sorted(valid_causal)}")
+
             cur.execute("""
-                INSERT INTO meta.version_event (version_id, event_type, event_detail, actor, caused_by_event_id)
-                VALUES (%s, %s, %s, %s, %s)
+                INSERT INTO meta.version_event (version_id, event_type, event_detail, actor, caused_by_event_id, causal_type)
+                VALUES (%s, %s, %s, %s, %s, %s)
                 RETURNING event_id, created_at
             """, (
                 version_id, payload.event_type,
                 json.dumps(payload.event_detail or {}),
-                payload.actor, payload.caused_by_event_id,
+                payload.actor, payload.caused_by_event_id, causal,
             ))
             row = cur.fetchone()
         conn.commit()
@@ -1228,7 +1247,7 @@ def get_causal_chain(event_id: str, max_depth: int = Query(20, ge=1, le=50)):
             # Verify event exists
             cur.execute("""
                 SELECT event_id, version_id, event_type, event_detail, actor,
-                       caused_by_event_id, created_at
+                       caused_by_event_id, created_at, causal_type
                 FROM meta.version_event WHERE event_id = %s
             """, (event_id,))
             root = cur.fetchone()
@@ -1244,26 +1263,27 @@ def get_causal_chain(event_id: str, max_depth: int = Query(20, ge=1, le=50)):
                     "actor": r[4],
                     "caused_by_event_id": str(r[5]) if r[5] else None,
                     "created_at": r[6].isoformat() if r[6] else None,
+                    "causal_type": r[7] or "blocking",
                 }
 
             # Walk upstream via recursive CTE (ancestors)
             cur.execute("""
                 WITH RECURSIVE ancestors AS (
                     SELECT event_id, version_id, event_type, event_detail, actor,
-                           caused_by_event_id, created_at, 1 AS depth
+                           caused_by_event_id, created_at, causal_type, 1 AS depth
                     FROM meta.version_event
                     WHERE event_id = (
                         SELECT caused_by_event_id FROM meta.version_event WHERE event_id = %s
                     )
                     UNION ALL
                     SELECT ve.event_id, ve.version_id, ve.event_type, ve.event_detail, ve.actor,
-                           ve.caused_by_event_id, ve.created_at, a.depth + 1
+                           ve.caused_by_event_id, ve.created_at, ve.causal_type, a.depth + 1
                     FROM meta.version_event ve
                     JOIN ancestors a ON ve.event_id = a.caused_by_event_id
                     WHERE a.depth < %s
                 )
                 SELECT event_id, version_id, event_type, event_detail, actor,
-                       caused_by_event_id, created_at
+                       caused_by_event_id, created_at, causal_type
                 FROM ancestors
                 ORDER BY depth DESC
                 LIMIT 1000
@@ -1274,18 +1294,18 @@ def get_causal_chain(event_id: str, max_depth: int = Query(20, ge=1, le=50)):
             cur.execute("""
                 WITH RECURSIVE descendants AS (
                     SELECT event_id, version_id, event_type, event_detail, actor,
-                           caused_by_event_id, created_at, 0 AS depth
+                           caused_by_event_id, created_at, causal_type, 0 AS depth
                     FROM meta.version_event
                     WHERE caused_by_event_id = %s
                     UNION ALL
                     SELECT ve.event_id, ve.version_id, ve.event_type, ve.event_detail, ve.actor,
-                           ve.caused_by_event_id, ve.created_at, d.depth + 1
+                           ve.caused_by_event_id, ve.created_at, ve.causal_type, d.depth + 1
                     FROM meta.version_event ve
                     JOIN descendants d ON ve.caused_by_event_id = d.event_id
                     WHERE d.depth < %s
                 )
                 SELECT event_id, version_id, event_type, event_detail, actor,
-                       caused_by_event_id, created_at
+                       caused_by_event_id, created_at, causal_type
                 FROM descendants
                 ORDER BY depth, created_at
                 LIMIT 1000
@@ -1304,6 +1324,75 @@ def get_causal_chain(event_id: str, max_depth: int = Query(20, ge=1, le=50)):
         result["truncated"] = True
 
     return envelope(result, t0)
+
+
+# =============================================================================
+# RECENT EVENTS (Wave 2.14 — system-wide activity feed)
+# =============================================================================
+
+@router.get("/events/recent")
+def get_recent_events(
+    limit: int = Query(default=50, ge=1, le=200),
+    event_type: Optional[str] = Query(default=None),
+    since: Optional[str] = Query(default=None, description="ISO timestamp — only events after this time"),
+):
+    """System-wide recent events across all versions, for the activity feed.
+
+    Filterable by event_type and since timestamp. Returns events with node context.
+    """
+    t0 = time.time()
+
+    with _get_conn() as conn:
+        with conn.cursor() as cur:
+            conditions = []
+            params = []
+
+            if event_type:
+                conditions.append("ve.event_type = %s")
+                params.append(event_type)
+
+            if since:
+                conditions.append("ve.created_at >= %s::timestamptz")
+                params.append(since)
+
+            where_clause = ""
+            if conditions:
+                where_clause = "WHERE " + " AND ".join(conditions)
+
+            params.append(limit)
+
+            cur.execute(f"""
+                SELECT ve.event_id, ve.version_id, ve.event_type, ve.event_detail, ve.actor,
+                       ve.caused_by_event_id, ve.created_at, ve.causal_type,
+                       nv.node_id, n.name AS node_name, n.subsystem,
+                       nv.version_number
+                FROM meta.version_event ve
+                JOIN meta.node_version nv ON nv.version_id = ve.version_id
+                JOIN meta.node n ON n.node_id = nv.node_id
+                {where_clause}
+                ORDER BY ve.created_at DESC
+                LIMIT %s
+            """, params)
+            rows = cur.fetchall()
+
+    events = []
+    for r in rows:
+        events.append({
+            "event_id": str(r[0]),
+            "version_id": str(r[1]),
+            "event_type": r[2],
+            "event_detail": r[3] or {},
+            "actor": r[4],
+            "caused_by_event_id": str(r[5]) if r[5] else None,
+            "created_at": r[6].isoformat() if r[6] else None,
+            "causal_type": r[7] or "blocking",
+            "node_id": str(r[8]),
+            "node_name": r[9],
+            "subsystem": r[10],
+            "version_number": r[11],
+        })
+
+    return envelope({"events": events, "count": len(events)}, t0)
 
 
 # =============================================================================

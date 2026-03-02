@@ -20,6 +20,10 @@ const initialState = {
   causalArrows: [],          // [{ from, to, label }]
   manualHighlight: null,     // Set<nodeId> from chat
   pressureWaveOrigin: null,
+  // Pipeline slicing (Wave 2.13)
+  sliceFrom: null,           // nodeId — first endpoint
+  sliceTo: null,             // nodeId — second endpoint
+  sliceNodeIds: null,        // Set<nodeId> — computed path between from/to
 }
 
 function graphReducer(state, action) {
@@ -91,6 +95,32 @@ function graphReducer(state, action) {
         ...state,
         selectedNodeId: null,
         manualHighlight: new Set(action.nodeIds),
+      }
+
+    // Pipeline slicing (Wave 2.13)
+    case 'START_SLICE':
+      return {
+        ...state,
+        sliceFrom: action.nodeId,
+        sliceTo: null,
+        sliceNodeIds: null,
+      }
+
+    case 'COMPLETE_SLICE':
+      return {
+        ...state,
+        sliceTo: action.nodeId,
+        sliceNodeIds: action.pathNodeIds, // Set<nodeId>
+        manualHighlight: action.pathNodeIds,
+      }
+
+    case 'CLEAR_SLICE':
+      return {
+        ...state,
+        sliceFrom: null,
+        sliceTo: null,
+        sliceNodeIds: null,
+        manualHighlight: null,
       }
 
     default:
@@ -289,6 +319,76 @@ export default function usePipelineGraph(topologyData) {
     dispatch({ type: 'HIGHLIGHT_NODES', nodeIds })
   }, [])
 
+  // Pipeline slicing (Wave 2.13)
+  // Two-step: startSlice(from) then completeSlice(to) — BFS finds path between them
+  const startSlice = useCallback((nodeId) => {
+    dispatch({ type: 'START_SLICE', nodeId })
+  }, [])
+
+  const completeSlice = useCallback((nodeId) => {
+    if (!state.sliceFrom) return
+    // BFS both directions to find path between sliceFrom and nodeId
+    // Try downstream first (from -> to), then upstream (to -> from)
+    let pathNodeIds = null
+
+    // BFS path finder: returns array of nodeIds from start to end, or null
+    function bfsPath(startId, endId, adjacencyMap) {
+      const visited = new Map() // nodeId -> parentId
+      const queue = [startId]
+      visited.set(startId, null)
+      while (queue.length > 0) {
+        const current = queue.shift()
+        if (current === endId) {
+          // Reconstruct path
+          const path = []
+          let c = endId
+          while (c !== null) {
+            path.unshift(c)
+            c = visited.get(c)
+          }
+          return new Set(path)
+        }
+        const neighbors = adjacencyMap[current]
+        if (neighbors) {
+          for (const n of neighbors) {
+            if (!visited.has(n)) {
+              visited.set(n, current)
+              queue.push(n)
+            }
+          }
+        }
+      }
+      return null
+    }
+
+    // Try downstream path
+    pathNodeIds = bfsPath(state.sliceFrom, nodeId, downstreamMap)
+    if (!pathNodeIds) {
+      // Try upstream path (reversed direction)
+      pathNodeIds = bfsPath(state.sliceFrom, nodeId, upstreamMap)
+    }
+    if (!pathNodeIds) {
+      // Try bidirectional: combine downstream from both, find intersection
+      const downFromA = bfs(state.sliceFrom, downstreamMap)
+      const downFromB = bfs(nodeId, downstreamMap)
+      const upFromA = bfs(state.sliceFrom, upstreamMap)
+      const upFromB = bfs(nodeId, upstreamMap)
+      // Union of all reachable nodes from both endpoints
+      pathNodeIds = new Set([...downFromA, ...upFromA, ...downFromB, ...upFromB]
+        .filter(id => (downFromA.has(id) || upFromA.has(id)) && (downFromB.has(id) || upFromB.has(id)))
+      )
+      // Always include the endpoints
+      pathNodeIds.add(state.sliceFrom)
+      pathNodeIds.add(nodeId)
+    }
+
+    dispatch({ type: 'COMPLETE_SLICE', nodeId, pathNodeIds })
+  }, [state.sliceFrom, downstreamMap, upstreamMap, bfs])
+
+  const clearSlice = useCallback(() => {
+    dispatch({ type: 'CLEAR_SLICE' })
+  }, [])
+
   // Navigate to node (select + scroll into view handled by caller)
   const navigateToNode = useCallback((nodeId) => {
     selectNode(nodeId)
@@ -323,6 +423,13 @@ export default function usePipelineGraph(topologyData) {
     // Chat integration
     highlightNodes,
     navigateToNode,
+    // Pipeline slicing
+    sliceFrom: state.sliceFrom,
+    sliceTo: state.sliceTo,
+    sliceNodeIds: state.sliceNodeIds,
+    startSlice,
+    completeSlice,
+    clearSlice,
     // Data
     nodeMap,
     upstreamMap,

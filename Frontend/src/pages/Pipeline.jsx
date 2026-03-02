@@ -16,6 +16,7 @@ import NodeDetailPanel from '../components/pipeline/NodeDetailPanel'
 import ChatPanel from '../components/pipeline/ChatPanel'
 import PipelineToolbar from '../components/pipeline/PipelineToolbar'
 import PipelineErrorBoundary from '../components/pipeline/PipelineErrorBoundary'
+import RecentActivity from '../components/pipeline/RecentActivity'
 import usePipelineGraph from '../hooks/usePipelineGraph'
 import usePipelineUrlState from '../hooks/usePipelineUrlState'
 
@@ -110,6 +111,12 @@ function PipelineInner() {
   const [error, setError] = useState(null)
   const [chatOpen, setChatOpen] = useState(false)
   const [tvMode, setTvMode] = useState(false)
+  const [recentActivityOpen, setRecentActivityOpen] = useState(false)
+  // Wave 2.12: configurable facets — which metrics show on nodes
+  const [facets, setFacets] = useState({
+    pf: true, winRate: true, trades: true, status: true,
+    owner: true, description: true, connections: true,
+  })
   const reactFlowRef = useRef(null)
 
   // Pipeline graph state management
@@ -190,9 +197,13 @@ function PipelineInner() {
 
       switch (e.key) {
         case 'Escape':
-          // Universal dismiss: overlay → chat → selection
-          if (graph.activeOverlay) {
+          // Universal dismiss: slice → overlay → recent → chat → selection
+          if (graph.sliceFrom) {
+            graph.clearSlice()
+          } else if (graph.activeOverlay) {
             graph.clearOverlay()
+          } else if (recentActivityOpen) {
+            setRecentActivityOpen(false)
           } else if (chatOpen) {
             setChatOpen(false)
           } else if (graph.selectedNodeId) {
@@ -243,7 +254,7 @@ function PipelineInner() {
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [graph, chatOpen, setChatOpen, nodes])
+  }, [graph, chatOpen, setChatOpen, recentActivityOpen, nodes])
 
   // Fetch topology
   useEffect(() => {
@@ -315,6 +326,7 @@ function PipelineInner() {
             ports: n.ports,
             visualState: 'default',
             pressureWaveDelay: null,
+            facets,
           },
         }
       })
@@ -427,7 +439,7 @@ function PipelineInner() {
     }
 
     return { flowNodes: nodes, flowEdges: edges }
-  }, [topologyData, collapsedGroups])
+  }, [topologyData, collapsedGroups, facets])
 
   // Layout effect: use Web Worker for dagre, with requestId staleness check
   useEffect(() => {
@@ -626,6 +638,15 @@ function PipelineInner() {
   }, [graph.visualState, graph.highlightedEdgeIds, graph.highlightedNodeIds, graph.causalArrows, graph.pressureWaveDistances, lodTier, viewportTick, setNodes, setEdges])
 
   const onNodeClick = useCallback((event, node) => {
+    // Wave 2.13: Shift+click for pipeline slicing
+    if (event.shiftKey) {
+      if (!graph.sliceFrom) {
+        graph.startSlice(node.id)
+      } else {
+        graph.completeSlice(node.id)
+      }
+      return
+    }
     graph.selectNode(node.id)
   }, [graph])
 
@@ -687,10 +708,45 @@ function PipelineInner() {
     )
   }
 
-  const panelOpen = selectedNode || chatOpen
+  const panelOpen = selectedNode || chatOpen || recentActivityOpen
 
   return (
-    <div className={`h-[calc(100vh-8rem)] flex ${tvMode ? 'pipeline-tv-mode' : ''}`} data-complexity-tier={complexityTier}>
+    <div className={`h-[calc(100vh-8rem)] flex ${tvMode ? 'pipeline-tv-mode' : ''} relative`} data-complexity-tier={complexityTier}>
+      {/* Subsystem Legend — overlaid at top of pipeline area, centered */}
+      <div className="absolute top-0 left-0 right-0 z-50 flex justify-center pointer-events-none" style={{ transform: 'translateY(-100%)' }}>
+        <div className="bg-terminal-800/90 backdrop-blur border border-terminal-600 rounded-b-lg px-2.5 py-1.5 text-xs pointer-events-auto" style={{ transform: 'translateY(100%)' }}>
+          <div className="flex flex-wrap gap-x-3 gap-y-1">
+            {SUBSYSTEM_ORDER.map(s => (
+              <div
+                key={s}
+                className="flex items-center gap-1 cursor-pointer hover:bg-terminal-700/50 rounded px-1"
+                onDoubleClick={() => toggleGroupCollapse(s)}
+                title="Double-click to collapse/expand"
+              >
+                <div
+                  className="w-2 h-2 rounded-sm flex-shrink-0"
+                  style={{
+                    backgroundColor: SUBSYSTEM_COLORS[s],
+                    opacity: collapsedGroups.has(s) ? 0.4 : 1,
+                  }}
+                />
+                <span className={`capitalize ${collapsedGroups.has(s) ? 'text-terminal-600 line-through' : 'text-terminal-500'}`}>
+                  {s}
+                </span>
+              </div>
+            ))}
+            {collapsedGroups.size > 0 && (
+              <button
+                onClick={() => setCollapsedGroups(new Set())}
+                className="text-terminal-600 hover:text-terminal-300 ml-1"
+              >
+                reset
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
       {/* React Flow Canvas */}
       <div className={`flex-1 relative transition-all duration-300 ${panelOpen ? 'mr-[400px]' : ''}`}>
         <ReactFlow
@@ -722,41 +778,6 @@ function PipelineInner() {
             position="bottom-right"
           />
 
-          {/* Legend — compact, double-click subsystem to collapse/expand group */}
-          <Panel position="top-left">
-            <div className="bg-terminal-800/90 backdrop-blur border border-terminal-600 rounded-lg px-2.5 py-2 text-xs">
-              <div className="flex flex-wrap gap-x-3 gap-y-1">
-                {SUBSYSTEM_ORDER.map(s => (
-                  <div
-                    key={s}
-                    className="flex items-center gap-1 cursor-pointer hover:bg-terminal-700/50 rounded px-1"
-                    onDoubleClick={() => toggleGroupCollapse(s)}
-                    title="Double-click to collapse/expand"
-                  >
-                    <div
-                      className="w-2 h-2 rounded-sm flex-shrink-0"
-                      style={{
-                        backgroundColor: SUBSYSTEM_COLORS[s],
-                        opacity: collapsedGroups.has(s) ? 0.4 : 1,
-                      }}
-                    />
-                    <span className={`capitalize ${collapsedGroups.has(s) ? 'text-terminal-600 line-through' : 'text-terminal-500'}`}>
-                      {s}
-                    </span>
-                  </div>
-                ))}
-                {collapsedGroups.size > 0 && (
-                  <button
-                    onClick={() => setCollapsedGroups(new Set())}
-                    className="text-terminal-600 hover:text-terminal-300 ml-1"
-                  >
-                    reset
-                  </button>
-                )}
-              </div>
-            </div>
-          </Panel>
-
           {/* Toolbar */}
           <PipelineErrorBoundary name="PipelineToolbar">
             <PipelineToolbar
@@ -767,7 +788,7 @@ function PipelineInner() {
             />
           </PipelineErrorBoundary>
 
-          {/* Chat toggle + TV mode + Fit View */}
+          {/* Chat toggle + TV mode + Fit View + Recent Activity */}
           <Panel position="top-right">
             <div className="flex gap-2">
               <button
@@ -787,6 +808,15 @@ function PipelineInner() {
                 TV
               </button>
               <button
+                onClick={() => setRecentActivityOpen(prev => !prev)}
+                className={`bg-terminal-800/90 backdrop-blur border rounded-lg px-3 py-2 text-xs hover:text-terminal-100 hover:bg-terminal-700 transition-colors pipeline-touch-target flex items-center justify-center ${
+                  recentActivityOpen ? 'border-amber-500 text-amber-400' : 'border-terminal-600 text-terminal-300'
+                }`}
+                title="Recent pipeline activity"
+              >
+                Activity
+              </button>
+              <button
                 onClick={() => setChatOpen(!chatOpen)}
                 className="bg-terminal-800/90 backdrop-blur border border-terminal-600 rounded-lg px-3 py-2 text-xs text-terminal-300 hover:text-terminal-100 hover:bg-terminal-700 transition-colors pipeline-touch-target flex items-center justify-center"
               >
@@ -794,6 +824,34 @@ function PipelineInner() {
               </button>
             </div>
           </Panel>
+
+          {/* Slice notification toast (Wave 2.13) */}
+          {graph.sliceFrom && !graph.sliceTo && (
+            <Panel position="bottom-center">
+              <div className="bg-amber-500/20 border border-amber-500/30 rounded-lg px-4 py-2 text-xs text-amber-300 backdrop-blur">
+                Hold Shift + Click on another node to slice pipeline
+                <button
+                  onClick={() => graph.clearSlice()}
+                  className="ml-3 text-amber-400 hover:text-amber-200 underline"
+                >
+                  Cancel
+                </button>
+              </div>
+            </Panel>
+          )}
+          {graph.sliceFrom && graph.sliceTo && (
+            <Panel position="bottom-center">
+              <div className="bg-green-500/20 border border-green-500/30 rounded-lg px-4 py-2 text-xs text-green-300 backdrop-blur flex items-center gap-3">
+                Pipeline sliced: {graph.sliceNodeIds?.size || 0} nodes in path
+                <button
+                  onClick={() => graph.clearSlice()}
+                  className="text-green-400 hover:text-green-200 underline"
+                >
+                  Clear slice
+                </button>
+              </div>
+            </Panel>
+          )}
         </ReactFlow>
       </div>
 
@@ -821,6 +879,19 @@ function PipelineInner() {
             onNavigateToNode={handleNavigateToNode}
             onExperimentOverlay={handleExperimentOverlay}
             graph={graph}
+          />
+        </PipelineErrorBoundary>
+      )}
+
+      {/* Recent Activity Panel (Wave 2.14) */}
+      {recentActivityOpen && !chatOpen && !selectedNode && (
+        <PipelineErrorBoundary name="RecentActivity" className="fixed right-0 top-0 h-full w-[400px] bg-terminal-800 border-l border-terminal-600 z-50">
+          <RecentActivity
+            onNavigateToNode={(nodeId) => {
+              setRecentActivityOpen(false)
+              handleNavigateToNode(nodeId)
+            }}
+            onClose={() => setRecentActivityOpen(false)}
           />
         </PipelineErrorBoundary>
       )}
