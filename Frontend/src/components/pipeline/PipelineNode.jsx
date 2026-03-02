@@ -78,6 +78,7 @@ function PipelineNode({ data, selected }) {
     label, nodeType, subsystem, subsystemColor, statusColor,
     versionCount, aggPf, currentVersion, description, owner,
     sourceFile, ports, visualState, pressureWaveDelay,
+    lodTier = 1,
   } = data
 
   const icon = NODE_TYPE_ICONS[nodeType] || '\u{2726}'
@@ -103,11 +104,17 @@ function PipelineNode({ data, selected }) {
     ? { animation: `pressure-wave 600ms ease-out ${pressureWaveDelay}ms` }
     : {}
 
+  // LOD CSS classes: visibility swap (NOT conditional rendering)
+  // tier 1 = full, tier 2 = name-only, tier 3 = minimal
+  const lodHideDetail = lodTier >= 2 ? 'invisible h-0 overflow-hidden' : ''
+  const lodHideName = lodTier >= 3 ? 'invisible h-0 overflow-hidden' : ''
+
   return (
     <div
       className={`
-        relative bg-terminal-800 border-[3px] rounded-xl px-6 py-4 w-[460px] h-[300px]
+        relative bg-terminal-800 border-[3px] rounded-xl px-6 py-4 w-[460px]
         transition-all duration-200 cursor-pointer flex flex-col overflow-hidden
+        ${lodTier >= 3 ? 'h-[80px]' : lodTier >= 2 ? 'h-[120px]' : 'h-[300px]'}
         ${stateStyle.extraClasses}
         ${!visualState && selected ? 'shadow-lg shadow-amber-500/20 scale-105' : ''}
         ${!visualState && !selected ? 'hover:shadow-md hover:shadow-white/5' : ''}
@@ -118,36 +125,34 @@ function PipelineNode({ data, selected }) {
         ...pressureStyle,
       }}
     >
-      {/* Top accent bar */}
+      {/* Top accent bar — always visible at all LOD tiers */}
       <div
         className="absolute top-0 left-0 right-0 h-3 rounded-t-lg"
         style={{ backgroundColor: subsystemColor }}
       />
 
-      {/* Input handle */}
+      {/* Input handle — always visible */}
       <Handle
         type="target"
         position={Position.Left}
         className="!w-5 !h-5 !bg-terminal-500 !border-2 !border-terminal-700"
       />
 
-      {/* Row 1: Icon + Name + Status badge + Alert */}
-      <div className="flex items-center justify-between mt-1.5">
+      {/* Row 1: Icon + Name + Status badge + Alert — visible at tier 1 & 2 */}
+      <div className={`flex items-center justify-between mt-1.5 ${lodHideName}`}>
         <div className="flex items-center gap-3 min-w-0">
           <span className="text-3xl flex-shrink-0">{icon}</span>
           <div className="min-w-0">
             <div className="text-xl font-bold text-white truncate leading-tight">{label}</div>
-            <div className="text-xs text-terminal-500 mt-0.5">{typeLabel}</div>
+            <div className={`text-xs text-terminal-500 mt-0.5 ${lodHideDetail}`}>{typeLabel}</div>
           </div>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-          {/* Alert badge */}
           {vs === 'alert' && (
             <span className="text-red-400" title="Stale metrics or failed validation">
               <AlertTriangle className="w-5 h-5" />
             </span>
           )}
-          {/* Status badge */}
           {statusLabel && (
             <span className={`text-sm font-semibold px-3 py-1 rounded-full ${statusBg}`}>
               {statusLabel}
@@ -156,8 +161,16 @@ function PipelineNode({ data, selected }) {
         </div>
       </div>
 
-      {/* Row 2: Subsystem + version + connections */}
-      <div className="flex items-center gap-2 mt-2.5">
+      {/* Tier 3 compact: just icon + truncated label inline */}
+      {lodTier >= 3 && (
+        <div className="flex items-center gap-2 mt-2">
+          <span className="text-2xl flex-shrink-0">{icon}</span>
+          <span className="text-base font-bold text-white truncate">{label}</span>
+        </div>
+      )}
+
+      {/* Row 2: Subsystem + version + connections — tier 1 & 2 */}
+      <div className={`flex items-center gap-2 mt-2.5 ${lodHideDetail}`}>
         <span
           className="text-sm px-2.5 py-0.5 rounded-full font-semibold capitalize"
           style={{
@@ -179,48 +192,52 @@ function PipelineNode({ data, selected }) {
         )}
       </div>
 
-      {/* Row 3: Description */}
-      {description && (
-        <p className="text-sm text-terminal-400 mt-2.5 line-clamp-3 leading-snug">
-          {description}
-        </p>
-      )}
+      {/* Row 3: Description — tier 1 only */}
+      <div className={lodHideDetail}>
+        {description && (
+          <p className="text-sm text-terminal-400 mt-2.5 line-clamp-3 leading-snug">
+            {description}
+          </p>
+        )}
+      </div>
 
-      {/* Spacer */}
-      <div className="flex-1" />
+      {/* Spacer — tier 1 only */}
+      <div className={`flex-1 ${lodHideDetail}`} />
 
-      {/* Row 4: Metrics bar (when available) */}
-      {(aggPf != null || currentVersion?.win_rate != null || currentVersion?.trade_count != null) && (
-        <div className="flex items-center gap-4 mt-2 py-2 px-3 -mx-1 bg-terminal-900/60 rounded-lg">
-          {aggPf != null && (
-            <div className="text-lg font-mono font-bold">
-              <span className="text-terminal-500 text-sm">PF </span>
-              <span className={aggPf >= 1.0 ? 'text-green-400' : 'text-red-400'}>
-                {aggPf.toFixed(2)}
-              </span>
-            </div>
-          )}
-          {currentVersion?.win_rate != null && (
-            <div className="text-lg font-mono font-bold">
-              <span className="text-terminal-500 text-sm">Win </span>
-              <span className="text-terminal-200">
-                {(currentVersion.win_rate * 100).toFixed(0)}%
-              </span>
-            </div>
-          )}
-          {currentVersion?.trade_count != null && (
-            <div className="text-lg font-mono font-bold">
-              <span className="text-terminal-500 text-sm">Trades </span>
-              <span className="text-terminal-200">
-                {currentVersion.trade_count}
-              </span>
-            </div>
-          )}
-        </div>
-      )}
+      {/* Row 4: Metrics bar — tier 1 only */}
+      <div className={lodHideDetail}>
+        {(aggPf != null || currentVersion?.win_rate != null || currentVersion?.trade_count != null) && (
+          <div className="flex items-center gap-4 mt-2 py-2 px-3 -mx-1 bg-terminal-900/60 rounded-lg">
+            {aggPf != null && (
+              <div className="text-lg font-mono font-bold">
+                <span className="text-terminal-500 text-sm">PF </span>
+                <span className={aggPf >= 1.0 ? 'text-green-400' : 'text-red-400'}>
+                  {aggPf.toFixed(2)}
+                </span>
+              </div>
+            )}
+            {currentVersion?.win_rate != null && (
+              <div className="text-lg font-mono font-bold">
+                <span className="text-terminal-500 text-sm">Win </span>
+                <span className="text-terminal-200">
+                  {(currentVersion.win_rate * 100).toFixed(0)}%
+                </span>
+              </div>
+            )}
+            {currentVersion?.trade_count != null && (
+              <div className="text-lg font-mono font-bold">
+                <span className="text-terminal-500 text-sm">Trades </span>
+                <span className="text-terminal-200">
+                  {currentVersion.trade_count}
+                </span>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
-      {/* Row 5: Footer — source file + owner */}
-      <div className="flex items-center justify-between mt-2">
+      {/* Row 5: Footer — tier 1 only */}
+      <div className={`flex items-center justify-between mt-2 ${lodHideDetail}`}>
         {shortFile && (
           <span className="text-xs text-terminal-600 font-mono truncate max-w-[60%]" title={sourceFile}>
             {shortFile}
@@ -234,7 +251,7 @@ function PipelineNode({ data, selected }) {
         {!shortFile && !owner && <div />}
       </div>
 
-      {/* Output handle */}
+      {/* Output handle — always visible */}
       <Handle
         type="source"
         position={Position.Right}

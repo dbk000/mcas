@@ -1206,12 +1206,25 @@ def log_version_event(version_id: str, payload: CreateVersionEvent):
 
 
 @router.get("/event/{event_id}/causal_chain")
-def get_causal_chain(event_id: str):
-    """Walk caused_by links in both directions to build full causal chain."""
+def get_causal_chain(event_id: str, max_depth: int = Query(20, ge=1, le=50)):
+    """Walk caused_by links in both directions using recursive CTEs.
+
+    Replaces the previous N+1 query pattern (one query per ancestor + BFS for
+    descendants) with two single-query recursive CTEs. At branching factor 5
+    and depth 15, the old approach issued 125+ individual queries; this issues 2.
+
+    Circuit breakers:
+    - Depth capped at max_depth (default 20)
+    - Total results capped at 1000 rows
+    - statement_timeout set to 5 seconds
+    """
     t0 = time.time()
 
     with _get_conn() as conn:
         with conn.cursor() as cur:
+            # Circuit breaker: prevent pathological queries
+            cur.execute("SET LOCAL statement_timeout = '5000'")
+
             # Verify event exists
             cur.execute("""
                 SELECT event_id, version_id, event_type, event_detail, actor,
@@ -1233,47 +1246,64 @@ def get_causal_chain(event_id: str):
                     "created_at": r[6].isoformat() if r[6] else None,
                 }
 
-            # Walk upstream (caused_by chain)
-            ancestors = []
-            current_id = root[5]  # caused_by_event_id
-            visited = {str(root[0])}
-            while current_id and str(current_id) not in visited:
-                visited.add(str(current_id))
-                cur.execute("""
+            # Walk upstream via recursive CTE (ancestors)
+            cur.execute("""
+                WITH RECURSIVE ancestors AS (
                     SELECT event_id, version_id, event_type, event_detail, actor,
-                           caused_by_event_id, created_at
-                    FROM meta.version_event WHERE event_id = %s
-                """, (str(current_id),))
-                ancestor = cur.fetchone()
-                if not ancestor:
-                    break
-                ancestors.append(row_to_dict(ancestor))
-                current_id = ancestor[5]
+                           caused_by_event_id, created_at, 1 AS depth
+                    FROM meta.version_event
+                    WHERE event_id = (
+                        SELECT caused_by_event_id FROM meta.version_event WHERE event_id = %s
+                    )
+                    UNION ALL
+                    SELECT ve.event_id, ve.version_id, ve.event_type, ve.event_detail, ve.actor,
+                           ve.caused_by_event_id, ve.created_at, a.depth + 1
+                    FROM meta.version_event ve
+                    JOIN ancestors a ON ve.event_id = a.caused_by_event_id
+                    WHERE a.depth < %s
+                )
+                SELECT event_id, version_id, event_type, event_detail, actor,
+                       caused_by_event_id, created_at
+                FROM ancestors
+                ORDER BY depth DESC
+                LIMIT 1000
+            """, (event_id, max_depth))
+            ancestors = [row_to_dict(r) for r in cur.fetchall()]
 
-            # Walk downstream (events caused by this one)
-            descendants = []
-            queue = [str(root[0])]
-            visited_down = {str(root[0])}
-            while queue:
-                cid = queue.pop(0)
-                cur.execute("""
+            # Walk downstream via recursive CTE (descendants)
+            cur.execute("""
+                WITH RECURSIVE descendants AS (
                     SELECT event_id, version_id, event_type, event_detail, actor,
-                           caused_by_event_id, created_at
-                    FROM meta.version_event WHERE caused_by_event_id = %s
-                """, (cid,))
-                for r in cur.fetchall():
-                    eid = str(r[0])
-                    if eid not in visited_down:
-                        visited_down.add(eid)
-                        descendants.append(row_to_dict(r))
-                        queue.append(eid)
+                           caused_by_event_id, created_at, 0 AS depth
+                    FROM meta.version_event
+                    WHERE caused_by_event_id = %s
+                    UNION ALL
+                    SELECT ve.event_id, ve.version_id, ve.event_type, ve.event_detail, ve.actor,
+                           ve.caused_by_event_id, ve.created_at, d.depth + 1
+                    FROM meta.version_event ve
+                    JOIN descendants d ON ve.caused_by_event_id = d.event_id
+                    WHERE d.depth < %s
+                )
+                SELECT event_id, version_id, event_type, event_detail, actor,
+                       caused_by_event_id, created_at
+                FROM descendants
+                ORDER BY depth, created_at
+                LIMIT 1000
+            """, (event_id, max_depth))
+            desc_rows = cur.fetchall()
+            descendants = [row_to_dict(r) for r in desc_rows]
+            truncated = len(desc_rows) >= 1000 or len(ancestors) >= 1000
 
-    return envelope({
+    result = {
         "root": row_to_dict(root),
-        "ancestors": list(reversed(ancestors)),  # oldest first
+        "ancestors": ancestors,  # oldest first (ORDER BY depth DESC)
         "descendants": descendants,
         "chain_length": len(ancestors) + 1 + len(descendants),
-    }, t0)
+    }
+    if truncated:
+        result["truncated"] = True
+
+    return envelope(result, t0)
 
 
 # =============================================================================

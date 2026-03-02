@@ -214,3 +214,52 @@ select:disabled {
 .animate-pulse-subtle {
   animation: subtle-pulse 2s ease-in-out infinite;
 }
+
+/* Pipeline TV text scaling system */
+:root {
+  --pipeline-text-scale: 1;
+}
+
+/* Auto-trigger for large viewports (TV at 4K) */
+@media (min-width: 2560px) {
+  :root {
+    --pipeline-text-scale: 1.75;
+  }
+}
+
+/* Manual toggle class (applied via JS) */
+.pipeline-tv-mode {
+  --pipeline-text-scale: 2;
+}
+
+/* Scaled text utility classes for pipeline components */
+.pipeline-text-xs {
+  font-size: calc(10px * var(--pipeline-text-scale));
+  line-height: calc(14px * var(--pipeline-text-scale));
+}
+
+.pipeline-text-sm {
+  font-size: calc(12px * var(--pipeline-text-scale));
+  line-height: calc(16px * var(--pipeline-text-scale));
+}
+
+.pipeline-text-base {
+  font-size: calc(14px * var(--pipeline-text-scale));
+  line-height: calc(20px * var(--pipeline-text-scale));
+}
+
+.pipeline-text-lg {
+  font-size: calc(18px * var(--pipeline-text-scale));
+  line-height: calc(24px * var(--pipeline-text-scale));
+}
+
+.pipeline-text-xl {
+  font-size: calc(22px * var(--pipeline-text-scale));
+  line-height: calc(28px * var(--pipeline-text-scale));
+}
+
+/* Pipeline touch target minimum (48x48px for TV/remote) */
+.pipeline-touch-target {
+  min-width: 48px;
+  min-height: 48px;
+}

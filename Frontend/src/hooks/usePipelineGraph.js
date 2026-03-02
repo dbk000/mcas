@@ -1,16 +1,107 @@
-import { useState, useCallback, useMemo, useRef, useEffect } from 'react'
+import { useReducer, useCallback, useMemo, useRef, useEffect } from 'react'
 
 /**
  * usePipelineGraph — manages visual state, selection, path-tracing,
  * overlays, composition drafts, and pressure waves for the pipeline canvas.
+ *
+ * RENDERER-AGNOSTIC INVARIANT:
+ *   This hook MUST NOT import from @xyflow/react or any renderer-specific library.
+ *   It provides abstract graph state. The renderer (Pipeline.jsx for React Flow,
+ *   or a future Pipeline3D.jsx for Three.js) maps this state to visual elements.
+ *   No viewport, camera, position, or input-device state belongs here.
  */
+
+// --- Reducer ---
+
+const initialState = {
+  selectedNodeId: null,
+  activeOverlay: null,       // { type: 'experiment'|'composition'|'learning', id }
+  compositionDraft: new Map(), // nodeId -> versionId
+  causalArrows: [],          // [{ from, to, label }]
+  manualHighlight: null,     // Set<nodeId> from chat
+  pressureWaveOrigin: null,
+}
+
+function graphReducer(state, action) {
+  switch (action.type) {
+    case 'SELECT_NODE':
+      return {
+        ...state,
+        selectedNodeId: action.nodeId,
+        manualHighlight: null,
+        causalArrows: [],
+      }
+
+    case 'CLEAR_SELECTION':
+      return {
+        ...state,
+        selectedNodeId: null,
+        manualHighlight: null,
+        causalArrows: [],
+      }
+
+    case 'SET_EXPERIMENT_OVERLAY':
+      return {
+        ...state,
+        activeOverlay: { type: 'experiment', id: action.experimentId },
+        manualHighlight: action.touchedNodeIds ? new Set(action.touchedNodeIds) : state.manualHighlight,
+      }
+
+    case 'SET_COMPOSITION_OVERLAY':
+      return {
+        ...state,
+        activeOverlay: { type: 'composition', id: action.compositionId },
+        manualHighlight: action.nodeVersionMap ? new Set(Object.keys(action.nodeVersionMap)) : state.manualHighlight,
+      }
+
+    case 'CLEAR_OVERLAY':
+      return {
+        ...state,
+        activeOverlay: null,
+        manualHighlight: null,
+        causalArrows: [],
+      }
+
+    case 'SET_VERSION_FOR_NODE': {
+      const next = new Map(state.compositionDraft)
+      next.set(action.nodeId, action.versionId)
+      return { ...state, compositionDraft: next }
+    }
+
+    case 'CLEAR_DRAFT':
+      return { ...state, compositionDraft: new Map() }
+
+    case 'SET_PRESSURE_WAVE':
+      return { ...state, pressureWaveOrigin: action.nodeId }
+
+    case 'CLEAR_PRESSURE_WAVE':
+      return { ...state, pressureWaveOrigin: null }
+
+    case 'SHOW_CAUSAL_ARROW':
+      return {
+        ...state,
+        causalArrows: [...state.causalArrows, { from: action.from, to: action.to, label: action.label }],
+      }
+
+    case 'CLEAR_CAUSAL_ARROWS':
+      return { ...state, causalArrows: [] }
+
+    case 'HIGHLIGHT_NODES':
+      return {
+        ...state,
+        selectedNodeId: null,
+        manualHighlight: new Set(action.nodeIds),
+      }
+
+    default:
+      return state
+  }
+}
+
+// --- Hook ---
+
 export default function usePipelineGraph(topologyData) {
-  const [selectedNodeId, setSelectedNodeId] = useState(null)
-  const [activeOverlay, setActiveOverlay] = useState(null) // { type: 'experiment'|'composition'|'learning', id }
-  const [compositionDraft, setCompositionDraft] = useState(new Map()) // nodeId -> versionId
-  const [causalArrows, setCausalArrows] = useState([]) // [{ from, to, label }]
-  const [manualHighlight, setManualHighlight] = useState(null) // Set<nodeId> from chat
-  const [pressureWaveOrigin, setPressureWaveOrigin] = useState(null)
+  const [state, dispatch] = useReducer(graphReducer, initialState)
   const pressureWaveTimer = useRef(null)
 
   // Build adjacency maps from topology edges
@@ -67,27 +158,23 @@ export default function usePipelineGraph(topologyData) {
 
   // Select a node: highlight upstream + downstream, dim rest
   const selectNode = useCallback((nodeId) => {
-    setSelectedNodeId(nodeId)
-    setManualHighlight(null)
-    setCausalArrows([])
+    dispatch({ type: 'SELECT_NODE', nodeId })
   }, [])
 
   const clearSelection = useCallback(() => {
-    setSelectedNodeId(null)
-    setManualHighlight(null)
-    setCausalArrows([])
+    dispatch({ type: 'CLEAR_SELECTION' })
   }, [])
 
   // Compute highlighted node IDs (selected + upstream + downstream)
   const highlightedNodeIds = useMemo(() => {
-    if (manualHighlight) return manualHighlight
+    if (state.manualHighlight) return state.manualHighlight
 
-    if (!selectedNodeId) return new Set()
-    const up = getUpstream(selectedNodeId)
-    const down = getDownstream(selectedNodeId)
-    const all = new Set([selectedNodeId, ...up, ...down])
+    if (!state.selectedNodeId) return new Set()
+    const up = getUpstream(state.selectedNodeId)
+    const down = getDownstream(state.selectedNodeId)
+    const all = new Set([state.selectedNodeId, ...up, ...down])
     return all
-  }, [selectedNodeId, getUpstream, getDownstream, manualHighlight])
+  }, [state.selectedNodeId, getUpstream, getDownstream, state.manualHighlight])
 
   // Compute highlighted edge IDs
   const highlightedEdgeIds = useMemo(() => {
@@ -106,7 +193,7 @@ export default function usePipelineGraph(topologyData) {
     const states = new Map()
     const allNodes = topologyData?.nodes || []
 
-    if (highlightedNodeIds.size === 0 && !activeOverlay) {
+    if (highlightedNodeIds.size === 0 && !state.activeOverlay) {
       // No selection, no overlay — everything default
       for (const n of allNodes) {
         states.set(n.id, 'default')
@@ -115,7 +202,7 @@ export default function usePipelineGraph(topologyData) {
     }
 
     for (const n of allNodes) {
-      if (n.id === selectedNodeId) {
+      if (n.id === state.selectedNodeId) {
         states.set(n.id, 'selected')
       } else if (highlightedNodeIds.has(n.id)) {
         states.set(n.id, 'highlighted')
@@ -126,38 +213,28 @@ export default function usePipelineGraph(topologyData) {
       }
     }
     return states
-  }, [topologyData, selectedNodeId, highlightedNodeIds, activeOverlay])
+  }, [topologyData, state.selectedNodeId, highlightedNodeIds, state.activeOverlay])
 
   // Overlay methods
   const setExperimentOverlay = useCallback((experimentId, touchedNodeIds) => {
-    setActiveOverlay({ type: 'experiment', id: experimentId })
-    if (touchedNodeIds) setManualHighlight(new Set(touchedNodeIds))
+    dispatch({ type: 'SET_EXPERIMENT_OVERLAY', experimentId, touchedNodeIds })
   }, [])
 
   const setCompositionOverlay = useCallback((compositionId, nodeVersionMap) => {
-    setActiveOverlay({ type: 'composition', id: compositionId })
-    if (nodeVersionMap) {
-      setManualHighlight(new Set(Object.keys(nodeVersionMap)))
-    }
+    dispatch({ type: 'SET_COMPOSITION_OVERLAY', compositionId, nodeVersionMap })
   }, [])
 
   const clearOverlay = useCallback(() => {
-    setActiveOverlay(null)
-    setManualHighlight(null)
-    setCausalArrows([])
+    dispatch({ type: 'CLEAR_OVERLAY' })
   }, [])
 
   // Composition draft methods
   const setVersionForNode = useCallback((nodeId, versionId) => {
-    setCompositionDraft(prev => {
-      const next = new Map(prev)
-      next.set(nodeId, versionId)
-      return next
-    })
+    dispatch({ type: 'SET_VERSION_FOR_NODE', nodeId, versionId })
   }, [])
 
   const clearDraft = useCallback(() => {
-    setCompositionDraft(new Map())
+    dispatch({ type: 'CLEAR_DRAFT' })
   }, [])
 
   // Cleanup pressure wave timer on unmount
@@ -169,19 +246,19 @@ export default function usePipelineGraph(topologyData) {
 
   // Pressure wave: staggered CSS pulse downstream
   const triggerPressureWave = useCallback((nodeId) => {
-    setPressureWaveOrigin(nodeId)
+    dispatch({ type: 'SET_PRESSURE_WAVE', nodeId })
     if (pressureWaveTimer.current) clearTimeout(pressureWaveTimer.current)
     // Auto-clear after animation completes (~2s)
     pressureWaveTimer.current = setTimeout(() => {
-      setPressureWaveOrigin(null)
+      dispatch({ type: 'CLEAR_PRESSURE_WAVE' })
     }, 2000)
   }, [])
 
   // Compute pressure wave distances for staggered animation
   const pressureWaveDistances = useMemo(() => {
-    if (!pressureWaveOrigin) return new Map()
+    if (!state.pressureWaveOrigin) return new Map()
     const distances = new Map()
-    const queue = [[pressureWaveOrigin, 0]]
+    const queue = [[state.pressureWaveOrigin, 0]]
     const visited = new Set()
     while (queue.length > 0) {
       const [current, dist] = queue.shift()
@@ -196,21 +273,20 @@ export default function usePipelineGraph(topologyData) {
       }
     }
     return distances
-  }, [pressureWaveOrigin, downstreamMap])
+  }, [state.pressureWaveOrigin, downstreamMap])
 
   // Causal arrows
   const showCausalArrow = useCallback((fromNodeId, toNodeId, label) => {
-    setCausalArrows(prev => [...prev, { from: fromNodeId, to: toNodeId, label }])
+    dispatch({ type: 'SHOW_CAUSAL_ARROW', from: fromNodeId, to: toNodeId, label })
   }, [])
 
   const clearCausalArrows = useCallback(() => {
-    setCausalArrows([])
+    dispatch({ type: 'CLEAR_CAUSAL_ARROWS' })
   }, [])
 
   // Chat integration: highlight arbitrary nodes
   const highlightNodes = useCallback((nodeIds) => {
-    setSelectedNodeId(null)
-    setManualHighlight(new Set(nodeIds))
+    dispatch({ type: 'HIGHLIGHT_NODES', nodeIds })
   }, [])
 
   // Navigate to node (select + scroll into view handled by caller)
@@ -219,7 +295,7 @@ export default function usePipelineGraph(topologyData) {
   }, [selectNode])
 
   return {
-    selectedNodeId,
+    selectedNodeId: state.selectedNodeId,
     highlightedNodeIds,
     highlightedEdgeIds,
     visualState,
@@ -231,17 +307,17 @@ export default function usePipelineGraph(topologyData) {
     setExperimentOverlay,
     setCompositionOverlay,
     clearOverlay,
-    activeOverlay,
+    activeOverlay: state.activeOverlay,
     // Composition draft
-    compositionDraft,
+    compositionDraft: state.compositionDraft,
     setVersionForNode,
     clearDraft,
     // Pressure wave
     triggerPressureWave,
-    pressureWaveOrigin,
+    pressureWaveOrigin: state.pressureWaveOrigin,
     pressureWaveDistances,
     // Causal arrows
-    causalArrows,
+    causalArrows: state.causalArrows,
     showCausalArrow,
     clearCausalArrows,
     // Chat integration
