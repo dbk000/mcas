@@ -1,4 +1,15 @@
 import { ChevronDown, ChevronUp } from 'lucide-react'
+import { PIPELINE_FEATURES } from '../../config/pipelineFeatures'
+
+const STALENESS_BADGE = {
+  potentially_stale: { label: 'Maybe stale', cls: 'bg-amber-500/15 text-amber-400 border-amber-500/20' },
+  confirmed_stale: { label: 'Stale', cls: 'bg-red-500/15 text-red-400 border-red-500/20' },
+}
+
+const HEALTH_BADGE = {
+  degraded: { label: 'Degraded', cls: 'bg-amber-500/15 text-amber-400 border-amber-500/20' },
+  unhealthy: { label: 'Unhealthy', cls: 'bg-red-500/15 text-red-400 border-red-500/20' },
+}
 
 const STATUS_COLORS = {
   deployed: 'bg-green-500/20 text-green-400 border-green-500/30',
@@ -37,6 +48,16 @@ export default function VersionRow({ version: v, expanded, onToggle, isSelectedF
           {v.agg_pf != null && (
             <span className={`text-xs font-mono flex-shrink-0 ${v.agg_pf >= 1.0 ? 'text-green-400' : 'text-red-400'}`}>
               PF {v.agg_pf.toFixed(2)}
+            </span>
+          )}
+          {PIPELINE_FEATURES.threeStateStaleness && STALENESS_BADGE[v.staleness_state] && (
+            <span className={`text-[9px] px-1 py-0.5 rounded border flex-shrink-0 ${STALENESS_BADGE[v.staleness_state].cls}`}>
+              {STALENESS_BADGE[v.staleness_state].label}
+            </span>
+          )}
+          {PIPELINE_FEATURES.threeStateStaleness && HEALTH_BADGE[v.health_status] && (
+            <span className={`text-[9px] px-1 py-0.5 rounded border flex-shrink-0 ${HEALTH_BADGE[v.health_status].cls}`}>
+              {HEALTH_BADGE[v.health_status].label}
             </span>
           )}
         </div>

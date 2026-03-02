@@ -184,7 +184,8 @@ def get_topology():
             # Fetch current deployed version per node (or latest promising/tested)
             cur.execute("""
                 SELECT DISTINCT ON (node_id) node_id, version_id, version_number,
-                       agg_pf, net_pnl, win_rate, trade_count, status, parameters
+                       agg_pf, net_pnl, win_rate, trade_count, status, parameters,
+                       staleness_state, health_status, output_hash
                 FROM meta.node_version
                 ORDER BY node_id,
                     CASE status
@@ -205,6 +206,9 @@ def get_topology():
                 "trade_count": r[6],
                 "status": r[7],
                 "parameters": r[8] or {},
+                "staleness_state": r[9] or "clean",
+                "health_status": r[10] or "unknown",
+                "output_hash": r[11],
             } for r in cur.fetchall()}
 
             # Version counts per node
@@ -287,7 +291,7 @@ def get_node_versions(
                        agg_pf, net_pnl, win_rate, max_drawdown, trade_count,
                        metrics_context, source_hash, significance,
                        superseded_by, change_reason, parent_version, derived_from,
-                       created_at
+                       created_at, staleness_state, health_status, output_hash
                 FROM meta.node_version
                 WHERE node_id = %s
             """
@@ -323,6 +327,9 @@ def get_node_versions(
             "parent_version": str(r[15]) if r[15] else None,
             "derived_from": r[16],
             "created_at": r[17].isoformat() if r[17] else None,
+            "staleness_state": r[18] or "clean",
+            "health_status": r[19] or "unknown",
+            "output_hash": r[20],
         })
 
     return envelope({
@@ -346,7 +353,8 @@ def get_version_detail(node_id: str, version_id: str):
                        nv.metrics_context, nv.source_hash, nv.significance,
                        nv.superseded_by, nv.change_reason, nv.parent_version, nv.derived_from,
                        nv.metrics_run_id, nv.created_at,
-                       n.name AS node_name, n.node_type, n.subsystem
+                       n.name AS node_name, n.node_type, n.subsystem,
+                       nv.staleness_state, nv.health_status, nv.output_hash
                 FROM meta.node_version nv
                 JOIN meta.node n ON n.node_id = nv.node_id
                 WHERE nv.node_id = %s AND nv.version_id = %s
@@ -405,6 +413,9 @@ def get_version_detail(node_id: str, version_id: str):
         "node_name": r[19],
         "node_type": r[20],
         "subsystem": r[21],
+        "staleness_state": r[22] or "clean",
+        "health_status": r[23] or "unknown",
+        "output_hash": r[24],
         "experiments": experiments,
         "compositions": compositions,
     }, t0)
@@ -1926,4 +1937,270 @@ def create_composition_constraint(payload: CreateConstraint):
     return envelope({
         "constraint_id": cid,
         "constraint_type": payload.constraint_type,
+    }, t0)
+
+
+# ===================================
+# Wave 3: Dependency Hardening
+# ===================================
+
+class UpdateStaleness(BaseModel):
+    staleness_state: str  # clean, potentially_stale, confirmed_stale
+    reason: Optional[str] = None
+
+class UpdateHealth(BaseModel):
+    health_status: str  # healthy, degraded, unhealthy, unknown
+    reason: Optional[str] = None
+
+class UpdateOutputHash(BaseModel):
+    output_hash: str
+
+
+@router.put("/node/{node_id}/version/{version_id}/staleness")
+def update_staleness(node_id: str, version_id: str, payload: UpdateStaleness):
+    """Update staleness state for a version (three-state: clean/potentially_stale/confirmed_stale)."""
+    t0 = time.time()
+    valid = ("clean", "potentially_stale", "confirmed_stale")
+    if payload.staleness_state not in valid:
+        raise HTTPException(status_code=400, detail=f"staleness_state must be one of {valid}")
+
+    with _get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                UPDATE meta.node_version SET staleness_state = %s
+                WHERE version_id = %s AND node_id = %s
+                RETURNING version_id
+            """, (payload.staleness_state, version_id, node_id))
+            row = cur.fetchone()
+            if not row:
+                raise HTTPException(status_code=404, detail="Version not found")
+        conn.commit()
+
+    return envelope({"version_id": version_id, "staleness_state": payload.staleness_state}, t0)
+
+
+@router.put("/node/{node_id}/version/{version_id}/health")
+def update_health(node_id: str, version_id: str, payload: UpdateHealth):
+    """Update health status for a version (separate from sync/deploy status)."""
+    t0 = time.time()
+    valid = ("healthy", "degraded", "unhealthy", "unknown")
+    if payload.health_status not in valid:
+        raise HTTPException(status_code=400, detail=f"health_status must be one of {valid}")
+
+    with _get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                UPDATE meta.node_version SET health_status = %s
+                WHERE version_id = %s AND node_id = %s
+                RETURNING version_id
+            """, (payload.health_status, version_id, node_id))
+            row = cur.fetchone()
+            if not row:
+                raise HTTPException(status_code=404, detail="Version not found")
+        conn.commit()
+
+    return envelope({"version_id": version_id, "health_status": payload.health_status}, t0)
+
+
+@router.put("/node/{node_id}/version/{version_id}/output-hash")
+def update_output_hash(node_id: str, version_id: str, payload: UpdateOutputHash):
+    """Set output hash for DICE early cutoff. If hash unchanged from previous version, skip downstream propagation."""
+    t0 = time.time()
+
+    with _get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                UPDATE meta.node_version SET output_hash = %s
+                WHERE version_id = %s AND node_id = %s
+                RETURNING version_id
+            """, (payload.output_hash, version_id, node_id))
+            row = cur.fetchone()
+            if not row:
+                raise HTTPException(status_code=404, detail="Version not found")
+        conn.commit()
+
+    return envelope({"version_id": version_id, "output_hash": payload.output_hash}, t0)
+
+
+@router.get("/drift")
+def get_drift_report():
+    """Drift detection: compare deployed composition node_versions to actual current versions.
+
+    Returns nodes where the deployed version differs from the latest version,
+    or where no deployed version exists.
+    """
+    t0 = time.time()
+
+    with _get_conn() as conn:
+        with conn.cursor() as cur:
+            # Get the deployed composition (if any)
+            cur.execute("""
+                SELECT composition_id, name, node_versions, config_hash
+                FROM meta.composition
+                WHERE status = 'deployed'
+                ORDER BY updated_at DESC LIMIT 1
+            """)
+            deployed_comp = cur.fetchone()
+
+            # Get the latest version per node (by status priority)
+            cur.execute("""
+                SELECT DISTINCT ON (node_id) node_id, version_id, version_number,
+                       status, staleness_state, health_status, output_hash
+                FROM meta.node_version
+                ORDER BY node_id,
+                    CASE status
+                        WHEN 'deployed' THEN 0
+                        WHEN 'promising' THEN 1
+                        WHEN 'tested' THEN 2
+                        WHEN 'baseline' THEN 3
+                        WHEN 'retired' THEN 4
+                    END,
+                    version_number DESC
+            """)
+            current = {str(r[0]): {
+                "version_id": str(r[1]), "version_number": r[2],
+                "status": r[3], "staleness_state": r[4] or "clean",
+                "health_status": r[5] or "unknown", "output_hash": r[6],
+            } for r in cur.fetchall()}
+
+            # Get node names
+            cur.execute("SELECT node_id, name, subsystem FROM meta.node")
+            node_info = {str(r[0]): {"name": r[1], "subsystem": r[2]} for r in cur.fetchall()}
+
+    drifted = []
+    synced = []
+
+    if deployed_comp:
+        comp_versions = deployed_comp[2] or {}  # {node_id: version_id}
+        for nid, info in node_info.items():
+            pinned_vid = comp_versions.get(nid)
+            cur_ver = current.get(nid)
+            if not cur_ver:
+                continue
+            entry = {
+                "node_id": nid,
+                "node_name": info["name"],
+                "subsystem": info["subsystem"],
+                "current_version_id": cur_ver["version_id"],
+                "current_version_number": cur_ver["version_number"],
+                "current_status": cur_ver["status"],
+                "staleness_state": cur_ver["staleness_state"],
+                "health_status": cur_ver["health_status"],
+            }
+            if pinned_vid and str(pinned_vid) != cur_ver["version_id"]:
+                entry["deployed_version_id"] = str(pinned_vid)
+                entry["drift_type"] = "version_mismatch"
+                drifted.append(entry)
+            elif not pinned_vid:
+                entry["drift_type"] = "not_in_composition"
+                drifted.append(entry)
+            else:
+                synced.append(entry)
+    else:
+        # No deployed composition — everything is "undeployed"
+        for nid, info in node_info.items():
+            cur_ver = current.get(nid)
+            if cur_ver:
+                drifted.append({
+                    "node_id": nid,
+                    "node_name": info["name"],
+                    "subsystem": info["subsystem"],
+                    "current_version_id": cur_ver["version_id"],
+                    "current_version_number": cur_ver["version_number"],
+                    "current_status": cur_ver["status"],
+                    "staleness_state": cur_ver["staleness_state"],
+                    "health_status": cur_ver["health_status"],
+                    "drift_type": "no_deployed_composition",
+                })
+
+    return envelope({
+        "deployed_composition": {
+            "composition_id": str(deployed_comp[0]),
+            "name": deployed_comp[1],
+        } if deployed_comp else None,
+        "drifted": drifted,
+        "synced": synced,
+        "drift_count": len(drifted),
+        "sync_count": len(synced),
+    }, t0)
+
+
+@router.post("/node/{node_id}/version/{version_id}/propagate-staleness")
+def propagate_staleness(node_id: str, version_id: str):
+    """Propagate staleness downstream from a changed node using DICE early cutoff.
+
+    If the node's output_hash is unchanged from previous version, mark downstream
+    as 'clean' (DICE cutoff). Otherwise mark downstream as 'potentially_stale'.
+    """
+    t0 = time.time()
+
+    with _get_conn() as conn:
+        with conn.cursor() as cur:
+            # Get current version's output_hash
+            cur.execute("""
+                SELECT nv.output_hash, nv.node_id
+                FROM meta.node_version nv
+                WHERE nv.version_id = %s AND nv.node_id = %s
+            """, (version_id, node_id))
+            row = cur.fetchone()
+            if not row:
+                raise HTTPException(status_code=404, detail="Version not found")
+
+            current_hash = row[0]
+
+            # Get previous version's output_hash for DICE comparison
+            cur.execute("""
+                SELECT output_hash FROM meta.node_version
+                WHERE node_id = %s AND version_id != %s
+                ORDER BY version_number DESC LIMIT 1
+            """, (node_id, version_id))
+            prev = cur.fetchone()
+            prev_hash = prev[0] if prev else None
+
+            # DICE early cutoff: if hashes match, no downstream propagation needed
+            if current_hash and prev_hash and current_hash == prev_hash:
+                return envelope({
+                    "action": "dice_cutoff",
+                    "reason": "Output hash unchanged — no downstream staleness propagation",
+                    "affected_count": 0,
+                }, t0)
+
+            # Find all downstream nodes via edge traversal
+            cur.execute("""
+                WITH RECURSIVE downstream AS (
+                    SELECT tp.node_id AS node_id
+                    FROM meta.edge e
+                    JOIN meta.port sp ON sp.port_id = e.source_port_id
+                    JOIN meta.port tp ON tp.port_id = e.target_port_id
+                    WHERE sp.node_id = %s
+                    UNION
+                    SELECT tp2.node_id
+                    FROM downstream d
+                    JOIN meta.port sp2 ON sp2.node_id = d.node_id
+                    JOIN meta.edge e2 ON e2.source_port_id = sp2.port_id
+                    JOIN meta.port tp2 ON tp2.port_id = e2.target_port_id
+                )
+                SELECT DISTINCT node_id FROM downstream
+            """, (node_id,))
+            downstream_nodes = [str(r[0]) for r in cur.fetchall()]
+
+            # Mark latest version of each downstream node as potentially_stale
+            affected = 0
+            for dn_id in downstream_nodes:
+                cur.execute("""
+                    UPDATE meta.node_version SET staleness_state = 'potentially_stale'
+                    WHERE version_id = (
+                        SELECT version_id FROM meta.node_version
+                        WHERE node_id = %s ORDER BY version_number DESC LIMIT 1
+                    ) AND staleness_state = 'clean'
+                    RETURNING version_id
+                """, (dn_id,))
+                if cur.fetchone():
+                    affected += 1
+        conn.commit()
+
+    return envelope({
+        "action": "propagated",
+        "downstream_nodes": downstream_nodes,
+        "affected_count": affected,
     }, t0)

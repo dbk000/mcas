@@ -1,6 +1,20 @@
 import { memo } from 'react'
 import { Handle, Position } from '@xyflow/react'
 import { AlertTriangle } from 'lucide-react'
+import { PIPELINE_FEATURES } from '../../config/pipelineFeatures'
+
+const STALENESS_ICONS = {
+  clean: { icon: '\u{2713}', color: 'text-green-400', bg: 'bg-green-500/20', label: 'Clean' },
+  potentially_stale: { icon: '?', color: 'text-amber-400', bg: 'bg-amber-500/20', label: 'Potentially stale' },
+  confirmed_stale: { icon: '!', color: 'text-red-400', bg: 'bg-red-500/20', label: 'Stale' },
+}
+
+const HEALTH_DOTS = {
+  healthy: '#22c55e',
+  degraded: '#f59e0b',
+  unhealthy: '#ef4444',
+  unknown: '#64748b',
+}
 
 const NODE_TYPE_ICONS = {
   data_source: '\u{1F4E1}',
@@ -146,6 +160,16 @@ function PipelineNode({ data, selected }) {
         style={{ backgroundColor: subsystemColor }}
       />
 
+      {/* Staleness badge — top-right corner (Wave 3.1) */}
+      {PIPELINE_FEATURES.threeStateStaleness && currentVersion?.staleness_state && currentVersion.staleness_state !== 'clean' && (
+        <div
+          className={`absolute top-4 right-3 z-10 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${STALENESS_ICONS[currentVersion.staleness_state]?.bg || ''} ${STALENESS_ICONS[currentVersion.staleness_state]?.color || ''}`}
+          title={STALENESS_ICONS[currentVersion.staleness_state]?.label || currentVersion.staleness_state}
+        >
+          {STALENESS_ICONS[currentVersion.staleness_state]?.icon || '?'}
+        </div>
+      )}
+
       {/* Input handle — always visible */}
       <Handle
         type="target"
@@ -167,6 +191,13 @@ function PipelineNode({ data, selected }) {
             <span className="text-red-400" title="Stale metrics or failed validation">
               <AlertTriangle className="w-5 h-5" />
             </span>
+          )}
+          {PIPELINE_FEATURES.threeStateStaleness && currentVersion?.health_status && currentVersion.health_status !== 'unknown' && (
+            <span
+              className="w-3 h-3 rounded-full flex-shrink-0"
+              style={{ backgroundColor: HEALTH_DOTS[currentVersion.health_status] || HEALTH_DOTS.unknown }}
+              title={`Health: ${currentVersion.health_status}`}
+            />
           )}
           {statusLabel && (
             <span className={`pipeline-text-sm font-semibold px-3 py-1 rounded-full ${statusBg}`}>

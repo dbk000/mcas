@@ -35,11 +35,11 @@ export const PIPELINE_FEATURES = {
   recentActivity: true,         // 2.14: Recent Activity summary
 
   // Wave 3: Dependency Hardening
-  threeStateStaleness: false,   // 3.1: Three-state staleness
-  outputHash: false,            // 3.2: Output hash on node_version
-  driftDetection: false,        // 3.4: Drift detection
-  diffVisualization: false,     // 3.5: Diff visualization
-  tieredConfirmation: false,    // 3.6: Tiered confirmation gates
+  threeStateStaleness: true,    // 3.1: Three-state staleness
+  outputHash: true,             // 3.2: Output hash on node_version
+  driftDetection: true,         // 3.4: Drift detection
+  diffVisualization: true,      // 3.5: Diff visualization
+  tieredConfirmation: true,     // 3.6: Tiered confirmation gates
 
   // Wave 4: Advanced Interaction
   lineageDepthSlider: false,    // 4.1: Lineage depth slider
