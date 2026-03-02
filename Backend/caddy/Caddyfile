@@ -18,7 +18,7 @@ api.mcasui.com {
   # CORS for frontend on mcasui.com
   header {
     Access-Control-Allow-Origin "https://mcasui.com"
-    Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+    Access-Control-Allow-Methods "GET, POST, PUT, PATCH, DELETE, OPTIONS"
     Access-Control-Allow-Headers "Content-Type, X-API-Key, X-Correlation-ID"
     Access-Control-Max-Age "86400"
   }

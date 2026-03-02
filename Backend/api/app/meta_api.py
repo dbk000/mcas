@@ -1289,6 +1289,7 @@ class UpdateExperiment(BaseModel):
 
 
 @router.patch("/experiment/{experiment_id}")
+@router.post("/experiment/{experiment_id}/update")
 def update_experiment(experiment_id: str, payload: UpdateExperiment):
     """Update experiment status, conclusion, outcome."""
     t0 = time.time()
@@ -1419,7 +1420,7 @@ def create_composition(payload: CreateComposition):
     }, t0)
 
 
-@router.patch("/composition/{composition_id}/deploy")
+@router.post("/composition/{composition_id}/deploy")
 def deploy_composition(composition_id: str):
     """Promote composition to deployed status and set its versions as active.
     Requires all 5 validation gates to pass (enforced by DB trigger too)."""

@@ -167,7 +167,10 @@ function PipelineInner() {
     return () => { cancelled = true }
   }, [get])
 
-  // Convert API data to React Flow nodes/edges with visual states
+  // Store layout positions so visual updates don't re-run dagre
+  const layoutRef = useRef({ nodes: [], edges: [] })
+
+  // Layout effect: run dagre only when topology changes
   useEffect(() => {
     if (!topologyData) return
 
@@ -179,13 +182,6 @@ function PipelineInner() {
       let statusColor = '#6b7280'
       if (cv?.status === 'deployed') statusColor = '#22c55e'
       else if (cv?.status === 'promising') statusColor = '#f59e0b'
-
-      // Get visual state from hook
-      const vs = graph.visualState.get(n.id) || 'default'
-
-      // Get pressure wave delay
-      const pwDist = graph.pressureWaveDistances.get(n.id)
-      const pressureWaveDelay = pwDist != null ? pwDist * 150 : null
 
       return {
         id: n.id,
@@ -203,65 +199,84 @@ function PipelineInner() {
           sourceFile: n.source_file,
           owner: n.owner,
           ports: n.ports,
-          visualState: vs,
-          pressureWaveDelay,
+          visualState: 'default',
+          pressureWaveDelay: null,
         },
       }
     })
 
-    const flowEdges = apiEdges.map((e) => {
-      const isHighlighted = graph.highlightedEdgeIds.has(e.id)
-      const hasSelection = graph.highlightedNodeIds.size > 0
-
-      return {
-        id: e.id,
-        source: e.source,
-        target: e.target,
-        sourceHandle: e.sourceHandle,
-        targetHandle: e.targetHandle,
-        animated: isHighlighted || !hasSelection,
-        style: {
-          stroke: isHighlighted ? '#94a3b8' : '#475569',
-          strokeWidth: isHighlighted ? 4 : 3,
-          opacity: hasSelection && !isHighlighted ? 0.15 : 1,
-        },
-        markerEnd: {
-          type: MarkerType.ArrowClosed,
-          color: isHighlighted ? '#94a3b8' : '#475569',
-          width: 20,
-          height: 20,
-        },
-      }
-    })
-
-    // Add causal arrows as overlay edges
-    const causalEdges = graph.causalArrows.map((arrow, i) => ({
-      id: `causal-${i}`,
-      source: arrow.from,
-      target: arrow.to,
-      type: 'default',
-      animated: false,
-      style: {
-        stroke: '#d97706',
-        strokeWidth: 2,
-        strokeDasharray: '8 4',
-        opacity: 0.8,
-      },
-      markerEnd: { type: MarkerType.ArrowClosed, color: '#d97706', width: 16, height: 16 },
-      label: arrow.label || '',
-      labelStyle: { fill: '#d97706', fontSize: 10 },
-      labelBgStyle: { fill: '#1e293b', fillOpacity: 0.8 },
+    const flowEdges = apiEdges.map((e) => ({
+      id: e.id,
+      source: e.source,
+      target: e.target,
+      sourceHandle: e.sourceHandle,
+      targetHandle: e.targetHandle,
+      animated: true,
+      style: { stroke: '#475569', strokeWidth: 3, opacity: 1 },
+      markerEnd: { type: MarkerType.ArrowClosed, color: '#475569', width: 20, height: 20 },
     }))
 
     const { nodes: layouted, edges: layoutedEdges } = getLayoutedElements(flowNodes, flowEdges)
+    layoutRef.current = { nodes: layouted, edges: layoutedEdges }
     setNodes(layouted)
-    setEdges([...layoutedEdges, ...causalEdges])
+    setEdges(layoutedEdges)
 
-    // Trigger fitView after layout settles
     setTimeout(() => {
       reactFlowRef.current?.fitView({ padding: 0.15, duration: 300 })
     }, 100)
-  }, [topologyData, setNodes, setEdges, graph.visualState, graph.highlightedEdgeIds, graph.highlightedNodeIds, graph.causalArrows, graph.pressureWaveDistances])
+  }, [topologyData, setNodes, setEdges])
+
+  // Visual state effect: update node/edge styles without re-running dagre
+  useEffect(() => {
+    if (layoutRef.current.nodes.length === 0) return
+
+    setNodes(prev => prev.map(n => {
+      const vs = graph.visualState.get(n.id) || 'default'
+      const pwDist = graph.pressureWaveDistances.get(n.id)
+      const pressureWaveDelay = pwDist != null ? pwDist * 150 : null
+      return {
+        ...n,
+        data: { ...n.data, visualState: vs, pressureWaveDelay },
+      }
+    }))
+
+    setEdges(prev => {
+      const hasSelection = graph.highlightedNodeIds.size > 0
+      const baseEdges = prev.filter(e => !e.id.startsWith('causal-')).map(e => {
+        const isHighlighted = graph.highlightedEdgeIds.has(e.id)
+        return {
+          ...e,
+          animated: isHighlighted || !hasSelection,
+          style: {
+            stroke: isHighlighted ? '#94a3b8' : '#475569',
+            strokeWidth: isHighlighted ? 4 : 3,
+            opacity: hasSelection && !isHighlighted ? 0.15 : 1,
+          },
+          markerEnd: {
+            type: MarkerType.ArrowClosed,
+            color: isHighlighted ? '#94a3b8' : '#475569',
+            width: 20,
+            height: 20,
+          },
+        }
+      })
+
+      const causalEdges = graph.causalArrows.map((arrow, i) => ({
+        id: `causal-${i}`,
+        source: arrow.from,
+        target: arrow.to,
+        type: 'default',
+        animated: false,
+        style: { stroke: '#d97706', strokeWidth: 2, strokeDasharray: '8 4', opacity: 0.8 },
+        markerEnd: { type: MarkerType.ArrowClosed, color: '#d97706', width: 16, height: 16 },
+        label: arrow.label || '',
+        labelStyle: { fill: '#d97706', fontSize: 10 },
+        labelBgStyle: { fill: '#1e293b', fillOpacity: 0.8 },
+      }))
+
+      return [...baseEdges, ...causalEdges]
+    })
+  }, [graph.visualState, graph.highlightedEdgeIds, graph.highlightedNodeIds, graph.causalArrows, graph.pressureWaveDistances, setNodes, setEdges])
 
   const onNodeClick = useCallback((event, node) => {
     graph.selectNode(node.id)

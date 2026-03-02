@@ -351,13 +351,7 @@ async function executeTool(toolName, toolInput, apiGet, apiPost, canvasCallbacks
       if (toolInput.conclusion) body.conclusion = toolInput.conclusion
       if (toolInput.outcome_class) body.outcome_class = toolInput.outcome_class
       if (toolInput.key_insight) body.key_insight = toolInput.key_insight
-      // PATCH via post with method override or direct fetch
-      const resp = await fetch(`/v1/meta/experiment/${toolInput.experiment_id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      })
-      return await resp.json()
+      return apiPost(`/v1/meta/experiment/${toolInput.experiment_id}/update`, body)
     }
     default:
       return { error: `Unknown tool: ${toolName}` }
@@ -450,7 +444,7 @@ For destructive actions (deploying compositions), explain what will happen and a
           'anthropic-dangerous-direct-browser-access': 'true',
         },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
+          model: 'claude-opus-4-20250514',
           max_tokens: 4096,
           system: buildSystemPrompt(),
           tools: TOOL_DEFINITIONS,
@@ -511,7 +505,7 @@ For destructive actions (deploying compositions), explain what will happen and a
             'anthropic-dangerous-direct-browser-access': 'true',
           },
           body: JSON.stringify({
-            model: 'claude-sonnet-4-20250514',
+            model: 'claude-opus-4-20250514',
             max_tokens: 4096,
             system: buildSystemPrompt(),
             tools: TOOL_DEFINITIONS,
