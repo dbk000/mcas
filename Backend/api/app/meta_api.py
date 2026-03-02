@@ -2265,7 +2265,7 @@ async def compute_sync_waves(composition_id: str):
             # Fetch node names for readability
             node_ids_flat = list(comp_nodes.keys())
             cur.execute("""
-                SELECT node_id, name, type FROM meta.node WHERE node_id = ANY(%s)
+                SELECT node_id, name, node_type FROM meta.node WHERE node_id = ANY(%s)
             """, (node_ids_flat,))
             node_info = {str(r[0]): {"name": r[1], "type": r[2]} for r in cur.fetchall()}
 
@@ -2575,7 +2575,7 @@ async def get_openlineage_events(
             cur.execute(f"""
                 SELECT ve.event_id, ve.version_id, nv.node_id, ve.event_type,
                        ve.caused_by_event_id, ve.event_detail, ve.created_at,
-                       n.name, n.type, n.subsystem, n.source_file
+                       n.name, n.node_type, n.subsystem, n.source_file
                 FROM meta.version_event ve
                 JOIN meta.node_version nv ON nv.version_id = ve.version_id
                 JOIN meta.node n ON n.node_id = nv.node_id
@@ -2822,7 +2822,7 @@ async def dependency_audit(node_id: str):
         with conn.cursor() as cur:
             # Declared upstream deps (from edges)
             cur.execute("""
-                SELECT DISTINCT sp.node_id, n.name, n.type
+                SELECT DISTINCT sp.node_id, n.name, n.node_type
                 FROM meta.edge e
                 JOIN meta.port tp ON tp.port_id = e.target_port_id
                 JOIN meta.port sp ON sp.port_id = e.source_port_id
@@ -2836,7 +2836,7 @@ async def dependency_audit(node_id: str):
 
             # Declared downstream deps
             cur.execute("""
-                SELECT DISTINCT tp.node_id, n.name, n.type
+                SELECT DISTINCT tp.node_id, n.name, n.node_type
                 FROM meta.edge e
                 JOIN meta.port sp ON sp.port_id = e.source_port_id
                 JOIN meta.port tp ON tp.port_id = e.target_port_id
