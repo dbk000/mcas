@@ -242,8 +242,23 @@ function ConnectionIndicator({ collapsed }) {
   )
 }
 
+const PIPELINE_SUBSYSTEMS = [
+  { name: 'ingestion', color: '#3b82f6' },
+  { name: 'feature', color: '#8b5cf6' },
+  { name: 'signal', color: '#f59e0b' },
+  { name: 'filtering', color: '#ef4444' },
+  { name: 'strategy', color: '#10b981' },
+  { name: 'parameter', color: '#6366f1' },
+  { name: 'backtest', color: '#ec4899' },
+  { name: 'metrics', color: '#14b8a6' },
+  { name: 'risk', color: '#f97316' },
+  { name: 'execution', color: '#22c55e' },
+]
+
 function Header() {
   const { connectionStatus, isConnected } = useApi()
+  const location = useLocation()
+  const isPipeline = location.pathname === '/pipeline'
 
   return (
     <header className="h-14 bg-terminal-800/50 border-b border-terminal-600 flex items-center justify-between px-6">
@@ -264,6 +279,18 @@ function Header() {
           </div>
         )}
       </div>
+
+      {/* Pipeline subsystem legend — shown when on Pipeline page */}
+      {isPipeline && (
+        <div className="flex flex-wrap gap-x-2.5 gap-y-0.5 text-[10px]">
+          {PIPELINE_SUBSYSTEMS.map(s => (
+            <div key={s.name} className="flex items-center gap-1">
+              <div className="w-1.5 h-1.5 rounded-sm flex-shrink-0" style={{ backgroundColor: s.color }} />
+              <span className="text-terminal-500 capitalize">{s.name}</span>
+            </div>
+          ))}
+        </div>
+      )}
 
       <div className="flex items-center gap-3">
         {/* Quick run scan button */}

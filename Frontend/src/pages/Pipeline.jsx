@@ -712,40 +712,7 @@ function PipelineInner() {
 
   return (
     <div className={`h-[calc(100vh-8rem)] flex ${tvMode ? 'pipeline-tv-mode' : ''} relative`} data-complexity-tier={complexityTier}>
-      {/* Subsystem Legend — overlaid at top of pipeline area, centered */}
-      <div className="absolute top-0 left-0 right-0 z-50 flex justify-center pointer-events-none" style={{ transform: 'translateY(-100%)' }}>
-        <div className="bg-terminal-800/90 backdrop-blur border border-terminal-600 rounded-b-lg px-2.5 py-1.5 text-xs pointer-events-auto" style={{ transform: 'translateY(100%)' }}>
-          <div className="flex flex-wrap gap-x-3 gap-y-1">
-            {SUBSYSTEM_ORDER.map(s => (
-              <div
-                key={s}
-                className="flex items-center gap-1 cursor-pointer hover:bg-terminal-700/50 rounded px-1"
-                onDoubleClick={() => toggleGroupCollapse(s)}
-                title="Double-click to collapse/expand"
-              >
-                <div
-                  className="w-2 h-2 rounded-sm flex-shrink-0"
-                  style={{
-                    backgroundColor: SUBSYSTEM_COLORS[s],
-                    opacity: collapsedGroups.has(s) ? 0.4 : 1,
-                  }}
-                />
-                <span className={`capitalize ${collapsedGroups.has(s) ? 'text-terminal-600 line-through' : 'text-terminal-500'}`}>
-                  {s}
-                </span>
-              </div>
-            ))}
-            {collapsedGroups.size > 0 && (
-              <button
-                onClick={() => setCollapsedGroups(new Set())}
-                className="text-terminal-600 hover:text-terminal-300 ml-1"
-              >
-                reset
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
+      {/* Subsystem legend moved to Layout Header — only collapse controls remain here */}
 
       {/* React Flow Canvas */}
       <div className={`flex-1 relative transition-all duration-300 ${panelOpen ? 'mr-[400px]' : ''}`}>
