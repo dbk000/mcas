@@ -42,11 +42,11 @@ export const PIPELINE_FEATURES = {
   tieredConfirmation: true,     // 3.6: Tiered confirmation gates
 
   // Wave 4: Advanced Interaction
-  lineageDepthSlider: false,    // 4.1: Lineage depth slider
-  searchFilter: false,          // 4.2: Search/filter over graph nodes
-  focusMode: false,             // 4.3: Focus mode with breadcrumb
-  splitPanelSidebar: false,     // 4.4: Split panel sidebar
-  compositionDraftUI: false,    // 4.9: Composition draft lifecycle
+  lineageDepthSlider: true,     // 4.1: Lineage depth slider
+  searchFilter: true,           // 4.2: Search/filter over graph nodes
+  focusMode: true,              // 4.3: Focus mode with breadcrumb
+  splitPanelSidebar: true,      // 4.4: Split panel sidebar
+  compositionDraftUI: true,     // 4.9: Composition draft lifecycle
 
   // Wave 5: Interoperability
   openLineageAdapter: false,    // 5.1: OpenLineage event adapter

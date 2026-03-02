@@ -2204,3 +2204,283 @@ def propagate_staleness(node_id: str, version_id: str):
         "downstream_nodes": downstream_nodes,
         "affected_count": affected,
     }, t0)
+
+
+# -------------------------------------------------------
+# Wave 4.7: Sync waves for push_to_live — DAG-ordered deploy
+# -------------------------------------------------------
+@router.post("/composition/{composition_id}/sync-waves")
+async def compute_sync_waves(composition_id: str):
+    """Compute deployment order for a composition based on DAG topology.
+    Returns waves: each wave contains nodes whose upstream deps are all in prior waves."""
+    t0 = time.time()
+    with _get_conn() as conn:
+        with conn.cursor() as cur:
+            # Get composition's node_versions
+            cur.execute("""
+                SELECT cv.node_id, cv.version_id
+                FROM meta.composition_version cv
+                WHERE cv.composition_id = %s
+            """, (composition_id,))
+            comp_nodes = {str(r[0]): str(r[1]) for r in cur.fetchall()}
+            if not comp_nodes:
+                raise HTTPException(status_code=404, detail="Composition not found or has no versions")
+
+            # Build adjacency for comp nodes only (edges where both src and tgt in composition)
+            cur.execute("""
+                SELECT DISTINCT sp.node_id AS src, tp.node_id AS tgt
+                FROM meta.edge e
+                JOIN meta.port sp ON sp.port_id = e.source_port_id
+                JOIN meta.port tp ON tp.port_id = e.target_port_id
+                WHERE sp.node_id = ANY(%s) AND tp.node_id = ANY(%s)
+            """, (list(comp_nodes.keys()), list(comp_nodes.keys())))
+            edges = cur.fetchall()
+
+            # Topological sort via Kahn's algorithm
+            in_degree = {nid: 0 for nid in comp_nodes}
+            downstream = {nid: [] for nid in comp_nodes}
+            for src, tgt in edges:
+                src_s, tgt_s = str(src), str(tgt)
+                if src_s in comp_nodes and tgt_s in comp_nodes:
+                    in_degree[tgt_s] = in_degree.get(tgt_s, 0) + 1
+                    downstream[src_s].append(tgt_s)
+
+            waves = []
+            remaining = dict(in_degree)
+            while remaining:
+                # Current wave: all nodes with in_degree 0
+                wave = [nid for nid, deg in remaining.items() if deg == 0]
+                if not wave:
+                    # Cycle detected — dump remaining as final wave
+                    wave = list(remaining.keys())
+                    waves.append(wave)
+                    break
+                waves.append(wave)
+                for nid in wave:
+                    del remaining[nid]
+                    for tgt in downstream.get(nid, []):
+                        if tgt in remaining:
+                            remaining[tgt] -= 1
+
+            # Fetch node names for readability
+            node_ids_flat = list(comp_nodes.keys())
+            cur.execute("""
+                SELECT node_id, name, type FROM meta.node WHERE node_id = ANY(%s)
+            """, (node_ids_flat,))
+            node_info = {str(r[0]): {"name": r[1], "type": r[2]} for r in cur.fetchall()}
+
+    wave_data = []
+    for i, wave in enumerate(waves):
+        wave_data.append({
+            "wave": i + 1,
+            "nodes": [{
+                "node_id": nid,
+                "version_id": comp_nodes[nid],
+                "name": node_info.get(nid, {}).get("name", "?"),
+                "type": node_info.get(nid, {}).get("type", "?"),
+            } for nid in wave]
+        })
+
+    return envelope({
+        "composition_id": composition_id,
+        "total_waves": len(waves),
+        "total_nodes": len(comp_nodes),
+        "waves": wave_data,
+    }, t0)
+
+
+# -------------------------------------------------------
+# Wave 4.8: Event search with inverse filters
+# -------------------------------------------------------
+@router.get("/events/search")
+async def search_events(
+    q: Optional[str] = Query(None, description="Text search in event details"),
+    event_type: Optional[str] = Query(None, description="Filter by event type (comma-separated)"),
+    exclude_type: Optional[str] = Query(None, description="Exclude event types (comma-separated, inverse filter)"),
+    node_id: Optional[str] = Query(None, description="Filter by node"),
+    actor: Optional[str] = Query(None, description="Filter by actor"),
+    after: Optional[str] = Query(None, description="Events after this ISO timestamp"),
+    before: Optional[str] = Query(None, description="Events before this ISO timestamp"),
+    limit: int = Query(50, ge=1, le=500),
+    offset: int = Query(0, ge=0),
+):
+    """Search version_events with text search and inverse filters."""
+    t0 = time.time()
+    conditions = []
+    params = []
+
+    if q:
+        conditions.append("(ve.event_detail::text ILIKE %s OR ve.event_type ILIKE %s)")
+        params.extend([f"%{q}%", f"%{q}%"])
+
+    if event_type:
+        types = [t.strip() for t in event_type.split(",") if t.strip()]
+        conditions.append("ve.event_type = ANY(%s)")
+        params.append(types)
+
+    if exclude_type:
+        exc_types = [t.strip() for t in exclude_type.split(",") if t.strip()]
+        conditions.append("NOT (ve.event_type = ANY(%s))")
+        params.append(exc_types)
+
+    if node_id:
+        conditions.append("nv.node_id = %s")
+        params.append(node_id)
+
+    if actor:
+        conditions.append("ve.event_detail->>'actor' ILIKE %s")
+        params.append(f"%{actor}%")
+
+    if after:
+        conditions.append("ve.created_at >= %s")
+        params.append(after)
+
+    if before:
+        conditions.append("ve.created_at <= %s")
+        params.append(before)
+
+    where = " AND ".join(conditions) if conditions else "TRUE"
+
+    with _get_conn() as conn:
+        with conn.cursor() as cur:
+            # Count total matching
+            cur.execute(f"""
+                SELECT COUNT(*)
+                FROM meta.version_event ve
+                JOIN meta.node_version nv ON nv.version_id = ve.version_id
+                WHERE {where}
+            """, params)
+            total = cur.fetchone()[0]
+
+            # Fetch page
+            cur.execute(f"""
+                SELECT ve.event_id, ve.version_id, nv.node_id, ve.event_type,
+                       ve.caused_by_event_id, ve.event_detail, ve.created_at,
+                       n.name AS node_name
+                FROM meta.version_event ve
+                JOIN meta.node_version nv ON nv.version_id = ve.version_id
+                JOIN meta.node n ON n.node_id = nv.node_id
+                WHERE {where}
+                ORDER BY ve.created_at DESC
+                LIMIT %s OFFSET %s
+            """, params + [limit, offset])
+            cols = [d[0] for d in cur.description]
+            rows = [dict(zip(cols, r)) for r in cur.fetchall()]
+
+    # Serialize
+    for r in rows:
+        for k in ("event_id", "version_id", "node_id", "caused_by_event_id"):
+            if r.get(k) is not None:
+                r[k] = str(r[k])
+        if r.get("created_at"):
+            r["created_at"] = r["created_at"].isoformat()
+
+    return envelope({
+        "events": rows,
+        "total": total,
+        "limit": limit,
+        "offset": offset,
+    }, t0)
+
+
+# -------------------------------------------------------
+# Wave 4.9: Composition draft lifecycle
+# -------------------------------------------------------
+class CompositionDraftCreate(BaseModel):
+    name: str
+    description: Optional[str] = None
+    node_versions: dict  # {node_id: version_id}
+
+
+@router.post("/composition/draft")
+async def create_composition_draft(body: CompositionDraftCreate):
+    """Create a new composition from a draft (node-version map)."""
+    t0 = time.time()
+    if not body.node_versions:
+        raise HTTPException(status_code=400, detail="node_versions cannot be empty")
+
+    config_hash = compute_config_hash(body.node_versions)
+
+    with _get_conn() as conn:
+        with conn.cursor() as cur:
+            # Check for duplicate config_hash
+            cur.execute("""
+                SELECT composition_id, name FROM meta.composition WHERE config_hash = %s
+            """, (config_hash,))
+            existing = cur.fetchone()
+            if existing:
+                return envelope({
+                    "action": "duplicate",
+                    "existing_composition_id": str(existing[0]),
+                    "existing_name": existing[1],
+                    "config_hash": config_hash,
+                }, t0)
+
+            # Create composition
+            cur.execute("""
+                INSERT INTO meta.composition (name, description, config_hash, status)
+                VALUES (%s, %s, %s, 'draft')
+                RETURNING composition_id
+            """, (body.name, body.description, config_hash))
+            comp_id = str(cur.fetchone()[0])
+
+            # Insert composition_version rows
+            for node_id, version_id in body.node_versions.items():
+                cur.execute("""
+                    INSERT INTO meta.composition_version (composition_id, node_id, version_id)
+                    VALUES (%s, %s, %s)
+                """, (comp_id, node_id, version_id))
+
+        conn.commit()
+
+    return envelope({
+        "action": "created",
+        "composition_id": comp_id,
+        "config_hash": config_hash,
+        "node_count": len(body.node_versions),
+    }, t0)
+
+
+class CompositionDraftUpdate(BaseModel):
+    node_versions: dict  # {node_id: version_id}
+
+
+@router.put("/composition/{composition_id}/draft")
+async def update_composition_draft(composition_id: str, body: CompositionDraftUpdate):
+    """Update a draft composition's node-version mapping."""
+    t0 = time.time()
+    with _get_conn() as conn:
+        with conn.cursor() as cur:
+            # Verify it's a draft
+            cur.execute("""
+                SELECT status FROM meta.composition WHERE composition_id = %s
+            """, (composition_id,))
+            row = cur.fetchone()
+            if not row:
+                raise HTTPException(status_code=404, detail="Composition not found")
+            if row[0] != 'draft':
+                raise HTTPException(status_code=400, detail=f"Cannot update non-draft composition (status: {row[0]})")
+
+            # Replace composition_version rows
+            cur.execute("DELETE FROM meta.composition_version WHERE composition_id = %s", (composition_id,))
+            for node_id, version_id in body.node_versions.items():
+                cur.execute("""
+                    INSERT INTO meta.composition_version (composition_id, node_id, version_id)
+                    VALUES (%s, %s, %s)
+                """, (composition_id, node_id, version_id))
+
+            # Update config_hash
+            new_hash = compute_config_hash(body.node_versions)
+            cur.execute("""
+                UPDATE meta.composition SET config_hash = %s, updated_at = NOW()
+                WHERE composition_id = %s
+            """, (new_hash, composition_id))
+
+        conn.commit()
+
+    return envelope({
+        "action": "updated",
+        "composition_id": composition_id,
+        "config_hash": new_hash,
+        "node_count": len(body.node_versions),
+    }, t0)

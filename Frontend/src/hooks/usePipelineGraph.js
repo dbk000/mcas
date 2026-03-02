@@ -24,6 +24,11 @@ const initialState = {
   sliceFrom: null,           // nodeId — first endpoint
   sliceTo: null,             // nodeId — second endpoint
   sliceNodeIds: null,        // Set<nodeId> — computed path between from/to
+  // Wave 4.1: Lineage depth slider — null = unlimited
+  lineageDepth: null,
+  // Wave 4.3: Focus mode — off | node | subsystem
+  focusMode: 'off',          // 'off' | 'node' | 'subsystem'
+  focusTarget: null,         // nodeId (when mode=node) or subsystem string (when mode=subsystem)
 }
 
 function graphReducer(state, action) {
@@ -123,6 +128,21 @@ function graphReducer(state, action) {
         manualHighlight: null,
       }
 
+    // Wave 4.1: Lineage depth slider
+    case 'SET_LINEAGE_DEPTH':
+      return { ...state, lineageDepth: action.depth }
+
+    // Wave 4.3: Focus mode
+    case 'SET_FOCUS_MODE':
+      return {
+        ...state,
+        focusMode: action.mode,    // 'node' | 'subsystem'
+        focusTarget: action.target, // nodeId or subsystem string
+      }
+
+    case 'CLEAR_FOCUS_MODE':
+      return { ...state, focusMode: 'off', focusTarget: null }
+
     default:
       return state
   }
@@ -156,32 +176,33 @@ export default function usePipelineGraph(topologyData) {
     return { upstreamMap: up, downstreamMap: down, nodeMap: nm }
   }, [topologyData])
 
-  // BFS traversal helper
-  const bfs = useCallback((startId, adjacencyMap) => {
+  // BFS traversal helper (supports optional depth limit for Wave 4.1)
+  const bfs = useCallback((startId, adjacencyMap, maxDepth = null) => {
     const visited = new Set()
-    const queue = [startId]
+    const queue = [[startId, 0]]
     while (queue.length > 0) {
-      const current = queue.shift()
+      const [current, depth] = queue.shift()
       if (visited.has(current)) continue
       visited.add(current)
+      if (maxDepth != null && depth >= maxDepth) continue
       const neighbors = adjacencyMap[current]
       if (neighbors) {
         for (const n of neighbors) {
-          if (!visited.has(n)) queue.push(n)
+          if (!visited.has(n)) queue.push([n, depth + 1])
         }
       }
     }
     return visited
   }, [])
 
-  const getUpstream = useCallback((nodeId) => {
-    const result = bfs(nodeId, upstreamMap)
+  const getUpstream = useCallback((nodeId, depth = null) => {
+    const result = bfs(nodeId, upstreamMap, depth)
     result.delete(nodeId) // exclude self
     return result
   }, [bfs, upstreamMap])
 
-  const getDownstream = useCallback((nodeId) => {
-    const result = bfs(nodeId, downstreamMap)
+  const getDownstream = useCallback((nodeId, depth = null) => {
+    const result = bfs(nodeId, downstreamMap, depth)
     result.delete(nodeId) // exclude self
     return result
   }, [bfs, downstreamMap])
@@ -196,15 +217,40 @@ export default function usePipelineGraph(topologyData) {
   }, [])
 
   // Compute highlighted node IDs (selected + upstream + downstream)
+  // Wave 4.1: Respects lineageDepth when set
+  // Wave 4.3: Focus mode overrides selection highlighting
   const highlightedNodeIds = useMemo(() => {
     if (state.manualHighlight) return state.manualHighlight
 
+    // Focus mode: highlight all connected nodes in the focus context
+    if (state.focusMode === 'node' && state.focusTarget) {
+      const up = getUpstream(state.focusTarget)
+      const down = getDownstream(state.focusTarget)
+      return new Set([state.focusTarget, ...up, ...down])
+    }
+    if (state.focusMode === 'subsystem' && state.focusTarget) {
+      const subsystemNodes = new Set()
+      for (const [id, node] of Object.entries(nodeMap)) {
+        if (node.subsystem === state.focusTarget) subsystemNodes.add(id)
+      }
+      // Also include immediate upstream/downstream of subsystem nodes
+      for (const nid of [...subsystemNodes]) {
+        const up = getUpstream(nid, 1)
+        const down = getDownstream(nid, 1)
+        for (const id of up) subsystemNodes.add(id)
+        for (const id of down) subsystemNodes.add(id)
+      }
+      return subsystemNodes
+    }
+
     if (!state.selectedNodeId) return new Set()
-    const up = getUpstream(state.selectedNodeId)
-    const down = getDownstream(state.selectedNodeId)
+    const depth = state.lineageDepth
+    const up = getUpstream(state.selectedNodeId, depth)
+    const down = getDownstream(state.selectedNodeId, depth)
     const all = new Set([state.selectedNodeId, ...up, ...down])
     return all
-  }, [state.selectedNodeId, getUpstream, getDownstream, state.manualHighlight])
+  }, [state.selectedNodeId, getUpstream, getDownstream, state.manualHighlight,
+      state.lineageDepth, state.focusMode, state.focusTarget, nodeMap])
 
   // Compute highlighted edge IDs
   const highlightedEdgeIds = useMemo(() => {
@@ -389,6 +435,55 @@ export default function usePipelineGraph(topologyData) {
     dispatch({ type: 'CLEAR_SLICE' })
   }, [])
 
+  // Wave 4.1: Lineage depth slider
+  const setLineageDepth = useCallback((depth) => {
+    dispatch({ type: 'SET_LINEAGE_DEPTH', depth })
+  }, [])
+
+  // Wave 4.3: Focus mode
+  const setFocusMode = useCallback((mode, target) => {
+    dispatch({ type: 'SET_FOCUS_MODE', mode, target })
+  }, [])
+
+  const clearFocusMode = useCallback(() => {
+    dispatch({ type: 'CLEAR_FOCUS_MODE' })
+  }, [])
+
+  // Wave 4.3: Focus breadcrumb trail
+  const focusBreadcrumb = useMemo(() => {
+    if (state.focusMode === 'off') return null
+    const crumbs = [{ label: 'Full Graph', action: 'clear' }]
+    if (state.focusMode === 'subsystem') {
+      crumbs.push({ label: `Subsystem: ${state.focusTarget}`, action: null })
+    }
+    if (state.focusMode === 'node') {
+      const node = nodeMap[state.focusTarget]
+      if (node?.subsystem) {
+        crumbs.push({ label: `Subsystem: ${node.subsystem}`, action: 'subsystem' })
+      }
+      crumbs.push({ label: node?.name || state.focusTarget, action: null })
+    }
+    return crumbs
+  }, [state.focusMode, state.focusTarget, nodeMap])
+
+  // Wave 4.6: Version data cache (Map<nodeId, { versions, fetchedAt }>)
+  const versionCacheRef = useRef(new Map())
+
+  const getCachedVersions = useCallback((nodeId) => {
+    const entry = versionCacheRef.current.get(nodeId)
+    if (!entry) return null
+    // 5-minute TTL
+    if (Date.now() - entry.fetchedAt > 5 * 60 * 1000) {
+      versionCacheRef.current.delete(nodeId)
+      return null
+    }
+    return entry.versions
+  }, [])
+
+  const setCachedVersions = useCallback((nodeId, versions) => {
+    versionCacheRef.current.set(nodeId, { versions, fetchedAt: Date.now() })
+  }, [])
+
   // Navigate to node (select + scroll into view handled by caller)
   const navigateToNode = useCallback((nodeId) => {
     selectNode(nodeId)
@@ -430,6 +525,18 @@ export default function usePipelineGraph(topologyData) {
     startSlice,
     completeSlice,
     clearSlice,
+    // Wave 4.1: Lineage depth
+    lineageDepth: state.lineageDepth,
+    setLineageDepth,
+    // Wave 4.3: Focus mode
+    focusMode: state.focusMode,
+    focusTarget: state.focusTarget,
+    setFocusMode,
+    clearFocusMode,
+    focusBreadcrumb,
+    // Wave 4.6: Version cache
+    getCachedVersions,
+    setCachedVersions,
     // Data
     nodeMap,
     upstreamMap,

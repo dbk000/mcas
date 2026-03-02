@@ -35,10 +35,24 @@ export default function NodeDetailPanel({ node, onClose, graph }) {
 
   const nodeId = node.id || node.node_id
 
-  // Fetch versions when node changes
+  // Fetch versions when node changes (Wave 4.6: check cache first)
   useEffect(() => {
     if (!nodeId) return
     let cancelled = false
+
+    // Check version cache
+    const cached = graph?.getCachedVersions?.(nodeId)
+    if (cached) {
+      setVersions(cached)
+      if (cached.length > 0) setSelectedVersionForBio(cached[0]?.version_id)
+      setLoadingVersions(false)
+      setActiveTab('versions')
+      setDiffData(null)
+      setDiffVersionA(null)
+      setDiffVersionB(null)
+      return
+    }
+
     async function fetchVersions() {
       setLoadingVersions(true)
       try {
@@ -46,6 +60,8 @@ export default function NodeDetailPanel({ node, onClose, graph }) {
         const data = resp?.versions || resp?.data?.versions || []
         if (!cancelled) {
           setVersions(data)
+          // Store in cache
+          graph?.setCachedVersions?.(nodeId, data)
           if (data.length > 0) {
             setSelectedVersionForBio(data[0]?.version_id)
           }
@@ -62,7 +78,7 @@ export default function NodeDetailPanel({ node, onClose, graph }) {
     setDiffVersionA(null)
     setDiffVersionB(null)
     return () => { cancelled = true }
-  }, [nodeId, get])
+  }, [nodeId, get, graph])
 
   // Init edit params from current version
   useEffect(() => {

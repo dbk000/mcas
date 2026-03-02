@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 // Panel removed — toolbar now positioned absolutely in Pipeline canvas container
-import { Beaker, Layers, BookOpen, X, ArrowRight, Play, ShieldCheck, ShieldAlert, ShieldX } from 'lucide-react'
+import { Beaker, Layers, BookOpen, X, ArrowRight, Play, ShieldCheck, ShieldAlert, ShieldX, PlusCircle } from 'lucide-react'
 import { useApi } from '../../context/ApiContext'
+import { PIPELINE_FEATURES } from '../../config/pipelineFeatures'
 
 // Significance badge component
 function SignificanceBadge({ level, small = false }) {
@@ -171,6 +172,16 @@ export default function PipelineToolbar({ topologyData, graph, onExperimentOverl
               <BookOpen className="w-3.5 h-3.5" />
               Corrections
             </button>
+            {PIPELINE_FEATURES.compositionDraftUI && (
+              <button
+                onClick={() => setMode('draft')}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-terminal-300 hover:text-terminal-100 hover:bg-terminal-700 rounded transition-colors"
+                title="Create new composition from selected versions"
+              >
+                <PlusCircle className="w-3.5 h-3.5" />
+                New Comp
+              </button>
+            )}
           </div>
         )}
 
@@ -425,7 +436,135 @@ export default function PipelineToolbar({ topologyData, graph, onExperimentOverl
             </div>
           </div>
         )}
+
+        {/* Composition draft mode (Wave 4.9) */}
+        {mode === 'draft' && (
+          <CompositionDraftPanel
+            graph={graph}
+            topologyData={topologyData}
+            onClose={clearMode}
+          />
+        )}
       </div>
+    </div>
+  )
+}
+
+// Wave 4.9: Composition draft lifecycle panel
+function CompositionDraftPanel({ graph, topologyData, onClose }) {
+  const { post } = useApi()
+  const [draftName, setDraftName] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [result, setResult] = useState(null)
+
+  const draftEntries = [...graph.compositionDraft.entries()]
+  const nodeMap = graph.nodeMap || {}
+
+  const handleSave = async () => {
+    if (!draftName.trim() || draftEntries.length === 0) return
+    setSaving(true)
+    try {
+      const nodeVersions = {}
+      for (const [nodeId, versionId] of draftEntries) {
+        nodeVersions[nodeId] = versionId
+      }
+      const resp = await post('/v1/meta/composition/draft', {
+        name: draftName,
+        node_versions: nodeVersions,
+      })
+      setResult(resp?.data || resp)
+    } catch (err) {
+      setResult({ error: err.message })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="bg-terminal-800/90 backdrop-blur border border-terminal-600 rounded-lg p-2 max-w-md">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-xs font-medium text-amber-400">
+          New Composition Draft
+          {draftEntries.length > 0 && (
+            <span className="ml-1 text-terminal-500">({draftEntries.length} nodes)</span>
+          )}
+        </span>
+        <button onClick={onClose} className="text-terminal-500 hover:text-terminal-100">
+          <X className="w-3.5 h-3.5" />
+        </button>
+      </div>
+
+      {result ? (
+        <div className="space-y-1.5">
+          {result.error ? (
+            <div className="text-[10px] text-red-400">{result.error}</div>
+          ) : result.action === 'duplicate' ? (
+            <div className="text-[10px] text-amber-400">
+              Duplicate: matches existing composition "{result.existing_name}"
+            </div>
+          ) : (
+            <div className="text-[10px] text-green-400">
+              Created composition with {result.node_count} nodes
+            </div>
+          )}
+          <button
+            onClick={() => { setResult(null); graph.clearDraft() }}
+            className="text-[10px] text-amber-400 hover:text-amber-300"
+          >
+            Start new draft
+          </button>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          <div className="text-[10px] text-terminal-400">
+            Click nodes on the canvas to add them to the draft.
+            Each node will use its current deployed version.
+          </div>
+
+          {draftEntries.length > 0 && (
+            <div className="max-h-32 overflow-y-auto space-y-0.5">
+              {draftEntries.map(([nodeId, versionId]) => {
+                const node = nodeMap[nodeId]
+                return (
+                  <div key={nodeId} className="flex items-center justify-between text-[10px] px-1.5 py-0.5 bg-terminal-900 rounded">
+                    <span className="text-terminal-200 truncate">{node?.name || nodeId.slice(0, 8)}</span>
+                    <button
+                      onClick={() => graph.setVersionForNode(nodeId, null)}
+                      className="text-terminal-500 hover:text-red-400 ml-1"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+
+          <input
+            type="text"
+            value={draftName}
+            onChange={e => setDraftName(e.target.value)}
+            placeholder="Composition name..."
+            className="w-full text-[10px] bg-terminal-900 border border-terminal-600 rounded px-2 py-1 text-terminal-200 placeholder-terminal-600 focus:outline-none focus:border-amber-500/50"
+          />
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleSave}
+              disabled={saving || !draftName.trim() || draftEntries.length === 0}
+              className="text-[10px] px-2 py-1 bg-green-600/20 text-green-400 rounded hover:bg-green-600/30 disabled:opacity-30"
+            >
+              {saving ? 'Saving...' : 'Save Draft'}
+            </button>
+            <button
+              onClick={() => graph.clearDraft()}
+              className="text-[10px] text-terminal-500 hover:text-terminal-300"
+            >
+              Clear all
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

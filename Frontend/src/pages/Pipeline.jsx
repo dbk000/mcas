@@ -17,8 +17,10 @@ import ChatPanel from '../components/pipeline/ChatPanel'
 import PipelineToolbar from '../components/pipeline/PipelineToolbar'
 import PipelineErrorBoundary from '../components/pipeline/PipelineErrorBoundary'
 import RecentActivity from '../components/pipeline/RecentActivity'
+import PipelineSidebar from '../components/pipeline/PipelineSidebar'
 import usePipelineGraph from '../hooks/usePipelineGraph'
 import usePipelineUrlState from '../hooks/usePipelineUrlState'
+import { PIPELINE_FEATURES } from '../config/pipelineFeatures'
 
 // Subsystem colors
 const SUBSYSTEM_COLORS = {
@@ -112,6 +114,11 @@ function PipelineInner() {
   const [chatOpen, setChatOpen] = useState(false)
   const [tvMode, setTvMode] = useState(false)
   const [recentActivityOpen, setRecentActivityOpen] = useState(false)
+  // Wave 4.4: sidebar toggle
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  // Wave 4.2: search/filter
+  const [searchQuery, setSearchQuery] = useState('')
+  const searchDebounceRef = useRef(null)
   // Wave 2.12: configurable facets — which metrics show on nodes
   const [facets, setFacets] = useState({
     pf: true, winRate: true, trades: true, status: true,
@@ -124,6 +131,31 @@ function PipelineInner() {
 
   // URL state sync (deep linking + browser back/forward)
   usePipelineUrlState(graph, topologyData, chatOpen, setChatOpen)
+
+  // Wave 4.2: Search/filter — debounced 250ms, highlights matching nodes
+  const handleSearchChange = useCallback((query) => {
+    setSearchQuery(query)
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current)
+    if (!query.trim()) {
+      graph.clearSelection()
+      return
+    }
+    searchDebounceRef.current = setTimeout(() => {
+      if (!topologyData?.nodes) return
+      const q = query.toLowerCase()
+      const matchIds = topologyData.nodes
+        .filter(n =>
+          (n.name || '').toLowerCase().includes(q) ||
+          (n.type || '').toLowerCase().includes(q) ||
+          (n.subsystem || '').toLowerCase().includes(q) ||
+          (n.description || '').toLowerCase().includes(q)
+        )
+        .map(n => n.id)
+      if (matchIds.length > 0) {
+        graph.highlightNodes(matchIds)
+      }
+    }, 250)
+  }, [topologyData, graph])
 
   // Derive selected node from graph state
   const selectedNode = useMemo(() => {
@@ -197,11 +229,18 @@ function PipelineInner() {
 
       switch (e.key) {
         case 'Escape':
-          // Universal dismiss: slice → overlay → recent → chat → selection
-          if (graph.sliceFrom) {
+          // Universal dismiss: search → slice → focus → overlay → sidebar → recent → chat → selection
+          if (searchQuery) {
+            setSearchQuery('')
+            graph.clearSelection()
+          } else if (graph.sliceFrom) {
             graph.clearSlice()
+          } else if (graph.focusMode !== 'off') {
+            graph.clearFocusMode()
           } else if (graph.activeOverlay) {
             graph.clearOverlay()
+          } else if (sidebarOpen) {
+            setSidebarOpen(false)
           } else if (recentActivityOpen) {
             setRecentActivityOpen(false)
           } else if (chatOpen) {
@@ -247,6 +286,27 @@ function PipelineInner() {
           break
         }
 
+        // Wave 4.2: '/' to focus search
+        case '/':
+          if (PIPELINE_FEATURES.searchFilter) {
+            e.preventDefault()
+            // Focus the search input if it exists
+            const searchInput = document.querySelector('[data-pipeline-search]')
+            if (searchInput) searchInput.focus()
+          }
+          break
+
+        // Wave 4.3: 'f' to toggle focus on selected node
+        case 'f':
+          if (PIPELINE_FEATURES.focusMode && graph.selectedNodeId) {
+            if (graph.focusMode !== 'off') {
+              graph.clearFocusMode()
+            } else {
+              graph.setFocusMode('node', graph.selectedNodeId)
+            }
+          }
+          break
+
         default:
           break
       }
@@ -254,7 +314,7 @@ function PipelineInner() {
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [graph, chatOpen, setChatOpen, recentActivityOpen, nodes])
+  }, [graph, chatOpen, setChatOpen, recentActivityOpen, nodes, searchQuery, sidebarOpen])
 
   // Fetch topology
   useEffect(() => {
@@ -647,7 +707,16 @@ function PipelineInner() {
       }
       return
     }
+    // Clear search on node click
+    if (searchQuery) setSearchQuery('')
     graph.selectNode(node.id)
+  }, [graph, searchQuery])
+
+  // Wave 4.3: Double-click for focus mode
+  const onNodeDoubleClick = useCallback((event, node) => {
+    if (PIPELINE_FEATURES.focusMode) {
+      graph.setFocusMode('node', node.id)
+    }
   }, [graph])
 
   const onPaneClick = useCallback(() => {
@@ -712,16 +781,26 @@ function PipelineInner() {
 
   return (
     <div className={`h-[calc(100vh-3.5rem)] flex ${tvMode ? 'pipeline-tv-mode' : ''} relative`} data-complexity-tier={complexityTier}>
-      {/* Subsystem legend moved to Layout Header — only collapse controls remain here */}
+      {/* Wave 4.4: Sidebar */}
+      {PIPELINE_FEATURES.splitPanelSidebar && sidebarOpen && (
+        <PipelineErrorBoundary name="PipelineSidebar">
+          <PipelineSidebar
+            topologyData={topologyData}
+            graph={graph}
+            onClose={() => setSidebarOpen(false)}
+          />
+        </PipelineErrorBoundary>
+      )}
 
       {/* React Flow Canvas */}
-      <div className={`flex-1 relative transition-all duration-300 ${panelOpen ? 'mr-[400px]' : ''}`}>
+      <div className={`flex-1 relative transition-all duration-300 ${panelOpen ? 'mr-[400px]' : ''} ${sidebarOpen ? 'ml-[260px]' : ''}`}>
         <ReactFlow
           nodes={nodes}
           edges={edges}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onNodeClick={onNodeClick}
+          onNodeDoubleClick={onNodeDoubleClick}
           onPaneClick={onPaneClick}
           onViewportChange={onViewportChange}
           nodeTypes={nodeTypes}
@@ -745,9 +824,98 @@ function PipelineInner() {
             position="bottom-right"
           />
 
+          {/* Wave 4.2: Search bar (top-left floating) */}
+          {PIPELINE_FEATURES.searchFilter && (
+            <Panel position="top-left">
+              <div className="bg-terminal-800/90 backdrop-blur border border-terminal-600 rounded-lg flex items-center gap-1.5 px-2 py-1">
+                <span className="text-terminal-500 text-xs">🔍</span>
+                <input
+                  data-pipeline-search
+                  type="text"
+                  value={searchQuery}
+                  onChange={e => handleSearchChange(e.target.value)}
+                  placeholder="Search nodes... (press /)"
+                  className="w-40 text-[11px] bg-transparent text-terminal-200 placeholder-terminal-600 focus:outline-none"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => { setSearchQuery(''); graph.clearSelection() }}
+                    className="text-terminal-500 hover:text-terminal-300"
+                  >
+                    <span className="text-xs">✕</span>
+                  </button>
+                )}
+              </div>
+            </Panel>
+          )}
+
+          {/* Wave 4.3: Focus mode breadcrumb */}
+          {PIPELINE_FEATURES.focusMode && graph.focusBreadcrumb && (
+            <Panel position="top-left" style={{ top: 42 }}>
+              <div className="bg-terminal-800/90 backdrop-blur border border-terminal-600 rounded-lg px-2.5 py-1.5 flex items-center gap-1.5">
+                {graph.focusBreadcrumb.map((crumb, i) => (
+                  <span key={i} className="flex items-center gap-1.5">
+                    {i > 0 && <span className="text-terminal-600 text-[10px]">›</span>}
+                    {crumb.action ? (
+                      <button
+                        onClick={() => {
+                          if (crumb.action === 'clear') graph.clearFocusMode()
+                          else if (crumb.action === 'subsystem') {
+                            const node = graph.nodeMap[graph.focusTarget]
+                            if (node?.subsystem) graph.setFocusMode('subsystem', node.subsystem)
+                          }
+                        }}
+                        className="text-[10px] text-amber-400 hover:text-amber-300 underline"
+                      >
+                        {crumb.label}
+                      </button>
+                    ) : (
+                      <span className="text-[10px] text-terminal-300">{crumb.label}</span>
+                    )}
+                  </span>
+                ))}
+              </div>
+            </Panel>
+          )}
+
+          {/* Wave 4.1: Lineage depth slider (visible when node selected) */}
+          {PIPELINE_FEATURES.lineageDepthSlider && graph.selectedNodeId && (
+            <Panel position="bottom-left" style={{ bottom: 50 }}>
+              <div className="bg-terminal-800/90 backdrop-blur border border-terminal-600 rounded-lg px-3 py-2 flex items-center gap-2">
+                <span className="text-[10px] text-terminal-400 whitespace-nowrap">Depth:</span>
+                <input
+                  type="range"
+                  min="1"
+                  max="10"
+                  value={graph.lineageDepth || 10}
+                  onChange={e => {
+                    const val = parseInt(e.target.value)
+                    graph.setLineageDepth(val >= 10 ? null : val)
+                  }}
+                  className="w-20 h-1 accent-amber-400"
+                />
+                <span className="text-[10px] text-terminal-300 font-mono w-6 text-right">
+                  {graph.lineageDepth || '∞'}
+                </span>
+              </div>
+            </Panel>
+          )}
+
           {/* Chat toggle + TV mode + Fit View + Recent Activity */}
           <Panel position="top-right">
             <div className="flex gap-2">
+              {/* Wave 4.4: Sidebar toggle */}
+              {PIPELINE_FEATURES.splitPanelSidebar && (
+                <button
+                  onClick={() => setSidebarOpen(prev => !prev)}
+                  className={`bg-terminal-800/90 backdrop-blur border rounded-lg px-3 py-2 text-xs hover:text-terminal-100 hover:bg-terminal-700 transition-colors pipeline-touch-target flex items-center justify-center ${
+                    sidebarOpen ? 'border-amber-500 text-amber-400' : 'border-terminal-600 text-terminal-300'
+                  }`}
+                  title="Toggle node tree sidebar"
+                >
+                  Tree
+                </button>
+              )}
               <button
                 onClick={panelAwareFitView}
                 className="bg-terminal-800/90 backdrop-blur border border-terminal-600 rounded-lg px-3 py-2 text-xs text-terminal-300 hover:text-terminal-100 hover:bg-terminal-700 transition-colors pipeline-touch-target flex items-center justify-center"

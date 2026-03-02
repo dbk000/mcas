@@ -407,6 +407,25 @@ For destructive actions (deploying compositions), explain what will happen and a
       }, null, 2)}`
     }
 
+    // Wave 4.10: Include highlighted/focused node context
+    if (graph) {
+      const highlightedIds = graph.highlightedNodeIds
+      if (highlightedIds?.size > 0 && topologyData?.nodes) {
+        const highlightedNodes = topologyData.nodes
+          .filter(n => highlightedIds.has(n.id))
+          .map(n => ({ id: n.id, name: n.name, subsystem: n.subsystem, type: n.type }))
+        if (highlightedNodes.length > 0 && highlightedNodes.length <= 20) {
+          system += `\n\nCurrently highlighted nodes (${highlightedNodes.length}):\n${JSON.stringify(highlightedNodes, null, 2)}`
+        }
+      }
+      if (graph.focusMode !== 'off') {
+        system += `\n\nFocus mode: ${graph.focusMode} on "${graph.focusTarget}"`
+      }
+      if (graph.sliceNodeIds?.size > 0) {
+        system += `\n\nActive pipeline slice: ${graph.sliceNodeIds.size} nodes in sliced path`
+      }
+    }
+
     if (topologyData) {
       const nodeList = (topologyData.nodes || []).map(n => ({
         id: n.id, name: n.name, subsystem: n.subsystem, type: n.type,
