@@ -190,7 +190,7 @@ def import_experiments_from_commits(conn, commits, dry_run=False):
             """, (
                 f"genesis_{event_type}",
                 "commit",
-                commit["sha"],
+                str(uuid4()),
                 "genesis_import",
                 json.dumps({
                     "source": "pre_epoch_reconstruction",
@@ -209,7 +209,15 @@ def import_experiments_from_commits(conn, commits, dry_run=False):
 def main():
     dry_run = "--dry-run" in sys.argv
 
-    repo_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    # Resolve repo path — handle Docker (/scripts/genesis_import.py → /app or /srv/mcas)
+    # and host (/home/darren/Desktop/MCAS/Backend/scripts/genesis_import.py)
+    script_path = os.path.abspath(__file__)
+    if os.path.isdir("/app"):
+        # Inside Docker container — repo root is mounted at /app or we look for CLAUDE.md
+        repo_path = "/app" if os.path.exists("/app/CLAUDE.md") else os.path.dirname(os.path.dirname(script_path))
+    else:
+        # Host — go up from Backend/scripts/ to repo root
+        repo_path = os.path.dirname(os.path.dirname(os.path.dirname(script_path)))
     claude_md = os.path.join(repo_path, "CLAUDE.md")
 
     print(f"Genesis Import {'(DRY RUN)' if dry_run else ''}")
@@ -267,12 +275,15 @@ def main():
             cur.execute("""
                 INSERT INTO meta.introspection_event
                     (event_type, entity_type, entity_id, actor, payload)
-                VALUES ('genesis_complete', 'system', 'genesis', 'genesis_import', %s)
-            """, (json.dumps({
-                "corrections_imported": n_corrections,
-                "commit_events_imported": n_commits,
-                "timestamp": datetime.now(timezone.utc).isoformat(),
-            }),))
+                VALUES ('genesis_complete', 'system', %s, 'genesis_import', %s)
+            """, (
+                str(uuid4()),
+                json.dumps({
+                    "corrections_imported": n_corrections,
+                    "commit_events_imported": n_commits,
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                }),
+            ))
 
         conn.commit()
         print("\nGenesis import complete.")
