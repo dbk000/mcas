@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useRef } from 'react'
+import { useState, useCallback, useMemo, useRef, useEffect } from 'react'
 
 /**
  * usePipelineGraph — manages visual state, selection, path-tracing,
@@ -158,6 +158,13 @@ export default function usePipelineGraph(topologyData) {
 
   const clearDraft = useCallback(() => {
     setCompositionDraft(new Map())
+  }, [])
+
+  // Cleanup pressure wave timer on unmount
+  useEffect(() => {
+    return () => {
+      if (pressureWaveTimer.current) clearTimeout(pressureWaveTimer.current)
+    }
   }, [])
 
   // Pressure wave: staggered CSS pulse downstream

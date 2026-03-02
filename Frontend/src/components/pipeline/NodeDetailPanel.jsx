@@ -489,9 +489,21 @@ export default function NodeDetailPanel({ node, onClose, graph }) {
             {selectedVersionForBio && (
               <VersionEventTimeline
                 versionId={selectedVersionForBio}
-                onCausalClick={(eventId) => {
-                  // Could trigger causal arrow on canvas in future
-                  console.log('Causal click:', eventId)
+                onCausalClick={async (eventId) => {
+                  try {
+                    const resp = await get(`/v1/meta/event/${eventId}/causal_chain`)
+                    const chain = resp?.data || resp
+                    // Draw causal arrows from ancestors → descendants
+                    graph?.clearCausalArrows?.()
+                    const links = [...(chain.ancestors || []), ...(chain.descendants || [])]
+                    for (const link of links) {
+                      if (link.from_node_id && link.to_node_id) {
+                        graph?.showCausalArrow?.(link.from_node_id, link.to_node_id, link.event_type || '')
+                      }
+                    }
+                  } catch (err) {
+                    console.error('Causal chain fetch failed:', err)
+                  }
                 }}
               />
             )}
@@ -508,16 +520,29 @@ export default function NodeDetailPanel({ node, onClose, graph }) {
                   <label className="text-[10px] text-terminal-400 font-mono w-1/2 truncate" title={key}>
                     {key}
                   </label>
-                  <input
-                    type={typeof value === 'number' ? 'number' : 'text'}
-                    value={typeof value === 'object' ? JSON.stringify(value) : value}
-                    onChange={e => {
-                      const v = typeof value === 'number' ? parseFloat(e.target.value) || 0 : e.target.value
-                      setEditParams(prev => ({ ...prev, [key]: v }))
-                    }}
-                    step={typeof value === 'number' ? 0.01 : undefined}
-                    className="flex-1 text-[10px] bg-terminal-900 border border-terminal-700 rounded px-1.5 py-1 text-terminal-200 font-mono"
-                  />
+                  {typeof value === 'boolean' ? (
+                    <button
+                      onClick={() => setEditParams(prev => ({ ...prev, [key]: !value }))}
+                      className={`text-[10px] font-mono px-2 py-1 rounded border transition-colors ${
+                        value
+                          ? 'bg-green-500/20 text-green-400 border-green-500/30'
+                          : 'bg-terminal-900 text-terminal-500 border-terminal-700'
+                      }`}
+                    >
+                      {value ? 'true' : 'false'}
+                    </button>
+                  ) : (
+                    <input
+                      type={typeof value === 'number' ? 'number' : 'text'}
+                      value={typeof value === 'object' ? JSON.stringify(value) : value}
+                      onChange={e => {
+                        const v = typeof value === 'number' ? parseFloat(e.target.value) || 0 : e.target.value
+                        setEditParams(prev => ({ ...prev, [key]: v }))
+                      }}
+                      step={typeof value === 'number' ? 0.01 : undefined}
+                      className="flex-1 text-[10px] bg-terminal-900 border border-terminal-700 rounded px-1.5 py-1 text-terminal-200 font-mono"
+                    />
+                  )}
                 </div>
               ))}
               {Object.keys(editParams).length === 0 && (

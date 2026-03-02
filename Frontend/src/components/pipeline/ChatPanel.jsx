@@ -368,6 +368,8 @@ export default function ChatPanel({
   const [loading, setLoading] = useState(false)
   const [apiKeyInput, setApiKeyInput] = useState(() => localStorage.getItem('mcas_anthropic_key') || '')
   const messagesEndRef = useRef(null)
+  // Full structured conversation for the Anthropic API (preserves tool_use blocks)
+  const conversationRef = useRef([])
 
   const canvasCallbacks = { onHighlightNodes, onPressureWave, onNavigateToNode, onExperimentOverlay }
 
@@ -421,56 +423,56 @@ For destructive actions (deploying compositions), explain what will happen and a
     if (!input.trim() || loading) return
     if (!anthropicKey) return
 
-    const userMsg = { role: 'user', content: input.trim() }
-    const newMessages = [...messages, userMsg]
-    setMessages(newMessages)
+    const userText = input.trim()
+    setMessages(prev => [...prev, { role: 'user', content: userText }])
     setInput('')
     setLoading(true)
 
     try {
-      const apiMessages = newMessages
-        .filter(m => m.role === 'user' || m.role === 'assistant')
-        .map(m => ({
-          role: m.role,
-          content: m.content,
-        }))
+      // Append user message to the structured conversation
+      conversationRef.current = [...conversationRef.current, { role: 'user', content: userText }]
 
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': anthropicKey,
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true',
-        },
-        body: JSON.stringify({
-          model: 'claude-opus-4-20250514',
-          max_tokens: 4096,
-          system: buildSystemPrompt(),
-          tools: TOOL_DEFINITIONS,
-          messages: apiMessages,
-        }),
-      })
-
-      if (!response.ok) {
-        const errText = await response.text()
-        throw new Error(`API error ${response.status}: ${errText.slice(0, 200)}`)
-      }
-
-      const data = await response.json()
-
+      const MAX_TOOL_ROUNDS = 5
       let textContent = ''
-      let toolCalls = []
 
-      for (const block of data.content) {
-        if (block.type === 'text') {
-          textContent += block.text
-        } else if (block.type === 'tool_use') {
-          toolCalls.push(block)
+      for (let round = 0; round <= MAX_TOOL_ROUNDS; round++) {
+        const response = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': anthropicKey,
+            'anthropic-version': '2023-06-01',
+            'anthropic-dangerous-direct-browser-access': 'true',
+          },
+          body: JSON.stringify({
+            model: 'claude-opus-4-20250514',
+            max_tokens: 4096,
+            system: buildSystemPrompt(),
+            tools: TOOL_DEFINITIONS,
+            messages: conversationRef.current,
+          }),
+        })
+
+        if (!response.ok) {
+          const errText = await response.text()
+          throw new Error(`API error ${response.status}: ${errText.slice(0, 200)}`)
         }
-      }
 
-      if (toolCalls.length > 0) {
+        const data = await response.json()
+
+        // Store the full assistant response in conversation (preserves tool_use blocks)
+        conversationRef.current = [...conversationRef.current, { role: 'assistant', content: data.content }]
+
+        // Extract text and tool calls from this response
+        const roundText = data.content.filter(b => b.type === 'text').map(b => b.text).join('')
+        const toolCalls = data.content.filter(b => b.type === 'tool_use')
+
+        if (roundText) textContent += roundText
+
+        // If no tool calls or stop_reason is end_turn, we're done
+        if (toolCalls.length === 0 || data.stop_reason === 'end_turn') break
+
+        // Execute tool calls
         const toolResults = []
         for (const tc of toolCalls) {
           try {
@@ -490,42 +492,15 @@ For destructive actions (deploying compositions), explain what will happen and a
           }
         }
 
-        const followupMessages = [
-          ...apiMessages,
-          { role: 'assistant', content: data.content },
-          { role: 'user', content: toolResults },
-        ]
-
-        const followupResp = await fetch('https://api.anthropic.com/v1/messages', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-api-key': anthropicKey,
-            'anthropic-version': '2023-06-01',
-            'anthropic-dangerous-direct-browser-access': 'true',
-          },
-          body: JSON.stringify({
-            model: 'claude-opus-4-20250514',
-            max_tokens: 4096,
-            system: buildSystemPrompt(),
-            tools: TOOL_DEFINITIONS,
-            messages: followupMessages,
-          }),
-        })
-
-        if (followupResp.ok) {
-          const followupData = await followupResp.json()
-          textContent = followupData.content
-            .filter(b => b.type === 'text')
-            .map(b => b.text)
-            .join('')
-        }
-
+        // Show tool indicator in display messages
         const toolNames = toolCalls.map(tc => tc.name).join(', ')
         setMessages(prev => [
           ...prev,
           { role: 'system', content: `Queried: ${toolNames}`, type: 'tool_indicator' },
         ])
+
+        // Store tool results in conversation for the next round
+        conversationRef.current = [...conversationRef.current, { role: 'user', content: toolResults }]
       }
 
       if (textContent) {
