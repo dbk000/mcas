@@ -148,6 +148,11 @@ class SignalWorker:
 
         logger.info("Cache ready, starting stream consumption")
 
+        # Auto-sync live parameters to meta.node_version on startup.
+        # This ensures Pipeline always shows the ACTUAL code values,
+        # not stale manually-inserted params.
+        self._sync_node_parameters()
+
         timeframes = get_timeframes(self.r)
         if not timeframes:
             timeframes = ["1m", "5m", "15m", "1h", "4h", "1d"]
@@ -511,6 +516,108 @@ class SignalWorker:
         "S10": "S10_v1.0",
         "D1": "D1_v1.1",
     }
+
+    def _sync_node_parameters(self):
+        """Sync live evaluator parameters to meta.node_version on startup.
+
+        Reads each evaluator's .parameters property (which reflects the actual
+        D1Config / U1Config values including env-var overrides) and upserts
+        into meta.node_version.parameters. Runs once at startup — every deploy
+        restarts the worker, so parameters are always current.
+
+        Only worker_index=0 writes to avoid concurrent upserts from multiple workers.
+        """
+        if WORKER_INDEX != 0:
+            return
+        if not DATABASE_URL:
+            return
+
+        evaluators = [
+            ("D1", self.d1_evaluator),
+            ("U1", self.u1_evaluator),
+        ]
+
+        for setup_id, evaluator in evaluators:
+            try:
+                # Build parameters dict from live SetupParameter objects
+                if not hasattr(evaluator, 'parameters'):
+                    logger.debug(f"{setup_id} evaluator has no .parameters property — skipping")
+                    continue
+                params = {}
+                for p in evaluator.parameters:
+                    params[p.name] = p.default
+
+                # Add gate descriptions for D1
+                if setup_id == "D1":
+                    params["gates"] = {
+                        "Gate 1 - Dormancy": f"dormancy_score >= {D1Config.DORMANCY_THRESHOLD} "
+                                             f"(fraction of 48 bars where (high-low)/close < {D1Config.DORMANCY_RANGE_THRESHOLD})",
+                        "Gate 2 - Compression": f"bb_width < {D1Config.BB_WIDTH_COMPRESS}",
+                        "Gate 3 - Volume spike": f"volume_z >= {D1Config.VOLUME_Z_SPIKE} AND rvol >= {D1Config.RVOL_MIN}",
+                        "Gate 4 - Breakout": "close > compression_box_high (donchian_high_20)",
+                        "Gate 5 - BB expanding": "bb_width expanding (regime transition)",
+                    }
+                    params["exit_config"] = {
+                        "stop_pct": D1Config.STOP_PCT,
+                        "tp1_pct": D1Config.TP1_PCT,
+                        "tp2_pct": D1Config.TP2_PCT,
+                        "time_stop_bars_1h": D1Config.TIME_STOP_BARS_1H,
+                        "trail": "none",
+                    }
+                    params["scoring_weights"] = {
+                        "dormancy": D1Config.W_DORMANCY,
+                        "vol_z": D1Config.W_VOL_Z,
+                        "accum_div": D1Config.W_ACCUM_DIV,
+                        "bb_expansion": D1Config.W_BB_EXPANSION,
+                        "rvol": D1Config.W_RVOL,
+                        "btc_adj_ret": D1Config.W_BTC_ADJ_RET,
+                    }
+
+                if setup_id == "U1":
+                    params["exit_config"] = {
+                        "stop_pct": U1Config.STOP_PCT,
+                        "tp1_pct": U1Config.TP1_PCT,
+                        "tp2_pct": U1Config.TP2_PCT,
+                        "time_stop_bars": U1Config.TIME_STOP_BARS,
+                    }
+
+                version_label = self.SETUP_VERSIONS.get(setup_id, f"{setup_id}_v1.0")
+                params_json = json.dumps(params)
+
+                # Map setup_id to exact node name in meta.node
+                NODE_NAMES = {
+                    "D1": "D1 Dormancy-to-Ignition",
+                    "U1": "U1 Unicorn Ignition",
+                    "S9": "S9 Short Reversion",
+                    "S10": "S10 BB Squeeze",
+                }
+                node_name = NODE_NAMES.get(setup_id)
+                if not node_name:
+                    logger.debug(f"No node name mapping for {setup_id} — skipping param sync")
+                    continue
+
+                with psycopg.connect(DATABASE_URL) as conn:
+                    with conn.cursor() as cur:
+                        # Upsert: update parameters on the latest version for this node
+                        cur.execute("""
+                            UPDATE meta.node_version nv
+                            SET parameters = %s::jsonb
+                            FROM meta.node n
+                            WHERE nv.node_id = n.node_id
+                              AND n.name = %s
+                              AND nv.version_number = (
+                                  SELECT MAX(nv2.version_number)
+                                  FROM meta.node_version nv2
+                                  WHERE nv2.node_id = n.node_id
+                              )
+                        """, (params_json, node_name))
+                        if cur.rowcount > 0:
+                            logger.info(f"Synced {setup_id} live parameters to meta.node_version ({len(params)} keys)")
+                        else:
+                            logger.debug(f"No meta.node_version found for {setup_id} — skipping param sync")
+                    conn.commit()
+            except Exception as e:
+                logger.warning(f"Failed to sync {setup_id} parameters to meta: {e}")
 
     def _persist_signal_to_pg(self, symbol: str, tf: str, setup_id: str,
                                score: float, reason: str, payload: dict):
