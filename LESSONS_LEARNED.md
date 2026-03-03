@@ -254,6 +254,24 @@ Two separate images coexisted:
 
 ---
 
+## 2026-03-04 — Strategy validated on dev DB (422 symbols) when production had 1,912 (CC)
+
+**What happened:** D1 Dormancy-to-Ignition was developed, backfilled, and validated entirely on the dev database (422 eligible symbols, 955 signals). The result — daily PF 2.41, aggPF 3.59 — was published as the validated finding. Meanwhile, production DB had 1,912 eligible symbols (4.5x more data). The entire distribution analysis, gate ablation, calibration sweep, backfill, and sim matrix were run on 22% of available data. The production backfill (still running at time of writing) is already showing 2,167+ signals at 25% completion — the full universe will produce ~5x more signals from symbols never seen during development.
+
+**Root cause:** The dev workspace (`/home/darren/Desktop/MCAS/Backend`) was the path of least resistance for running scripts. `docker compose run` (no `-f` flag) resolves to the dev containers/DB. The dev DB has the same schema but a much smaller Known Universe (422 vs 1,912 symbols) because it doesn't run the full ingestor pipeline. At no point during development was the symbol count checked against production — the 422 number was accepted without questioning whether it represented the full population.
+
+**Why this is dangerous:** A strategy that works on 422 carefully-observed symbols may fail on the other 1,490. The dev universe is biased toward symbols with more data/liquidity (they get ingested first). Dormancy patterns in truly micro-cap coins with spotty OHLCV coverage could behave completely differently. The PF 2.41 might hold, improve, or collapse — we don't know until the production sim runs. Publishing results from a convenience sample as validated findings is methodologically unsound.
+
+**Fix:** ALL financially meaningful calculations — backfill, simulation, validation, distribution analysis, calibration sweeps — MUST run against the production database (`backend-postgres-1`). The dev database is for schema testing and import verification only. Never for research.
+
+**Rule — immutable, applies to all strategies and research scripts:**
+1. Every backfill and simulation script defaults to production DB. Dev DB requires an explicit `--dev` flag with a warning.
+2. Before publishing any metric (PF, WR, PnL), verify the symbol count matches production's Known Universe. If it doesn't, the result is a preliminary estimate, not a validated finding.
+3. Distribution analysis and threshold calibration are especially sensitive to universe size — a threshold calibrated on 422 symbols may be wrong for 1,912.
+4. If dev DB coverage ever falls below production, that's an infrastructure bug to fix, not a reason to use stale data.
+
+---
+
 ## 2026-03-04 — Docker `run` containers without mem_limit trigger kernel OOM killer
 
 **What happened:** `docker compose run --rm worker python3 /scripts/sim_d1_matrix.py` caused kernel OOM killer to fire repeatedly, killing random Python and Docker processes across the server — including production containers. The Hetzner console showed dozens of `Memory cgroup out of memory: Killed process` entries.

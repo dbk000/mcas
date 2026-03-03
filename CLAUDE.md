@@ -178,6 +178,7 @@ Every plan that creates or modifies a script must address:
 - NEVER apply live dedup logic to simulation/backtest queries
 - NEVER assume backfill range is sufficient without warmup accounting
 - NEVER accumulate all results in memory for single bulk write
+- NEVER run financially meaningful calculations (backfill, simulation, validation, distribution analysis, threshold calibration) against the dev database. Dev DB has a fraction of production's universe (e.g. 422 vs 1,912 symbols). Results from dev are preliminary estimates, not validated findings. ALL research scripts must target production DB (`backend-postgres-1`). Before publishing any metric, verify symbol count matches production's Known Universe.
 
 ## Timestamps
 - Binance timestamps are milliseconds — always divide by 1000
