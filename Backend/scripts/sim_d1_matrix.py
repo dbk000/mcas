@@ -521,8 +521,7 @@ def portfolio_walk(
 
         # Compute position size
         if compounding and account_equity:
-            current_equity = start_equity + equity - start_equity  # running equity
-            pos_usd = current_equity * (position_pct / 100.0)
+            pos_usd = equity * (position_pct / 100.0)  # equity tracks running balance
             pos_usd = max(pos_usd, 50.0)  # Floor at $50
         else:
             pos_usd = position_usd
@@ -565,8 +564,11 @@ def portfolio_walk(
         dd = peak_equity - equity
         if dd > max_dd:
             max_dd = dd
-        if peak_equity > 0:
-            dd_pct = dd / peak_equity * 100
+        # DD% denominator: compounding uses peak equity (has account base),
+        # non-compounding uses peak capital deployed (equity starts at 0)
+        dd_denom = peak_equity if account_equity else peak_capital_deployed
+        if dd_denom > 0:
+            dd_pct = dd / dd_denom * 100
             max_dd_pct = max(max_dd_pct, dd_pct)
 
     # Close remaining
@@ -578,14 +580,13 @@ def portfolio_walk(
     dd = peak_equity - equity
     if dd > max_dd:
         max_dd = dd
-    if peak_equity > 0:
-        max_dd_pct = max(max_dd_pct, dd / peak_equity * 100)
+    dd_denom = peak_equity if account_equity else peak_capital_deployed
+    if dd_denom > 0:
+        max_dd_pct = max(max_dd_pct, dd / dd_denom * 100)
 
     # Compounding metrics
     compounding_metrics = None
     if compounding and account_equity:
-        final_equity = start_equity + equity - (start_equity if not compounding else 0)
-        # More accurate: track running balance
         final_equity = start_equity + sum(t["pnl_net"] for t in closed_trades)
 
         # Time span for CAGR
