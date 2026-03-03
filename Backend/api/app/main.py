@@ -101,6 +101,7 @@ STRATEGY_REGISTRY = {
     "S9": {"label": "S9 (Short Reversion)", "type": "crypto", "status": "active"},
     "S10": {"label": "S10 (MACD Scalp)", "type": "crypto", "status": "active"},
     "U1": {"label": "U1 (Unicorn)", "type": "crypto", "status": "active"},
+    "D1": {"label": "D1 (Dormancy Ignition)", "type": "crypto", "status": "active"},
     "EQFP": {"label": "EQ: Forward Predictor", "type": "equities", "status": "active"},
     "EQ_TSMOM": {"label": "EQ: TSMOM (20d)", "type": "equities", "status": "active"},
     "EQ_XSMOM": {"label": "EQ: XS Momentum (20d)", "type": "equities", "status": "active"},

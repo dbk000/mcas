@@ -34,6 +34,8 @@ Use quantitative validation methods (walk-forward, holdout, DSR) because those a
 
 6. **Before any --clear-expired backfill run, snapshot existing results to /scripts/output/snapshots/{setup_version}_{date}/.
 
+7. **Record nodal atomic influence on every experiment.** Every simulation, backfill, ablation, or sweep must decompose its results into per-node contributions and write them to `meta.node_impact`. Each pipeline node involved in an experiment gets a record of its quantified marginal impact — filter rates, metric slices by threshold, sensitivity analysis. Before running a new experiment, check existing `node_impact` records first: if the question can be answered by scanning past nodal influence (e.g. "what happens if I tighten dormancy from 0.75 to 0.90?"), use the existing data instead of re-running the full pipeline. Never compute 10,000 factorial to get 20 numbers when those 20 numbers are already recorded atomically at the node level.
+
 ## 0.3 How to Work
 
 - **Think longer, implement less, prove before scaling.** Reason about the solution before writing code. Design sweeps and matrix tests that explore the space in parallel rather than iterating sequentially. Extract strategic implications from data — model theoretical bounds, identify the highest-leverage intervention, and say what you'd do and why.
@@ -101,20 +103,22 @@ cd /srv/mcas/Frontend && npm install && npm run build
 - `mcas-dev-postgres-1` / `mcas-dev-worker-1` = dev
 - Do not confuse them.
 
-**DB Migrations — ALWAYS production first:**
-DB migrations MUST run on **production** (`backend-postgres-1`), not dev. The frontend auto-deploys to CF Pages which hits the production API. Dev-only migrations are useless for verifying deployed features. Run on production, then optionally dev.
+**DB Migrations — ALWAYS dev first, then production:**
+Every migration runs on dev first (catch bugs cheap against the 102GB prod DB), verify, then production. If you catch yourself manually patching dev to match prod, the process broke.
 ```bash
-# Run migration on PRODUCTION:
-cat docs/db/migrations/XXXX.sql | docker exec -i backend-postgres-1 psql -U trading -d trading
-# Run migration on dev (optional, secondary):
+# Step 1: Dev (catch bugs cheap)
 cat docs/db/migrations/XXXX.sql | docker exec -i mcas-dev-postgres-1 psql -U trading -d trading
+# Step 2: Verify — run a query that exercises the migration
+# Step 3: Production (deploy verified schema)
+cat docs/db/migrations/XXXX.sql | docker exec -i backend-postgres-1 psql -U trading -d trading
 ```
+For changes the frontend depends on: run prod migration BEFORE pushing the code that queries new schema. Deploy sequence: dev migration → verify → prod migration → push code.
 
 **Deploy checklist — EVERYTHING targets production:**
 There is no staging environment. After every commit+push that touches backend code:
-1. Frontend: automatic via CF Pages (`git push origin main`)
-2. Backend API: `cd /srv/mcas && git pull origin main` then `docker compose -f docker-compose.yml build api && docker compose -f docker-compose.yml up -d --no-deps api`
-3. DB migrations: run on `backend-postgres-1` (see above)
+1. DB migrations: dev first, verify, then production (see above)
+2. Frontend: automatic via CF Pages (`git push origin main`)
+3. Backend API: `cd /srv/mcas && git pull origin main` then `docker compose -f docker-compose.yml build api && docker compose -f docker-compose.yml up -d --no-deps api`
 4. NEVER deploy only to dev containers (`mcas-dev-*`) and call it done — the live site won't see the changes
 
 ## 1.6 Resource Awareness & Agent Teams Protocol
@@ -152,7 +156,8 @@ Every plan that creates or modifies a script must address:
 4. **Execution context** — detects Docker vs host, resolves paths (`os.path.isdir('/app')`)
 5. **Detached execution** — run instructions specify `tmux`/`screen`
 6. **Plan approval gate** — user sees and approves FINAL version before execution
-7. **Parallelism design** — before any script is approved for execution, answer these five questions in the plan:
+7. **Persistent output** — every script must write its results to a file (e.g. `scripts/output/{script_name}_{timestamp}.{ext}`). No script should ever run without a built-in "output records to location X" pathway. If a script produces findings, metrics, or confirmations, those must survive the process — console-only output that vanishes when the terminal closes or Docker container is removed is not acceptable. The output path must be logged at script start.
+8. **Parallelism design** — before any script is approved for execution, answer these five questions in the plan:
 
    **a) What is the compute profile?** List every phase of the script with estimated wall-clock time and whether it's single-threaded, multi-threaded (BLAS), or multi-process. Example: "Phase 2: 8 min, categories A-G single-threaded, H-M 6-worker Pool."
 
@@ -185,7 +190,7 @@ Every plan that creates or modifies a script must address:
 - NEVER deploy without user approval — dev and prod share the same machine but are separate git worktrees
 - NEVER recreate infra services during code-only deploy — use `--no-deps`
 - NEVER hardcode import paths — detect execution context at runtime
-- NEVER run DB migrations on dev only — always run on production (`backend-postgres-1`) first, since the frontend deploys to CF Pages which hits the production API
+- NEVER run DB migrations on prod only — always run on dev (`mcas-dev-postgres-1`) first, verify, then production. Schema drift from skipping dev causes manual patching later
 
 ## SQL / Query Patterns
 - NEVER use `!= ALL(array)` in Postgres — use `NOT (col = ANY(array))`
@@ -234,6 +239,7 @@ Ingestor fetches OHLCV from Binance → Indicator workers compute features → S
 4. Include `since_ts`, `action_by_ts`, `ExplainPayload` (3-8 why items)
 5. Register in `setups/__init__.py` and `signal_engine.py`
 6. Add to `SETUP_IDS` env var
+7. **"Finished" means:** the end user can run an expired opportunities simulation in the UI on all expired opps for that strategy and the output matches the configs for the winning version of the strat. This means: D1Config defaults = winning config (e.g. Config D's 1.5% stop), backfill opportunities have correct price levels baked in, strategy appears in STRATEGY_REGISTRY, and `SETUP_IDS` includes it in the worker.
 
 ## 3.6 Build & Run
 ```bash

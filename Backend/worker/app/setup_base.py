@@ -88,6 +88,10 @@ class IndicatorRequirement(Enum):
     VWAP_IND = "VWAP"
     EMA_SLOPES = "EMA_SLOPES"
 
+    # Tier 2 - Dormancy / Accumulation (for D1)
+    DORMANCY_SCORE = "DORMANCY_SCORE"
+    ACCUM_DIVERGENCE = "ACCUM_DIVERGENCE"
+
 
 @dataclass
 class SetupParameter:

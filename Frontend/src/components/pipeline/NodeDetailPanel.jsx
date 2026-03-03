@@ -160,6 +160,51 @@ export default function NodeDetailPanel({ node, onClose, graph }) {
       lines.push('')
     }
 
+    // Data provenance for active version
+    const activeVersion = versions.find(v => v.status === 'deployed') || versions[0]
+    if (activeVersion) {
+      lines.push('### Data Provenance')
+      const ctx = activeVersion.metrics_context || {}
+      if (activeVersion.metrics_run_id) {
+        lines.push(`- **Simulation Run ID:** \`${activeVersion.metrics_run_id}\``)
+        lines.push(`- **Results Query:** \`SELECT * FROM simulation_results WHERE run_id = '${activeVersion.metrics_run_id}'\``)
+      } else {
+        lines.push('- **Simulation Run ID:** not recorded')
+      }
+      const rd = activeVersion.run_detail
+      if (rd) {
+        lines.push(`- **Run Type:** ${rd.run_type}`)
+        if (rd.run_completed_at) lines.push(`- **Completed:** ${rd.run_completed_at}`)
+      }
+      // Date range
+      const start = ctx?.date_range?.start_ts || ctx?.date_range?.start || ctx?.start_date
+      const end = ctx?.date_range?.end_ts || ctx?.date_range?.end || ctx?.end_date
+      if (start || end) {
+        const fmt = (d) => {
+          if (!d) return '?'
+          const dt = new Date(typeof d === 'number' ? d * 1000 : d)
+          return isNaN(dt) ? String(d) : dt.toISOString().slice(0, 10)
+        }
+        lines.push(`- **Date Range:** ${fmt(start)} to ${fmt(end)}`)
+      } else {
+        lines.push('- **Date Range:** not recorded')
+      }
+      // Symbols
+      const syms = ctx?.symbols_tested || ctx?.symbols
+      if (Array.isArray(syms)) {
+        lines.push(`- **Symbols:** ${syms.length} (${syms.slice(0, 10).join(', ')}${syms.length > 10 ? '...' : ''})`)
+      } else if (typeof syms === 'number') {
+        lines.push(`- **Symbols:** ${syms}`)
+      } else {
+        lines.push('- **Symbols:** not recorded')
+      }
+      if (ctx?.timeframe) lines.push(`- **Timeframe:** ${ctx.timeframe}`)
+      if (ctx?.slippage_model || ctx?.slippage) lines.push(`- **Slippage:** ${ctx.slippage_model || ctx.slippage}`)
+      if (activeVersion.source_hash) lines.push(`- **Source Hash:** \`${activeVersion.source_hash}\``)
+      if (ctx?.reproduce_cmd) lines.push(`- **Reproduce:** \`${ctx.reproduce_cmd}\``)
+      lines.push('')
+    }
+
     const ports = node.ports || {}
     if (ports.inputs?.length || ports.outputs?.length) {
       lines.push('### Ports')

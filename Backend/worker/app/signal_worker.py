@@ -35,6 +35,7 @@ from indicators import IndicatorSnapshot
 from setups import S9Evaluator, S9Signal, S9State
 from setups import S10Evaluator, S10Signal
 from setups.u1_unicorn_ignition import U1Evaluator, U1State, U1Phase, U1Config, load_funding_rates
+from setups.d1_dormancy_ignition import D1Evaluator, D1State, D1Phase, D1Config, is_d1_excluded
 from setup_base import Direction
 from s9_microstructure import (
     fetch_1s_klines_batch, analyze_tape, analyze_exit_tape,
@@ -63,6 +64,7 @@ SETUP_SCORE_MULTIPLIERS = {
     "U1": float(os.getenv("U1_SCORE_MULT", "1.0")),
     "S9": float(os.getenv("S9_SCORE_MULT", "1.0")),
     "S10": float(os.getenv("S10_SCORE_MULT", "1.0")),
+    "D1": float(os.getenv("D1_SCORE_MULT", "1.0")),
 }
 
 
@@ -125,11 +127,13 @@ class SignalWorker:
         self._excluded_symbols_cache: set[str] = set()
         self._excluded_symbols_cache_ts: float = 0.0
         self.s10_evaluator = S10Evaluator()
+        self.d1_evaluator = D1Evaluator()
+        self._d1_prev_states: dict[str, D1State] = {}  # keyed by "symbol:tf"
         # Diagnostic counters (reset per logging cycle)
         self._diag = {
             "evaluated": 0, "snapshot_fail": 0, "candle_fail": 0,
             "symbol_quality_excluded": 0,
-            "s10_signal": 0,
+            "s10_signal": 0, "d1_signal": 0,
             "s9_signal": 0, "s9_breadth_fail": 0,
         }
         self._last_diag_log = 0.0
@@ -257,6 +261,10 @@ class SignalWorker:
         if tf == "5m":
             self._evaluate_s10(symbol, tf, snapshot, bar_start_ts)
 
+        # D1: Dormancy-to-Ignition (1h only, microcap universe)
+        if tf == "1h":
+            self._evaluate_d1(symbol, tf, snapshot, bar_start_ts)
+
         # U1 evaluator (only for EMBRYO_ACTIVE symbols)
         self._evaluate_u1(symbol, tf, snapshot.ohlcv, snap_ts)
 
@@ -340,6 +348,72 @@ class SignalWorker:
             )
         except Exception as e:
             logger.debug("S10 eval error %s:%s: %s", symbol, tf, e)
+
+    def _evaluate_d1(self, symbol: str, tf: str, snapshot, bar_start_ts: str):
+        """Run D1 Dormancy-to-Ignition evaluator on 1h bars (microcap universe)."""
+        # Universe filter: skip majors, stablecoins, wrapped, leverage
+        if is_d1_excluded(symbol):
+            return
+
+        try:
+            state_key = f"{symbol}:{tf}"
+            prev_state = self._d1_prev_states.get(state_key)
+
+            state = self.d1_evaluator.compute_state(
+                snapshot, prev_state=prev_state, btc_returns=None,
+            )
+            self._d1_prev_states[state_key] = state
+
+            sig = self.d1_evaluator.evaluate_trigger(snapshot, state, symbol, tf)
+            if sig is None:
+                return
+
+            self._diag["d1_signal"] += 1
+
+            # Build payload
+            calib_mult = SETUP_SCORE_MULTIPLIERS.get("D1", 1.0)
+            calibrated_score = min(sig.setup_score * calib_mult, 1.0)
+
+            payload = {
+                "setup_id": "D1",
+                "setup_name": "Dormancy-to-Ignition v1.0",
+                "symbol": symbol,
+                "timeframe": tf,
+                "direction": sig.direction.value,
+                "setup_score": calibrated_score,
+                "raw_score": sig.setup_score,
+                "entry_price": sig.entry_price,
+                "stop_price": sig.stop_price,
+                "tp1_price": sig.tp1_price,
+                "tp2_price": sig.tp2_price,
+                "r_value": sig.r_value,
+                "time_stop_bars": sig.time_stop_bars,
+                "bar_start_ts": bar_start_ts or "",
+                "as_of_ts": time.time(),
+                "why_items": sig.explain.why_items if sig.explain else [],
+                "dormancy_score": sig.dormancy_score,
+                "accum_divergence": sig.accum_divergence,
+                "compression_box_high": sig.compression_box_high,
+                "compression_box_low": sig.compression_box_low,
+                "volume_z_at_trigger": sig.volume_z_at_trigger,
+                "rvol_at_trigger": sig.rvol_at_trigger,
+                "bb_width_at_trigger": sig.bb_width_at_trigger,
+                "btc_beta": sig.btc_beta,
+                "score_components": sig.score_components,
+            }
+
+            store_signal(self.r, symbol, tf, "D1", payload,
+                         calibrated_score, bar_start_ts or "")
+            reason = "; ".join(sig.explain.why_items) if sig.explain else None
+            self._persist_signal_to_pg(symbol, tf, "D1", calibrated_score, reason, payload)
+
+            logger.info(
+                "Signal: D1 LONG %s:%s score=%.3f dormancy=%.0f%% vol_z=%.1f rvol=%.1fx",
+                symbol, tf, calibrated_score, sig.dormancy_score * 100,
+                sig.volume_z_at_trigger, sig.rvol_at_trigger,
+            )
+        except Exception as e:
+            logger.debug("D1 eval error %s:%s: %s", symbol, tf, e)
 
     def _evaluate_u1(self, symbol: str, tf: str, candles, bar_start_ts: str):
         """Run U1 evaluator for EMBRYO_ACTIVE symbols only."""
@@ -435,6 +509,7 @@ class SignalWorker:
         "U1": "U1_v3.0",
         "S9": "S9_v1.0",
         "S10": "S10_v1.0",
+        "D1": "D1_v1.1",
     }
 
     def _persist_signal_to_pg(self, symbol: str, tf: str, setup_id: str,
@@ -922,7 +997,7 @@ class SignalWorker:
                         continue
 
                     reeval_needed = False
-                    for setup_id in ["S9", "U1", "S10"]:
+                    for setup_id in ["S9", "U1", "S10", "D1"]:
                         sig_ts = b2f(self.r.hget(
                             sig_meta_key(symbol, tf, setup_id), "bar_start_ts"
                         ))
@@ -947,7 +1022,7 @@ class SignalWorker:
         """Prune stale signals across all setups and timeframes."""
         try:
             timeframes = get_timeframes(self.r)
-            for setup_id in ["S9", "U1", "S10"]:
+            for setup_id in ["S9", "U1", "S10", "D1"]:
                 for tf in timeframes:
                     prune_stale_signals(self.r, setup_id, tf)
             # Also expire stale active records in Postgres

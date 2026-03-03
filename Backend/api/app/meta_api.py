@@ -291,7 +291,8 @@ def get_node_versions(
                        agg_pf, net_pnl, win_rate, max_drawdown, trade_count,
                        metrics_context, source_hash, significance,
                        superseded_by, change_reason, parent_version, derived_from,
-                       created_at, staleness_state, health_status, output_hash
+                       created_at, staleness_state, health_status, output_hash,
+                       metrics_run_id
                 FROM meta.node_version
                 WHERE node_id = %s
             """
@@ -306,8 +307,38 @@ def get_node_versions(
             cur.execute(query, params)
             rows = cur.fetchall()
 
+    # Collect all run_ids to batch-resolve run details
+    run_ids = set()
+    for r in rows:
+        if r[21]:
+            run_ids.add(str(r[21]))
+
+    # Resolve run details if any metrics_run_id values exist
+    run_details = {}
+    if run_ids:
+        with _get_conn() as conn2:
+            with conn2.cursor() as cur2:
+                cur2.execute("""
+                    SELECT id, run_type, name, status, strategy_json,
+                           created_at, started_at, completed_at
+                    FROM public.runs
+                    WHERE id = ANY(%s::uuid[])
+                """, (list(run_ids),))
+                for rd in cur2.fetchall():
+                    run_details[str(rd[0])] = {
+                        "run_id": str(rd[0]),
+                        "run_type": rd[1],
+                        "run_name": rd[2],
+                        "run_status": rd[3],
+                        "strategy_json": rd[4],
+                        "run_created_at": rd[5].isoformat() if rd[5] else None,
+                        "run_started_at": rd[6].isoformat() if rd[6] else None,
+                        "run_completed_at": rd[7].isoformat() if rd[7] else None,
+                    }
+
     versions = []
     for r in rows:
+        rid = str(r[21]) if r[21] else None
         versions.append({
             "version_id": str(r[0]),
             "version_number": r[1],
@@ -330,6 +361,8 @@ def get_node_versions(
             "staleness_state": r[18] or "clean",
             "health_status": r[19] or "unknown",
             "output_hash": r[20],
+            "metrics_run_id": rid,
+            "run_detail": run_details.get(rid) if rid else None,
         })
 
     return envelope({
@@ -1044,6 +1077,7 @@ class CreateNodeVersion(BaseModel):
     parameters: Optional[dict] = None
     metrics: Optional[dict] = None
     metrics_context: Optional[dict] = None
+    metrics_run_id: Optional[str] = None
     change_reason: Optional[str] = None
     source_hash: Optional[str] = None
     status: str = "tested"
@@ -1081,14 +1115,15 @@ def create_node_version(payload: CreateNodeVersion):
             cur.execute("""
                 INSERT INTO meta.node_version
                     (node_id, version_number, status, parameters, metrics,
-                     metrics_context, source_hash, change_reason)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                     metrics_context, metrics_run_id, source_hash, change_reason)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
                 RETURNING version_id
             """, (
                 payload.node_id, next_ver, payload.status,
                 json.dumps(params), json.dumps(metrics),
                 json.dumps(payload.metrics_context or {}),
-                payload.source_hash, payload.change_reason,
+                payload.metrics_run_id, payload.source_hash,
+                payload.change_reason,
             ))
             vid = str(cur.fetchone()[0])
 

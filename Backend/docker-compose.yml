@@ -40,6 +40,7 @@ services:
       SERVICE_NAME: worker
     volumes:
       - ./scripts:/scripts
+    mem_limit: 8g
     networks:
       - backend
 

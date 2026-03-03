@@ -312,6 +312,20 @@ _register(IndicatorDef(
     implementation="(close - vwap) / atr",
 ))
 
+# Tier 2 — Dormancy Score (fraction of low-range bars in trailing window)
+_register(IndicatorDef(
+    indicator_id=generate_indicator_id("DORMANCY_SCORE", 48), name="Dormancy Score (48-bar)", tier=2,
+    inputs=["high", "low", "close"], params={"n": 48, "threshold": 0.001},
+    implementation="FeatureFactory._dormancy_score",
+))
+
+# Tier 2 — Accumulation Divergence (ADL slope vs price slope)
+_register(IndicatorDef(
+    indicator_id=generate_indicator_id("ACCUM_DIVERGENCE", 20), name="Accumulation Divergence (20-bar)", tier=2,
+    inputs=["high", "low", "close", "volume"], params={"n": 20},
+    implementation="FeatureFactory._accumulation_divergence",
+))
+
 # Canon §1.6: Module-level uniqueness assertion — fail fast on ID collisions
 assert len(INDICATOR_REGISTRY) == len(set(d.indicator_id for d in INDICATOR_REGISTRY.values())), \
     "Indicator ID collision detected in INDICATOR_REGISTRY!"
@@ -403,6 +417,10 @@ class IndicatorSnapshot:
     vwap_upper_2sd: Optional[float] = None
     vwap_lower_2sd: Optional[float] = None
     vwap_distance_atr: Optional[float] = None
+
+    # Tier 2 - Dormancy / Accumulation (for D1)
+    dormancy_score: float = 0.0       # Fraction of trailing N bars with tight range
+    accum_divergence: float = 0.0     # ADL slope vs price slope divergence
 
     # HTF proxies (optional, for bias)
     htf_close: Optional[float] = None
@@ -537,6 +555,10 @@ class FeatureFactory:
         if vwap is not None and atr > 0:
             vwap_distance_atr = (closes[-1] - vwap) / atr
         
+        # Tier 2 - Dormancy Score + Accumulation Divergence (for D1)
+        dormancy_score = self._dormancy_score(highs, lows, closes)
+        accum_divergence = self._accumulation_divergence(highs, lows, closes, volumes)
+
         # HTF indicators (if provided)
         htf_close = None
         htf_sma50 = None
@@ -586,6 +608,8 @@ class FeatureFactory:
             vwap_upper_2sd=vwap_upper_2sd,
             vwap_lower_2sd=vwap_lower_2sd,
             vwap_distance_atr=vwap_distance_atr,
+            dormancy_score=dormancy_score,
+            accum_divergence=accum_divergence,
             htf_close=htf_close,
             htf_sma50=htf_sma50,
             htf_bb_mb=htf_bb_mb,
@@ -756,6 +780,90 @@ class FeatureFactory:
         vwap_lower_2sd = vwap - 2.0 * vwap_std
 
         return vwap, vwap_upper_2sd, vwap_lower_2sd
+
+    def _dormancy_score(self, highs: np.ndarray, lows: np.ndarray,
+                         closes: np.ndarray, n: int = 48,
+                         threshold: float = 0.010) -> float:
+        """Fraction of trailing N bars where (high - low) / close < threshold.
+
+        EXCLUDES the current bar. Dormancy describes the regime you're leaving,
+        not the bar you're on. The breakout bar is non-dormant by definition —
+        including it would cause the score to drop below threshold on the exact
+        bar the trigger should fire.
+
+        Range: 0.0 (active / wide ranges) to 1.0 (completely dormant / flatline).
+        Default threshold 1.0% calibrated from altcoin data: at 0.1% only pegged
+        assets qualify; at 1.0%, 83% of altcoins exhibit dormancy periods.
+        """
+        # Need at least n+1 bars: n historical + 1 current (excluded)
+        if len(closes) < 2:
+            return 0.0
+        if len(closes) - 1 < n:
+            n = len(closes) - 1
+        if n == 0:
+            return 0.0
+
+        # Bars BEFORE the current bar: [-(n+1):-1]
+        h = highs[-(n+1):-1]
+        l = lows[-(n+1):-1]
+        c = closes[-(n+1):-1]
+
+        # Avoid division by zero
+        safe_c = np.where(c > 0, c, 1.0)
+        ranges = (h - l) / safe_c
+        dormant_count = np.sum(ranges < threshold)
+        return float(dormant_count / n)
+
+    def _accumulation_divergence(self, highs: np.ndarray, lows: np.ndarray,
+                                  closes: np.ndarray, volumes: np.ndarray,
+                                  n: int = 20) -> float:
+        """ADL slope vs price slope divergence over trailing N bars.
+
+        CLV = ((C - L) - (H - C)) / (H - L)  [clamped to avoid div-by-zero]
+        ADL = cumsum(CLV * volume)
+        Returns: normalized divergence (ADL slope - price slope).
+        Positive = accumulation (ADL rising while price flat/falling).
+        Normalized by avg_price * avg_volume for cross-asset comparability.
+        """
+        if len(closes) < n:
+            return 0.0
+
+        h = highs[-n:]
+        l = lows[-n:]
+        c = closes[-n:]
+        v = volumes[-n:]
+
+        # CLV: ((C-L) - (H-C)) / (H-L)
+        hl_range = h - l
+        # Avoid division by zero for flat bars
+        safe_range = np.where(hl_range > 0, hl_range, 1.0)
+        clv = ((c - l) - (h - c)) / safe_range
+        # Zero out CLV where range was zero (truly flat bar)
+        clv = np.where(hl_range > 0, clv, 0.0)
+
+        # ADL = cumulative sum of CLV * volume
+        adl = np.cumsum(clv * v)
+
+        # Slopes via linear regression (index as x)
+        x = np.arange(n, dtype=float)
+        x_mean = x.mean()
+        x_var = np.sum((x - x_mean) ** 2)
+        if x_var == 0:
+            return 0.0
+
+        adl_slope = np.sum((x - x_mean) * (adl - adl.mean())) / x_var
+        price_slope = np.sum((x - x_mean) * (c - c.mean())) / x_var
+
+        # Normalize: both slopes by avg_price * avg_volume
+        avg_price = np.mean(c)
+        avg_volume = np.mean(v)
+        normalizer = avg_price * avg_volume if (avg_price > 0 and avg_volume > 0) else 1.0
+
+        norm_adl_slope = adl_slope / normalizer
+        norm_price_slope = price_slope / (avg_price if avg_price > 0 else 1.0)
+
+        # Divergence: ADL rising relative to price
+        return float(norm_adl_slope - norm_price_slope)
 
     def _std(self, data: np.ndarray, n: int) -> float:
         """Rolling standard deviation (last value only)."""
