@@ -386,7 +386,13 @@ def get_simulation_results(
                        tp1_price, tp2_price, r_value, exit_ts, exit_price,
                        exit_price_with_slippage, exit_reason, bars_held,
                        pnl_gross, fees, pnl_net, r_multiple,
-                       data_available, error_message
+                       data_available, error_message,
+                       (data_available AND pnl_net IS NOT NULL) AS included_in_summary,
+                       CASE
+                           WHEN data_available AND pnl_net IS NOT NULL THEN 'included'
+                           WHEN error_message LIKE 'R-multiple below floor:%' THEN 'post_sim_filter'
+                           ELSE 'pretrade_or_data_gate'
+                       END AS inclusion_reason
                 FROM simulation_results
                 WHERE run_id = %s
                 ORDER BY r_multiple DESC NULLS LAST, opportunity_id
@@ -423,6 +429,8 @@ def get_simulation_results(
             "r_multiple": row[23],
             "data_available": row[24],
             "error_message": row[25],
+            "included_in_summary": row[26],
+            "inclusion_reason": row[27],
         })
 
     # Compute aggregate stats from returned results if summary not available
@@ -472,7 +480,13 @@ def export_simulation_results_csv(run_id: str):
                        sr.tp1_price, sr.tp2_price, sr.r_value, sr.exit_ts, sr.exit_price,
                        sr.exit_price_with_slippage, sr.exit_reason, sr.bars_held,
                        sr.pnl_gross, sr.fees, sr.pnl_net, sr.r_multiple,
-                       sr.data_available, sr.error_message
+                       sr.data_available, sr.error_message,
+                       (sr.data_available AND sr.pnl_net IS NOT NULL) AS included_in_summary,
+                       CASE
+                           WHEN sr.data_available AND sr.pnl_net IS NOT NULL THEN 'included'
+                           WHEN sr.error_message LIKE 'R-multiple below floor:%' THEN 'post_sim_filter'
+                           ELSE 'pretrade_or_data_gate'
+                       END AS inclusion_reason
                 FROM simulation_results sr
                 LEFT JOIN opportunities o ON o.id = sr.opportunity_id
                 WHERE sr.run_id = %s
