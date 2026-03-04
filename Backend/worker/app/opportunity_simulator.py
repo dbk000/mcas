@@ -27,6 +27,11 @@ from ohlcv_backfill import backfill_for_simulation
 
 logger = logging.getLogger(__name__)
 
+# Keep simulation defaults centralized so worker/API callers cannot drift from
+# the research baseline by accident.
+SIM_DEFAULT_MAX_BARS_FORWARD = 200
+SIM_DEFAULT_MIN_R_PRESERVATION = 0.5
+
 # Per-setup exit configs — override default ExitConfig for strategies with
 # validated exit behavior. Without this, all strategies use the default which
 # includes fail-fast and trailing stops that may not match the validated config.
@@ -52,10 +57,10 @@ class SimulationConfig:
     slippage_entry_bps: float = 5.0
     slippage_exit_bps: float = 5.0
     fee_taker_bps: float = 4.0
-    max_bars_forward: int = 100  # Max bars to simulate forward
+    max_bars_forward: int = SIM_DEFAULT_MAX_BARS_FORWARD  # Max bars to simulate forward
     time_stop_bars: int = 50    # Default time stop if not specified
     max_fee_r_ratio: float = _env_float("SIM_MAX_FEE_R_RATIO", 0.3)    # Skip trades where fees > this fraction of risk
-    min_r_preservation: float = _env_float("SIM_MIN_R_PRESERVATION", 0.5)  # Skip trades where gap consumed > 50% of original R
+    min_r_preservation: float = SIM_DEFAULT_MIN_R_PRESERVATION  # Skip trades where gap consumed > 50% of original R
 
     # Stop distance factor (Experiment B: tighter stops at simulation time)
     stop_distance_factor: float = 1.0  # Global multiplier (1.0 = unchanged)

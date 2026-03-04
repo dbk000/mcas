@@ -142,6 +142,8 @@ class SimulationRunRequest(BaseModel):
     max_age_hours: Optional[int] = Field(default=None, ge=1)  # How far back to look
     limit: int = Field(default=5000, ge=1, le=10000)
     slippage_bps: float = Field(default=5.0, ge=0, le=50)
+    max_bars_forward: int = Field(default=200, ge=1, le=2000)
+    min_r_preservation: float = Field(default=0.5, ge=0.5, le=1.0)
     setup_version: Optional[str] = None  # Filter by setup version (e.g. 'S1_v2.2')
     batch_id: Optional[str] = None  # Filter by backfill batch ID
     timeframes: Optional[list[str]] = None  # Filter by 1m, 5m, 15m, etc.
@@ -638,6 +640,8 @@ def create_simulation_run(request: SimulationRunRequest):
             "max_age_hours": request.max_age_hours,
             "limit": request.limit,
             "slippage_bps": request.slippage_bps,
+            "max_bars_forward": request.max_bars_forward,
+            "min_r_preservation": request.min_r_preservation,
             "setup_version": request.setup_version,
             "batch_id": request.batch_id,
             "timeframes": request.timeframes,

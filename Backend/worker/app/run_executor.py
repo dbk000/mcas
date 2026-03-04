@@ -47,7 +47,12 @@ try:
 except ImportError:
     _LEGACY_SETUPS_AVAILABLE = False
 from exit_checker import check_exit, ExitConfig, PositionState
-from opportunity_simulator import OpportunitySimulator, SimulationConfig
+from opportunity_simulator import (
+    OpportunitySimulator,
+    SimulationConfig,
+    SIM_DEFAULT_MAX_BARS_FORWARD,
+    SIM_DEFAULT_MIN_R_PRESERVATION,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -1521,6 +1526,8 @@ class RunExecutor:
         exclude_dates = setup_params.get("exclude_dates")  # Skip these dates
         stop_distance_factor = setup_params.get("stop_distance_factor", 1.0)
         stop_distance_factors = setup_params.get("stop_distance_factors") or {}
+        max_bars_forward = setup_params.get("max_bars_forward", SIM_DEFAULT_MAX_BARS_FORWARD)
+        min_r_preservation = setup_params.get("min_r_preservation", SIM_DEFAULT_MIN_R_PRESERVATION)
 
         # Build simulator config
         sim_config = SimulationConfig(
@@ -1528,7 +1535,8 @@ class RunExecutor:
             slippage_entry_bps=slippage_bps,
             slippage_exit_bps=slippage_bps,
             fee_taker_bps=run.execution.fee_taker_bps,
-            max_bars_forward=100,
+            max_bars_forward=max_bars_forward,
+            min_r_preservation=min_r_preservation,
             stop_distance_factor=stop_distance_factor,
             stop_distance_factors=stop_distance_factors,
         )
