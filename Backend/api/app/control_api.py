@@ -148,7 +148,7 @@ class SimulationRunRequest(BaseModel):
     d1_causal_gate_enabled: Optional[bool] = None
     d1_causal_min_entry_price: float = Field(default=0.0, ge=0.0)
     d1_causal_min_stop_pct: float = Field(default=0.015, ge=0.0, le=1.0)
-    d1_causal_min_score: float = Field(default=0.35, ge=0.0, le=1.0)
+    d1_causal_min_score: float = Field(default=0.0, ge=0.0, le=1.0)
     setup_version: Optional[str] = None  # Filter by setup version (e.g. 'S1_v2.2')
     batch_id: Optional[str] = None  # Filter by backfill batch ID
     timeframes: Optional[list[str]] = None  # Filter by 1m, 5m, 15m, etc.

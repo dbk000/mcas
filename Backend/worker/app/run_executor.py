@@ -1581,6 +1581,11 @@ class RunExecutor:
                 if float(d1_causal_min_entry_price) <= 0
                 else f"{float(d1_causal_min_entry_price)}"
             )
+            min_score_label = (
+                "disabled"
+                if float(d1_causal_min_score) <= 0
+                else f"{float(d1_causal_min_score):.2f}"
+            )
             self.repo.add_event(RunEvent(
                 run_id=run.id,
                 event_type="INFO",
@@ -1588,7 +1593,7 @@ class RunExecutor:
                     "D1 causal entry gate active: "
                     f"min_entry_price={min_entry_price_label}, "
                     f"min_stop_pct={d1_causal_min_stop_pct:.2%}, "
-                    f"min_score={d1_causal_min_score:.2f}"
+                    f"min_score={min_score_label}"
                 ),
             ))
 

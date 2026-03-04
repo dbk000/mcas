@@ -35,7 +35,7 @@ SIM_DEFAULT_MIN_R_PRESERVATION = 0.5
 SIM_DEFAULT_D1_CAUSAL_GATE_ENABLED = True
 SIM_DEFAULT_D1_CAUSAL_MIN_ENTRY_PRICE = 0.0
 SIM_DEFAULT_D1_CAUSAL_MIN_STOP_PCT = 0.015   # 1.5%
-SIM_DEFAULT_D1_CAUSAL_MIN_SCORE = 0.35
+SIM_DEFAULT_D1_CAUSAL_MIN_SCORE = 0.0
 
 # Per-setup exit configs — override default ExitConfig for strategies with
 # validated exit behavior. Without this, all strategies use the default which
@@ -427,21 +427,22 @@ class OpportunitySimulator:
                 )
                 return result
 
-            score = opp.get("score")
-            score_val = None
-            try:
-                if score is not None:
-                    score_val = float(score)
-            except (TypeError, ValueError):
+            if self.config.d1_causal_min_score > 0:
+                score = opp.get("score")
                 score_val = None
+                try:
+                    if score is not None:
+                        score_val = float(score)
+                except (TypeError, ValueError):
+                    score_val = None
 
-            if score_val is None or score_val < self.config.d1_causal_min_score:
-                result.data_available = False
-                result.error_message = (
-                    f"D1 causal gate: score={score_val if score_val is not None else 'NA'} "
-                    f"< min={self.config.d1_causal_min_score:.2f}"
-                )
-                return result
+                if score_val is None or score_val < self.config.d1_causal_min_score:
+                    result.data_available = False
+                    result.error_message = (
+                        f"D1 causal gate: score={score_val if score_val is not None else 'NA'} "
+                        f"< min={self.config.d1_causal_min_score:.2f}"
+                    )
+                    return result
 
         # Always compute r_value as absolute price distance from entry to stop.
         # Payload r_value may be an R-multiple (e.g. D1 stores reward/risk ratio ~6.7)
