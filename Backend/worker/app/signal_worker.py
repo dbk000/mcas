@@ -405,6 +405,31 @@ class SignalWorker:
                 "bb_width_at_trigger": sig.bb_width_at_trigger,
                 "btc_beta": sig.btc_beta,
                 "score_components": sig.score_components,
+                "gates": {
+                    "Gate 1 - Dormancy": f"dormancy_score >= {D1Config.DORMANCY_THRESHOLD}",
+                    "Gate 2 - Compression": f"bb_width < {D1Config.BB_WIDTH_COMPRESS}",
+                    "Gate 3 - Volume spike": (
+                        f"volume_z >= {D1Config.VOLUME_Z_SPIKE} AND "
+                        f"rvol >= {D1Config.RVOL_MIN}"
+                    ),
+                    "Gate 4 - Breakout": "close > prev_compression_box_high (previous donchian_high_20)",
+                    "Gate 5 - BB expanding": "bb_width > bb_width_prev",
+                },
+                "exit_config": {
+                    "trail": "none",
+                    "stop_pct": D1Config.STOP_PCT,
+                    "tp1_pct": D1Config.TP1_PCT,
+                    "tp2_pct": D1Config.TP2_PCT,
+                    "time_stop_bars_1h": D1Config.TIME_STOP_BARS_1H,
+                },
+                "scoring_weights": {
+                    "dormancy": D1Config.W_DORMANCY,
+                    "vol_z": D1Config.W_VOL_Z,
+                    "accum_div": D1Config.W_ACCUM_DIV,
+                    "bb_expansion": D1Config.W_BB_EXPANSION,
+                    "rvol": D1Config.W_RVOL,
+                    "btc_adj_ret": D1Config.W_BTC_ADJ_RET,
+                },
             }
 
             store_signal(self.r, symbol, tf, "D1", payload,
@@ -549,13 +574,21 @@ class SignalWorker:
 
                 # Add gate descriptions for D1
                 if setup_id == "D1":
+                    params["dormancy_require_neg_volume_z"] = D1Config.DORMANCY_REQUIRE_NEG_VOLUME_Z
+                    params["trigger_require_dormancy"] = D1Config.TRIGGER_REQUIRE_DORMANCY
+                    params["trigger_require_compression"] = D1Config.TRIGGER_REQUIRE_COMPRESSION
+                    params["require_accum_divergence_gate"] = D1Config.REQUIRE_ACCUM_DIVERGENCE_GATE
                     params["gates"] = {
                         "Gate 1 - Dormancy": f"dormancy_score >= {D1Config.DORMANCY_THRESHOLD} "
                                              f"(fraction of 48 bars where (high-low)/close < {D1Config.DORMANCY_RANGE_THRESHOLD})",
                         "Gate 2 - Compression": f"bb_width < {D1Config.BB_WIDTH_COMPRESS}",
                         "Gate 3 - Volume spike": f"volume_z >= {D1Config.VOLUME_Z_SPIKE} AND rvol >= {D1Config.RVOL_MIN}",
-                        "Gate 4 - Breakout": "close > compression_box_high (donchian_high_20)",
+                        "Gate 4 - Breakout": "close > prev_compression_box_high (previous donchian_high_20)",
                         "Gate 5 - BB expanding": "bb_width expanding (regime transition)",
+                        "Optional Gate - Accum divergence": (
+                            f"enabled={D1Config.REQUIRE_ACCUM_DIVERGENCE_GATE}, "
+                            f"accum_divergence >= {D1Config.ACCUM_DIVERGENCE_MIN}"
+                        ),
                     }
                     params["exit_config"] = {
                         "stop_pct": D1Config.STOP_PCT,

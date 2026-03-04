@@ -61,6 +61,13 @@ def _env_int(name: str, default: int) -> int:
         return default
 
 
+def _env_bool(name: str, default: bool) -> bool:
+    raw = os.getenv(name)
+    if raw is None:
+        return default
+    return raw.strip().lower() in {"1", "true", "yes", "on"}
+
+
 # =============================================================================
 # Configuration
 # =============================================================================
@@ -96,11 +103,20 @@ class D1Config:
     #   0.75: ~8% pass at old threshold
     DORMANCY_THRESHOLD = _env_float("D1_DORMANCY_THRESHOLD", 0.75)
     BB_WIDTH_COMPRESS = _env_float("D1_BB_WIDTH_COMPRESS", 0.05)  # relaxed from 0.02 (redundant w/ dormancy)
+    # Optional extra condition for initial dormancy confirmation.
+    # Set false to use only dormancy+compression for phase confirmation.
+    DORMANCY_REQUIRE_NEG_VOLUME_Z = _env_bool("D1_DORMANCY_REQUIRE_NEG_VOLUME_Z", False)
 
     # Accumulation divergence: score component only, NOT a binary gate.
     # Data showed accum_div > 0 killed 58% of triggers while median on
     # triggered obs was -0.035 (coin flip). Positive accum_div boosts score.
     ACCUM_DIVERGENCE_MIN = _env_float("D1_ACCUM_DIVERGENCE_MIN", 0.0)  # used for scoring reference only
+    # Optional trigger gate for accum_divergence >= ACCUM_DIVERGENCE_MIN.
+    REQUIRE_ACCUM_DIVERGENCE_GATE = _env_bool("D1_REQUIRE_ACCUM_DIVERGENCE_GATE", False)
+
+    # Trigger gate toggles (all causal; no future-bar dependency).
+    TRIGGER_REQUIRE_DORMANCY = _env_bool("D1_TRIGGER_REQUIRE_DORMANCY", True)
+    TRIGGER_REQUIRE_COMPRESSION = _env_bool("D1_TRIGGER_REQUIRE_COMPRESSION", True)
 
     # Phase 3: Breakout trigger
     # vol_z>=2.0: 4.1% pass; rvol>=3.0: 4.8% pass (was 5.0 @ 2.1%)
@@ -120,12 +136,12 @@ class D1Config:
     COOLDOWN_BARS_1H = _env_int("D1_COOLDOWN_BARS_1H", 24)  # 1 day
 
     # Scoring weights (sum to 1.0)
-    W_DORMANCY = 0.20
-    W_VOL_Z = 0.25
-    W_ACCUM_DIV = 0.15
-    W_BB_EXPANSION = 0.15
-    W_RVOL = 0.10
-    W_BTC_ADJ_RET = 0.15
+    W_DORMANCY = _env_float("D1_W_DORMANCY", 0.20)
+    W_VOL_Z = _env_float("D1_W_VOL_Z", 0.25)
+    W_ACCUM_DIV = _env_float("D1_W_ACCUM_DIV", 0.15)
+    W_BB_EXPANSION = _env_float("D1_W_BB_EXPANSION", 0.15)
+    W_RVOL = _env_float("D1_W_RVOL", 0.10)
+    W_BTC_ADJ_RET = _env_float("D1_W_BTC_ADJ_RET", 0.15)
 
     # Dormancy score lookback for detection
     DORMANCY_LOOKBACK = 48  # bars
@@ -430,9 +446,14 @@ class D1Evaluator(SetupBase):
 
         # Phase 1: Dormancy detection
         if state.phase == D1Phase.SCANNING:
-            if (state.dormancy_score >= D1Config.DORMANCY_THRESHOLD
-                    and state.bb_width < D1Config.BB_WIDTH_COMPRESS
-                    and state.volume_z < 0):
+            if (
+                state.dormancy_score >= D1Config.DORMANCY_THRESHOLD
+                and state.bb_width < D1Config.BB_WIDTH_COMPRESS
+                and (
+                    not D1Config.DORMANCY_REQUIRE_NEG_VOLUME_Z
+                    or state.volume_z < 0
+                )
+            ):
                 state.phase = D1Phase.DORMANT_CONFIRMED
                 state.dormancy_confirmed_at_bar = state.bar_index
                 # Record compression box from Donchian
@@ -488,15 +509,15 @@ class D1Evaluator(SetupBase):
         """
         Evaluate if D1 trigger conditions are met.
 
-        Four gates must pass:
-          Gate 1: Dormancy was confirmed (state reached DORMANT_CONFIRMED or beyond)
-          Gate 2: Volume spike (volume_z >= threshold AND rvol >= threshold)
-          Gate 3: Price breakout above compression box high
-          Gate 4: BB width expanding (regime transition from compressed)
+        Five gates must pass (all known at trigger bar close):
+          Gate 1: Dormancy (dormancy_score >= threshold)
+          Gate 2: Compression (bb_width < threshold)
+          Gate 3: Volume spike (volume_z >= threshold AND rvol >= threshold)
+          Gate 4: Price breakout above compression box high
+          Gate 5: BB width expanding (regime transition from compressed)
 
-        accum_divergence is a score component (boosts signal when positive),
-        NOT a binary gate. Data showed it killed 58% of triggers while median
-        on triggered observations was -0.035 (essentially coin flip).
+        Optional:
+          Gate 6 (disabled by default): accum_divergence >= min threshold.
         """
         # Trigger from DORMANT_CONFIRMED or ACCUMULATING
         if state.phase not in (D1Phase.DORMANT_CONFIRMED, D1Phase.ACCUMULATING):
@@ -509,16 +530,27 @@ class D1Evaluator(SetupBase):
         # Gate 1: Dormancy must have been confirmed
         if state.dormancy_confirmed_at_bar == 0:
             return None
+        if D1Config.TRIGGER_REQUIRE_DORMANCY and state.dormancy_score < D1Config.DORMANCY_THRESHOLD:
+            return None
 
-        # Gate 2: Volume spike
+        # Gate 2: Compression at trigger
+        if D1Config.TRIGGER_REQUIRE_COMPRESSION and state.bb_width >= D1Config.BB_WIDTH_COMPRESS:
+            return None
+
+        # Gate 3: Volume spike
         if state.volume_z < D1Config.VOLUME_Z_SPIKE:
             return None
         if state.rvol < D1Config.RVOL_MIN:
             return None
 
-        # accum_divergence: score component, not gate (see docstring above)
+        # Optional gate: accumulation divergence minimum
+        if (
+            D1Config.REQUIRE_ACCUM_DIVERGENCE_GATE
+            and state.accum_divergence < D1Config.ACCUM_DIVERGENCE_MIN
+        ):
+            return None
 
-        # Gate 3: Price breakout above compression box
+        # Gate 4: Price breakout above compression box
         # Uses PREVIOUS bar's compression box — not current bar's donchian.
         # Current bar's high updates donchian_high_20, making close > donchian_high
         # impossible (close <= high <= donchian_high). We ask: "did price break
@@ -528,7 +560,7 @@ class D1Evaluator(SetupBase):
         if close <= state.prev_compression_box_high:
             return None
 
-        # Gate 4: BB width expanding (current > previous)
+        # Gate 5: BB width expanding (current > previous)
         if state.bb_width <= state.bb_width_prev:
             return None
 
@@ -560,6 +592,7 @@ class D1Evaluator(SetupBase):
         # Build explain payload
         why_items = [
             f"Dormancy score {state.dormancy_score:.0%} (threshold {D1Config.DORMANCY_THRESHOLD:.0%})",
+            f"Compression width {state.bb_width:.4f} (max {D1Config.BB_WIDTH_COMPRESS:.4f})",
             f"Volume z-score {state.volume_z:.1f} (threshold {D1Config.VOLUME_Z_SPIKE:.1f})",
             f"Relative volume {state.rvol:.1f}x (threshold {D1Config.RVOL_MIN:.1f}x)",
             f"Accumulation divergence {state.accum_divergence:.4f} ({'positive — boosts score' if state.accum_divergence > 0 else 'negative — score neutral'})",
@@ -603,19 +636,35 @@ class D1Evaluator(SetupBase):
                        close: float) -> dict:
         """Compute weighted score components. Each in [0, 1], sum weighted."""
         components = {}
+        w_sum = (
+            D1Config.W_DORMANCY
+            + D1Config.W_VOL_Z
+            + D1Config.W_ACCUM_DIV
+            + D1Config.W_BB_EXPANSION
+            + D1Config.W_RVOL
+            + D1Config.W_BTC_ADJ_RET
+        )
+        if w_sum <= 0:
+            w_sum = 1.0
+        w_dormancy = D1Config.W_DORMANCY / w_sum
+        w_vol_z = D1Config.W_VOL_Z / w_sum
+        w_accum_div = D1Config.W_ACCUM_DIV / w_sum
+        w_bb_expansion = D1Config.W_BB_EXPANSION / w_sum
+        w_rvol = D1Config.W_RVOL / w_sum
+        w_btc_adj_ret = D1Config.W_BTC_ADJ_RET / w_sum
 
         # Dormancy: higher is better (more dormant before breakout)
-        components["dormancy"] = D1Config.W_DORMANCY * min(
+        components["dormancy"] = w_dormancy * min(
             state.dormancy_score / D1Config.DORMANCY_THRESHOLD, 1.0
         )
 
         # Volume z: higher is better (stronger volume spike)
         vol_z_norm = min(state.volume_z / 5.0, 1.0)  # Normalize to 5.0 max
-        components["vol_z"] = D1Config.W_VOL_Z * vol_z_norm
+        components["vol_z"] = w_vol_z * vol_z_norm
 
         # Accumulation divergence: higher is better
         accum_norm = min(max(state.accum_divergence, 0) / 0.01, 1.0)  # 0.01 as reference max
-        components["accum_div"] = D1Config.W_ACCUM_DIV * accum_norm
+        components["accum_div"] = w_accum_div * accum_norm
 
         # BB expansion: ratio of current to previous width
         if state.bb_width_prev > 0:
@@ -624,11 +673,11 @@ class D1Evaluator(SetupBase):
             expansion_norm = max(expansion_norm, 0.0)
         else:
             expansion_norm = 0.5
-        components["bb_expansion"] = D1Config.W_BB_EXPANSION * expansion_norm
+        components["bb_expansion"] = w_bb_expansion * expansion_norm
 
         # RVOL: higher is better
         rvol_norm = min(state.rvol / 20.0, 1.0)  # Normalize to 20x max
-        components["rvol"] = D1Config.W_RVOL * rvol_norm
+        components["rvol"] = w_rvol * rvol_norm
 
         # BTC-adjusted return: positive idiosyncratic return = genuine buying
         if len(snapshot.ohlcv) >= 2:
@@ -639,7 +688,7 @@ class D1Evaluator(SetupBase):
             btc_adj_score = min(max(adj_ret / 0.05, 0), 1.0)  # 5% return = max score
         else:
             btc_adj_score = 0.5
-        components["btc_adj_ret"] = D1Config.W_BTC_ADJ_RET * btc_adj_score
+        components["btc_adj_ret"] = w_btc_adj_ret * btc_adj_score
 
         return components
 
