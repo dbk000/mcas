@@ -104,7 +104,7 @@ Purpose: record attempted fixes, outcomes, and regressions so later sessions avo
 - Date (UTC): 2026-03-04
 - Area: Survey chart lifecycle
 - Change: Full code-path audit identified chart remount churn as primary blank/flicker trigger.
-- Commit: working tree (post-`492a89b`, pre-commit)
+- Commit: `1862ee4`
 - Outcome: Confirmed root cause candidate.
 - Notes / Evidence:
   - `OpportunityCurveChart` init effect depended on unstable values (`syncMarkerCoords`, `maPeriods`) and could `chart.remove()`/recreate during normal rerenders.
@@ -120,6 +120,6 @@ Purpose: record attempted fixes, outcomes, and regressions so later sessions avo
   - Ignored non-positive level prices for rendered SL/TP/entry/exit lines.
   - Added responsive presentation columns (fallback to 1 column when viewport too narrow).
   - Removed unnecessary `movingAveragePeriods` prop from survey row (MAs disabled there).
-- Commit: working tree (post-`492a89b`, pre-commit)
+- Commit: `1862ee4`
 - Outcome: Build passes locally (`Frontend npm run build`). Runtime validation pending browser check.
 - Notes / Evidence: This pass targets exact “brief render then blank” behavior reported in screenshots.
