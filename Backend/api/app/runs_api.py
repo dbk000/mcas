@@ -390,7 +390,7 @@ def get_simulation_results(
                        (data_available AND pnl_net IS NOT NULL) AS included_in_summary,
                        CASE
                            WHEN data_available AND pnl_net IS NOT NULL THEN 'included'
-                           WHEN error_message LIKE 'R-multiple below floor:%' THEN 'post_sim_filter'
+                           WHEN position('R-multiple below floor:' in coalesce(error_message, '')) = 1 THEN 'post_sim_filter'
                            ELSE 'pretrade_or_data_gate'
                        END AS inclusion_reason
                 FROM simulation_results
@@ -484,7 +484,7 @@ def export_simulation_results_csv(run_id: str):
                        (sr.data_available AND sr.pnl_net IS NOT NULL) AS included_in_summary,
                        CASE
                            WHEN sr.data_available AND sr.pnl_net IS NOT NULL THEN 'included'
-                           WHEN sr.error_message LIKE 'R-multiple below floor:%' THEN 'post_sim_filter'
+                           WHEN position('R-multiple below floor:' in coalesce(sr.error_message, '')) = 1 THEN 'post_sim_filter'
                            ELSE 'pretrade_or_data_gate'
                        END AS inclusion_reason
                 FROM simulation_results sr
