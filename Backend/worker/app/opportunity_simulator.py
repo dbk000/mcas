@@ -387,16 +387,17 @@ class OpportunitySimulator:
                 )
                 return result
 
-        # Calculate r_value if not present
-        if r_value is None:
-            if direction == "long":
-                r_value = entry_price - stop_price
-            else:
-                r_value = stop_price - entry_price
-            if r_value <= 0:
-                result.data_available = False
-                result.error_message = "Invalid r_value"
-                return result
+        # Always compute r_value as absolute price distance from entry to stop.
+        # Payload r_value may be an R-multiple (e.g. D1 stores reward/risk ratio ~6.7)
+        # which would break the R-preservation guard that compares absolute distances.
+        if direction == "long":
+            r_value = entry_price - stop_price
+        else:
+            r_value = stop_price - entry_price
+        if r_value <= 0:
+            result.data_available = False
+            result.error_message = "Invalid r_value"
+            return result
 
         result.stop_price = stop_price
         result.r_value = r_value
