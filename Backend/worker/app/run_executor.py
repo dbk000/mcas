@@ -1529,6 +1529,17 @@ class RunExecutor:
         max_bars_forward = setup_params.get("max_bars_forward", SIM_DEFAULT_MAX_BARS_FORWARD)
         min_r_preservation = setup_params.get("min_r_preservation", SIM_DEFAULT_MIN_R_PRESERVATION)
 
+        # If version is unspecified for a single setup run, pin to latest known
+        # setup_version so simulation matches current node behavior/dataset.
+        inferred_setup_version = self._infer_latest_setup_version(setup_ids, setup_version, batch_id)
+        if inferred_setup_version and inferred_setup_version != setup_version:
+            setup_version = inferred_setup_version
+            self.repo.add_event(RunEvent(
+                run_id=run.id,
+                event_type="INFO",
+                message=f"Inferred setup_version={setup_version} for simulation dataset alignment",
+            ))
+
         # Build simulator config
         sim_config = SimulationConfig(
             position_size_usd=position_size_usd,
@@ -1590,20 +1601,46 @@ class RunExecutor:
             ))
 
         # Compute summary statistics
-        summary_stats = simulator.compute_summary(results, position_size_usd)
+        summary_stats = simulator.compute_summary(
+            results,
+            position_size_usd,
+            starting_capital=run.execution.starting_capital,
+        )
 
         # Update run summary
         run.summary.total_trades = summary_stats["simulated_count"]
         run.summary.signals_generated = summary_stats["total_opportunities"]
-        run.summary.winning_trades = len([r for r in results if r.data_available and r.pnl_net and r.pnl_net > 0])
-        run.summary.losing_trades = len([r for r in results if r.data_available and r.pnl_net and r.pnl_net <= 0])
+        run.summary.winning_trades = summary_stats["winning_trades"]
+        run.summary.losing_trades = summary_stats["losing_trades"]
         run.summary.win_rate = summary_stats["win_rate"]
         run.summary.total_r = summary_stats["total_r"]
         run.summary.avg_r = summary_stats["avg_r"]
+        run.summary.max_r = summary_stats["max_r"]
+        run.summary.min_r = summary_stats["min_r"]
+        run.summary.gross_pnl = summary_stats["gross_pnl"]
+        run.summary.total_fees = summary_stats["total_fees"]
+        run.summary.total_slippage = summary_stats["total_slippage"]
         run.summary.profit_factor = summary_stats["profit_factor"] or 0
         run.summary.net_pnl = summary_stats["total_pnl_net"]
+        run.summary.max_drawdown_pct = summary_stats["max_drawdown_pct"]
         run.summary.expectancy = summary_stats["expectancy_r"]
+        run.summary.bars_processed = summary_stats["bars_processed"]
+        run.summary.assets_processed = summary_stats["assets_processed"]
+        run.summary.assets_skipped = summary_stats["assets_skipped"]
+        run.summary.starting_capital = summary_stats["starting_capital"]
+        run.summary.final_equity = summary_stats["final_equity"]
+        run.summary.return_pct = summary_stats["return_pct"]
+        run.summary.sharpe_ratio = summary_stats["sharpe_ratio"]
+        run.summary.sortino_ratio = summary_stats["sortino_ratio"]
+        run.summary.calmar_ratio = summary_stats["calmar_ratio"]
+        run.summary.max_consecutive_wins = summary_stats["max_consecutive_wins"]
+        run.summary.max_consecutive_losses = summary_stats["max_consecutive_losses"]
+        run.summary.avg_holding_bars = summary_stats["avg_holding_bars"]
+        run.summary.avg_win_r = summary_stats["avg_win_r"]
+        run.summary.avg_loss_r = summary_stats["avg_loss_r"]
+        run.summary.payoff_ratio = summary_stats["payoff_ratio"]
         run.summary.per_setup = summary_stats["per_setup"]
+        run.summary.per_symbol = summary_stats["per_symbol"]
 
         # Store summary stats as run event for API retrieval
         self.repo.add_event(RunEvent(
@@ -1617,6 +1654,44 @@ class RunExecutor:
             ),
             payload=summary_stats,
         ))
+
+    def _infer_latest_setup_version(
+        self,
+        setup_ids: Optional[list[str]],
+        setup_version: Optional[str],
+        batch_id: Optional[str],
+    ) -> Optional[str]:
+        """
+        Infer latest setup_version for single-setup simulations.
+
+        This keeps simulation dataset aligned with the currently active node
+        version when caller did not pin setup_version explicitly.
+        """
+        if setup_version or batch_id:
+            return setup_version
+        if not setup_ids or len(setup_ids) != 1:
+            return setup_version
+
+        target_setup = setup_ids[0]
+        with self._conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT setup_version
+                    FROM opportunities
+                    WHERE status = 'expired'
+                      AND setup_id = %s
+                      AND setup_version IS NOT NULL
+                      AND setup_version <> ''
+                    ORDER BY created_ts DESC
+                    LIMIT 1;
+                    """,
+                    (target_setup,),
+                )
+                row = cur.fetchone()
+                if row and row[0]:
+                    return row[0]
+        return setup_version
 
     def _load_expired_opportunities(
         self,

@@ -810,6 +810,7 @@ class OpportunitySimulator:
         self,
         results: list[SimulationResult],
         position_size_usd: float,
+        starting_capital: float = 10000.0,
     ) -> dict:
         """
         Compute summary statistics from simulation results.
@@ -823,22 +824,51 @@ class OpportunitySimulator:
                 "total_opportunities": len(results),
                 "simulated_count": 0,
                 "skipped_no_data": len(results) - len(valid_results),
+                "winning_trades": 0,
+                "losing_trades": 0,
                 "win_rate": 0,
                 "profit_factor": 0,
                 "expectancy_r": 0,
                 "avg_r": 0,
                 "total_r": 0,
+                "max_r": 0,
+                "min_r": 0,
+                "gross_pnl": 0,
+                "total_fees": 0,
+                "total_slippage": 0,
                 "total_pnl_net": 0,
                 "position_size_usd": position_size_usd,
+                "max_drawdown_pct": 0,
+                "starting_capital": round(starting_capital, 2),
+                "final_equity": round(starting_capital, 2),
+                "return_pct": 0,
+                "bars_processed": 0,
+                "assets_processed": 0,
+                "assets_skipped": 0,
+                "sharpe_ratio": 0,
+                "sortino_ratio": 0,
+                "calmar_ratio": 0,
+                "max_consecutive_wins": 0,
+                "max_consecutive_losses": 0,
+                "avg_holding_bars": 0,
+                "avg_win_r": 0,
+                "avg_loss_r": 0,
+                "payoff_ratio": 0,
                 "per_setup": {},
+                "per_symbol": {},
                 "exit_reasons": {},
+                "tp_invalidated_count": 0,
+                "error_breakdown": {},
             }
 
         winners = [r for r in valid_results if r.pnl_net > 0]
         losers = [r for r in valid_results if r.pnl_net <= 0]
 
         total_pnl = sum(r.pnl_net for r in valid_results)
-        r_multiples = [r.r_multiple for r in valid_results]
+        total_fees = sum((r.fees or 0.0) for r in valid_results)
+        gross_pnl = total_pnl + total_fees
+        bars_processed = sum((r.bars_held or 0) for r in valid_results)
+        r_multiples = [r.r_multiple or 0.0 for r in valid_results]
         total_r = sum(r_multiples)
         avg_r = total_r / len(r_multiples) if r_multiples else 0
 
@@ -847,6 +877,68 @@ class OpportunitySimulator:
         profit_factor = gross_profit / gross_loss if gross_loss > 0 else float('inf')
 
         win_rate = len(winners) / len(valid_results) if valid_results else 0
+
+        # Slippage impact in quote currency terms
+        total_slippage = 0.0
+        for r in valid_results:
+            if (
+                r.entry_price is not None and r.entry_price_with_slippage is not None
+                and r.exit_price is not None and r.exit_price_with_slippage is not None
+                and r.position_size is not None
+            ):
+                entry_slip = abs(r.entry_price_with_slippage - r.entry_price) * r.position_size
+                exit_slip = abs(r.exit_price_with_slippage - r.exit_price) * r.position_size
+                total_slippage += (entry_slip + exit_slip)
+
+        # P2-style extended metrics for UI parity with backtest summary
+        bars_held_list = [r.bars_held or 0 for r in valid_results]
+        avg_holding = sum(bars_held_list) / len(bars_held_list) if bars_held_list else 0
+
+        win_rs = [r.r_multiple or 0.0 for r in winners]
+        loss_rs = [r.r_multiple or 0.0 for r in losers]
+        avg_win_r = sum(win_rs) / len(win_rs) if win_rs else 0
+        avg_loss_r = sum(loss_rs) / len(loss_rs) if loss_rs else 0
+        payoff_ratio = abs(avg_win_r / avg_loss_r) if avg_loss_r != 0 else 0
+
+        max_con_wins = 0
+        max_con_losses = 0
+        cur_wins = 0
+        cur_losses = 0
+        for r in valid_results:
+            if (r.pnl_net or 0) > 0:
+                cur_wins += 1
+                cur_losses = 0
+                max_con_wins = max(max_con_wins, cur_wins)
+            else:
+                cur_losses += 1
+                cur_wins = 0
+                max_con_losses = max(max_con_losses, cur_losses)
+
+        import math
+        sharpe = 0.0
+        sortino = 0.0
+        if len(r_multiples) > 1:
+            mean_r = avg_r
+            std_r = math.sqrt(sum((r - mean_r) ** 2 for r in r_multiples) / (len(r_multiples) - 1))
+            sharpe = (mean_r / std_r) if std_r > 0 else 0.0
+            downside = [min(0.0, r) for r in r_multiples]
+            downside_var = sum(d ** 2 for d in downside) / (len(r_multiples) - 1)
+            downside_std = math.sqrt(downside_var)
+            sortino = (mean_r / downside_std) if downside_std > 0 else 0.0
+
+        # Mark-to-market style equity path using sequential simulated trades
+        equity = starting_capital
+        peak = starting_capital
+        max_drawdown_pct = 0.0
+        for r in valid_results:
+            equity += (r.pnl_net or 0.0)
+            peak = max(peak, equity)
+            if peak > 0:
+                dd = (peak - equity) / peak * 100
+                max_drawdown_pct = max(max_drawdown_pct, dd)
+        final_equity = equity
+        return_pct = ((final_equity - starting_capital) / starting_capital * 100) if starting_capital > 0 else 0.0
+        calmar = (return_pct / max_drawdown_pct) if max_drawdown_pct > 0 else 0.0
 
         # Per-setup breakdown
         per_setup: dict[str, dict] = {}
@@ -869,6 +961,27 @@ class OpportunitySimulator:
             s["pnl_net"] = round(s["pnl_net"], 2)
             s["total_r"] = round(s["total_r"], 2)
 
+        # Per-symbol breakdown (trim to top 20 by |PnL|)
+        per_symbol: dict[str, dict] = {}
+        for r in valid_results:
+            sym = r.symbol
+            if sym not in per_symbol:
+                per_symbol[sym] = {"trades": 0, "wins": 0, "pnl_net": 0.0, "total_r": 0.0}
+            per_symbol[sym]["trades"] += 1
+            if (r.pnl_net or 0) > 0:
+                per_symbol[sym]["wins"] += 1
+            per_symbol[sym]["pnl_net"] += (r.pnl_net or 0.0)
+            per_symbol[sym]["total_r"] += (r.r_multiple or 0.0)
+        for sym in per_symbol:
+            s = per_symbol[sym]
+            s["win_rate"] = s["wins"] / s["trades"] if s["trades"] > 0 else 0
+            s["avg_r"] = s["total_r"] / s["trades"] if s["trades"] > 0 else 0
+            s["pnl_net"] = round(s["pnl_net"], 2)
+            s["total_r"] = round(s["total_r"], 2)
+        if len(per_symbol) > 20:
+            top_syms = sorted(per_symbol, key=lambda s: abs(per_symbol[s]["pnl_net"]), reverse=True)[:20]
+            per_symbol = {s: per_symbol[s] for s in top_syms}
+
         # Exit reason distribution
         exit_reasons: dict[str, int] = {}
         for r in valid_results:
@@ -884,19 +997,45 @@ class OpportunitySimulator:
 
         # TP invalidation count
         tp_invalidated_count = sum(1 for r in valid_results if r.tp_invalidated)
+        valid_symbols = {r.symbol for r in valid_results}
+        skipped_symbols = {r.symbol for r in results if not r.data_available and r.symbol not in valid_symbols}
 
         return {
             "total_opportunities": len(results),
             "simulated_count": len(valid_results),
             "skipped_no_data": len(results) - len(valid_results),
+            "winning_trades": len(winners),
+            "losing_trades": len(losers),
             "win_rate": round(win_rate, 4),
             "profit_factor": round(profit_factor, 3) if profit_factor != float('inf') else None,
             "expectancy_r": round(avg_r, 4),
             "avg_r": round(avg_r, 4),
             "total_r": round(total_r, 2),
+            "max_r": round(max(r_multiples), 4) if r_multiples else 0,
+            "min_r": round(min(r_multiples), 4) if r_multiples else 0,
+            "gross_pnl": round(gross_pnl, 2),
+            "total_fees": round(total_fees, 2),
+            "total_slippage": round(total_slippage, 2),
             "total_pnl_net": round(total_pnl, 2),
             "position_size_usd": position_size_usd,
+            "max_drawdown_pct": round(max_drawdown_pct, 2),
+            "starting_capital": round(starting_capital, 2),
+            "final_equity": round(final_equity, 2),
+            "return_pct": round(return_pct, 2),
+            "bars_processed": int(bars_processed),
+            "assets_processed": len(valid_symbols),
+            "assets_skipped": len(skipped_symbols),
+            "sharpe_ratio": round(sharpe, 3),
+            "sortino_ratio": round(sortino, 3),
+            "calmar_ratio": round(calmar, 3),
+            "max_consecutive_wins": max_con_wins,
+            "max_consecutive_losses": max_con_losses,
+            "avg_holding_bars": round(avg_holding, 1),
+            "avg_win_r": round(avg_win_r, 3),
+            "avg_loss_r": round(avg_loss_r, 3),
+            "payoff_ratio": round(payoff_ratio, 3),
             "per_setup": per_setup,
+            "per_symbol": per_symbol,
             "exit_reasons": exit_reasons,
             "tp_invalidated_count": tp_invalidated_count,
             "error_breakdown": error_breakdown,

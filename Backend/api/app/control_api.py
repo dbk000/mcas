@@ -547,10 +547,32 @@ def create_simulation_run(request: SimulationRunRequest):
     t0 = time.time()
     run_id = str(uuid.uuid4())
     now = datetime.now(timezone.utc)
+    resolved_setup_version = request.setup_version
 
     # Count available expired opportunities
     with get_conn() as conn:
         with conn.cursor() as cur:
+            # Align dataset to current setup version when caller did not pin one.
+            if (
+                not resolved_setup_version
+                and not request.batch_id
+                and request.setup_ids
+                and len(request.setup_ids) == 1
+            ):
+                cur.execute("""
+                    SELECT setup_version
+                    FROM opportunities
+                    WHERE status = 'expired'
+                      AND setup_id = %s
+                      AND setup_version IS NOT NULL
+                      AND setup_version <> ''
+                    ORDER BY created_ts DESC
+                    LIMIT 1;
+                """, (request.setup_ids[0],))
+                _row = cur.fetchone()
+                if _row and _row[0]:
+                    resolved_setup_version = _row[0]
+
             conditions = ["status = 'expired'"]
             params = []
 
@@ -566,9 +588,9 @@ def create_simulation_run(request: SimulationRunRequest):
                 conditions.append("created_ts >= NOW() - INTERVAL '%s hours'")
                 params.append(request.max_age_hours)
 
-            if request.setup_version:
+            if resolved_setup_version:
                 conditions.append("setup_version = %s")
-                params.append(request.setup_version)
+                params.append(resolved_setup_version)
 
             if request.batch_id:
                 conditions.append("batch_id = %s")
@@ -632,7 +654,7 @@ def create_simulation_run(request: SimulationRunRequest):
 
     strategy_json = json.dumps({
         "setup_id": ",".join(request.setup_ids) if request.setup_ids else "S9,U1",
-        "setup_version": request.setup_version or "v2.0",
+        "setup_version": resolved_setup_version or "AUTO",
         "setup_params": {
             "position_size_usd": request.position_size_usd,
             "setup_ids": request.setup_ids,
@@ -642,7 +664,7 @@ def create_simulation_run(request: SimulationRunRequest):
             "slippage_bps": request.slippage_bps,
             "max_bars_forward": request.max_bars_forward,
             "min_r_preservation": request.min_r_preservation,
-            "setup_version": request.setup_version,
+            "setup_version": resolved_setup_version,
             "batch_id": request.batch_id,
             "timeframes": request.timeframes,
             "directions": request.directions,
@@ -709,6 +731,7 @@ def create_simulation_run(request: SimulationRunRequest):
         "opportunities_available": opp_count,
         "limit": request.limit,
         "position_size_usd": request.position_size_usd,
+        "setup_version": resolved_setup_version,
         "message": f"Simulation run queued for {min(opp_count, request.limit)} expired opportunities",
     }, t0)
 
