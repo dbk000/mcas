@@ -5,6 +5,27 @@
 
 Coins transitioning from prolonged dormancy (flatline price, near-zero relative volume) to active accumulation (volume spikes while price stays compressed) exhibit a predictable breakout pattern. The dormancy phase establishes a low-volatility, low-volume baseline. The accumulation phase — visible as rising volume without proportional price movement — signals that informed participants are building positions while the market is inattentive. Entry on breakout from the compressed range captures the ignition move. Research basis: 69.3% of pump events show pre-accumulation averaging 36 hours (arxiv:2504.15790), and dual EWMA + volume thresholding achieves 0.84 precision on detecting the ignition (arxiv:2503.08692). D1 combines the dormancy detection (identifying candidates), accumulation confirmation (filtering for genuine buying), and threshold-based entry timing into a single integrated setup.
 
+## 2026-03-04 Provenance and Production Notes
+
+- Retrospective slice `r_multiple >= -1.05` was used as a **diagnostic lens only** to identify entry-time predictors of tail-loss trades. It is not a production gate.
+- Research artifacts that contain this diagnostic:
+  - `Backend/scripts/sim_d1_matrix.py`
+  - `Backend/scripts/d1_capacity_ranker.py`
+  - `Backend/scripts/d1_tier_diagnostic.py`
+  - `Backend/scripts/output/sim_d1_matrix_20260303_122026.{txt,json}`
+  - `Backend/scripts/output/sim_d1_matrix_20260303_131113.{txt,json}`
+  - `Backend/scripts/output/d1_gate_ablation_results.txt`
+- Current causal D1 gates are entry-time computable:
+  - Dormancy confirmed
+  - Compression (`bb_width < bb_width_compress`)
+  - Volume spike (`volume_z >= volume_z_spike` and `rvol >= rvol_min`)
+  - Breakout (`close > compression_box_high`)
+  - BB expansion regime transition
+  - Optional accumulation divergence gate
+- Current simulator defaults (for D1 causal gate):
+  - Enabled: `min_stop_pct=1.5%`
+  - Disabled by default: `min_entry_price`, `min_score`, `min_r_multiple_floor`
+
 ## Data Requirements
 
 - OHLCV candles (15m and 1h primary timeframes)
