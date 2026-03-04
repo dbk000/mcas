@@ -27,7 +27,7 @@ import time
 import json
 import hmac
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Optional, Any
 
 import requests
@@ -292,40 +292,76 @@ def list_timeframes():
 @router.get("/ohlcv")
 def get_ohlcv(
     symbol: str = Query(..., description="Trading pair, e.g. BTCUSDT"),
-    tf: str = Query(default="1h", description="Timeframe"),
+    tf: str = Query(default="1m", description="Timeframe"),
     limit: int = Query(default=100, ge=1, le=500),
 ):
-    """Get OHLCV candles from Binance."""
+    """Get OHLCV candles from persisted DB collector data."""
     t0 = time.time()
 
-    url = "https://api.binance.com/api/v3/klines"
-    params = {"symbol": symbol, "interval": tf, "limit": limit}
+    if not DATABASE_URL:
+        raise HTTPException(status_code=500, detail="Database not configured")
 
-    try:
-        resp = requests.get(url, params=params, timeout=10)
-        resp.raise_for_status()
-        data = resp.json()
-    except Exception as e:
-        raise HTTPException(status_code=502, detail=f"Binance API error: {e}")
+    symbol_norm = symbol.strip().upper()
+    tf_norm = tf.strip().lower()
+
+    with psycopg.connect(DATABASE_URL) as conn:
+        with conn.cursor() as cur:
+            # Deduplicate per bar timestamp while preferring freshest rows and WS source.
+            cur.execute("""
+                SELECT bar_start_ts, open, high, low, close, volume, as_of_ts, is_final, source
+                FROM (
+                    SELECT bar_start_ts, open, high, low, close, volume, as_of_ts, is_final, source
+                    FROM (
+                        SELECT DISTINCT ON (bar_start_ts)
+                               bar_start_ts, open, high, low, close, volume, as_of_ts, is_final, source
+                        FROM ohlcv
+                        WHERE symbol = %s
+                          AND timeframe = %s
+                        ORDER BY bar_start_ts DESC,
+                                 as_of_ts DESC,
+                                 CASE source
+                                     WHEN 'ws' THEN 0
+                                     WHEN 'binance' THEN 1
+                                     ELSE 2
+                                 END
+                    ) dedup
+                    ORDER BY bar_start_ts DESC
+                    LIMIT %s
+                ) latest
+                ORDER BY bar_start_ts ASC;
+            """, (symbol_norm, tf_norm, limit))
+            rows = cur.fetchall()
 
     candles = []
-    for k in data:
+    freshest_as_of: Optional[datetime] = None
+    for r_ in rows:
+        bar_ts, o_, h_, l_, c_, v_, as_of_ts, is_final, source = r_
+        if as_of_ts and (freshest_as_of is None or as_of_ts > freshest_as_of):
+            freshest_as_of = as_of_ts
         candles.append({
-            "timestamp": k[0],
-            "candle_ts": datetime.fromtimestamp(k[0] / 1000, tz=timezone.utc).isoformat(),
-            "open": float(k[1]),
-            "high": float(k[2]),
-            "low": float(k[3]),
-            "close": float(k[4]),
-            "volume": float(k[5]),
+            "timestamp": int(bar_ts.timestamp() * 1000),
+            "candle_ts": bar_ts.isoformat(),
+            "open": float(o_),
+            "high": float(h_),
+            "low": float(l_),
+            "close": float(c_),
+            "volume": float(v_),
+            "as_of_ts": as_of_ts.isoformat() if as_of_ts else None,
+            "is_final": bool(is_final),
+            "source": source,
         })
 
-    as_of = time.time()
+    as_of = freshest_as_of.timestamp() if freshest_as_of else time.time()
+    collector_lag_s = int(max(0, time.time() - as_of)) if freshest_as_of else None
+
     return envelope({
-        "symbol": symbol,
-        "timeframe": tf,
+        "symbol": symbol_norm,
+        "timeframe": tf_norm,
         "candles": candles,
         "count": len(candles),
+        "collector_as_of_ts": freshest_as_of.isoformat() if freshest_as_of else None,
+        "collector_lag_s": collector_lag_s,
+        "source": "db_ohlcv",
     }, t0, as_of_ts=as_of)
 
 
@@ -601,12 +637,96 @@ def _read_opportunities_from_redis(min_score: float = 0.0, limit: int = 50, setu
         return None
 
 
+def _parse_payload_json(raw_payload: Any) -> dict:
+    """Safely parse payload_json into a dict."""
+    if isinstance(raw_payload, dict):
+        return raw_payload
+    if not raw_payload:
+        return {}
+    try:
+        parsed = json.loads(raw_payload)
+        return parsed if isinstance(parsed, dict) else {}
+    except Exception:
+        return {}
+
+
+def _parse_timestamp(value: Any) -> Optional[datetime]:
+    """Parse epoch seconds/ms or ISO timestamp to timezone-aware datetime."""
+    if value is None:
+        return None
+
+    if isinstance(value, datetime):
+        return value if value.tzinfo else value.replace(tzinfo=timezone.utc)
+
+    if isinstance(value, (int, float)):
+        ts = float(value)
+        if ts > 1e12:
+            ts /= 1000.0
+        try:
+            return datetime.fromtimestamp(ts, tz=timezone.utc)
+        except Exception:
+            return None
+
+    if isinstance(value, str):
+        v = value.strip()
+        if not v:
+            return None
+        try:
+            numeric = float(v)
+            return _parse_timestamp(numeric)
+        except ValueError:
+            pass
+        try:
+            if v.endswith("Z"):
+                v = v[:-1] + "+00:00"
+            dt = datetime.fromisoformat(v)
+            return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+        except Exception:
+            return None
+
+    return None
+
+
+def _parse_float(value: Any) -> Optional[float]:
+    if value is None:
+        return None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _compute_outcome_class(r_multiple: Any, pnl_net: Any) -> str:
+    """Map existing outcome fields to winner/loser class."""
+    r_value = _parse_float(r_multiple)
+    if r_value is not None:
+        if r_value > 0:
+            return "winner"
+        if r_value < 0:
+            return "loser"
+
+    pnl_value = _parse_float(pnl_net)
+    if pnl_value is not None:
+        if pnl_value > 0:
+            return "winner"
+        if pnl_value < 0:
+            return "loser"
+
+    return "unknown"
+
+
 @router.get("/opportunities")
 def list_opportunities(
     status: str = Query(default="active"),
     setup_id: Optional[str] = Query(default=None),
     min_score: float = Query(default=0.0),
-    limit: int = Query(default=50, ge=1, le=200),
+    limit: int = Query(default=50, ge=1, le=500),
+    dedup: bool = Query(default=True, description="When false, return all matching rows (no symbol/tf/setup dedup)."),
+    include_outcome: bool = Query(default=False, description="Include latest simulation outcome fields for survey mode."),
+    outcome_class: Optional[str] = Query(default=None, description="winner, loser, or unknown (requires include_outcome=true)."),
+    ids: Optional[str] = Query(default=None, description="Comma-separated opportunity ids."),
+    random_sample: bool = Query(default=False, description="Deterministic pseudo-random ordering for survey batching."),
+    sample_seed: int = Query(default=0, description="Seed used when random_sample=true."),
 ):
     """List opportunities with filters.
 
@@ -617,11 +737,34 @@ def list_opportunities(
     t0 = time.time()
     redis_items = None
 
+    selected_ids: list[int] = []
+    if ids:
+        try:
+            selected_ids = sorted({int(part.strip()) for part in ids.split(",") if part.strip()})
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid ids parameter; expected comma-separated integers")
+
+    normalized_outcome = (outcome_class or "").strip().lower() or None
+    if normalized_outcome and normalized_outcome not in {"winner", "loser", "unknown"}:
+        raise HTTPException(status_code=400, detail="Invalid outcome_class. Must be winner, loser, or unknown.")
+    if normalized_outcome and status == "active":
+        raise HTTPException(status_code=400, detail="outcome_class is only supported for non-active statuses")
+    if normalized_outcome:
+        include_outcome = True
+
     # For active signals: merge Redis (live) + Postgres (EQFP and others not in Redis).
     # Redis is the fast path for strategies that write to it; Postgres catches the rest.
     if status == "active":
         redis_items = _read_opportunities_from_redis(min_score, limit, setup_id=setup_id)
-        if redis_items is not None and len(redis_items) > 0 and setup_id and setup_id in REDIS_SETUP_IDS:
+        if (
+            redis_items is not None
+            and len(redis_items) > 0
+            and setup_id
+            and setup_id in REDIS_SETUP_IDS
+            and not selected_ids
+            and not include_outcome
+            and not normalized_outcome
+        ):
             # Fast path: specific Redis-tracked setup with results
             return envelope({
                 "opportunities": redis_items,
@@ -633,43 +776,86 @@ def list_opportunities(
     if not DATABASE_URL:
         raise HTTPException(status_code=500, detail="Database not configured")
 
+    outcome_sql = """
+        CASE
+            WHEN sr.r_multiple IS NOT NULL AND sr.r_multiple > 0 THEN 'winner'
+            WHEN sr.r_multiple IS NOT NULL AND sr.r_multiple < 0 THEN 'loser'
+            WHEN sr.pnl_net IS NOT NULL AND sr.pnl_net > 0 THEN 'winner'
+            WHEN sr.pnl_net IS NOT NULL AND sr.pnl_net < 0 THEN 'loser'
+            ELSE 'unknown'
+        END
+    """
+
+    base_select = """
+        o.id, o.signal_id, o.symbol, o.timeframe, o.setup_id, o.decision, o.score,
+        o.reason, o.payload_json, o.updated_ts, o.created_ts
+    """
+    if include_outcome:
+        base_select += """
+            , sr.entry_ts, sr.exit_ts, sr.entry_price, sr.stop_price,
+              sr.tp1_price, sr.tp2_price, sr.r_multiple, sr.pnl_net
+        """
+
+    from_clause = "FROM opportunities o"
+    if include_outcome:
+        from_clause += """
+            LEFT JOIN LATERAL (
+                SELECT entry_ts, exit_ts, entry_price, stop_price, tp1_price, tp2_price, r_multiple, pnl_net
+                FROM simulation_results
+                WHERE opportunity_id = o.id
+                ORDER BY created_at DESC
+                LIMIT 1
+            ) sr ON TRUE
+        """
+
+    where_clauses = ["o.status = %s", "o.score >= %s"]
+    params_list: list[Any] = [status, min_score]
+
+    if setup_id:
+        where_clauses.append("o.setup_id = %s")
+        params_list.append(setup_id)
+    if selected_ids:
+        where_clauses.append("o.id = ANY(%s)")
+        params_list.append(selected_ids)
+    if include_outcome and normalized_outcome:
+        where_clauses.append(f"{outcome_sql} = %s")
+        params_list.append(normalized_outcome)
+
+    where_sql = " AND ".join(where_clauses)
+
+    if status != "active" and dedup:
+        query = f"""
+            SELECT DISTINCT ON (o.symbol, o.timeframe, o.setup_id)
+                   {base_select}
+            {from_clause}
+            WHERE {where_sql}
+            ORDER BY o.symbol, o.timeframe, o.setup_id, o.score DESC, o.updated_ts DESC
+            LIMIT %s;
+        """
+        params_list.append(limit)
+    else:
+        query = f"""
+            SELECT {base_select}
+            {from_clause}
+            WHERE {where_sql}
+        """
+        if status != "active" and random_sample:
+            query += " ORDER BY md5((o.id::text || %s::text)) "
+            params_list.append(str(sample_seed))
+        else:
+            query += " ORDER BY o.score DESC, o.updated_ts DESC "
+        query += " LIMIT %s;"
+        params_list.append(limit)
+
     with psycopg.connect(DATABASE_URL) as conn:
         with conn.cursor() as cur:
-            # For non-active statuses (e.g. 'expired'), dedup to one row per
-            # (symbol, tf, setup_id) taking the highest-scored version.
-            # Active status is already deduped (one active per combo).
-            if status != "active":
-                query = """
-                    SELECT DISTINCT ON (symbol, timeframe, setup_id)
-                           id, signal_id, symbol, timeframe, setup_id, decision, score, reason, payload_json, updated_ts
-                    FROM opportunities
-                    WHERE status = %s AND score >= %s
-                """
-            else:
-                query = """
-                    SELECT id, signal_id, symbol, timeframe, setup_id, decision, score, reason, payload_json, updated_ts
-                    FROM opportunities
-                    WHERE status = %s AND score >= %s
-                """
-            params_list = [status, min_score]
-
-            if setup_id:
-                query += " AND setup_id = %s"
-                params_list.append(setup_id)
-
-            if status != "active":
-                query += " ORDER BY symbol, timeframe, setup_id, score DESC, updated_ts DESC LIMIT %s;"
-            else:
-                query += " ORDER BY score DESC, updated_ts DESC LIMIT %s;"
-            params_list.append(limit)
-
             cur.execute(query, params_list)
             rows = cur.fetchall()
 
     pg_items = []
     for r_ in rows:
-        payload = json.loads(r_[8]) if r_[8] else None
-        pg_items.append({
+        payload = _parse_payload_json(r_[8])
+        item = {
             "id": r_[0],
             "signal_id": r_[1],
             "symbol": r_[2],
@@ -682,8 +868,45 @@ def list_opportunities(
             "payload": payload,
             "candle_ts": r_[9].isoformat() if r_[9] else None,
             "updated_ts": r_[9].isoformat() if r_[9] else None,
+            "created_ts": r_[10].isoformat() if r_[10] else None,
             "source": "postgres",
-        })
+        }
+
+        if include_outcome:
+            payload_entry_ts = (
+                _parse_timestamp(payload.get("entry_ts"))
+                or _parse_timestamp(payload.get("bar_start_ts"))
+                or _parse_timestamp(r_[11])
+                or _parse_timestamp(r_[10])
+            )
+            payload_exit_ts = _parse_timestamp(payload.get("exit_ts")) or _parse_timestamp(r_[12])
+            entry_price = _parse_float(payload.get("entry_price"))
+            stop_price = _parse_float(payload.get("stop_price"))
+            tp1_price = _parse_float(payload.get("tp1_price"))
+            tp2_price = _parse_float(payload.get("tp2_price"))
+
+            if entry_price is None:
+                entry_price = _parse_float(r_[13])
+            if stop_price is None:
+                stop_price = _parse_float(r_[14])
+            if tp1_price is None:
+                tp1_price = _parse_float(r_[15])
+            if tp2_price is None:
+                tp2_price = _parse_float(r_[16])
+
+            item.update({
+                "entry_ts": payload_entry_ts.isoformat() if payload_entry_ts else None,
+                "exit_ts": payload_exit_ts.isoformat() if payload_exit_ts else None,
+                "entry_price": entry_price,
+                "stop_price": stop_price,
+                "tp1_price": tp1_price,
+                "tp2_price": tp2_price,
+                "outcome_class": _compute_outcome_class(r_[17], r_[18]),
+                "outcome_r_multiple": _parse_float(r_[17]),
+                "outcome_pnl_net": _parse_float(r_[18]),
+            })
+
+        pg_items.append(item)
 
     # For active status: merge Redis + Postgres, Redis takes priority
     if status == "active" and redis_items:
@@ -843,6 +1066,145 @@ def get_live_opportunity(setup_id: str, symbol: str, tf: str):
     except Exception as e:
         logger.debug(f"Redis live opportunity read failed: {e}")
         raise HTTPException(status_code=502, detail="Redis unavailable")
+
+
+@router.get("/opportunities/{opp_id}/price-window")
+def get_opportunity_price_window(
+    opp_id: int,
+    pre_s: int = Query(default=3600, ge=0, le=172800, description="Seconds before entry timestamp"),
+    post_s: int = Query(default=21600, ge=0, le=604800, description="Seconds after exit timestamp"),
+):
+    """
+    Return 5m DB candles around an expired opportunity from pre-entry to post-exit.
+
+    Window:
+      t_start = entry_ts - pre_s
+      t_end   = exit_ts  + post_s
+    """
+    t0 = time.time()
+
+    if not DATABASE_URL:
+        raise HTTPException(status_code=500, detail="Database not configured")
+
+    with psycopg.connect(DATABASE_URL) as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT o.id, o.symbol, o.created_ts, o.payload_json,
+                       sr.entry_ts, sr.exit_ts, sr.entry_price, sr.stop_price,
+                       sr.tp1_price, sr.tp2_price, sr.r_multiple, sr.pnl_net
+                FROM opportunities o
+                LEFT JOIN LATERAL (
+                    SELECT entry_ts, exit_ts, entry_price, stop_price, tp1_price, tp2_price, r_multiple, pnl_net
+                    FROM simulation_results
+                    WHERE opportunity_id = o.id
+                    ORDER BY created_at DESC
+                    LIMIT 1
+                ) sr ON TRUE
+                WHERE o.id = %s;
+            """, (opp_id,))
+            row = cur.fetchone()
+
+            if not row:
+                raise HTTPException(status_code=404, detail="Opportunity not found")
+
+            payload = _parse_payload_json(row[3])
+            entry_ts = (
+                _parse_timestamp(payload.get("entry_ts"))
+                or _parse_timestamp(payload.get("bar_start_ts"))
+                or _parse_timestamp(row[4])
+                or _parse_timestamp(row[2])
+            )
+            exit_ts = _parse_timestamp(payload.get("exit_ts")) or _parse_timestamp(row[5])
+
+            if not exit_ts:
+                raise HTTPException(status_code=422, detail="expired opp missing exit_ts")
+            if not entry_ts:
+                raise HTTPException(status_code=422, detail="expired opp missing entry_ts")
+
+            entry_px = _parse_float(payload.get("entry_price"))
+            stop_px = _parse_float(payload.get("stop_price"))
+            tp1_px = _parse_float(payload.get("tp1_price"))
+            tp2_px = _parse_float(payload.get("tp2_price"))
+
+            if entry_px is None:
+                entry_px = _parse_float(row[6])
+            if stop_px is None:
+                stop_px = _parse_float(row[7])
+            if tp1_px is None:
+                tp1_px = _parse_float(row[8])
+            if tp2_px is None:
+                tp2_px = _parse_float(row[9])
+
+            tp_px = [px for px in (tp1_px, tp2_px) if px is not None]
+            # Preserve stable ordering while removing accidental duplicates.
+            tp_px = list(dict.fromkeys(tp_px))
+
+            t_start_dt = entry_ts - timedelta(seconds=pre_s)
+            t_end_dt = exit_ts + timedelta(seconds=post_s)
+
+            cur.execute("""
+                SELECT DISTINCT ON (bar_start_ts)
+                       bar_start_ts, open, high, low, close, volume
+                FROM ohlcv
+                WHERE symbol = %s
+                  AND timeframe = '5m'
+                  AND bar_start_ts >= %s
+                  AND bar_start_ts <= %s
+                ORDER BY bar_start_ts,
+                         CASE source
+                             WHEN 'ws' THEN 0
+                             WHEN 'binance' THEN 1
+                             ELSE 2
+                         END;
+            """, (row[1], t_start_dt, t_end_dt))
+            candle_rows = cur.fetchall()
+
+    candles = [
+        {
+            "t": int(c_[0].timestamp() * 1000),
+            "o": float(c_[1]),
+            "h": float(c_[2]),
+            "l": float(c_[3]),
+            "c": float(c_[4]),
+            "v": float(c_[5]),
+        }
+        for c_ in candle_rows
+    ]
+
+    gap_count = 0
+    expected_gap_ms = 5 * 60 * 1000
+    for idx in range(1, len(candles)):
+        if (candles[idx]["t"] - candles[idx - 1]["t"]) > expected_gap_ms:
+            gap_count += 1
+
+    outcome_class = _compute_outcome_class(row[10], row[11])
+
+    return envelope({
+        "opportunity_id": row[0],
+        "symbol": row[1],
+        "tf": "5m",
+        "t_start": int(t_start_dt.timestamp() * 1000),
+        "t_end": int(t_end_dt.timestamp() * 1000),
+        "candles": candles,
+        "count": len(candles),
+        "data_quality": {
+            "gap_count": gap_count,
+            "is_gappy": gap_count > 0,
+            "empty": len(candles) == 0,
+        },
+        "markers": {
+            "entry_ts": int(entry_ts.timestamp() * 1000),
+            "exit_ts": int(exit_ts.timestamp() * 1000),
+            "entry_px": entry_px,
+            "stop_px": stop_px,
+            "tp_px": tp_px,
+        },
+        "outcome": {
+            "class": outcome_class,
+            "r_multiple": _parse_float(row[10]),
+            "pnl_net": _parse_float(row[11]),
+        },
+    }, t0)
 
 
 @router.get("/opportunities/{opp_id}")

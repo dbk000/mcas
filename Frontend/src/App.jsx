@@ -8,6 +8,7 @@ import Layout from './components/Layout'
 // Pages
 import Dashboard from './pages/Dashboard'
 import Opportunities from './pages/Opportunities'
+import OpportunitySurvey from './pages/OpportunitySurvey'
 import OpportunityDetail from './pages/OpportunityDetail'
 import Markets from './pages/Markets'
 import MarketDetail from './pages/MarketDetail'
@@ -128,6 +129,12 @@ export default function App() {
           <Route path="/opportunities" element={
             <ProtectedRoute>
               <Opportunities />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/opportunities/survey" element={
+            <ProtectedRoute>
+              <OpportunitySurvey />
             </ProtectedRoute>
           } />
 

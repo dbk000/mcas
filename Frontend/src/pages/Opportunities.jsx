@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Target, Filter, Copy, Check, Clock, RefreshCw, PlayCircle, ChevronDown, ChevronRight, X, Plus, Download } from 'lucide-react'
-import { useOpportunities, useStrategies } from '../hooks/useData'
+import { Target, Filter, Copy, Check, Clock, RefreshCw, PlayCircle, ChevronDown, ChevronRight, X, Plus, Download, LineChart, Square, CheckSquare, BarChart3 } from 'lucide-react'
+import { useOpportunities, useStrategies, useOpportunityPriceWindow } from '../hooks/useData'
 import { useToast } from '../context/ToastContext'
 import { useApi } from '../context/ApiContext'
 import {
@@ -16,7 +16,9 @@ import {
   RefreshControl,
   Input,
   Select,
-  MultiSelect
+  MultiSelect,
+  Modal,
+  DataRow
 } from '../components/ui'
 import {
   formatPrice,
@@ -27,6 +29,7 @@ import {
   copyToClipboard,
   isEquitiesStrategy
 } from '../utils/formatters'
+import OpportunityCurveChart from '../components/opportunities/OpportunityCurveChart'
 
 function ExpiryBadge({ expiresAt }) {
   const [label, setLabel] = useState('')
@@ -146,6 +149,62 @@ function sortOpportunities(opps, sortBy) {
   return sorted
 }
 
+function CurveViewerModal({ opportunity, onClose }) {
+  const { data, loading, error, refetch } = useOpportunityPriceWindow(
+    opportunity?.id,
+    { pre_s: 3600, post_s: 21600 },
+    !!opportunity?.id
+  )
+
+  const markers = data?.markers || {}
+  const entryIso = markers.entry_ts ? new Date(markers.entry_ts).toISOString() : null
+  const exitIso = markers.exit_ts ? new Date(markers.exit_ts).toISOString() : null
+  const hasGaps = data?.data_quality?.is_gappy
+
+  return (
+    <Modal
+      isOpen={!!opportunity}
+      onClose={onClose}
+      size="xl"
+      title={opportunity ? `Curve • ${opportunity.symbol} #${opportunity.id}` : 'Curve'}
+    >
+      {!opportunity ? null : loading && !data ? (
+        <Skeleton className="h-[420px]" />
+      ) : error ? (
+        <div className="space-y-3">
+          <p className="text-terminal-300">Failed to load curve: {error}</p>
+          <button className="btn btn-secondary btn-sm" onClick={refetch}>
+            <RefreshCw className="w-4 h-4" />
+            Retry
+          </button>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          <OpportunityCurveChart
+            candles={data?.candles || []}
+            markers={markers}
+            height={420}
+          />
+
+          {data?.data_quality?.empty && (
+            <p className="text-sm text-terminal-400">No 5m candles found in this window.</p>
+          )}
+          {hasGaps && (
+            <p className="text-sm text-amber-300">Data has gaps. Pattern interpretation may be distorted.</p>
+          )}
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-2 border-t border-terminal-600">
+            <DataRow label="Entry Time" value={formatDateTime(entryIso)} />
+            <DataRow label="Exit Time" value={formatDateTime(exitIso)} />
+            <DataRow label="Entry Px" value={formatPrice(markers.entry_px)} />
+            <DataRow label="Stop Px" value={formatPrice(markers.stop_px)} />
+          </div>
+        </div>
+      )}
+    </Modal>
+  )
+}
+
 export default function Opportunities() {
   const { addToast } = useToast()
   const { post, config } = useApi()
@@ -178,6 +237,8 @@ export default function Opportunities() {
   const [showDateFilters, setShowDateFilters] = useState(false)
   const [excludeDateInput, setExcludeDateInput] = useState('')
   const [includeDateInput, setIncludeDateInput] = useState('')
+  const [curveOpp, setCurveOpp] = useState(null)
+  const [selectedOppIds, setSelectedOppIds] = useState([])
 
   // Fetch strategy registry for dropdown options
   const { data: strategyData } = useStrategies()
@@ -193,6 +254,20 @@ export default function Opportunities() {
   const { data, loading, lastUpdated, refetch, meta } = useOpportunities(apiParams)
   const rawOpportunities = data?.opportunities || []
   const opportunities = sortOpportunities(rawOpportunities, sortBy)
+  const selectedOppSet = useMemo(() => new Set(selectedOppIds), [selectedOppIds])
+
+  useEffect(() => {
+    if (filters.status !== 'expired') {
+      setSelectedOppIds([])
+      return
+    }
+    const visibleIds = new Set(
+      opportunities
+        .map((opp) => (opp?.id != null ? String(opp.id) : null))
+        .filter(Boolean)
+    )
+    setSelectedOppIds((prev) => prev.filter((id) => visibleIds.has(id)))
+  }, [filters.status, opportunities])
 
   const handleCopyTradePlan = async (opp) => {
     const plan = formatTradePlan({
@@ -284,6 +359,22 @@ export default function Opportunities() {
     }
   }
 
+  const toggleOppSelection = (oppId) => {
+    if (oppId == null) return
+    const key = String(oppId)
+    setSelectedOppIds((prev) => (
+      prev.includes(key) ? prev.filter((id) => id !== key) : [...prev, key]
+    ))
+  }
+
+  const openSurveyMode = () => {
+    const params = new URLSearchParams({ mode: 'selected' })
+    if (selectedOppIds.length > 0) {
+      params.set('ids', selectedOppIds.join(','))
+    }
+    navigate(`/opportunities/survey?${params.toString()}`)
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -364,6 +455,11 @@ export default function Opportunities() {
             <span className="text-sm text-terminal-400">
               {opportunities.length} opportunities
             </span>
+            {filters.status === 'expired' && (
+              <span className="text-sm text-terminal-400">
+                {selectedOppIds.length} selected
+              </span>
+            )}
             <button
               onClick={handleExportCsv}
               className="btn btn-ghost btn-sm flex items-center gap-2"
@@ -372,6 +468,15 @@ export default function Opportunities() {
               <Download className="w-4 h-4" />
               Export CSV
             </button>
+            {filters.status === 'expired' && (
+              <button
+                onClick={openSurveyMode}
+                className="btn btn-secondary btn-sm flex items-center gap-2"
+              >
+                <BarChart3 className="w-4 h-4" />
+                Survey Mode
+              </button>
+            )}
             {filters.status === 'expired' && (
               <button
                 onClick={() => setShowSimModal(true)}
@@ -690,15 +795,30 @@ export default function Opportunities() {
               key={opp.id || `${opp.setup_id}:${opp.symbol}:${opp.timeframe}`}
               opportunity={opp}
               onCopy={() => handleCopyTradePlan(opp)}
+              onCurve={() => setCurveOpp(opp)}
+              showCurve={filters.status === 'expired'}
+              isSelectable={filters.status === 'expired'}
+              isSelected={selectedOppSet.has(String(opp.id))}
+              onToggleSelect={() => toggleOppSelection(opp.id)}
             />
           ))}
         </div>
       )}
+
+      <CurveViewerModal opportunity={curveOpp} onClose={() => setCurveOpp(null)} />
     </div>
   )
 }
 
-function OpportunityCard({ opportunity, onCopy }) {
+function OpportunityCard({
+  opportunity,
+  onCopy,
+  onCurve,
+  showCurve = false,
+  isSelectable = false,
+  isSelected = false,
+  onToggleSelect,
+}) {
   const [copied, setCopied] = useState(false)
 
   const handleCopy = async (e) => {
@@ -707,6 +827,18 @@ function OpportunityCard({ opportunity, onCopy }) {
     await onCopy()
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
+  }
+
+  const handleCurve = (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    onCurve?.()
+  }
+
+  const handleToggleSelect = (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    onToggleSelect?.()
   }
 
   const payload = opportunity.payload || {}
@@ -726,7 +858,18 @@ function OpportunityCard({ opportunity, onCopy }) {
               </span>
               <Badge>{opportunity.timeframe}</Badge>
             </div>
-            <DirectionBadge direction={opportunity.direction || opportunity.decision} />
+            <div className="flex items-center gap-2">
+              {isSelectable && (
+                <button
+                  onClick={handleToggleSelect}
+                  className={`btn btn-ghost btn-xs ${isSelected ? 'text-amber-300' : 'text-terminal-400'}`}
+                  title={isSelected ? 'Deselect from survey batch' : 'Select for survey batch'}
+                >
+                  {isSelected ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
+                </button>
+              )}
+              <DirectionBadge direction={opportunity.direction || opportunity.decision} />
+            </div>
           </div>
 
           {/* Setup and score */}
@@ -826,17 +969,29 @@ function OpportunityCard({ opportunity, onCopy }) {
             <span className="text-xs text-terminal-500">
               {formatRelativeTime(opportunity.updated_ts)}
             </span>
-            <button
-              onClick={handleCopy}
-              className="btn btn-ghost btn-xs"
-              title="Copy trade plan"
-            >
-              {copied ? (
-                <Check className="w-4 h-4 text-green-400" />
-              ) : (
-                <Copy className="w-4 h-4" />
+            <div className="flex items-center gap-1">
+              {showCurve && (
+                <button
+                  onClick={handleCurve}
+                  className="btn btn-ghost btn-xs"
+                  title="Open opportunity curve"
+                >
+                  <LineChart className="w-4 h-4" />
+                  Curve
+                </button>
               )}
-            </button>
+              <button
+                onClick={handleCopy}
+                className="btn btn-ghost btn-xs"
+                title="Copy trade plan"
+              >
+                {copied ? (
+                  <Check className="w-4 h-4 text-green-400" />
+                ) : (
+                  <Copy className="w-4 h-4" />
+                )}
+              </button>
+            </div>
           </div>
         </CardContent>
       </Link>

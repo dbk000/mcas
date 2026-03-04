@@ -162,6 +162,15 @@ export function useOpportunity(id) {
   return useFetch(`/v1/opportunities/${id}`, {}, { skip: !id })
 }
 
+// Opportunity 5m chart window hook
+export function useOpportunityPriceWindow(oppId, params = {}, enabled = true) {
+  return useFetch(
+    `/v1/opportunities/${oppId}/price-window`,
+    params,
+    { skip: !enabled || !oppId }
+  )
+}
+
 // Live opportunity hook (Redis-sourced, composite key)
 export function useLiveOpportunity(setup_id, symbol, tf) {
   return useFetch(
@@ -239,6 +248,14 @@ export function usePerformance() {
 // OHLCV hook
 export function useOHLCV(symbol, tf, limit = 100) {
   return useFetch('/v1/ohlcv', { symbol, tf, limit }, { skip: !symbol || !tf })
+}
+
+// Live OHLCV hook (collector-backed)
+export function useLiveOHLCV(symbol, tf, limit = 100, intervalMs = 5000, enabled = true) {
+  return usePolling('/v1/ohlcv', { symbol, tf, limit }, intervalMs, {
+    enabled: enabled && !!symbol && !!tf,
+    skip: !enabled || !symbol || !tf,
+  })
 }
 
 // Live snapshot hook with fast polling

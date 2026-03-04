@@ -1,8 +1,7 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { ArrowLeft, RefreshCw, Clock, Activity, Target, TrendingUp, TrendingDown } from 'lucide-react'
-import { createChart, CrosshairMode } from 'lightweight-charts'
-import { useTimeframes, useOHLCV, useSnapshot, useSqueezeState, useBtcSqueezeStatus } from '../hooks/useData'
+import { useTimeframes, useLiveOHLCV, useSnapshot, useSqueezeState, useBtcSqueezeStatus } from '../hooks/useData'
 import { 
   Card, 
   CardHeader, 
@@ -20,12 +19,60 @@ import {
   formatDateTime,
   formatRelativeTime
 } from '../utils/formatters'
+import OpportunityCurveChart from '../components/opportunities/OpportunityCurveChart'
+
+const TF_TO_MS = {
+  '1m': 60_000,
+  '3m': 180_000,
+  '5m': 300_000,
+  '15m': 900_000,
+  '30m': 1_800_000,
+  '1h': 3_600_000,
+  '2h': 7_200_000,
+  '4h': 14_400_000,
+  '6h': 21_600_000,
+  '8h': 28_800_000,
+  '12h': 43_200_000,
+  '1d': 86_400_000,
+  '3d': 259_200_000,
+  '1w': 604_800_000,
+}
+
+function timeframeToMs(tf) {
+  const key = String(tf || '').toLowerCase()
+  if (TF_TO_MS[key]) return TF_TO_MS[key]
+
+  const parsed = key.match(/^(\d+)([mhdw])$/)
+  if (!parsed) return 300_000
+  const qty = Number(parsed[1])
+  const unit = parsed[2]
+  if (!Number.isFinite(qty) || qty <= 0) return 300_000
+  if (unit === 'm') return qty * 60_000
+  if (unit === 'h') return qty * 3_600_000
+  if (unit === 'd') return qty * 86_400_000
+  if (unit === 'w') return qty * 604_800_000
+  return 300_000
+}
+
+function toCurveCandle(candle) {
+  if (!candle) return null
+  const t = Number(candle.timestamp ?? Date.parse(candle.candle_ts))
+  if (!Number.isFinite(t)) return null
+  return {
+    t,
+    o: Number(candle.open),
+    h: Number(candle.high),
+    l: Number(candle.low),
+    c: Number(candle.close),
+    v: Number(candle.volume),
+  }
+}
 
 export default function MarketDetail() {
   const { symbol } = useParams()
   const { data: tfData } = useTimeframes()
   
-  const [selectedTf, setSelectedTf] = useState('1h')
+  const [selectedTf, setSelectedTf] = useState('1m')
   const [candleLimit, setCandleLimit] = useState(100)
 
   const timeframes = tfData?.timeframes || ['1m', '5m', '15m', '1h', '4h', '1d']
@@ -87,91 +134,29 @@ export default function MarketDetail() {
 }
 
 function CandlestickChart({ symbol, timeframe, limit }) {
-  const chartContainerRef = useRef(null)
-  const chartRef = useRef(null)
-  const seriesRef = useRef(null)
-  
-  const { data, loading, error, refetch } = useOHLCV(symbol, timeframe, limit)
+  const pollMs = timeframe === '1m' ? 2000 : 5000
+  const { data, loading, error, refreshing, lastUpdated, refetch } = useLiveOHLCV(
+    symbol,
+    timeframe,
+    limit,
+    pollMs,
+    true
+  )
 
-  // Initialize chart
-  useEffect(() => {
-    if (!chartContainerRef.current) return
-
-    const chart = createChart(chartContainerRef.current, {
-      layout: {
-        background: { color: '#111115' },
-        textColor: '#c5c5d3',
-      },
-      grid: {
-        vertLines: { color: '#1f1f26' },
-        horzLines: { color: '#1f1f26' },
-      },
-      crosshair: {
-        mode: CrosshairMode.Normal,
-        vertLine: { color: '#f59e0b', style: 2, width: 1 },
-        horzLine: { color: '#f59e0b', style: 2, width: 1 },
-      },
-      timeScale: {
-        borderColor: '#27272f',
-        timeVisible: true,
-        secondsVisible: false,
-      },
-      rightPriceScale: {
-        borderColor: '#27272f',
-      },
-    })
-
-    const candleSeries = chart.addCandlestickSeries({
-      upColor: '#10b981',
-      downColor: '#ef4444',
-      borderUpColor: '#10b981',
-      borderDownColor: '#ef4444',
-      wickUpColor: '#10b981',
-      wickDownColor: '#ef4444',
-    })
-
-    chartRef.current = chart
-    seriesRef.current = candleSeries
-
-    // Handle resize
-    const handleResize = () => {
-      if (chartContainerRef.current) {
-        chart.applyOptions({ width: chartContainerRef.current.clientWidth })
-      }
-    }
-
-    window.addEventListener('resize', handleResize)
-
-    return () => {
-      window.removeEventListener('resize', handleResize)
-      chart.remove()
-    }
-  }, [])
-
-  // Update data
-  useEffect(() => {
-    if (!seriesRef.current || !data?.candles) return
-
-    const chartData = data.candles.map(c => ({
-      time: Math.floor(c.timestamp / 1000),
-      open: c.open,
-      high: c.high,
-      low: c.low,
-      close: c.close,
-    }))
-
-    seriesRef.current.setData(chartData)
-    chartRef.current?.timeScale().fitContent()
-  }, [data])
+  const candles = useMemo(
+    () => (data?.candles || []).map(toCurveCandle).filter(Boolean),
+    [data?.candles]
+  )
+  const gapMs = useMemo(() => timeframeToMs(timeframe), [timeframe])
 
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="flex items-center gap-2">
           <Activity className="w-4 h-4 text-amber-400" />
-          OHLCV Chart
+          Collector Chart
         </CardTitle>
-        <RefreshControl onRefresh={refetch} loading={loading} />
+        <RefreshControl onRefresh={refetch} loading={loading || refreshing} />
       </CardHeader>
       <CardContent>
         {loading && !data ? (
@@ -181,10 +166,21 @@ function CandlestickChart({ symbol, timeframe, limit }) {
             Failed to load chart data
           </div>
         ) : (
-          <div 
-            ref={chartContainerRef} 
-            className="h-[400px] w-full"
-          />
+          <div className="space-y-3">
+            <OpportunityCurveChart
+              candles={candles}
+              markers={{}}
+              height={400}
+              expectedGapMs={gapMs}
+              gapLabel={`${timeframe} collector data`}
+            />
+            <div className="flex items-center justify-between text-xs text-terminal-500">
+              <span>
+                Source: {data?.source || 'db_ohlcv'} • Collector lag: {data?.collector_lag_s ?? 'n/a'}s
+              </span>
+              <span>{lastUpdated ? `Polled ${formatRelativeTime(lastUpdated)}` : 'Waiting for first poll'}</span>
+            </div>
+          </div>
         )}
       </CardContent>
     </Card>
