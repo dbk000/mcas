@@ -794,7 +794,9 @@ class OpportunitySimulator:
             return result
 
         # Extract trace data from opportunity payload for correlation analysis
-        result.trace_json = self._extract_trace_from_payload(payload, direction, exit_reason, bars_held)
+        result.trace_json = self._extract_trace_from_payload(
+            payload, direction, result.exit_reason, bars_held
+        )
 
         # Compute MAE/MFE R-multiples and store in trace_json
         stop_distance = abs(entry_with_slip - stop_price) if stop_price else None
