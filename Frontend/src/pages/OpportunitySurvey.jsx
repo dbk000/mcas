@@ -684,10 +684,11 @@ function SurveyRow({
               compact
               height={presentationMode ? 210 : 190}
               chartVariant={presentationMode ? 'classic' : 'terminal'}
-              showMovingAverages={presentationMode}
+              showMovingAverages={false}
               movingAveragePeriods={[9, 21, 50]}
               thinTemporalMarkers
-              showVolume={presentationMode}
+              showVolume={false}
+              showCloseLine={presentationMode}
               targetBarSpacing={presentationMode ? 8 : 10}
               autoBarSpacingByPrice={presentationMode}
               priceBarSpacingTable={PRESENTATION_PRICE_SPACING_TABLE}

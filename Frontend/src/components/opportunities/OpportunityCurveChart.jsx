@@ -189,11 +189,13 @@ export default function OpportunityCurveChart({
   barSpacingTable = null,
   autoBarSpacingByPrice = false,
   priceBarSpacingTable = null,
+  showCloseLine = false,
 }) {
   const containerRef = useRef(null)
   const chartRef = useRef(null)
   const seriesRef = useRef(null)
   const volumeSeriesRef = useRef(null)
+  const closeLineSeriesRef = useRef(null)
   const maSeriesRef = useRef([])
   const priceLinesRef = useRef([])
   const [markerCoords, setMarkerCoords] = useState({ entry: null, exits: [] })
@@ -356,6 +358,20 @@ export default function OpportunityCurveChart({
       volumeSeriesRef.current = null
     }
 
+    if (showCloseLine) {
+      const closeLineSeries = chart.addLineSeries({
+        color: '#dbeafe',
+        lineWidth: 1,
+        lineStyle: LineStyle.Solid,
+        crosshairMarkerVisible: false,
+        priceLineVisible: false,
+        lastValueVisible: false,
+      })
+      closeLineSeriesRef.current = closeLineSeries
+    } else {
+      closeLineSeriesRef.current = null
+    }
+
     const maSeries = []
     if (showMAs) {
       maPeriods.forEach((period, idx) => {
@@ -394,6 +410,7 @@ export default function OpportunityCurveChart({
       chartRef.current = null
       seriesRef.current = null
       volumeSeriesRef.current = null
+      closeLineSeriesRef.current = null
       maSeriesRef.current = []
     }
   }, [
@@ -402,6 +419,7 @@ export default function OpportunityCurveChart({
     variantStyle,
     showMAs,
     showVolume,
+    showCloseLine,
     maKey,
     syncMarkerCoords,
     maPeriods,
@@ -414,6 +432,14 @@ export default function OpportunityCurveChart({
 
     const chartData = clippedCandles.map(toChartPoint)
     series.setData(chartData)
+    if (showCloseLine && closeLineSeriesRef.current) {
+      closeLineSeriesRef.current.setData(
+        clippedCandles.map((c) => ({
+          time: Math.floor(c.t / 1000),
+          value: Number(c.c),
+        }))
+      )
+    }
     if (showVolume && volumeSeriesRef.current) {
       try {
         volumeSeriesRef.current.setData(
@@ -463,6 +489,7 @@ export default function OpportunityCurveChart({
     clippedCandles,
     showMAs,
     showVolume,
+    showCloseLine,
     syncMarkerCoords,
     variantStyle,
     targetBarSpacing,
