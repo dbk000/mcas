@@ -52,6 +52,9 @@ from opportunity_simulator import (
     SimulationConfig,
     SIM_DEFAULT_MAX_BARS_FORWARD,
     SIM_DEFAULT_MIN_R_PRESERVATION,
+    SIM_DEFAULT_D1_CAUSAL_MIN_ENTRY_PRICE,
+    SIM_DEFAULT_D1_CAUSAL_MIN_STOP_PCT,
+    SIM_DEFAULT_D1_CAUSAL_MIN_SCORE,
 )
 
 logger = logging.getLogger(__name__)
@@ -1532,9 +1535,18 @@ class RunExecutor:
         d1_causal_gate_enabled = setup_params.get("d1_causal_gate_enabled")
         if d1_causal_gate_enabled is None:
             d1_causal_gate_enabled = bool(setup_ids and set(setup_ids) == {"D1"})
-        d1_causal_min_entry_price = setup_params.get("d1_causal_min_entry_price", 1.0)
-        d1_causal_min_stop_pct = setup_params.get("d1_causal_min_stop_pct", 0.015)
-        d1_causal_min_score = setup_params.get("d1_causal_min_score", 0.35)
+        d1_causal_min_entry_price = setup_params.get(
+            "d1_causal_min_entry_price",
+            SIM_DEFAULT_D1_CAUSAL_MIN_ENTRY_PRICE,
+        )
+        d1_causal_min_stop_pct = setup_params.get(
+            "d1_causal_min_stop_pct",
+            SIM_DEFAULT_D1_CAUSAL_MIN_STOP_PCT,
+        )
+        d1_causal_min_score = setup_params.get(
+            "d1_causal_min_score",
+            SIM_DEFAULT_D1_CAUSAL_MIN_SCORE,
+        )
 
         # If version is unspecified for a single setup run, pin to latest known
         # setup_version so simulation matches current node behavior/dataset.
@@ -1564,12 +1576,17 @@ class RunExecutor:
             min_r_multiple_floor=min_r_multiple_floor,
         )
         if d1_causal_gate_enabled and setup_ids and set(setup_ids) == {"D1"}:
+            min_entry_price_label = (
+                "disabled"
+                if float(d1_causal_min_entry_price) <= 0
+                else f"{float(d1_causal_min_entry_price)}"
+            )
             self.repo.add_event(RunEvent(
                 run_id=run.id,
                 event_type="INFO",
                 message=(
                     "D1 causal entry gate active: "
-                    f"min_entry_price={d1_causal_min_entry_price}, "
+                    f"min_entry_price={min_entry_price_label}, "
                     f"min_stop_pct={d1_causal_min_stop_pct:.2%}, "
                     f"min_score={d1_causal_min_score:.2f}"
                 ),

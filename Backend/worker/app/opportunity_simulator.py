@@ -33,7 +33,7 @@ SIM_DEFAULT_MAX_BARS_FORWARD = 200
 SIM_DEFAULT_MIN_R_PRESERVATION = 0.5
 # Causal entry-time D1 gate defaults (entry-known features only).
 SIM_DEFAULT_D1_CAUSAL_GATE_ENABLED = True
-SIM_DEFAULT_D1_CAUSAL_MIN_ENTRY_PRICE = 1.0
+SIM_DEFAULT_D1_CAUSAL_MIN_ENTRY_PRICE = 0.0
 SIM_DEFAULT_D1_CAUSAL_MIN_STOP_PCT = 0.015   # 1.5%
 SIM_DEFAULT_D1_CAUSAL_MIN_SCORE = 0.35
 
@@ -408,7 +408,10 @@ class OpportunitySimulator:
         # Causal D1 entry gate: filter risky opportunities using entry-known fields.
         # This replaces outcome-based slicing for primary simulation KPIs.
         if self.config.d1_causal_gate_enabled and setup_id == "D1":
-            if entry_price < self.config.d1_causal_min_entry_price:
+            if (
+                self.config.d1_causal_min_entry_price > 0
+                and entry_price < self.config.d1_causal_min_entry_price
+            ):
                 result.data_available = False
                 result.error_message = (
                     f"D1 causal gate: entry_price={entry_price:.6f} "
