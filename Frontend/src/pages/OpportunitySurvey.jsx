@@ -96,8 +96,9 @@ function getBoundsForWindow(windowData) {
 
 function pickColumns(presentationMode, width) {
   if (!presentationMode) return 1
-  if (width >= 1800) return 3
-  return 2
+  if (width >= 2200) return 3
+  if (width >= 1700) return 2
+  return 1
 }
 
 export default function OpportunitySurvey() {
@@ -626,7 +627,7 @@ function SurveyRow({
   }, [windowData, finalExitPrice])
 
   return (
-    <div className="border border-terminal-600 rounded bg-terminal-900/40 p-3 h-[calc(100%-0px)]">
+    <div className="border border-terminal-600 rounded bg-terminal-900/40 p-3 h-[calc(100%-0px)] overflow-hidden">
       <div className="grid grid-cols-[170px_1fr_220px] gap-3 h-full">
         <div className="text-xs space-y-1">
           <p className="font-mono text-terminal-100 text-sm">{opp.symbol}</p>
@@ -654,7 +655,7 @@ function SurveyRow({
           )}
         </div>
 
-        <div className="h-full">
+        <div className="h-full min-w-0">
           {windowError ? (
             <div className="h-full border border-terminal-600 rounded flex items-center justify-center text-xs text-red-300">
               {windowError}
