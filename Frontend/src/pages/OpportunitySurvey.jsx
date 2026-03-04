@@ -96,9 +96,7 @@ function getBoundsForWindow(windowData) {
 
 function pickColumns(presentationMode, width) {
   if (!presentationMode) return 1
-  if (width >= 2200) return 3
-  if (width >= 1700) return 2
-  return 1
+  return 2
 }
 
 export default function OpportunitySurvey() {
@@ -581,6 +579,7 @@ export default function OpportunitySurvey() {
                             windowError={windowErrorsById[opp.id]}
                             revealOffsetMin={revealOffsetMin}
                             mode={mode}
+                            presentationMode={presentationMode}
                             prediction={predictions[opp.id]}
                             onCommit={commitPrediction}
                             confidence={Number(confidenceDraft[opp.id] || predictions[opp.id]?.confidence || 3)}
@@ -607,6 +606,7 @@ function SurveyRow({
   windowError,
   revealOffsetMin,
   mode,
+  presentationMode,
   prediction,
   onCommit,
   confidence,
@@ -628,7 +628,7 @@ function SurveyRow({
 
   return (
     <div className="border border-terminal-600 rounded bg-terminal-900/40 p-3 h-[calc(100%-0px)] overflow-hidden">
-      <div className="grid grid-cols-[170px_1fr_220px] gap-3 h-full">
+      <div className={`grid ${presentationMode ? 'grid-cols-[150px_1fr_180px]' : 'grid-cols-[170px_1fr_220px]'} gap-3 h-full`}>
         <div className="text-xs space-y-1">
           <p className="font-mono text-terminal-100 text-sm">{opp.symbol}</p>
           <p className="text-terminal-400">{(opp.direction || opp.decision || 'n/a').toUpperCase()}</p>
@@ -672,7 +672,12 @@ function SurveyRow({
               hideExitUntilReveal
               hideLevels={hideLevelsUntilReveal && revealOffsetMin <= 0}
               compact
-              height={190}
+              height={presentationMode ? 210 : 190}
+              chartVariant={presentationMode ? 'classic' : 'terminal'}
+              showMovingAverages={presentationMode}
+              movingAveragePeriods={[9, 21, 50]}
+              thinTemporalMarkers
+              showVolume={presentationMode}
             />
           )}
         </div>

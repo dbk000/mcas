@@ -2,6 +2,28 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createChart, CrosshairMode, LineStyle } from 'lightweight-charts'
 
 const FIVE_MINUTES_MS = 5 * 60 * 1000
+const MA_COLORS = ['#7dd3fc', '#a3e635', '#ef4444']
+
+const CHART_VARIANTS = {
+  terminal: {
+    background: '#111115',
+    text: '#c5c5d3',
+    grid: '#1f1f26',
+    border: '#27272f',
+    up: '#10b981',
+    down: '#ef4444',
+    crosshair: '#f59e0b',
+  },
+  classic: {
+    background: '#170c1d',
+    text: '#cfc6de',
+    grid: '#2a2130',
+    border: '#352c3c',
+    up: '#7bd88f',
+    down: '#f97066',
+    crosshair: '#f5d76e',
+  },
+}
 
 function toChartPoint(candle) {
   return {
@@ -37,6 +59,79 @@ function formatLevelPrice(value) {
   })
 }
 
+function getVariantStyle(variant) {
+  return CHART_VARIANTS[variant] || CHART_VARIANTS.terminal
+}
+
+function normalizePeriods(periods) {
+  if (!Array.isArray(periods)) return []
+  return periods
+    .map((p) => Number(p))
+    .filter((p) => Number.isFinite(p) && p >= 2)
+    .map((p) => Math.floor(p))
+    .slice(0, 3)
+}
+
+function toMovingAverageData(candles, period) {
+  if (!Array.isArray(candles) || candles.length < period) return []
+
+  const points = []
+  let running = 0
+  for (let i = 0; i < candles.length; i += 1) {
+    running += Number(candles[i].c)
+    if (i >= period) running -= Number(candles[i - period].c)
+    if (i >= period - 1) {
+      points.push({
+        time: Math.floor(candles[i].t / 1000),
+        value: running / period,
+      })
+    }
+  }
+
+  return points
+}
+
+function exitPointColor(label, isFinal) {
+  if (isFinal) return '#38bdf8'
+  const labelLower = String(label || '').toLowerCase()
+  if (labelLower.includes('tp')) return '#22c55e'
+  if (labelLower.includes('stop') || labelLower.includes('sl')) return '#ef4444'
+  return '#7dd3fc'
+}
+
+function normalizeExitPoints(markers, hideExitUntilReveal, revealTs) {
+  const points = []
+  const seen = new Set()
+
+  const add = (rawTs, rawLabel, isFinal = false) => {
+    const ts = Number(rawTs)
+    if (!Number.isFinite(ts)) return
+    if (hideExitUntilReveal && revealTs != null && ts > revealTs) return
+    const label = String(rawLabel || (isFinal ? 'FINAL EXIT' : 'EXIT'))
+    const key = `${ts}:${label}`
+    if (seen.has(key)) return
+    seen.add(key)
+    points.push({ ts, label, isFinal, color: exitPointColor(label, isFinal) })
+  }
+
+  if (Array.isArray(markers?.exit_points)) {
+    markers.exit_points.forEach((point, idx) => {
+      if (point && typeof point === 'object') {
+        add(point.ts, point.label || `EXIT ${idx + 1}`, Boolean(point.is_final))
+      } else {
+        add(point, `EXIT ${idx + 1}`, false)
+      }
+    })
+  }
+
+  const finalExitTs = Number(markers?.exit_ts)
+  if (Number.isFinite(finalExitTs)) {
+    add(finalExitTs, 'FINAL EXIT', true)
+  }
+
+  return points.sort((a, b) => a.ts - b.ts)
+}
+
 export default function OpportunityCurveChart({
   candles = [],
   markers = {},
@@ -49,12 +144,19 @@ export default function OpportunityCurveChart({
   gapLabel = '5m data',
   showGapBadge = true,
   className = '',
+  chartVariant = 'terminal',
+  showMovingAverages = false,
+  movingAveragePeriods = [9, 21, 50],
+  thinTemporalMarkers = false,
+  showVolume = false,
 }) {
   const containerRef = useRef(null)
   const chartRef = useRef(null)
   const seriesRef = useRef(null)
+  const volumeSeriesRef = useRef(null)
+  const maSeriesRef = useRef([])
   const priceLinesRef = useRef([])
-  const [markerCoords, setMarkerCoords] = useState({ entry: null, exit: null })
+  const [markerCoords, setMarkerCoords] = useState({ entry: null, exits: [] })
 
   const clippedCandles = useMemo(() => {
     if (!Array.isArray(candles) || candles.length === 0) return []
@@ -62,11 +164,28 @@ export default function OpportunityCurveChart({
     return candles.filter((c) => c.t <= revealTs)
   }, [candles, revealTs])
 
+  const variantStyle = useMemo(() => getVariantStyle(chartVariant), [chartVariant])
+  const maPeriods = useMemo(() => normalizePeriods(movingAveragePeriods), [movingAveragePeriods])
+  const maKey = useMemo(() => maPeriods.join(','), [maPeriods])
+  const showMAs = showMovingAverages && maPeriods.length > 0
+
   const gapCount = useMemo(
     () => calcGapCount(clippedCandles, expectedGapMs),
     [clippedCandles, expectedGapMs]
   )
-  const hideExit = hideExitUntilReveal && revealTs != null && markers?.exit_ts != null && revealTs < markers.exit_ts
+
+  const hideExitPrice = (
+    hideExitUntilReveal
+    && revealTs != null
+    && markers?.exit_ts != null
+    && revealTs < Number(markers.exit_ts)
+  )
+
+  const exitPoints = useMemo(
+    () => normalizeExitPoints(markers, hideExitUntilReveal, revealTs),
+    [markers, hideExitUntilReveal, revealTs]
+  )
+
   const levelLegend = useMemo(() => {
     if (hideLevels) return []
 
@@ -83,71 +202,121 @@ export default function OpportunityCurveChart({
         items.push({ key: `tp-${idx}`, label: `TP${idx + 1}`, price, className: 'text-emerald-300 border-emerald-500/60 bg-emerald-500/15' })
       })
     }
-    if (!hideExit && markers?.exit_px != null) {
+    if (!hideExitPrice && markers?.exit_px != null) {
       items.push({ key: 'exit', label: 'EXIT', price: markers.exit_px, className: 'text-sky-300 border-sky-500/60 bg-sky-500/15' })
     }
     return items
-  }, [markers, hideLevels, hideExit])
+  }, [markers, hideLevels, hideExitPrice])
 
   const syncMarkerCoords = useCallback(() => {
     const chart = chartRef.current
     if (!chart || !markers) return
 
     const timeScale = chart.timeScale()
-    const entryX = markers.entry_ts ? timeScale.timeToCoordinate(Math.floor(markers.entry_ts / 1000)) : null
-    const exitX = (!hideExit && markers.exit_ts)
-      ? timeScale.timeToCoordinate(Math.floor(markers.exit_ts / 1000))
+    const entryX = markers.entry_ts
+      ? timeScale.timeToCoordinate(Math.floor(Number(markers.entry_ts) / 1000))
       : null
+
+    const exits = exitPoints
+      .map((point) => {
+        const x = timeScale.timeToCoordinate(Math.floor(point.ts / 1000))
+        return {
+          ...point,
+          x: Number.isFinite(x) ? x : null,
+        }
+      })
+      .filter((point) => point.x !== null)
 
     setMarkerCoords({
       entry: Number.isFinite(entryX) ? entryX : null,
-      exit: Number.isFinite(exitX) ? exitX : null,
+      exits,
     })
-  }, [markers, hideExit])
+  }, [markers, exitPoints])
 
   useEffect(() => {
     if (!containerRef.current) return undefined
 
     const chart = createChart(containerRef.current, {
       layout: {
-        background: { color: '#111115' },
-        textColor: '#c5c5d3',
+        background: { color: variantStyle.background },
+        textColor: variantStyle.text,
       },
       grid: {
-        vertLines: { color: '#1f1f26' },
-        horzLines: { color: '#1f1f26' },
+        vertLines: { color: variantStyle.grid },
+        horzLines: { color: variantStyle.grid },
       },
       crosshair: {
         mode: CrosshairMode.Normal,
-        vertLine: { color: '#f59e0b', style: LineStyle.Dashed, width: 1 },
-        horzLine: { color: '#f59e0b', style: LineStyle.Dashed, width: 1 },
+        vertLine: { color: variantStyle.crosshair, style: LineStyle.Dashed, width: 1 },
+        horzLine: { color: variantStyle.crosshair, style: LineStyle.Dashed, width: 1 },
       },
       timeScale: {
-        borderColor: '#27272f',
+        borderColor: variantStyle.border,
         timeVisible: true,
         secondsVisible: false,
         rightOffset: 0,
       },
       rightPriceScale: {
-        borderColor: '#27272f',
+        borderColor: variantStyle.border,
       },
       width: containerRef.current.clientWidth,
       height,
     })
 
     const candleSeries = chart.addCandlestickSeries({
-      upColor: '#10b981',
-      downColor: '#ef4444',
-      borderUpColor: '#10b981',
-      borderDownColor: '#ef4444',
-      wickUpColor: '#10b981',
-      wickDownColor: '#ef4444',
+      upColor: variantStyle.up,
+      downColor: variantStyle.down,
+      borderUpColor: variantStyle.up,
+      borderDownColor: variantStyle.down,
+      wickUpColor: variantStyle.up,
+      wickDownColor: variantStyle.down,
       priceLineVisible: false,
       lastValueVisible: !compact,
     })
+    if (showVolume) {
+      const volumeSeries = chart.addHistogramSeries({
+        priceScaleId: 'volume',
+        priceLineVisible: false,
+        lastValueVisible: false,
+        crosshairMarkerVisible: false,
+      })
+      volumeSeriesRef.current = volumeSeries
+      candleSeries.priceScale().applyOptions({
+        scaleMargins: {
+          top: 0.03,
+          bottom: 0.28,
+        },
+      })
+      chart.priceScale('volume').applyOptions({
+        scaleMargins: {
+          top: 0.74,
+          bottom: 0,
+        },
+        borderVisible: false,
+      })
+    } else {
+      volumeSeriesRef.current = null
+    }
+
+    const maSeries = []
+    if (showMAs) {
+      maPeriods.forEach((period, idx) => {
+        const lineSeries = chart.addLineSeries({
+          color: MA_COLORS[idx % MA_COLORS.length],
+          lineWidth: 1,
+          lineStyle: LineStyle.Solid,
+          crosshairMarkerVisible: false,
+          priceLineVisible: false,
+          lastValueVisible: false,
+          title: `MA ${period}`,
+        })
+        maSeries.push({ period, series: lineSeries })
+      })
+    }
 
     chartRef.current = chart
     seriesRef.current = candleSeries
+    maSeriesRef.current = maSeries
 
     const resizeObserver = new ResizeObserver(() => {
       if (!containerRef.current || !chartRef.current) return
@@ -168,8 +337,19 @@ export default function OpportunityCurveChart({
       chart.remove()
       chartRef.current = null
       seriesRef.current = null
+      volumeSeriesRef.current = null
+      maSeriesRef.current = []
     }
-  }, [height, compact, syncMarkerCoords])
+  }, [
+    height,
+    compact,
+    variantStyle,
+    showMAs,
+    showVolume,
+    maKey,
+    syncMarkerCoords,
+    maPeriods,
+  ])
 
   useEffect(() => {
     if (!seriesRef.current || !chartRef.current) return
@@ -178,9 +358,25 @@ export default function OpportunityCurveChart({
 
     const chartData = clippedCandles.map(toChartPoint)
     series.setData(chartData)
+    if (showVolume && volumeSeriesRef.current) {
+      volumeSeriesRef.current.setData(
+        clippedCandles.map((c) => ({
+          time: Math.floor(c.t / 1000),
+          value: Number(c.v || 0),
+          color: Number(c.c) >= Number(c.o) ? `${variantStyle.up}88` : `${variantStyle.down}88`,
+        }))
+      )
+    }
+
+    if (showMAs && maSeriesRef.current.length > 0) {
+      maSeriesRef.current.forEach(({ period, series: maSeries }) => {
+        maSeries.setData(toMovingAverageData(clippedCandles, period))
+      })
+    }
+
     chart.timeScale().fitContent()
     requestAnimationFrame(syncMarkerCoords)
-  }, [clippedCandles, syncMarkerCoords])
+  }, [clippedCandles, showMAs, showVolume, syncMarkerCoords, variantStyle])
 
   useEffect(() => {
     const series = seriesRef.current
@@ -202,7 +398,7 @@ export default function OpportunityCurveChart({
       const line = series.createPriceLine({
         price: Number(price),
         color,
-        lineWidth: 2,
+        lineWidth: compact ? 1 : 2,
         lineStyle,
         axisLabelVisible: true,
         title,
@@ -215,10 +411,10 @@ export default function OpportunityCurveChart({
     if (Array.isArray(markers.tp_px)) {
       markers.tp_px.forEach((px, idx) => addLine(px, '#22c55e', `TP${idx + 1}`, LineStyle.Dashed))
     }
-    if (!hideExit) {
+    if (!hideExitPrice) {
       addLine(markers.exit_px, '#38bdf8', 'EXIT')
     }
-  }, [markers, hideLevels, hideExit, clippedCandles.length, compact])
+  }, [markers, hideLevels, hideExitPrice, clippedCandles.length, compact])
 
   if (clippedCandles.length === 0) {
     return (
@@ -238,20 +434,35 @@ export default function OpportunityCurveChart({
       <div className="pointer-events-none absolute inset-0">
         {markerCoords.entry !== null && (
           <div className="absolute top-0 bottom-0" style={{ left: `${markerCoords.entry}px` }}>
-            <div className="absolute top-0 bottom-0 w-0.5 bg-amber-300 shadow-[0_0_10px_rgba(251,191,36,0.9)]" />
-            <span className="absolute top-1 left-1 px-1 py-0.5 text-[9px] font-bold tracking-wide rounded border border-amber-500/70 bg-amber-500/25 text-amber-200">
-              ENTRY
-            </span>
+            <div className={`absolute top-0 bottom-0 ${thinTemporalMarkers ? 'w-px' : 'w-0.5'} bg-amber-300`} />
+            {!compact && (
+              <span className="absolute top-1 left-1 px-1 py-0.5 text-[9px] font-bold tracking-wide rounded border border-amber-500/70 bg-amber-500/25 text-amber-200">
+                ENTRY
+              </span>
+            )}
           </div>
         )}
-        {markerCoords.exit !== null && (
-          <div className="absolute top-0 bottom-0" style={{ left: `${markerCoords.exit}px` }}>
-            <div className="absolute top-0 bottom-0 w-0.5 bg-sky-300 shadow-[0_0_10px_rgba(125,211,252,0.9)]" />
-            <span className="absolute top-1 left-1 px-1 py-0.5 text-[9px] font-bold tracking-wide rounded border border-sky-500/70 bg-sky-500/25 text-sky-200">
-              EXIT
-            </span>
+
+        {markerCoords.exits.map((point) => (
+          <div key={`${point.ts}:${point.label}`} className="absolute top-0 bottom-0" style={{ left: `${point.x}px` }}>
+            <div
+              className={`absolute top-0 bottom-0 ${thinTemporalMarkers ? 'w-px' : 'w-0.5'}`}
+              style={{ backgroundColor: point.color }}
+            />
+            {!compact && (
+              <span
+                className="absolute top-1 left-1 px-1 py-0.5 text-[9px] font-bold tracking-wide rounded border"
+                style={{
+                  color: point.color,
+                  borderColor: `${point.color}99`,
+                  backgroundColor: `${point.color}22`,
+                }}
+              >
+                {point.label}
+              </span>
+            )}
           </div>
-        )}
+        ))}
       </div>
 
       {!hideLevels && levelLegend.length > 0 && (

@@ -728,6 +728,88 @@ def _parse_horizon_delta(value: Any) -> Optional[timedelta]:
     return None
 
 
+def _format_exit_label(key: str) -> str:
+    key_l = key.lower()
+    if "tp1" in key_l:
+        return "TP1 EXIT"
+    if "tp2" in key_l:
+        return "TP2 EXIT"
+    if "tp" in key_l or "take_profit" in key_l:
+        return "TP EXIT"
+    if "stop" in key_l or "sl" in key_l:
+        return "STOP EXIT"
+    if "partial" in key_l:
+        return "PARTIAL EXIT"
+    if "final" in key_l:
+        return "FINAL EXIT"
+    if "close" in key_l:
+        return "CLOSE EXIT"
+    return "EXIT"
+
+
+def _extract_exit_points(payload: dict[str, Any], fallback_exit_ts: datetime) -> list[dict[str, Any]]:
+    """Extract all known exit-like timestamps from payload for vertical marker rendering."""
+    points: dict[int, dict[str, Any]] = {}
+
+    def add_point(ts_value: Any, label: str, is_final: bool = False) -> None:
+        ts_dt = _parse_timestamp(ts_value)
+        if not ts_dt:
+            return
+        ts_ms = int(ts_dt.timestamp() * 1000)
+        existing = points.get(ts_ms)
+        if existing:
+            if is_final:
+                existing["label"] = label
+                existing["is_final"] = True
+            return
+        points[ts_ms] = {"ts": ts_ms, "label": label, "is_final": is_final}
+
+    excluded_keys = {
+        "entry_ts",
+        "bar_start_ts",
+        "created_ts",
+        "updated_ts",
+        "as_of_ts",
+        "since_ts",
+        "action_by_ts",
+        "expiry_ts",
+        "expires_at",
+        "exit_settled_ts",
+    }
+
+    for key, value in payload.items():
+        if not isinstance(key, str):
+            continue
+        key_l = key.lower()
+        if key_l in excluded_keys:
+            continue
+        if "ts" not in key_l:
+            continue
+        if not any(token in key_l for token in ("exit", "tp", "take_profit", "stop", "sl", "close")):
+            continue
+        add_point(value, _format_exit_label(key_l), is_final=("exit" in key_l and "entry" not in key_l))
+
+    raw_points = payload.get("exit_points")
+    if isinstance(raw_points, list):
+        for idx, raw in enumerate(raw_points):
+            if isinstance(raw, dict):
+                ts_value = (
+                    raw.get("ts")
+                    or raw.get("time")
+                    or raw.get("exit_ts")
+                    or raw.get("timestamp")
+                )
+                label = str(raw.get("label") or raw.get("reason") or f"EXIT {idx + 1}")
+                add_point(ts_value, label, is_final=(str(raw.get("is_final")).lower() == "true"))
+            else:
+                add_point(raw, f"EXIT {idx + 1}")
+
+    add_point(fallback_exit_ts, "FINAL EXIT", is_final=True)
+
+    ordered = sorted(points.values(), key=lambda p: (p["ts"], 0 if p.get("is_final") else 1, p["label"]))
+    return ordered
+
+
 def _parse_float(value: Any) -> Optional[float]:
     if value is None:
         return None
@@ -1254,6 +1336,7 @@ def get_opportunity_price_window(
             gap_count += 1
 
     outcome_class = _compute_outcome_class(row[11], row[12])
+    exit_points = _extract_exit_points(payload, exit_ts)
 
     return envelope({
         "opportunity_id": row[0],
@@ -1277,6 +1360,7 @@ def get_opportunity_price_window(
             "exit_px": exit_px,
             "stop_px": stop_px,
             "tp_px": tp_px,
+            "exit_points": exit_points,
         },
         "outcome": {
             "class": outcome_class,
