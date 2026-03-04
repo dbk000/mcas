@@ -434,15 +434,19 @@ export default function OpportunityCurveChart({
       })
     }
 
-    chart.timeScale().fitContent()
     const referencePrice = Number(chartData[chartData.length - 1]?.close)
-    const chosenBarSpacing = autoBarSpacingByPrice
+    let chosenBarSpacing = autoBarSpacingByPrice
       ? pickBarSpacingByPrice(referencePrice, priceBarSpacingTable, targetBarSpacing)
       : (
           autoBarSpacing
             ? pickBarSpacing(chartData.length, barSpacingTable, targetBarSpacing)
             : targetBarSpacing
         )
+    const containerWidth = containerRef.current?.clientWidth || 0
+    if (Number.isFinite(chosenBarSpacing) && chosenBarSpacing > 0 && containerWidth > 0 && chartData.length > 0) {
+      const maxSafeSpacing = Math.max(2, (containerWidth - 24) / chartData.length)
+      chosenBarSpacing = Math.min(chosenBarSpacing, maxSafeSpacing)
+    }
     if (Number.isFinite(chosenBarSpacing) && chosenBarSpacing > 0) {
       try {
         chart.timeScale().applyOptions({
@@ -453,6 +457,7 @@ export default function OpportunityCurveChart({
         // Ignore incompatible runtime versions/options.
       }
     }
+    chart.timeScale().fitContent()
     requestAnimationFrame(syncMarkerCoords)
   }, [
     clippedCandles,
