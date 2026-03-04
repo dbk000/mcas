@@ -72,6 +72,7 @@ def test_price_window_computes_bounds_and_clips_candles(monkeypatch):
         '{"entry_ts":"2026-02-01T10:00:00+00:00","exit_ts":"2026-02-01T12:30:00+00:00","entry_price":101.5,"stop_price":99.0,"tp1_price":105.0,"tp2_price":108.0}',  # payload_json
         None,  # sr.entry_ts
         None,  # sr.exit_ts
+        None,  # sr.exit_price
         None,  # sr.entry_price
         None,  # sr.stop_price
         None,  # sr.tp1_price
@@ -124,6 +125,7 @@ def test_price_window_infers_exit_from_horizon(monkeypatch):
         '{"entry_ts":"2026-02-01T10:00:00+00:00","horizon":"1d","direction":"long"}',  # payload_json
         None,  # sr.entry_ts
         None,  # sr.exit_ts
+        None,  # sr.exit_price
         None,  # sr.entry_price
         None,  # sr.stop_price
         None,  # sr.tp1_price
@@ -163,6 +165,7 @@ def test_price_window_missing_exit_ts_returns_422(monkeypatch):
         '{"entry_price":2500.0,"stop_price":2450.0,"tp1_price":2580.0}',  # payload_json
         None,  # sr.entry_ts
         None,  # sr.exit_ts
+        None,  # sr.exit_price
         2500.0,  # sr.entry_price
         2450.0,  # sr.stop_price
         2580.0,  # sr.tp1_price

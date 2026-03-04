@@ -1141,11 +1141,11 @@ def get_opportunity_price_window(
         with conn.cursor() as cur:
             cur.execute("""
                 SELECT o.id, o.symbol, o.created_ts, o.payload_json,
-                       sr.entry_ts, sr.exit_ts, sr.entry_price, sr.stop_price,
+                       sr.entry_ts, sr.exit_ts, sr.exit_price, sr.entry_price, sr.stop_price,
                        sr.tp1_price, sr.tp2_price, sr.r_multiple, sr.pnl_net
                 FROM opportunities o
                 LEFT JOIN LATERAL (
-                    SELECT entry_ts, exit_ts, entry_price, stop_price, tp1_price, tp2_price, r_multiple, pnl_net
+                    SELECT entry_ts, exit_ts, exit_price, entry_price, stop_price, tp1_price, tp2_price, r_multiple, pnl_net
                     FROM simulation_results
                     WHERE opportunity_id = o.id
                     ORDER BY created_at DESC
@@ -1195,18 +1195,21 @@ def get_opportunity_price_window(
                 raise HTTPException(status_code=422, detail="expired opp missing exit_ts")
 
             entry_px = _parse_float(payload.get("entry_price"))
+            exit_px = _parse_float(payload.get("exit_price"))
             stop_px = _parse_float(payload.get("stop_price"))
             tp1_px = _parse_float(payload.get("tp1_price"))
             tp2_px = _parse_float(payload.get("tp2_price"))
 
             if entry_px is None:
-                entry_px = _parse_float(row[6])
+                entry_px = _parse_float(row[7])
+            if exit_px is None:
+                exit_px = _parse_float(row[6])
             if stop_px is None:
-                stop_px = _parse_float(row[7])
+                stop_px = _parse_float(row[8])
             if tp1_px is None:
-                tp1_px = _parse_float(row[8])
+                tp1_px = _parse_float(row[9])
             if tp2_px is None:
-                tp2_px = _parse_float(row[9])
+                tp2_px = _parse_float(row[10])
 
             tp_px = [px for px in (tp1_px, tp2_px) if px is not None]
             # Preserve stable ordering while removing accidental duplicates.
@@ -1250,7 +1253,7 @@ def get_opportunity_price_window(
         if (candles[idx]["t"] - candles[idx - 1]["t"]) > expected_gap_ms:
             gap_count += 1
 
-    outcome_class = _compute_outcome_class(row[10], row[11])
+    outcome_class = _compute_outcome_class(row[11], row[12])
 
     return envelope({
         "opportunity_id": row[0],
@@ -1271,13 +1274,14 @@ def get_opportunity_price_window(
             "exit_ts_inferred": exit_ts_inferred,
             "exit_ts_source": exit_ts_source,
             "entry_px": entry_px,
+            "exit_px": exit_px,
             "stop_px": stop_px,
             "tp_px": tp_px,
         },
         "outcome": {
             "class": outcome_class,
-            "r_multiple": _parse_float(row[10]),
-            "pnl_net": _parse_float(row[11]),
+            "r_multiple": _parse_float(row[11]),
+            "pnl_net": _parse_float(row[12]),
         },
     }, t0)
 

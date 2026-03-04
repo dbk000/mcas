@@ -23,6 +23,20 @@ function calcGapCount(candles, expectedGapMs) {
   return gaps
 }
 
+function formatLevelPrice(value) {
+  if (value == null || Number.isNaN(Number(value))) return '—'
+  const n = Number(value)
+  let decimals = 4
+  if (Math.abs(n) >= 1000) decimals = 2
+  else if (Math.abs(n) >= 1) decimals = 3
+  else if (Math.abs(n) >= 0.01) decimals = 5
+  else decimals = 7
+  return n.toLocaleString('en-US', {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  })
+}
+
 export default function OpportunityCurveChart({
   candles = [],
   markers = {},
@@ -53,6 +67,27 @@ export default function OpportunityCurveChart({
     [clippedCandles, expectedGapMs]
   )
   const hideExit = hideExitUntilReveal && revealTs != null && markers?.exit_ts != null && revealTs < markers.exit_ts
+  const levelLegend = useMemo(() => {
+    if (hideLevels) return []
+
+    const items = []
+    if (markers?.entry_px != null) {
+      items.push({ key: 'entry', label: 'ENTRY', price: markers.entry_px, className: 'text-amber-300 border-amber-500/60 bg-amber-500/15' })
+    }
+    if (markers?.stop_px != null) {
+      items.push({ key: 'stop', label: 'STOP', price: markers.stop_px, className: 'text-red-300 border-red-500/60 bg-red-500/15' })
+    }
+    if (Array.isArray(markers?.tp_px)) {
+      markers.tp_px.forEach((price, idx) => {
+        if (price == null || Number.isNaN(Number(price))) return
+        items.push({ key: `tp-${idx}`, label: `TP${idx + 1}`, price, className: 'text-emerald-300 border-emerald-500/60 bg-emerald-500/15' })
+      })
+    }
+    if (!hideExit && markers?.exit_px != null) {
+      items.push({ key: 'exit', label: 'EXIT', price: markers.exit_px, className: 'text-sky-300 border-sky-500/60 bg-sky-500/15' })
+    }
+    return items
+  }, [markers, hideLevels, hideExit])
 
   const syncMarkerCoords = useCallback(() => {
     const chart = chartRef.current
@@ -162,25 +197,28 @@ export default function OpportunityCurveChart({
 
     if (hideLevels || clippedCandles.length === 0 || !markers) return
 
-    const addLine = (price, color, title) => {
+    const addLine = (price, color, title, lineStyle = LineStyle.Solid) => {
       if (price == null || Number.isNaN(Number(price))) return
       const line = series.createPriceLine({
         price: Number(price),
         color,
-        lineWidth: 1,
-        lineStyle: LineStyle.Dashed,
-        axisLabelVisible: !compact,
+        lineWidth: 2,
+        lineStyle,
+        axisLabelVisible: true,
         title,
       })
       priceLinesRef.current.push(line)
     }
 
     addLine(markers.entry_px, '#f59e0b', 'ENTRY')
-    addLine(markers.stop_px, '#ef4444', 'STOP')
+    addLine(markers.stop_px, '#ef4444', 'STOP', LineStyle.Dashed)
     if (Array.isArray(markers.tp_px)) {
-      markers.tp_px.forEach((px, idx) => addLine(px, '#22c55e', `TP${idx + 1}`))
+      markers.tp_px.forEach((px, idx) => addLine(px, '#22c55e', `TP${idx + 1}`, LineStyle.Dashed))
     }
-  }, [markers, hideLevels, clippedCandles.length, compact])
+    if (!hideExit) {
+      addLine(markers.exit_px, '#38bdf8', 'EXIT')
+    }
+  }, [markers, hideLevels, hideExit, clippedCandles.length, compact])
 
   if (clippedCandles.length === 0) {
     return (
@@ -200,25 +238,34 @@ export default function OpportunityCurveChart({
       <div className="pointer-events-none absolute inset-0">
         {markerCoords.entry !== null && (
           <div className="absolute top-0 bottom-0" style={{ left: `${markerCoords.entry}px` }}>
-            <div className="absolute top-0 bottom-0 w-px bg-amber-400/90" />
-            {!compact && (
-              <span className="absolute top-1 left-1 px-1 py-0.5 text-[10px] font-mono rounded bg-amber-500/20 text-amber-300">
-                ENTRY
-              </span>
-            )}
+            <div className="absolute top-0 bottom-0 w-0.5 bg-amber-300 shadow-[0_0_10px_rgba(251,191,36,0.9)]" />
+            <span className="absolute top-1 left-1 px-1 py-0.5 text-[9px] font-bold tracking-wide rounded border border-amber-500/70 bg-amber-500/25 text-amber-200">
+              ENTRY
+            </span>
           </div>
         )}
         {markerCoords.exit !== null && (
           <div className="absolute top-0 bottom-0" style={{ left: `${markerCoords.exit}px` }}>
-            <div className="absolute top-0 bottom-0 w-px bg-sky-400/90" />
-            {!compact && (
-              <span className="absolute top-1 left-1 px-1 py-0.5 text-[10px] font-mono rounded bg-sky-500/20 text-sky-300">
-                EXIT
-              </span>
-            )}
+            <div className="absolute top-0 bottom-0 w-0.5 bg-sky-300 shadow-[0_0_10px_rgba(125,211,252,0.9)]" />
+            <span className="absolute top-1 left-1 px-1 py-0.5 text-[9px] font-bold tracking-wide rounded border border-sky-500/70 bg-sky-500/25 text-sky-200">
+              EXIT
+            </span>
           </div>
         )}
       </div>
+
+      {!hideLevels && levelLegend.length > 0 && (
+        <div className="pointer-events-none absolute top-2 left-2 right-2 flex flex-wrap gap-1">
+          {levelLegend.map((item) => (
+            <span
+              key={item.key}
+              className={`px-1.5 py-0.5 rounded border text-[10px] font-mono ${item.className}`}
+            >
+              {item.label} {formatLevelPrice(item.price)}
+            </span>
+          ))}
+        </div>
+      )}
 
       {showGapBadge && gapCount > 0 && (
         <div className="pointer-events-none absolute bottom-2 left-2 px-2 py-1 rounded bg-terminal-900/90 text-[11px] text-amber-300 border border-amber-700/60">

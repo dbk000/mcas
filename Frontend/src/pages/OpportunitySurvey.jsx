@@ -4,6 +4,8 @@ import {
   ArrowLeft,
   BarChart3,
   CheckCircle2,
+  ChevronDown,
+  ChevronUp,
   Pause,
   Play,
   Shuffle,
@@ -21,7 +23,7 @@ import {
   Select,
   Toggle,
 } from '../components/ui'
-import { formatDateTime } from '../utils/formatters'
+import { formatDateTime, formatPrice } from '../utils/formatters'
 import OpportunityCurveChart from '../components/opportunities/OpportunityCurveChart'
 
 const PREDICTIONS_KEY = 'mcas_visual_predictions_v1'
@@ -116,6 +118,7 @@ export default function OpportunitySurvey() {
   const [revealOffsetMin, setRevealOffsetMin] = useState(0) // Assumption: default reveal at entry.
   const [autoplayMs, setAutoplayMs] = useState(500)
   const [autoplayOn, setAutoplayOn] = useState(false)
+  const [topPanelsCollapsed, setTopPanelsCollapsed] = useState(false)
   const [oppsLoading, setOppsLoading] = useState(false)
   const [oppsError, setOppsError] = useState('')
   const [candidates, setCandidates] = useState([])
@@ -387,130 +390,142 @@ export default function OpportunitySurvey() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            className="btn btn-ghost btn-sm"
+            onClick={() => setTopPanelsCollapsed((v) => !v)}
+            title={topPanelsCollapsed ? 'Show controls above stack view' : 'Collapse controls above stack view'}
+          >
+            {topPanelsCollapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+            {topPanelsCollapsed ? 'Show Top Panels' : 'Collapse Top Panels'}
+          </button>
           <Badge variant={committedForBatch ? 'success' : 'warning'}>
             {committedForBatch ? 'Predictions Committed' : 'Commit Required Before Forward Reveal'}
           </Badge>
         </div>
       </div>
 
-      <Card>
-        <CardContent className="flex flex-wrap items-center gap-3">
-          <Select value={mode} onChange={(e) => setMode(e.target.value)} options={modeOptions} className="w-64" />
-          <Select
-            value={batchSize}
-            onChange={(e) => setBatchSize(Number(e.target.value))}
-            options={[25, 50, 100].map((n) => ({ value: n, label: `${n}` }))}
-            className="w-24"
-          />
-          <Toggle enabled={randomSample} onChange={setRandomSample} label="Random Sample" />
-          <Toggle enabled={presentationMode} onChange={setPresentationMode} label="Presentation Mode (Landscape)" />
-          <Toggle
-            enabled={hideLevelsUntilReveal}
-            onChange={setHideLevelsUntilReveal}
-            label="Hide SL/TP Until Reveal"
-          />
-          <button className="btn btn-secondary btn-sm" onClick={fetchCandidates}>
-            <Shuffle className="w-4 h-4" />
-            Reload Batch
-          </button>
-          <div className="ml-auto flex items-center gap-2">
-            <button
-              className="btn btn-ghost btn-sm"
-              disabled={batchOffset === 0}
-              onClick={() => setBatchOffset((v) => Math.max(0, v - batchSize))}
-            >
-              Prev
-            </button>
-            <span className="text-sm text-terminal-400">
-              Page {totalPages > 0 ? currentPage : 0}/{Math.max(totalPages, 1)}
-            </span>
-            <button
-              className="btn btn-ghost btn-sm"
-              disabled={batchOffset + batchSize >= candidates.length}
-              onClick={() => setBatchOffset((v) => v + batchSize)}
-            >
-              Next
-            </button>
-          </div>
-        </CardContent>
-      </Card>
+      {!topPanelsCollapsed && (
+        <>
+          <Card>
+            <CardContent className="flex flex-wrap items-center gap-3">
+              <Select value={mode} onChange={(e) => setMode(e.target.value)} options={modeOptions} className="w-64" />
+              <Select
+                value={batchSize}
+                onChange={(e) => setBatchSize(Number(e.target.value))}
+                options={[25, 50, 100].map((n) => ({ value: n, label: `${n}` }))}
+                className="w-24"
+              />
+              <Toggle enabled={randomSample} onChange={setRandomSample} label="Random Sample" />
+              <Toggle enabled={presentationMode} onChange={setPresentationMode} label="Presentation Mode (Landscape)" />
+              <Toggle
+                enabled={hideLevelsUntilReveal}
+                onChange={setHideLevelsUntilReveal}
+                label="Hide SL/TP Until Reveal"
+              />
+              <button className="btn btn-secondary btn-sm" onClick={fetchCandidates}>
+                <Shuffle className="w-4 h-4" />
+                Reload Batch
+              </button>
+              <div className="ml-auto flex items-center gap-2">
+                <button
+                  className="btn btn-ghost btn-sm"
+                  disabled={batchOffset === 0}
+                  onClick={() => setBatchOffset((v) => Math.max(0, v - batchSize))}
+                >
+                  Prev
+                </button>
+                <span className="text-sm text-terminal-400">
+                  Page {totalPages > 0 ? currentPage : 0}/{Math.max(totalPages, 1)}
+                </span>
+                <button
+                  className="btn btn-ghost btn-sm"
+                  disabled={batchOffset + batchSize >= candidates.length}
+                  onClick={() => setBatchOffset((v) => v + batchSize)}
+                >
+                  Next
+                </button>
+              </div>
+            </CardContent>
+          </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Reveal Controls</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <button className="btn btn-ghost btn-sm" onClick={() => setRevealOffsetMin((v) => clamp(v - 30, bounds.min, maxRevealAllowed))}>-30m</button>
-            <button className="btn btn-ghost btn-sm" onClick={() => setRevealOffsetMin((v) => clamp(v - 5, bounds.min, maxRevealAllowed))}>-5m</button>
-            <button
-              className="btn btn-secondary btn-sm"
-              disabled={!committedForBatch}
-              onClick={() => setRevealOffsetMin((v) => clamp(v + 5, bounds.min, maxRevealAllowed))}
-            >
-              +5m
-            </button>
-            <button
-              className="btn btn-secondary btn-sm"
-              disabled={!committedForBatch}
-              onClick={() => setRevealOffsetMin((v) => clamp(v + 30, bounds.min, maxRevealAllowed))}
-            >
-              +30m
-            </button>
-            <button className="btn btn-ghost btn-sm" onClick={() => setRevealOffsetMin(0)}>Jump Entry</button>
-            <button
-              className="btn btn-ghost btn-sm"
-              disabled={!committedForBatch}
-              onClick={() => setRevealOffsetMin(clamp(bounds.revealExit, bounds.min, maxRevealAllowed))}
-            >
-              Reveal Exit
-            </button>
-            <button
-              className="btn btn-primary btn-sm"
-              disabled={!committedForBatch}
-              onClick={() => setRevealOffsetMin(maxRevealAllowed)}
-            >
-              Reveal All
-            </button>
+          <Card>
+            <CardHeader>
+              <CardTitle>Reveal Controls</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <button className="btn btn-ghost btn-sm" onClick={() => setRevealOffsetMin((v) => clamp(v - 30, bounds.min, maxRevealAllowed))}>-30m</button>
+                <button className="btn btn-ghost btn-sm" onClick={() => setRevealOffsetMin((v) => clamp(v - 5, bounds.min, maxRevealAllowed))}>-5m</button>
+                <button
+                  className="btn btn-secondary btn-sm"
+                  disabled={!committedForBatch}
+                  onClick={() => setRevealOffsetMin((v) => clamp(v + 5, bounds.min, maxRevealAllowed))}
+                >
+                  +5m
+                </button>
+                <button
+                  className="btn btn-secondary btn-sm"
+                  disabled={!committedForBatch}
+                  onClick={() => setRevealOffsetMin((v) => clamp(v + 30, bounds.min, maxRevealAllowed))}
+                >
+                  +30m
+                </button>
+                <button className="btn btn-ghost btn-sm" onClick={() => setRevealOffsetMin(0)}>Jump Entry</button>
+                <button
+                  className="btn btn-ghost btn-sm"
+                  disabled={!committedForBatch}
+                  onClick={() => setRevealOffsetMin(clamp(bounds.revealExit, bounds.min, maxRevealAllowed))}
+                >
+                  Reveal Exit
+                </button>
+                <button
+                  className="btn btn-primary btn-sm"
+                  disabled={!committedForBatch}
+                  onClick={() => setRevealOffsetMin(maxRevealAllowed)}
+                >
+                  Reveal All
+                </button>
 
-            <button
-              className="btn btn-ghost btn-sm"
-              disabled={!committedForBatch}
-              onClick={() => setAutoplayOn((v) => !v)}
-            >
-              {autoplayOn ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-              {autoplayOn ? 'Stop' : 'Autoplay'}
-            </button>
+                <button
+                  className="btn btn-ghost btn-sm"
+                  disabled={!committedForBatch}
+                  onClick={() => setAutoplayOn((v) => !v)}
+                >
+                  {autoplayOn ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                  {autoplayOn ? 'Stop' : 'Autoplay'}
+                </button>
 
-            <Select
-              value={autoplayMs}
-              onChange={(e) => setAutoplayMs(Number(e.target.value))}
-              options={[
-                { value: 250, label: '250ms' },
-                { value: 500, label: '500ms' },
-                { value: 1000, label: '1000ms' },
-              ]}
-              className="w-24"
-            />
-          </div>
+                <Select
+                  value={autoplayMs}
+                  onChange={(e) => setAutoplayMs(Number(e.target.value))}
+                  options={[
+                    { value: 250, label: '250ms' },
+                    { value: 500, label: '500ms' },
+                    { value: 1000, label: '1000ms' },
+                  ]}
+                  className="w-24"
+                />
+              </div>
 
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-sm text-terminal-400">
-              <span>Offset from entry (minutes)</span>
-              <span className="font-mono text-terminal-200">{revealOffsetMin}m</span>
-            </div>
-            <input
-              type="range"
-              min={bounds.min}
-              max={maxRevealAllowed}
-              step={REVEAL_STEP_MIN}
-              value={revealOffsetMin}
-              onChange={(e) => setRevealOffsetMin(Number(e.target.value))}
-              className="w-full"
-            />
-          </div>
-        </CardContent>
-      </Card>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-sm text-terminal-400">
+                  <span>Offset from entry (minutes)</span>
+                  <span className="font-mono text-terminal-200">{revealOffsetMin}m</span>
+                </div>
+                <input
+                  type="range"
+                  min={bounds.min}
+                  max={maxRevealAllowed}
+                  step={REVEAL_STEP_MIN}
+                  value={revealOffsetMin}
+                  onChange={(e) => setRevealOffsetMin(Number(e.target.value))}
+                  className="w-full"
+                />
+              </div>
+            </CardContent>
+          </Card>
+        </>
+      )}
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
@@ -529,11 +544,11 @@ export default function OpportunitySurvey() {
           ) : activeBatch.length === 0 ? (
             <EmptyState icon={XCircle} title="No opportunities in this mode" description="Change mode or reload batch." />
           ) : (
-            <div
-              ref={scrollRef}
-              onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}
-              className="h-[70vh] overflow-auto border border-terminal-600 rounded"
-            >
+              <div
+                ref={scrollRef}
+                onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}
+                className={`${topPanelsCollapsed ? 'h-[84vh]' : 'h-[70vh]'} overflow-auto border border-terminal-600 rounded`}
+              >
               <div style={{ height: rowCount * rowHeight, position: 'relative' }}>
                 {visibleRows.map((rowIdx) => {
                   const start = rowIdx * columns
@@ -600,6 +615,15 @@ function SurveyRow({
   const revealTs = windowData ? getRowRevealTs(windowData, revealOffsetMin) : null
   const outcomeClass = windowData?.outcome?.class || opp.outcome_class || 'unknown'
   const hideOutcome = mode === 'mixed' && !prediction
+  const finalExitPriceRaw = windowData?.markers?.exit_px ?? opp?.exit_price ?? opp?.payload?.exit_price
+  const finalExitPrice = Number.isFinite(Number(finalExitPriceRaw)) ? Number(finalExitPriceRaw) : null
+  const markers = useMemo(() => {
+    if (!windowData?.markers) return {}
+    return {
+      ...windowData.markers,
+      exit_px: windowData.markers.exit_px ?? finalExitPrice,
+    }
+  }, [windowData, finalExitPrice])
 
   return (
     <div className="border border-terminal-600 rounded bg-terminal-900/40 p-3 h-[calc(100%-0px)]">
@@ -615,6 +639,11 @@ function SurveyRow({
             </Badge>
           ) : (
             <Badge variant="warning">Outcome hidden</Badge>
+          )}
+          {!hideOutcome && (
+            <p className="text-terminal-500">
+              Final Exit: <span className="font-mono text-sky-300">{finalExitPrice != null ? formatPrice(finalExitPrice) : '—'}</span>
+            </p>
           )}
           {prediction && !hideOutcome && outcomeClass !== 'unknown' && (
             prediction.predicted_class === outcomeClass ? (
@@ -637,7 +666,7 @@ function SurveyRow({
           ) : (
             <OpportunityCurveChart
               candles={windowData.candles || []}
-              markers={windowData.markers || {}}
+              markers={markers}
               revealTs={revealTs}
               hideExitUntilReveal
               hideLevels={hideLevelsUntilReveal && revealOffsetMin <= 0}
