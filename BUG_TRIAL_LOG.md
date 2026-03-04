@@ -121,5 +121,5 @@ Purpose: record attempted fixes, outcomes, and regressions so later sessions avo
   - Added responsive presentation columns (fallback to 1 column when viewport too narrow).
   - Removed unnecessary `movingAveragePeriods` prop from survey row (MAs disabled there).
 - Commit: `1862ee4`
-- Outcome: Build passes locally (`Frontend npm run build`). Runtime validation pending browser check.
-- Notes / Evidence: This pass targets exact “brief render then blank” behavior reported in screenshots.
+- Outcome: Build passes locally (`Frontend npm run build`) and Cloudflare Pages deploy succeeded (`b93d15e` -> `https://85e8a1f7.mcas.pages.dev`).
+- Notes / Evidence: This pass targets exact “brief render then blank” behavior reported in screenshots. User runtime validation still required.
