@@ -602,13 +602,26 @@ class OpportunitySimulator:
         # Per-setup exit config (e.g. D1 uses no fail-fast/trailing)
         exit_cfg = SETUP_EXIT_CONFIGS.get(setup_id, self.config.exit_config)
 
-        # Walk forward through bars checking for exit
+        # Walk forward through bars checking for exit.
+        # Align with backtest/paper behavior: TP1 can be a partial close
+        # (50%) with a runner to TP2 and stop moved to breakeven.
         hwm = None
         half_r_touched = False
         exit_reason = None
         exit_price = None
         exit_ts = None
         bars_held = 0
+        sim_stop_price = stop_price
+
+        remaining_size = position_size
+        tp1_taken = False
+        tp1_close_size = 0.0
+        tp1_exit_price = None
+        tp1_exit_with_slip = None
+        realized_gross = 0.0
+        realized_exit_fees = 0.0
+        fee_bps = self.config.fee_taker_bps
+        exit_slip_bps = self.config.slippage_exit_bps
 
         # MAE/MFE tracking (using high/low, not close)
         # Initialize from entry_with_slip, then immediately process entry bar (bar 0).
@@ -660,7 +673,7 @@ class OpportunitySimulator:
                 side=direction,
                 bar=bar,
                 entry_price=entry_with_slip,
-                stop_price=stop_price,
+                stop_price=sim_stop_price,
                 tp1_price=tp1_price,
                 tp2_price=tp2_price,
                 r_value=actual_r_value,
@@ -675,8 +688,39 @@ class OpportunitySimulator:
             half_r_touched = new_half_r
 
             if exit_result:
-                exit_reason, exit_price = exit_result
-                exit_ts = bar["bar_start_ts"]
+                leg_reason, leg_exit_price = exit_result
+                leg_exit_ts = bar["bar_start_ts"]
+
+                # Partial TP1 close: close 50%, keep runner to TP2,
+                # move stop to entry (breakeven) for remainder.
+                if leg_reason == "TP1" and tp2_price is not None and not tp1_taken:
+                    close_size = remaining_size * 0.5
+                    if close_size > 0:
+                        if direction == "long":
+                            leg_exit_with_slip = leg_exit_price * (1 - exit_slip_bps / 10000)
+                            leg_pnl_gross = (leg_exit_with_slip - entry_with_slip) * close_size
+                        else:
+                            leg_exit_with_slip = leg_exit_price * (1 + exit_slip_bps / 10000)
+                            leg_pnl_gross = (entry_with_slip - leg_exit_with_slip) * close_size
+
+                        leg_exit_fee = leg_exit_with_slip * close_size * (fee_bps / 10000)
+                        realized_gross += leg_pnl_gross
+                        realized_exit_fees += leg_exit_fee
+
+                        tp1_taken = True
+                        tp1_close_size = close_size
+                        tp1_exit_price = leg_exit_price
+                        tp1_exit_with_slip = leg_exit_with_slip
+                        remaining_size -= close_size
+
+                        # Runner leg settings after TP1 partial.
+                        sim_stop_price = entry_with_slip
+                        tp1_price = None
+                        continue
+
+                exit_reason = leg_reason
+                exit_price = leg_exit_price
+                exit_ts = leg_exit_ts
                 break
 
         # If no exit triggered, force close at last bar's close
@@ -686,14 +730,8 @@ class OpportunitySimulator:
             exit_price = last_bar["close"]
             exit_ts = last_bar["bar_start_ts"]
 
-        result.exit_ts = exit_ts
-        result.exit_price = exit_price
-        result.exit_reason = exit_reason
-        result.bars_held = bars_held
-
-        # Apply exit slippage (NOT for stop losses - fill is already modeled)
+        # Final leg (or full leg if TP1 partial never triggered)
         if exit_reason != "STOP_LOSS":
-            exit_slip_bps = self.config.slippage_exit_bps
             if direction == "long":
                 exit_with_slip = exit_price * (1 - exit_slip_bps / 10000)
             else:
@@ -701,19 +739,16 @@ class OpportunitySimulator:
         else:
             exit_with_slip = exit_price
 
-        result.exit_price_with_slippage = exit_with_slip
-
-        # Calculate PnL
         if direction == "long":
-            pnl_gross = (exit_with_slip - entry_with_slip) * position_size
+            final_leg_gross = (exit_with_slip - entry_with_slip) * remaining_size
         else:
-            pnl_gross = (entry_with_slip - exit_with_slip) * position_size
+            final_leg_gross = (entry_with_slip - exit_with_slip) * remaining_size
+        final_leg_exit_fee = exit_with_slip * remaining_size * (fee_bps / 10000)
 
-        # Fees (entry + exit)
-        fee_bps = self.config.fee_taker_bps
+        # Fees (entry + exits on each closed leg)
         entry_fee = entry_with_slip * position_size * (fee_bps / 10000)
-        exit_fee = exit_with_slip * position_size * (fee_bps / 10000)
-        total_fees = entry_fee + exit_fee
+        pnl_gross = realized_gross + final_leg_gross
+        total_fees = entry_fee + realized_exit_fees + final_leg_exit_fee
 
         pnl_net = pnl_gross - total_fees
 
@@ -721,6 +756,25 @@ class OpportunitySimulator:
         risk_per_unit = actual_r_value * position_size
         r_multiple = pnl_net / risk_per_unit if risk_per_unit > 0 else 0
 
+        # Represent the trade with weighted average exit prices when TP1 partial
+        # closes happened, so reported price fields remain economically coherent.
+        if tp1_taken and tp1_close_size > 0:
+            weighted_exit_price = (
+                (tp1_exit_price * tp1_close_size) + (exit_price * remaining_size)
+            ) / position_size
+            weighted_exit_with_slip = (
+                (tp1_exit_with_slip * tp1_close_size) + (exit_with_slip * remaining_size)
+            ) / position_size
+            result.exit_reason = f"TP1+{exit_reason}"
+            result.exit_price = weighted_exit_price
+            result.exit_price_with_slippage = weighted_exit_with_slip
+        else:
+            result.exit_reason = exit_reason
+            result.exit_price = exit_price
+            result.exit_price_with_slippage = exit_with_slip
+
+        result.exit_ts = exit_ts
+        result.bars_held = bars_held
         result.pnl_gross = pnl_gross
         result.fees = total_fees
         result.pnl_net = pnl_net
