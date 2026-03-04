@@ -106,6 +106,7 @@ function getBoundsForWindow(windowData) {
 
 function pickColumns(presentationMode, width) {
   if (!presentationMode) return 1
+  if (width < 1500) return 1
   return 2
 }
 
@@ -369,6 +370,16 @@ export default function OpportunitySurvey() {
   for (let rowIdx = firstRow; rowIdx < lastRow; rowIdx += 1) {
     visibleRows.push(rowIdx)
   }
+
+  useEffect(() => {
+    if (!scrollRef.current) return
+    const maxScrollTop = Math.max(0, (rowCount * rowHeight) - viewport.height)
+    if (scrollTop > maxScrollTop) {
+      const clamped = Math.max(0, maxScrollTop)
+      scrollRef.current.scrollTop = clamped
+      setScrollTop(clamped)
+    }
+  }, [rowCount, rowHeight, viewport.height, scrollTop])
 
   const totalPages = Math.ceil(candidates.length / batchSize)
   const currentPage = Math.floor(batchOffset / batchSize) + 1
@@ -638,7 +649,7 @@ function SurveyRow({
 
   return (
     <div className="border border-terminal-600 rounded bg-terminal-900/40 p-3 h-[calc(100%-0px)] overflow-hidden">
-      <div className={`grid ${presentationMode ? 'grid-cols-[150px_1fr_180px]' : 'grid-cols-[170px_1fr_220px]'} gap-3 h-full`}>
+      <div className={`grid ${presentationMode ? 'grid-cols-[140px_minmax(0,1fr)_150px]' : 'grid-cols-[170px_1fr_220px]'} gap-3 h-full`}>
         <div className="text-xs space-y-1">
           <p className="font-mono text-terminal-100 text-sm">{opp.symbol}</p>
           <p className="text-terminal-400">{(opp.direction || opp.decision || 'n/a').toUpperCase()}</p>
@@ -685,7 +696,6 @@ function SurveyRow({
               height={presentationMode ? 210 : 190}
               chartVariant={presentationMode ? 'classic' : 'terminal'}
               showMovingAverages={false}
-              movingAveragePeriods={[9, 21, 50]}
               thinTemporalMarkers
               showVolume={false}
               showCloseLine={presentationMode}

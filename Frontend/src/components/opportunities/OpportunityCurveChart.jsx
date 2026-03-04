@@ -28,10 +28,10 @@ const CHART_VARIANTS = {
 function toChartPoint(candle) {
   return {
     time: Math.floor(candle.t / 1000),
-    open: candle.o,
-    high: candle.h,
-    low: candle.l,
-    close: candle.c,
+    open: Number(candle.o),
+    high: Number(candle.h),
+    low: Number(candle.l),
+    close: Number(candle.c),
   }
 }
 
@@ -57,6 +57,11 @@ function formatLevelPrice(value) {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
   })
+}
+
+function isRenderablePrice(value) {
+  const n = Number(value)
+  return Number.isFinite(n) && n > 0
 }
 
 function getVariantStyle(variant) {
@@ -198,6 +203,8 @@ export default function OpportunityCurveChart({
   const closeLineSeriesRef = useRef(null)
   const maSeriesRef = useRef([])
   const priceLinesRef = useRef([])
+  const markersRef = useRef(markers)
+  const exitPointsRef = useRef([])
   const [markerCoords, setMarkerCoords] = useState({ entry: null, exits: [] })
 
   const clippedCandles = useMemo(() => {
@@ -236,23 +243,28 @@ export default function OpportunityCurveChart({
     [markers, hideExitUntilReveal, revealTs]
   )
 
+  useEffect(() => {
+    markersRef.current = markers
+    exitPointsRef.current = exitPoints
+  }, [markers, exitPoints])
+
   const levelLegend = useMemo(() => {
     if (hideLevels) return []
 
     const items = []
-    if (markers?.entry_px != null) {
+    if (isRenderablePrice(markers?.entry_px)) {
       items.push({ key: 'entry', label: 'ENTRY', price: markers.entry_px, className: 'text-amber-300 border-amber-500/60 bg-amber-500/15' })
     }
-    if (markers?.stop_px != null) {
+    if (isRenderablePrice(markers?.stop_px)) {
       items.push({ key: 'stop', label: 'STOP', price: markers.stop_px, className: 'text-red-300 border-red-500/60 bg-red-500/15' })
     }
     if (Array.isArray(markers?.tp_px)) {
       markers.tp_px.forEach((price, idx) => {
-        if (price == null || Number.isNaN(Number(price))) return
+        if (!isRenderablePrice(price)) return
         items.push({ key: `tp-${idx}`, label: `TP${idx + 1}`, price, className: 'text-emerald-300 border-emerald-500/60 bg-emerald-500/15' })
       })
     }
-    if (!hideExitPrice && markers?.exit_px != null) {
+    if (!hideExitPrice && isRenderablePrice(markers?.exit_px)) {
       items.push({ key: 'exit', label: 'EXIT', price: markers.exit_px, className: 'text-sky-300 border-sky-500/60 bg-sky-500/15' })
     }
     return items
@@ -260,14 +272,16 @@ export default function OpportunityCurveChart({
 
   const syncMarkerCoords = useCallback(() => {
     const chart = chartRef.current
-    if (!chart || !markers) return
+    const markersCurrent = markersRef.current
+    const exitPointsCurrent = exitPointsRef.current
+    if (!chart || !markersCurrent) return
 
     const timeScale = chart.timeScale()
-    const entryX = markers.entry_ts
-      ? timeScale.timeToCoordinate(Math.floor(Number(markers.entry_ts) / 1000))
+    const entryX = markersCurrent.entry_ts
+      ? timeScale.timeToCoordinate(Math.floor(Number(markersCurrent.entry_ts) / 1000))
       : null
 
-    const exits = exitPoints
+    const exits = exitPointsCurrent
       .map((point) => {
         const x = timeScale.timeToCoordinate(Math.floor(point.ts / 1000))
         return {
@@ -281,7 +295,7 @@ export default function OpportunityCurveChart({
       entry: Number.isFinite(entryX) ? entryX : null,
       exits,
     })
-  }, [markers, exitPoints])
+  }, [])
 
   useEffect(() => {
     if (!containerRef.current) return undefined
@@ -309,7 +323,7 @@ export default function OpportunityCurveChart({
       rightPriceScale: {
         borderColor: variantStyle.border,
       },
-      width: containerRef.current.clientWidth,
+      width: Math.max(containerRef.current.clientWidth || 0, 120),
       height,
     })
 
@@ -392,10 +406,12 @@ export default function OpportunityCurveChart({
 
     const resizeObserver = new ResizeObserver(() => {
       if (!containerRef.current || !chartRef.current) return
+      const width = Math.max(containerRef.current.clientWidth || 0, 120)
       chartRef.current.applyOptions({
-        width: containerRef.current.clientWidth,
+        width,
         height,
       })
+      chartRef.current.timeScale().fitContent()
       syncMarkerCoords()
     })
     resizeObserver.observe(containerRef.current)
@@ -422,7 +438,6 @@ export default function OpportunityCurveChart({
     showCloseLine,
     maKey,
     syncMarkerCoords,
-    maPeriods,
   ])
 
   useEffect(() => {
@@ -430,14 +445,22 @@ export default function OpportunityCurveChart({
     const series = seriesRef.current
     const chart = chartRef.current
 
-    const chartData = clippedCandles.map(toChartPoint)
+    const chartData = clippedCandles
+      .map(toChartPoint)
+      .filter((point) => (
+        Number.isFinite(point.time)
+        && Number.isFinite(point.open)
+        && Number.isFinite(point.high)
+        && Number.isFinite(point.low)
+        && Number.isFinite(point.close)
+      ))
     series.setData(chartData)
     if (showCloseLine && closeLineSeriesRef.current) {
       closeLineSeriesRef.current.setData(
         clippedCandles.map((c) => ({
           time: Math.floor(c.t / 1000),
           value: Number(c.c),
-        }))
+        })).filter((point) => Number.isFinite(point.time) && Number.isFinite(point.value))
       )
     }
     if (showVolume && volumeSeriesRef.current) {
@@ -447,7 +470,7 @@ export default function OpportunityCurveChart({
             time: Math.floor(c.t / 1000),
             value: Number(c.v || 0),
             color: Number(c.c) >= Number(c.o) ? `${variantStyle.up}88` : `${variantStyle.down}88`,
-          }))
+          })).filter((point) => Number.isFinite(point.time) && Number.isFinite(point.value))
         )
       } catch (err) {
         console.warn('volume series update skipped', err)
@@ -470,7 +493,7 @@ export default function OpportunityCurveChart({
         )
     const containerWidth = containerRef.current?.clientWidth || 0
     if (Number.isFinite(chosenBarSpacing) && chosenBarSpacing > 0 && containerWidth > 0 && chartData.length > 0) {
-      const maxSafeSpacing = Math.max(2, (containerWidth - 24) / chartData.length)
+      const maxSafeSpacing = Math.max(1, (containerWidth - 24) / chartData.length)
       chosenBarSpacing = Math.min(chosenBarSpacing, maxSafeSpacing)
     }
     if (Number.isFinite(chosenBarSpacing) && chosenBarSpacing > 0) {
@@ -499,6 +522,7 @@ export default function OpportunityCurveChart({
     autoBarSpacingByPrice,
     priceBarSpacingTable,
     priceBarSpacingTableKey,
+    maKey,
   ])
 
   useEffect(() => {
@@ -517,7 +541,7 @@ export default function OpportunityCurveChart({
     if (hideLevels || clippedCandles.length === 0 || !markers) return
 
     const addLine = (price, color, title, lineStyle = LineStyle.Solid) => {
-      if (price == null || Number.isNaN(Number(price))) return
+      if (!isRenderablePrice(price)) return
       const line = series.createPriceLine({
         price: Number(price),
         color,
