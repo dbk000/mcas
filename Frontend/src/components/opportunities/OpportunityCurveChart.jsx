@@ -273,27 +273,36 @@ export default function OpportunityCurveChart({
       priceLineVisible: false,
       lastValueVisible: !compact,
     })
+    chartRef.current = chart
+    seriesRef.current = candleSeries
+
     if (showVolume) {
-      const volumeSeries = chart.addHistogramSeries({
-        priceScaleId: 'volume',
-        priceLineVisible: false,
-        lastValueVisible: false,
-        crosshairMarkerVisible: false,
-      })
-      volumeSeriesRef.current = volumeSeries
-      candleSeries.priceScale().applyOptions({
-        scaleMargins: {
-          top: 0.03,
-          bottom: 0.28,
-        },
-      })
-      chart.priceScale('volume').applyOptions({
-        scaleMargins: {
-          top: 0.74,
-          bottom: 0,
-        },
-        borderVisible: false,
-      })
+      try {
+        const volumeSeries = chart.addHistogramSeries({
+          priceScaleId: 'volume',
+          priceLineVisible: false,
+          lastValueVisible: false,
+          crosshairMarkerVisible: false,
+        })
+        volumeSeriesRef.current = volumeSeries
+        candleSeries.priceScale().applyOptions({
+          scaleMargins: {
+            top: 0.03,
+            bottom: 0.28,
+          },
+        })
+        chart.priceScale('volume').applyOptions({
+          scaleMargins: {
+            top: 0.74,
+            bottom: 0,
+          },
+          borderVisible: false,
+        })
+      } catch (err) {
+        // Keep candle rendering alive even if histogram panel fails at runtime.
+        console.warn('volume pane disabled for this chart', err)
+        volumeSeriesRef.current = null
+      }
     } else {
       volumeSeriesRef.current = null
     }
@@ -314,8 +323,6 @@ export default function OpportunityCurveChart({
       })
     }
 
-    chartRef.current = chart
-    seriesRef.current = candleSeries
     maSeriesRef.current = maSeries
 
     const resizeObserver = new ResizeObserver(() => {
@@ -359,13 +366,17 @@ export default function OpportunityCurveChart({
     const chartData = clippedCandles.map(toChartPoint)
     series.setData(chartData)
     if (showVolume && volumeSeriesRef.current) {
-      volumeSeriesRef.current.setData(
-        clippedCandles.map((c) => ({
-          time: Math.floor(c.t / 1000),
-          value: Number(c.v || 0),
-          color: Number(c.c) >= Number(c.o) ? `${variantStyle.up}88` : `${variantStyle.down}88`,
-        }))
-      )
+      try {
+        volumeSeriesRef.current.setData(
+          clippedCandles.map((c) => ({
+            time: Math.floor(c.t / 1000),
+            value: Number(c.v || 0),
+            color: Number(c.c) >= Number(c.o) ? `${variantStyle.up}88` : `${variantStyle.down}88`,
+          }))
+        )
+      } catch (err) {
+        console.warn('volume series update skipped', err)
+      }
     }
 
     if (showMAs && maSeriesRef.current.length > 0) {
