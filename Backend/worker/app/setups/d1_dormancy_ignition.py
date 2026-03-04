@@ -347,7 +347,7 @@ class D1Evaluator(SetupBase):
         return SetupMetadata(
             id="D1",
             name="Dormancy-to-Ignition",
-            version="v1.0",
+            version="v1.2",
             description=(
                 "Detects coins transitioning from prolonged dormancy to active "
                 "accumulation, entering on volume breakout above compression box."

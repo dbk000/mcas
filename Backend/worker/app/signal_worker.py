@@ -381,7 +381,7 @@ class SignalWorker:
 
             payload = {
                 "setup_id": "D1",
-                "setup_name": "Dormancy-to-Ignition v1.0",
+                "setup_name": "Dormancy-to-Ignition v1.2",
                 "symbol": symbol,
                 "timeframe": tf,
                 "direction": sig.direction.value,
@@ -539,7 +539,7 @@ class SignalWorker:
         "U1": "U1_v3.0",
         "S9": "S9_v1.0",
         "S10": "S10_v1.0",
-        "D1": "D1_v1.1",
+        "D1": "D1_v1.2",
     }
 
     def _sync_node_parameters(self):
