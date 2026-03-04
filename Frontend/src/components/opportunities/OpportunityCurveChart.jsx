@@ -91,6 +91,36 @@ function toMovingAverageData(candles, period) {
   return points
 }
 
+function derivePriceFormat(candles) {
+  if (!Array.isArray(candles) || candles.length === 0) {
+    return { precision: 4, minMove: 0.0001 }
+  }
+  let maxAbs = 0
+  for (const c of candles) {
+    const vals = [c?.o, c?.h, c?.l, c?.c]
+    for (const v of vals) {
+      const n = Number(v)
+      if (!Number.isFinite(n)) continue
+      const abs = Math.abs(n)
+      if (abs > maxAbs) maxAbs = abs
+    }
+  }
+
+  let precision = 4
+  if (maxAbs >= 1000) precision = 2
+  else if (maxAbs >= 100) precision = 3
+  else if (maxAbs >= 1) precision = 4
+  else if (maxAbs >= 0.1) precision = 5
+  else if (maxAbs >= 0.01) precision = 6
+  else if (maxAbs >= 0.001) precision = 7
+  else precision = 8
+
+  return {
+    precision,
+    minMove: 10 ** (-precision),
+  }
+}
+
 function exitPointColor(label, isFinal) {
   if (isFinal) return '#38bdf8'
   const labelLower = String(label || '').toLowerCase()
@@ -173,6 +203,7 @@ export default function OpportunityCurveChart({
     () => calcGapCount(clippedCandles, expectedGapMs),
     [clippedCandles, expectedGapMs]
   )
+  const priceFormat = useMemo(() => derivePriceFormat(clippedCandles), [clippedCandles])
 
   const hideExitPrice = (
     hideExitUntilReveal
@@ -364,6 +395,13 @@ export default function OpportunityCurveChart({
     const chart = chartRef.current
 
     const chartData = clippedCandles.map(toChartPoint)
+    series.applyOptions({
+      priceFormat: {
+        type: 'price',
+        precision: priceFormat.precision,
+        minMove: priceFormat.minMove,
+      },
+    })
     series.setData(chartData)
     if (showVolume && volumeSeriesRef.current) {
       try {
@@ -387,7 +425,7 @@ export default function OpportunityCurveChart({
 
     chart.timeScale().fitContent()
     requestAnimationFrame(syncMarkerCoords)
-  }, [clippedCandles, showMAs, showVolume, syncMarkerCoords, variantStyle])
+  }, [clippedCandles, showMAs, showVolume, syncMarkerCoords, variantStyle, priceFormat])
 
   useEffect(() => {
     const series = seriesRef.current
