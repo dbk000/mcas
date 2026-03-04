@@ -31,6 +31,16 @@ const REVEAL_STEP_MIN = 5
 const PRE_S = 3600
 const POST_S = 21600
 
+const PRESENTATION_PRICE_SPACING_TABLE = [
+  { maxPrice: 0.02, spacing: 20 },
+  { maxPrice: 0.1, spacing: 16 },
+  { maxPrice: 1, spacing: 12 },
+  { maxPrice: 10, spacing: 10 },
+  { maxPrice: 100, spacing: 8 },
+  { maxPrice: 1000, spacing: 6.5 },
+  { maxPrice: 1000000, spacing: 5.5 },
+]
+
 const modeOptions = [
   { value: 'selected', label: 'Selected Opps (Mode A)' },
   { value: 'winners', label: 'All Winners (Mode B)' },
@@ -679,6 +689,8 @@ function SurveyRow({
               thinTemporalMarkers
               showVolume={presentationMode}
               targetBarSpacing={presentationMode ? 8 : 10}
+              autoBarSpacingByPrice={presentationMode}
+              priceBarSpacingTable={PRESENTATION_PRICE_SPACING_TABLE}
             />
           )}
         </div>

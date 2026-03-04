@@ -91,6 +91,35 @@ function toMovingAverageData(candles, period) {
   return points
 }
 
+function pickBarSpacing(barCount, table, fallback) {
+  if (!Array.isArray(table) || table.length === 0) return fallback
+  for (const row of table) {
+    const maxBars = Number(row?.maxBars)
+    const spacing = Number(row?.spacing)
+    if (!Number.isFinite(maxBars) || !Number.isFinite(spacing)) continue
+    if (barCount <= maxBars) return spacing
+  }
+  return fallback
+}
+
+function pickBarSpacingByPrice(price, table, fallback) {
+  if (!Number.isFinite(price)) return fallback
+  if (!Array.isArray(table) || table.length === 0) return fallback
+
+  const sorted = [...table]
+    .map((row) => ({
+      maxPrice: Number(row?.maxPrice),
+      spacing: Number(row?.spacing),
+    }))
+    .filter((row) => Number.isFinite(row.maxPrice) && Number.isFinite(row.spacing))
+    .sort((a, b) => a.maxPrice - b.maxPrice)
+
+  for (const row of sorted) {
+    if (price <= row.maxPrice) return row.spacing
+  }
+  return fallback
+}
+
 function derivePriceFormat(candles) {
   if (!Array.isArray(candles) || candles.length === 0) {
     return { precision: 4, minMove: 0.0001 }
@@ -180,6 +209,10 @@ export default function OpportunityCurveChart({
   thinTemporalMarkers = false,
   showVolume = false,
   targetBarSpacing = null,
+  autoBarSpacing = false,
+  barSpacingTable = null,
+  autoBarSpacingByPrice = false,
+  priceBarSpacingTable = null,
 }) {
   const containerRef = useRef(null)
   const chartRef = useRef(null)
@@ -199,6 +232,14 @@ export default function OpportunityCurveChart({
   const maPeriods = useMemo(() => normalizePeriods(movingAveragePeriods), [movingAveragePeriods])
   const maKey = useMemo(() => maPeriods.join(','), [maPeriods])
   const showMAs = showMovingAverages && maPeriods.length > 0
+  const barSpacingTableKey = useMemo(() => {
+    if (!Array.isArray(barSpacingTable)) return ''
+    return barSpacingTable.map((row) => `${row?.maxBars}:${row?.spacing}`).join('|')
+  }, [barSpacingTable])
+  const priceBarSpacingTableKey = useMemo(() => {
+    if (!Array.isArray(priceBarSpacingTable)) return ''
+    return priceBarSpacingTable.map((row) => `${row?.maxPrice}:${row?.spacing}`).join('|')
+  }, [priceBarSpacingTable])
 
   const gapCount = useMemo(
     () => calcGapCount(clippedCandles, expectedGapMs),
@@ -425,10 +466,18 @@ export default function OpportunityCurveChart({
     }
 
     chart.timeScale().fitContent()
-    if (Number.isFinite(targetBarSpacing) && targetBarSpacing > 0) {
+    const referencePrice = Number(chartData[chartData.length - 1]?.close)
+    const chosenBarSpacing = autoBarSpacingByPrice
+      ? pickBarSpacingByPrice(referencePrice, priceBarSpacingTable, targetBarSpacing)
+      : (
+          autoBarSpacing
+            ? pickBarSpacing(chartData.length, barSpacingTable, targetBarSpacing)
+            : targetBarSpacing
+        )
+    if (Number.isFinite(chosenBarSpacing) && chosenBarSpacing > 0) {
       try {
         chart.timeScale().applyOptions({
-          barSpacing: targetBarSpacing,
+          barSpacing: chosenBarSpacing,
           minBarSpacing: 1,
         })
       } catch {
@@ -436,7 +485,21 @@ export default function OpportunityCurveChart({
       }
     }
     requestAnimationFrame(syncMarkerCoords)
-  }, [clippedCandles, showMAs, showVolume, syncMarkerCoords, variantStyle, priceFormat, targetBarSpacing])
+  }, [
+    clippedCandles,
+    showMAs,
+    showVolume,
+    syncMarkerCoords,
+    variantStyle,
+    priceFormat,
+    targetBarSpacing,
+    autoBarSpacing,
+    barSpacingTableKey,
+    barSpacingTable,
+    autoBarSpacingByPrice,
+    priceBarSpacingTable,
+    priceBarSpacingTableKey,
+  ])
 
   useEffect(() => {
     const series = seriesRef.current
