@@ -469,10 +469,16 @@ def portfolio_walk(
     account_equity: Optional[float] = None,
     position_pct: float = 5.0,
     compounding: bool = False,
+    account_capital: Optional[float] = None,
 ) -> dict:
     """Walk equity curve chronologically tracking concurrent positions.
 
-    Returns portfolio metrics dict.
+    Args:
+        account_capital: Starting account capital for DD% in non-compounding mode.
+            DD% = max_dd / (account_capital + peak_equity).
+            Without this, DD% uses peak_capital_deployed (capped at 100%).
+
+    Returns portfolio metrics dict including closed_trades for downstream analysis.
     """
     if not traded_results:
         return {"error": "no trades"}
@@ -564,11 +570,21 @@ def portfolio_walk(
         dd = peak_equity - equity
         if dd > max_dd:
             max_dd = dd
-        # DD% denominator: compounding uses peak equity (has account base),
-        # non-compounding uses peak capital deployed (equity starts at 0)
-        dd_denom = peak_equity if account_equity else peak_capital_deployed
+        # DD% denominator:
+        # - Compounding: equity includes account base, so peak_equity is the right denominator
+        # - Non-compounding with account_capital: DD% = dd / (account_capital + peak_equity)
+        #   where account_capital + peak_equity = account value at peak
+        # - Non-compounding without account_capital: use peak_capital_deployed, capped at 100%
+        if account_equity:
+            dd_denom = peak_equity
+        elif account_capital:
+            dd_denom = account_capital + peak_equity
+        else:
+            dd_denom = peak_capital_deployed
         if dd_denom > 0:
             dd_pct = dd / dd_denom * 100
+            if not account_equity and not account_capital:
+                dd_pct = min(dd_pct, 100.0)
             max_dd_pct = max(max_dd_pct, dd_pct)
 
     # Close remaining
@@ -580,9 +596,17 @@ def portfolio_walk(
     dd = peak_equity - equity
     if dd > max_dd:
         max_dd = dd
-    dd_denom = peak_equity if account_equity else peak_capital_deployed
+    if account_equity:
+        dd_denom = peak_equity
+    elif account_capital:
+        dd_denom = account_capital + peak_equity
+    else:
+        dd_denom = peak_capital_deployed
     if dd_denom > 0:
-        max_dd_pct = max(max_dd_pct, dd / dd_denom * 100)
+        dd_pct_final = dd / dd_denom * 100
+        if not account_equity and not account_capital:
+            dd_pct_final = min(dd_pct_final, 100.0)
+        max_dd_pct = max(max_dd_pct, dd_pct_final)
 
     # Compounding metrics
     compounding_metrics = None
@@ -635,6 +659,7 @@ def portfolio_walk(
         "total_pnl": round(equity if not account_equity else equity - start_equity + sum(t["pnl_net"] for t in closed_trades), 2),
         "compounding": compounding_metrics,
         "equity_curve_len": len(equity_curve),
+        "closed_trades": closed_trades,
     }
 
 
@@ -1215,10 +1240,13 @@ def main():
                 d_metas_traded.append(meta)
 
     # S1/S2: Portfolio walk (no position limit)
-    log.info("\n  S1/S2: Portfolio walk — Config D (no position limit)")
+    acct_capital = args.account_equity or 20_000.0  # Default $20K for DD% denominator
+    log.info("\n  S1/S2: Portfolio walk — Config D (no position limit, DD%% base=$%s)",
+             f"{acct_capital:,.0f}")
     portfolio = portfolio_walk(
         d_traded, d_metas_traded, ohlcv_cache,
         position_usd=position_usd,
+        account_capital=acct_capital,
     )
     log.info("    Peak concurrent positions: %d", portfolio.get("peak_concurrent_positions", 0))
     log.info("    Peak capital deployed: $%s", f"{portfolio.get('peak_capital_deployed', 0):,.0f}")
@@ -1242,29 +1270,57 @@ def main():
     # S4: Position limit sweep
     position_limit_results = {}
     if max_concurrent_values:
-        log.info("\n  S4: Position limit sweep")
-        log.info("    %-6s %8s %8s %8s %8s", "Limit", "dailyPF", "N_trades", "N_skip", "PnL")
-        log.info("    " + "-" * 44)
+        log.info("\n  S4: Position limit sweep (DD%% base=$%s)", f"{acct_capital:,.0f}")
+        log.info("    %-6s %8s %8s %8s %8s %8s %8s", "Limit", "dailyPF", "aggPF", "DD%", "N_trades", "N_skip", "PnL")
+        log.info("    " + "-" * 62)
 
         for mc in sorted(max_concurrent_values):
             pl_portfolio = portfolio_walk(
                 d_traded, d_metas_traded, ohlcv_cache,
                 position_usd=position_usd,
                 max_concurrent=mc,
+                account_capital=acct_capital,
             )
-            # Recompute daily PF from the portfolio's actual trades
             n_trades = pl_portfolio.get("n_trades", 0)
             n_skipped = pl_portfolio.get("n_skipped", 0)
             total_pnl = pl_portfolio.get("total_pnl", 0)
+            dd_pct = pl_portfolio.get("max_portfolio_drawdown_pct", 0)
+
+            # Compute daily PF from portfolio's actual closed trades
+            closed = pl_portfolio.get("closed_trades", [])
+            daily_pnls: dict[str, list[float]] = defaultdict(list)
+            for t in closed:
+                ts = t.get("entry_ts")
+                if ts:
+                    day = ts.strftime("%Y-%m-%d") if isinstance(ts, datetime) else str(ts)[:10]
+                    daily_pnls[day].append(t["pnl_net"])
+            daily_pfs = []
+            for _, day_pnls in sorted(daily_pnls.items()):
+                gp = sum(p for p in day_pnls if p > 0)
+                gl = abs(sum(p for p in day_pnls if p < 0))
+                if gl > 0:
+                    daily_pfs.append(min(gp / gl, 5.0))
+                elif gp > 0:
+                    daily_pfs.append(5.0)
+            avg_daily_pf = float(np.mean(daily_pfs)) if daily_pfs else 0.0
+
+            # Aggregate PF
+            gross_profit = sum(t["pnl_net"] for t in closed if t["pnl_net"] > 0)
+            gross_loss = abs(sum(t["pnl_net"] for t in closed if t["pnl_net"] < 0))
+            agg_pf = gross_profit / gross_loss if gross_loss > 0 else 0.0
 
             position_limit_results[str(mc)] = {
                 "n_trades": n_trades,
                 "n_skipped": n_skipped,
                 "peak_concurrent": pl_portfolio.get("peak_concurrent_positions", 0),
                 "total_pnl": total_pnl,
+                "avg_daily_pf": round(avg_daily_pf, 4),
+                "agg_pf": round(agg_pf, 4),
+                "max_dd_pct": round(dd_pct, 2),
+                "n_trading_days": len(daily_pfs),
             }
-            log.info("    %-6d %8s %8d %8d $%7.0f", mc, "—",
-                     n_trades, n_skipped, total_pnl)
+            log.info("    %-6d %8.2f %8.2f %7.1f%% %8d %8d $%7.0f", mc, avg_daily_pf,
+                     agg_pf, dd_pct, n_trades, n_skipped, total_pnl)
 
     # S7: Compounding mode
     compounding_metrics = None

@@ -27,6 +27,18 @@ from ohlcv_backfill import backfill_for_simulation
 
 logger = logging.getLogger(__name__)
 
+# Per-setup exit configs — override default ExitConfig for strategies with
+# validated exit behavior. Without this, all strategies use the default which
+# includes fail-fast and trailing stops that may not match the validated config.
+SETUP_EXIT_CONFIGS: dict[str, ExitConfig] = {
+    # D1 Config D (production winner): no fail-fast, no trailing stop.
+    # Validated via 5/5 walk-forward folds, daily PF 2.70.
+    "D1": ExitConfig(
+        fail_fast_bars=0, fail_fast_threshold=0.0,
+        trail_breakeven_r=0, trail_activation_r=999.0, trail_distance_r=0.5,
+    ),
+}
+
 
 def _env_float(name: str, default: float) -> float:
     val = os.getenv(name)
@@ -529,6 +541,9 @@ class OpportunitySimulator:
         # Time stop from setup or config default
         time_stop_bars = payload.get("time_stop_bars", self.config.time_stop_bars)
 
+        # Per-setup exit config (e.g. D1 uses no fail-fast/trailing)
+        exit_cfg = SETUP_EXIT_CONFIGS.get(setup_id, self.config.exit_config)
+
         # Walk forward through bars checking for exit
         hwm = None
         half_r_touched = False
@@ -595,7 +610,7 @@ class OpportunitySimulator:
                 max_bars=time_stop_bars,
                 high_water_mark=hwm,
                 half_r_touched=half_r_touched,
-                config=self.config.exit_config,
+                config=exit_cfg,
             )
 
             hwm = new_hwm
