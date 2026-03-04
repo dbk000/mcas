@@ -1581,6 +1581,11 @@ class RunExecutor:
                 if float(d1_causal_min_entry_price) <= 0
                 else f"{float(d1_causal_min_entry_price)}"
             )
+            min_stop_pct_label = (
+                "disabled"
+                if float(d1_causal_min_stop_pct) <= 0
+                else f"{float(d1_causal_min_stop_pct):.2%}"
+            )
             min_score_label = (
                 "disabled"
                 if float(d1_causal_min_score) <= 0
@@ -1592,7 +1597,7 @@ class RunExecutor:
                 message=(
                     "D1 causal entry gate active: "
                     f"min_entry_price={min_entry_price_label}, "
-                    f"min_stop_pct={d1_causal_min_stop_pct:.2%}, "
+                    f"min_stop_pct={min_stop_pct_label}, "
                     f"min_score={min_score_label}"
                 ),
             ))

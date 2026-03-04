@@ -34,7 +34,7 @@ SIM_DEFAULT_MIN_R_PRESERVATION = 0.5
 # Causal entry-time D1 gate defaults (entry-known features only).
 SIM_DEFAULT_D1_CAUSAL_GATE_ENABLED = True
 SIM_DEFAULT_D1_CAUSAL_MIN_ENTRY_PRICE = 0.0
-SIM_DEFAULT_D1_CAUSAL_MIN_STOP_PCT = 0.015   # 1.5%
+SIM_DEFAULT_D1_CAUSAL_MIN_STOP_PCT = 0.0
 SIM_DEFAULT_D1_CAUSAL_MIN_SCORE = 0.0
 
 # Per-setup exit configs — override default ExitConfig for strategies with
@@ -419,7 +419,11 @@ class OpportunitySimulator:
                 )
                 return result
 
-            if stop_pct is not None and stop_pct < self.config.d1_causal_min_stop_pct:
+            if (
+                stop_pct is not None
+                and self.config.d1_causal_min_stop_pct > 0
+                and stop_pct < (self.config.d1_causal_min_stop_pct - 1e-9)
+            ):
                 result.data_available = False
                 result.error_message = (
                     f"D1 causal gate: stop_pct={stop_pct:.2%} "
