@@ -73,6 +73,8 @@ class SimulationConfig:
 
     # Exit config override (None = use defaults from exit_checker.py)
     exit_config: Optional[ExitConfig] = None
+    # Optional post-sim floor used by D1 matrix summaries (drop extreme < -1.05R outliers)
+    min_r_multiple_floor: Optional[float] = None
 
 
 @dataclass
@@ -673,6 +675,19 @@ class OpportunitySimulator:
         result.fees = total_fees
         result.pnl_net = pnl_net
         result.r_multiple = r_multiple
+
+        # Align with D1 matrix post-simulation slicing behavior:
+        # drop pathological tail outcomes below configured R floor.
+        if (
+            self.config.min_r_multiple_floor is not None
+            and r_multiple < self.config.min_r_multiple_floor
+        ):
+            result.data_available = False
+            result.error_message = (
+                f"R-multiple below floor: {r_multiple:.2f} "
+                f"< {self.config.min_r_multiple_floor:.2f}"
+            )
+            return result
 
         # Extract trace data from opportunity payload for correlation analysis
         result.trace_json = self._extract_trace_from_payload(payload, direction, exit_reason, bars_held)

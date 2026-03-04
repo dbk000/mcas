@@ -1528,6 +1528,9 @@ class RunExecutor:
         stop_distance_factors = setup_params.get("stop_distance_factors") or {}
         max_bars_forward = setup_params.get("max_bars_forward", SIM_DEFAULT_MAX_BARS_FORWARD)
         min_r_preservation = setup_params.get("min_r_preservation", SIM_DEFAULT_MIN_R_PRESERVATION)
+        min_r_multiple_floor = setup_params.get("min_r_multiple_floor")
+        if min_r_multiple_floor is None and setup_ids and set(setup_ids) == {"D1"}:
+            min_r_multiple_floor = -1.05
 
         # If version is unspecified for a single setup run, pin to latest known
         # setup_version so simulation matches current node behavior/dataset.
@@ -1550,6 +1553,7 @@ class RunExecutor:
             min_r_preservation=min_r_preservation,
             stop_distance_factor=stop_distance_factor,
             stop_distance_factors=stop_distance_factors,
+            min_r_multiple_floor=min_r_multiple_floor,
         )
 
         # Load expired opportunities from database
