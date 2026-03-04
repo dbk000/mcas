@@ -1529,8 +1529,12 @@ class RunExecutor:
         max_bars_forward = setup_params.get("max_bars_forward", SIM_DEFAULT_MAX_BARS_FORWARD)
         min_r_preservation = setup_params.get("min_r_preservation", SIM_DEFAULT_MIN_R_PRESERVATION)
         min_r_multiple_floor = setup_params.get("min_r_multiple_floor")
-        if min_r_multiple_floor is None and setup_ids and set(setup_ids) == {"D1"}:
-            min_r_multiple_floor = -1.05
+        d1_causal_gate_enabled = setup_params.get("d1_causal_gate_enabled")
+        if d1_causal_gate_enabled is None:
+            d1_causal_gate_enabled = bool(setup_ids and set(setup_ids) == {"D1"})
+        d1_causal_min_entry_price = setup_params.get("d1_causal_min_entry_price", 1.0)
+        d1_causal_min_stop_pct = setup_params.get("d1_causal_min_stop_pct", 0.015)
+        d1_causal_min_score = setup_params.get("d1_causal_min_score", 0.35)
 
         # If version is unspecified for a single setup run, pin to latest known
         # setup_version so simulation matches current node behavior/dataset.
@@ -1553,8 +1557,23 @@ class RunExecutor:
             min_r_preservation=min_r_preservation,
             stop_distance_factor=stop_distance_factor,
             stop_distance_factors=stop_distance_factors,
+            d1_causal_gate_enabled=d1_causal_gate_enabled,
+            d1_causal_min_entry_price=d1_causal_min_entry_price,
+            d1_causal_min_stop_pct=d1_causal_min_stop_pct,
+            d1_causal_min_score=d1_causal_min_score,
             min_r_multiple_floor=min_r_multiple_floor,
         )
+        if d1_causal_gate_enabled and setup_ids and set(setup_ids) == {"D1"}:
+            self.repo.add_event(RunEvent(
+                run_id=run.id,
+                event_type="INFO",
+                message=(
+                    "D1 causal entry gate active: "
+                    f"min_entry_price={d1_causal_min_entry_price}, "
+                    f"min_stop_pct={d1_causal_min_stop_pct:.2%}, "
+                    f"min_score={d1_causal_min_score:.2f}"
+                ),
+            ))
 
         # Load expired opportunities from database
         opportunities = self._load_expired_opportunities(

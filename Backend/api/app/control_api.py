@@ -145,6 +145,10 @@ class SimulationRunRequest(BaseModel):
     max_bars_forward: int = Field(default=200, ge=1, le=2000)
     min_r_preservation: float = Field(default=0.5, ge=0.5, le=1.0)
     min_r_multiple_floor: Optional[float] = Field(default=None, ge=-10.0, le=0.0)
+    d1_causal_gate_enabled: Optional[bool] = None
+    d1_causal_min_entry_price: float = Field(default=1.0, gt=0.0)
+    d1_causal_min_stop_pct: float = Field(default=0.015, ge=0.0, le=1.0)
+    d1_causal_min_score: float = Field(default=0.35, ge=0.0, le=1.0)
     setup_version: Optional[str] = None  # Filter by setup version (e.g. 'S1_v2.2')
     batch_id: Optional[str] = None  # Filter by backfill batch ID
     timeframes: Optional[list[str]] = None  # Filter by 1m, 5m, 15m, etc.
@@ -666,6 +670,10 @@ def create_simulation_run(request: SimulationRunRequest):
             "max_bars_forward": request.max_bars_forward,
             "min_r_preservation": request.min_r_preservation,
             "min_r_multiple_floor": request.min_r_multiple_floor,
+            "d1_causal_gate_enabled": request.d1_causal_gate_enabled,
+            "d1_causal_min_entry_price": request.d1_causal_min_entry_price,
+            "d1_causal_min_stop_pct": request.d1_causal_min_stop_pct,
+            "d1_causal_min_score": request.d1_causal_min_score,
             "setup_version": resolved_setup_version,
             "batch_id": request.batch_id,
             "timeframes": request.timeframes,

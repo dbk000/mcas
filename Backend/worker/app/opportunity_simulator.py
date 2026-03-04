@@ -31,6 +31,11 @@ logger = logging.getLogger(__name__)
 # the research baseline by accident.
 SIM_DEFAULT_MAX_BARS_FORWARD = 200
 SIM_DEFAULT_MIN_R_PRESERVATION = 0.5
+# Causal entry-time D1 gate defaults (entry-known features only).
+SIM_DEFAULT_D1_CAUSAL_GATE_ENABLED = True
+SIM_DEFAULT_D1_CAUSAL_MIN_ENTRY_PRICE = 1.0
+SIM_DEFAULT_D1_CAUSAL_MIN_STOP_PCT = 0.015   # 1.5%
+SIM_DEFAULT_D1_CAUSAL_MIN_SCORE = 0.35
 
 # Per-setup exit configs — override default ExitConfig for strategies with
 # validated exit behavior. Without this, all strategies use the default which
@@ -73,6 +78,11 @@ class SimulationConfig:
 
     # Exit config override (None = use defaults from exit_checker.py)
     exit_config: Optional[ExitConfig] = None
+    # Causal D1 entry gate (uses only information available at entry time).
+    d1_causal_gate_enabled: bool = SIM_DEFAULT_D1_CAUSAL_GATE_ENABLED
+    d1_causal_min_entry_price: float = SIM_DEFAULT_D1_CAUSAL_MIN_ENTRY_PRICE
+    d1_causal_min_stop_pct: float = SIM_DEFAULT_D1_CAUSAL_MIN_STOP_PCT
+    d1_causal_min_score: float = SIM_DEFAULT_D1_CAUSAL_MIN_SCORE
     # Optional post-sim floor used by D1 matrix summaries (drop extreme < -1.05R outliers)
     min_r_multiple_floor: Optional[float] = None
 
@@ -384,6 +394,7 @@ class OpportunitySimulator:
             return result
 
         # Stop-width gate: skip trades where stop distance is structurally too wide
+        stop_pct = None
         if entry_price > 0:
             stop_pct = abs(stop_price - entry_price) / entry_price
             if stop_pct > self.config.max_stop_pct:
@@ -391,6 +402,41 @@ class OpportunitySimulator:
                 result.error_message = (
                     f"Stop too wide: {stop_pct:.1%} "
                     f"> max {self.config.max_stop_pct:.0%}"
+                )
+                return result
+
+        # Causal D1 entry gate: filter risky opportunities using entry-known fields.
+        # This replaces outcome-based slicing for primary simulation KPIs.
+        if self.config.d1_causal_gate_enabled and setup_id == "D1":
+            if entry_price < self.config.d1_causal_min_entry_price:
+                result.data_available = False
+                result.error_message = (
+                    f"D1 causal gate: entry_price={entry_price:.6f} "
+                    f"< min={self.config.d1_causal_min_entry_price:.6f}"
+                )
+                return result
+
+            if stop_pct is not None and stop_pct < self.config.d1_causal_min_stop_pct:
+                result.data_available = False
+                result.error_message = (
+                    f"D1 causal gate: stop_pct={stop_pct:.2%} "
+                    f"< min={self.config.d1_causal_min_stop_pct:.2%}"
+                )
+                return result
+
+            score = opp.get("score")
+            score_val = None
+            try:
+                if score is not None:
+                    score_val = float(score)
+            except (TypeError, ValueError):
+                score_val = None
+
+            if score_val is None or score_val < self.config.d1_causal_min_score:
+                result.data_available = False
+                result.error_message = (
+                    f"D1 causal gate: score={score_val if score_val is not None else 'NA'} "
+                    f"< min={self.config.d1_causal_min_score:.2f}"
                 )
                 return result
 
