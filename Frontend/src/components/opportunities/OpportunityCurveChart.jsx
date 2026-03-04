@@ -179,6 +179,7 @@ export default function OpportunityCurveChart({
   movingAveragePeriods = [9, 21, 50],
   thinTemporalMarkers = false,
   showVolume = false,
+  minVisibleBars = null,
 }) {
   const containerRef = useRef(null)
   const chartRef = useRef(null)
@@ -423,9 +424,15 @@ export default function OpportunityCurveChart({
       })
     }
 
-    chart.timeScale().fitContent()
+    if (Number.isFinite(minVisibleBars) && minVisibleBars > 0 && chartData.length > 0) {
+      const to = chartData.length - 1
+      const from = to - (Math.max(1, Math.floor(minVisibleBars)) - 1)
+      chart.timeScale().setVisibleLogicalRange({ from, to })
+    } else {
+      chart.timeScale().fitContent()
+    }
     requestAnimationFrame(syncMarkerCoords)
-  }, [clippedCandles, showMAs, showVolume, syncMarkerCoords, variantStyle, priceFormat])
+  }, [clippedCandles, showMAs, showVolume, syncMarkerCoords, variantStyle, priceFormat, minVisibleBars])
 
   useEffect(() => {
     const series = seriesRef.current

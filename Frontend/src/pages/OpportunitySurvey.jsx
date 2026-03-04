@@ -678,6 +678,7 @@ function SurveyRow({
               movingAveragePeriods={[9, 21, 50]}
               thinTemporalMarkers
               showVolume={presentationMode}
+              minVisibleBars={presentationMode ? 36 : 28}
             />
           )}
         </div>
