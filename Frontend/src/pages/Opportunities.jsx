@@ -250,6 +250,7 @@ export default function Opportunities() {
   // Build API params — omit setup_id if empty
   const apiParams = { status: filters.status, min_score: filters.min_score, limit: filters.limit }
   if (filters.setup_id) apiParams.setup_id = filters.setup_id
+  if (filters.status === 'expired') apiParams.include_outcome = true
 
   const { data, loading, lastUpdated, refetch, meta } = useOpportunities(apiParams)
   const rawOpportunities = data?.opportunities || []
@@ -797,6 +798,7 @@ export default function Opportunities() {
               onCopy={() => handleCopyTradePlan(opp)}
               onCurve={() => setCurveOpp(opp)}
               showCurve={filters.status === 'expired'}
+              showOutcome={filters.status === 'expired'}
               isSelectable={filters.status === 'expired'}
               isSelected={selectedOppSet.has(String(opp.id))}
               onToggleSelect={() => toggleOppSelection(opp.id)}
@@ -815,6 +817,7 @@ function OpportunityCard({
   onCopy,
   onCurve,
   showCurve = false,
+  showOutcome = false,
   isSelectable = false,
   isSelected = false,
   onToggleSelect,
@@ -845,6 +848,21 @@ function OpportunityCard({
   const linkId = opportunity.id || `${opportunity.setup_id}:${opportunity.symbol}:${opportunity.timeframe}`
   const sinceTs = opportunity.since_ts || payload.since_ts || null
   const actionByTs = opportunity.action_by_ts || payload.action_by_ts || null
+  const entryPx = Number(payload.entry_price ?? opportunity.entry_price)
+  const exitPx = Number(payload.exit_price ?? opportunity.exit_price)
+  const pnlNet = opportunity.outcome_pnl_net != null ? Number(opportunity.outcome_pnl_net) : null
+  const rMult = opportunity.outcome_r_multiple != null ? Number(opportunity.outcome_r_multiple) : null
+  const dir = String(opportunity.direction || opportunity.decision || payload.direction || '').toLowerCase()
+  const canDerivePct = Number.isFinite(entryPx) && entryPx > 0 && Number.isFinite(exitPx)
+  const derivedPnlPct = canDerivePct
+    ? ((dir === 'short' ? (entryPx - exitPx) : (exitPx - entryPx)) / entryPx) * 100
+    : null
+  const pnlValue = pnlNet != null
+    ? pnlNet
+    : (derivedPnlPct != null ? derivedPnlPct : null)
+  const pnlClass = pnlValue == null
+    ? 'text-terminal-400'
+    : (pnlValue >= 0 ? 'text-signal-long' : 'text-signal-short')
 
   return (
     <Card hover className="relative">
@@ -961,6 +979,33 @@ function OpportunityCard({
               {actionByTs && (
                 <ActionByLabel actionByTs={actionByTs} />
               )}
+            </div>
+          )}
+
+          {showOutcome && (
+            <div className="border-t border-terminal-600 pt-3">
+              <div className="grid grid-cols-3 gap-2 text-sm">
+                <div>
+                  <span className="text-terminal-500">Exit</span>
+                  <p className="font-mono text-terminal-100">
+                    {Number.isFinite(exitPx) ? formatPrice(exitPx) : '—'}
+                  </p>
+                </div>
+                <div>
+                  <span className="text-terminal-500">PnL</span>
+                  <p className={`font-mono ${pnlClass}`}>
+                    {pnlNet != null
+                      ? formatDollar(pnlNet)
+                      : (derivedPnlPct != null ? `${derivedPnlPct >= 0 ? '+' : ''}${derivedPnlPct.toFixed(2)}%` : '—')}
+                  </p>
+                </div>
+                <div>
+                  <span className="text-terminal-500">R-Mult</span>
+                  <p className="font-mono text-terminal-100">
+                    {rMult != null ? rMult.toFixed(2) : '—'}
+                  </p>
+                </div>
+              </div>
             </div>
           )}
 

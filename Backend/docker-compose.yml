@@ -302,6 +302,24 @@ services:
     networks:
       - backend
 
+  expired_opp_exit_settler:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      SERVICE_NAME: expired_opp_exit_settler
+      SETTLER_INTERVAL_S: "3600"
+    command: ["python", "-u", "/scripts/expired_opportunity_exit_settler.py", "--loop", "--interval-seconds", "3600", "--limit", "5000"]
+    volumes:
+      - ./scripts:/scripts
+    depends_on:
+      - postgres
+    networks:
+      - backend
+
 volumes:
   caddy_data:
   caddy_config:

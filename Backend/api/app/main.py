@@ -27,6 +27,7 @@ import time
 import json
 import hmac
 import logging
+import re
 from datetime import datetime, timezone, timedelta
 from typing import Optional, Any
 
@@ -687,6 +688,46 @@ def _parse_timestamp(value: Any) -> Optional[datetime]:
     return None
 
 
+_HORIZON_RE = re.compile(r"^\s*(\d+)\s*([mhdw])\s*$", re.IGNORECASE)
+
+
+def _parse_horizon_delta(value: Any) -> Optional[timedelta]:
+    """Parse horizon strings like 30m, 6h, 1d, 2w into timedelta."""
+    if value is None:
+        return None
+
+    if isinstance(value, (int, float)):
+        seconds = float(value)
+        if seconds > 0:
+            return timedelta(seconds=seconds)
+        return None
+
+    if not isinstance(value, str):
+        return None
+
+    raw = value.strip().lower()
+    if not raw:
+        return None
+
+    match = _HORIZON_RE.match(raw)
+    if not match:
+        return None
+
+    qty = int(match.group(1))
+    unit = match.group(2)
+    if qty <= 0:
+        return None
+    if unit == "m":
+        return timedelta(minutes=qty)
+    if unit == "h":
+        return timedelta(hours=qty)
+    if unit == "d":
+        return timedelta(days=qty)
+    if unit == "w":
+        return timedelta(weeks=qty)
+    return None
+
+
 def _parse_float(value: Any) -> Optional[float]:
     if value is None:
         return None
@@ -792,15 +833,17 @@ def list_opportunities(
     """
     if include_outcome:
         base_select += """
-            , sr.entry_ts, sr.exit_ts, sr.entry_price, sr.stop_price,
-              sr.tp1_price, sr.tp2_price, sr.r_multiple, sr.pnl_net
+            , sr.entry_ts, sr.exit_ts, sr.exit_price, sr.exit_reason,
+              sr.entry_price, sr.stop_price, sr.tp1_price, sr.tp2_price,
+              sr.r_multiple, sr.pnl_net
         """
 
     from_clause = "FROM opportunities o"
     if include_outcome:
         from_clause += """
             LEFT JOIN LATERAL (
-                SELECT entry_ts, exit_ts, entry_price, stop_price, tp1_price, tp2_price, r_multiple, pnl_net
+                SELECT entry_ts, exit_ts, exit_price, exit_reason,
+                       entry_price, stop_price, tp1_price, tp2_price, r_multiple, pnl_net
                 FROM simulation_results
                 WHERE opportunity_id = o.id
                 ORDER BY created_at DESC
@@ -880,30 +923,38 @@ def list_opportunities(
                 or _parse_timestamp(r_[10])
             )
             payload_exit_ts = _parse_timestamp(payload.get("exit_ts")) or _parse_timestamp(r_[12])
+            exit_price = _parse_float(payload.get("exit_price"))
+            exit_reason = payload.get("exit_reason")
             entry_price = _parse_float(payload.get("entry_price"))
             stop_price = _parse_float(payload.get("stop_price"))
             tp1_price = _parse_float(payload.get("tp1_price"))
             tp2_price = _parse_float(payload.get("tp2_price"))
 
+            if exit_price is None:
+                exit_price = _parse_float(r_[13])
+            if not exit_reason:
+                exit_reason = r_[14]
             if entry_price is None:
-                entry_price = _parse_float(r_[13])
+                entry_price = _parse_float(r_[15])
             if stop_price is None:
-                stop_price = _parse_float(r_[14])
+                stop_price = _parse_float(r_[16])
             if tp1_price is None:
-                tp1_price = _parse_float(r_[15])
+                tp1_price = _parse_float(r_[17])
             if tp2_price is None:
-                tp2_price = _parse_float(r_[16])
+                tp2_price = _parse_float(r_[18])
 
             item.update({
                 "entry_ts": payload_entry_ts.isoformat() if payload_entry_ts else None,
                 "exit_ts": payload_exit_ts.isoformat() if payload_exit_ts else None,
+                "exit_price": exit_price,
+                "exit_reason": exit_reason,
                 "entry_price": entry_price,
                 "stop_price": stop_price,
                 "tp1_price": tp1_price,
                 "tp2_price": tp2_price,
-                "outcome_class": _compute_outcome_class(r_[17], r_[18]),
-                "outcome_r_multiple": _parse_float(r_[17]),
-                "outcome_pnl_net": _parse_float(r_[18]),
+                "outcome_class": _compute_outcome_class(r_[19], r_[20]),
+                "outcome_r_multiple": _parse_float(r_[19]),
+                "outcome_pnl_net": _parse_float(r_[20]),
             })
 
         pg_items.append(item)
@@ -1116,10 +1167,32 @@ def get_opportunity_price_window(
             )
             exit_ts = _parse_timestamp(payload.get("exit_ts")) or _parse_timestamp(row[5])
 
-            if not exit_ts:
-                raise HTTPException(status_code=422, detail="expired opp missing exit_ts")
+            exit_ts_inferred = False
+            exit_ts_source: Optional[str] = None
+
             if not entry_ts:
                 raise HTTPException(status_code=422, detail="expired opp missing entry_ts")
+
+            if not exit_ts:
+                inferred_direct = (
+                    _parse_timestamp(payload.get("action_by_ts"))
+                    or _parse_timestamp(payload.get("expiry_ts"))
+                    or _parse_timestamp(payload.get("expires_at"))
+                )
+                if inferred_direct:
+                    exit_ts = inferred_direct
+                    exit_ts_inferred = True
+                    exit_ts_source = "payload_expiry"
+
+            if not exit_ts:
+                horizon_delta = _parse_horizon_delta(payload.get("horizon"))
+                if horizon_delta:
+                    exit_ts = entry_ts + horizon_delta
+                    exit_ts_inferred = True
+                    exit_ts_source = f"horizon:{payload.get('horizon')}"
+
+            if not exit_ts:
+                raise HTTPException(status_code=422, detail="expired opp missing exit_ts")
 
             entry_px = _parse_float(payload.get("entry_price"))
             stop_px = _parse_float(payload.get("stop_price"))
@@ -1195,6 +1268,8 @@ def get_opportunity_price_window(
         "markers": {
             "entry_ts": int(entry_ts.timestamp() * 1000),
             "exit_ts": int(exit_ts.timestamp() * 1000),
+            "exit_ts_inferred": exit_ts_inferred,
+            "exit_ts_source": exit_ts_source,
             "entry_px": entry_px,
             "stop_px": stop_px,
             "tp_px": tp_px,

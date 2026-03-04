@@ -55,13 +55,6 @@ function parseIds(raw) {
   return Array.from(new Set(ids))
 }
 
-function hasExitTimestamp(opp) {
-  const v = opp?.exit_ts ?? opp?.payload?.exit_ts
-  if (v == null) return false
-  if (typeof v === 'string') return v.trim().length > 0
-  return true
-}
-
 function readPredictionStore() {
   try {
     const raw = localStorage.getItem(PREDICTIONS_KEY)
@@ -125,7 +118,6 @@ export default function OpportunitySurvey() {
   const [autoplayOn, setAutoplayOn] = useState(false)
   const [oppsLoading, setOppsLoading] = useState(false)
   const [oppsError, setOppsError] = useState('')
-  const [skippedMissingExitCount, setSkippedMissingExitCount] = useState(0)
   const [candidates, setCandidates] = useState([])
   const [windowsById, setWindowsById] = useState({})
   const [windowErrorsById, setWindowErrorsById] = useState({})
@@ -141,7 +133,6 @@ export default function OpportunitySurvey() {
   const fetchCandidates = useCallback(async () => {
     setOppsLoading(true)
     setOppsError('')
-    setSkippedMissingExitCount(0)
     const reqId = ++requestVersionRef.current
 
     try {
@@ -205,9 +196,7 @@ export default function OpportunitySurvey() {
       }
 
       if (requestVersionRef.current !== reqId) return
-      const chartableRows = rows.filter(hasExitTimestamp)
-      setSkippedMissingExitCount(Math.max(0, rows.length - chartableRows.length))
-      setCandidates(chartableRows)
+      setCandidates(rows)
       setBatchOffset(0)
     } catch (err) {
       if (requestVersionRef.current !== reqId) return
@@ -445,13 +434,6 @@ export default function OpportunitySurvey() {
           </div>
         </CardContent>
       </Card>
-
-      {skippedMissingExitCount > 0 && (
-        <div className="px-3 py-2 rounded border border-amber-700/60 bg-amber-500/10 text-amber-300 text-xs">
-          Skipped {skippedMissingExitCount} expired opportunit{skippedMissingExitCount === 1 ? 'y' : 'ies'} missing
-          {' '}`exit_ts` (non-chartable by design).
-        </div>
-      )}
 
       <Card>
         <CardHeader>

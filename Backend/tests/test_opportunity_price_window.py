@@ -114,6 +114,46 @@ def test_price_window_computes_bounds_and_clips_candles(monkeypatch):
     assert cursor.ohlcv_params[2] == exit_ts + timedelta(seconds=21600)
 
 
+def test_price_window_infers_exit_from_horizon(monkeypatch):
+    entry_ts = datetime(2026, 2, 1, 10, 0, tzinfo=timezone.utc)
+    inferred_exit = entry_ts + timedelta(days=1)
+    opp_row = (
+        789,  # id
+        "AAPL",  # symbol
+        entry_ts,  # created_ts
+        '{"entry_ts":"2026-02-01T10:00:00+00:00","horizon":"1d","direction":"long"}',  # payload_json
+        None,  # sr.entry_ts
+        None,  # sr.exit_ts
+        None,  # sr.entry_price
+        None,  # sr.stop_price
+        None,  # sr.tp1_price
+        None,  # sr.tp2_price
+        None,  # sr.r_multiple
+        None,  # sr.pnl_net
+    )
+    candle_rows = [
+        (entry_ts - timedelta(hours=1), 190.0, 191.0, 189.5, 190.5, 500.0),
+        (inferred_exit, 195.0, 196.0, 194.0, 195.5, 650.0),
+    ]
+
+    client, cursor = _make_client(monkeypatch, opp_row, candle_rows)
+    response = client.get(
+        "/v1/opportunities/789/price-window",
+        headers={"X-API-Key": "test-api-key"},
+    )
+
+    assert response.status_code == 200, response.text
+    body = response.json()["data"]
+    assert body["markers"]["entry_ts"] == int(entry_ts.timestamp() * 1000)
+    assert body["markers"]["exit_ts"] == int(inferred_exit.timestamp() * 1000)
+    assert body["markers"]["exit_ts_inferred"] is True
+    assert body["markers"]["exit_ts_source"] == "horizon:1d"
+
+    assert cursor.ohlcv_params[0] == "AAPL"
+    assert cursor.ohlcv_params[1] == entry_ts - timedelta(seconds=3600)
+    assert cursor.ohlcv_params[2] == inferred_exit + timedelta(seconds=21600)
+
+
 def test_price_window_missing_exit_ts_returns_422(monkeypatch):
     created_ts = datetime(2026, 2, 1, 10, 0, tzinfo=timezone.utc)
     opp_row = (
