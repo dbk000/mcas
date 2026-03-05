@@ -278,3 +278,12 @@ Purpose: record attempted fixes, outcomes, and regressions so later sessions avo
 - Commit: `9451aa1`
 - Outcome: `Frontend npm run build` passes; Cloudflare Pages deploy success (`https://0c18115c.mcas.pages.dev`).
 - Notes / Evidence: User reported `Up To Exit`/`Exit + N` showing same chart extent and exit alignment drift.
+
+## 2026-03-05 (UTC) - Remove Chart Corner Branding Mark
+
+- Date (UTC): 2026-03-05
+- Area: Chart rendering polish
+- Change: Disabled chart corner attribution logo in `OpportunityCurveChart` layout options.
+- Commit: pending
+- Outcome: pending build/deploy validation.
+- Notes / Evidence: User requested removal of persistent bottom-left logo from every chart tile.

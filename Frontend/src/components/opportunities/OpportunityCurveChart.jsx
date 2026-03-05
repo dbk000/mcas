@@ -299,6 +299,7 @@ export default function OpportunityCurveChart({
       layout: {
         background: { color: variantStyle.background },
         textColor: variantStyle.text,
+        attributionLogo: false,
       },
       grid: {
         vertLines: { color: variantStyle.grid },
