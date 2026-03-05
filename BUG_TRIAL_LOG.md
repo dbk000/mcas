@@ -218,3 +218,14 @@ Purpose: record attempted fixes, outcomes, and regressions so later sessions avo
 - Commit: `b986b3f`
 - Outcome: `Frontend npm run build` passes; Cloudflare Pages deploy success (`https://fba4cf01.mcas.pages.dev`).
 - Notes / Evidence: User requested cleaner, implicit layout with less repetitive labeling.
+
+## 2026-03-05 (UTC) - Inline Setup Token in Survey Header
+
+- Date (UTC): 2026-03-05
+- Area: Survey row left metadata header
+- Change:
+  - Removed `Setup:` prefix text.
+  - Moved setup token inline to the top row between symbol and direction (`SYMBOL  S9  SHORT`).
+- Commit: pending
+- Outcome: pending build/deploy validation.
+- Notes / Evidence: User requested tighter header semantics with setup as an inline token.

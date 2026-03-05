@@ -587,11 +587,11 @@ function SurveyRow({
     <div className="border border-terminal-600 rounded bg-terminal-900/40 p-3">
       <div className={`grid ${presentationMode ? 'grid-cols-[185px_minmax(0,1fr)]' : 'grid-cols-[210px_1fr]'} gap-3`}>
         <div className="text-xs space-y-1">
-          <div className="flex items-baseline justify-between gap-2">
+          <div className="flex items-baseline gap-2">
             <p className="font-mono text-terminal-100 text-sm">{opp.symbol}</p>
-            <p className="font-mono text-terminal-400 text-[11px]">{(opp.direction || opp.decision || 'n/a').toUpperCase()}</p>
+            <p className="font-mono text-terminal-500 text-[11px]">{opp.setup_id || '—'}</p>
+            <p className="ml-auto font-mono text-terminal-400 text-[11px]">{(opp.direction || opp.decision || 'n/a').toUpperCase()}</p>
           </div>
-          <p className="text-terminal-500">Setup: {opp.setup_id}</p>
           {!hideOutcome ? (
             <Badge variant={outcomeClass === 'winner' ? 'success' : outcomeClass === 'loser' ? 'error' : 'default'}>
               Outcome: {outcomeClass}
