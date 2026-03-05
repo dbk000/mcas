@@ -251,6 +251,6 @@ Purpose: record attempted fixes, outcomes, and regressions so later sessions avo
   - Kept only TP/STOP/PARTIAL intermediate exits; dropped ambiguous generic `EXIT/CLOSE` points when not canonical final.
   - Removed frontend fallback append of arbitrary extra exit rows beyond `ENTRY/TP1/TP2/STOP/FINAL EXIT`.
   - Added test coverage for stale payload `EXIT` conflicts to ensure only one final remains.
-- Commit: pending
-- Outcome: pending build/test/deploy validation.
+- Commit: `185ab56`
+- Outcome: `Frontend npm run build` passes; backend tests pass in container (`4 passed` on `test_opportunity_price_window.py`); Cloudflare Pages deploy success (`https://37eaa66f.mcas.pages.dev`).
 - Notes / Evidence: User reported conflicting `EXIT` and `FINAL EXIT` values in survey table.
