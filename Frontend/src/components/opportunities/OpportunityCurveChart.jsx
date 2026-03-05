@@ -672,7 +672,7 @@ export default function OpportunityCurveChart({
     <div className={`relative w-full rounded border border-terminal-600 overflow-hidden ${className}`} style={{ height }}>
       <div ref={containerRef} className="h-full w-full" />
 
-      <div className="pointer-events-none absolute inset-0">
+      <div className="pointer-events-none absolute inset-0 z-40">
         {markerCoords.entry !== null && (
           <div className="absolute top-0 bottom-0" style={{ left: `${markerCoords.entry}px` }}>
             <div className={`absolute top-0 bottom-0 ${thinTemporalMarkers ? 'w-px' : 'w-0.5'} bg-amber-300`} />
@@ -708,24 +708,24 @@ export default function OpportunityCurveChart({
         {markerCoords.axisEvents.map((event) => (
           <div
             key={event.key}
-            className="absolute -translate-x-1/2 flex flex-col items-center"
-            style={{ left: `${event.x}px`, bottom: `${2 + (event.lane * 13)}px` }}
+            className="absolute -translate-x-1/2 flex flex-col items-center z-50"
+            style={{ left: `${event.x}px`, bottom: `${14 + (event.lane * 14)}px` }}
             title={event.label}
           >
-            <div
-              className={thinTemporalMarkers ? 'w-px h-2' : 'w-px h-3'}
-              style={{ backgroundColor: event.color }}
-            />
             <span
-              className="mt-0.5 px-1 rounded-[3px] border text-[8px] leading-tight font-bold tracking-wide font-mono"
+              className="px-1 rounded-[3px] border text-[8px] leading-tight font-bold tracking-wide font-mono shadow-[0_0_0_1px_rgba(0,0,0,0.35)]"
               style={{
                 color: event.color,
                 borderColor: `${event.color}99`,
-                backgroundColor: `${event.color}26`,
+                backgroundColor: `${event.color}33`,
               }}
             >
               {event.shortLabel}
             </span>
+            <div
+              className={thinTemporalMarkers ? 'mt-0.5 w-px h-2' : 'mt-0.5 w-px h-3'}
+              style={{ backgroundColor: event.color }}
+            />
           </div>
         ))}
       </div>

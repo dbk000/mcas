@@ -392,3 +392,14 @@ Purpose: record attempted fixes, outcomes, and regressions so later sessions avo
   - `clippedCandlesRef` now initializes with `[]` and is hydrated in effect (instead of referencing `clippedCandles` before declaration).
 - Outcome: `Frontend npm run build` passes.
 - Notes / Evidence: User hit app-wide survey crash with lexical declaration error on `/opportunities/survey`.
+
+## 2026-03-05 (UTC) - X-Axis Event Label Visibility Lift (Compact Survey)
+
+- Date (UTC): 2026-03-05
+- Area: `OpportunityCurveChart` overlay layer/timing rail visibility
+- Change:
+  - Raised x-axis event labels into chart body (`bottom` offset increase) to avoid overlap with chart time-axis pane.
+  - Forced overlay stack order (`z-40`/`z-50`) so event tags render above chart internals in compact survey mode.
+  - Increased tag background contrast for dark theme readability.
+- Outcome: `Frontend npm run build` passes.
+- Notes / Evidence: User still unable to see x-axis event labels after interpolation patch.
