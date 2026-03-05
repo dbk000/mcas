@@ -21,7 +21,6 @@ import logging
 import threading
 from datetime import datetime, timezone
 from contextlib import contextmanager
-from pathlib import Path
 
 import psycopg
 import redis
@@ -37,10 +36,6 @@ from run_executor import RunExecutor
 from runs.models import Run, RunType, RunStatus, UniverseSpec, StrategySpec, DataSpec
 from runs.repository import RunRepository
 from correlation.executor import CorrelationJobExecutor
-
-_BACKEND_ROOT = Path(__file__).resolve().parents[2]
-if str(_BACKEND_ROOT) not in sys.path:
-    sys.path.insert(0, str(_BACKEND_ROOT))
 
 from stop_policy_registry import validate_stop_registry
 

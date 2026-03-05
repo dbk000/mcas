@@ -14,7 +14,6 @@ import json
 import time
 import logging
 from dataclasses import dataclass, asdict
-from pathlib import Path
 
 import redis
 import psycopg
@@ -44,10 +43,6 @@ from s9_microstructure import (
 )
 
 logger = logging.getLogger("signal_worker")
-
-_BACKEND_ROOT = Path(__file__).resolve().parents[2]
-if str(_BACKEND_ROOT) not in sys.path:
-    sys.path.insert(0, str(_BACKEND_ROOT))
 
 from stop_policy_registry import validate_stop_registry
 

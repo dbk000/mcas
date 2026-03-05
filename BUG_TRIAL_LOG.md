@@ -346,3 +346,16 @@ Purpose: record attempted fixes, outcomes, and regressions so later sessions avo
   - Bound simulation runs to persisted stop-policy snapshots (including `node_version_id`) for deterministic replay.
 - Outcome: `python3 -m py_compile` passes; targeted pytest suite passes (`10 passed`); frontend build passes.
 - Notes / Evidence: closes two explicit “not fully safe yet” gaps identified in review.
+
+## 2026-03-05 (UTC) - Hotfix: Startup Gate Import Path Crash in Docker
+
+- Date (UTC): 2026-03-05
+- Area: API/worker startup (`main.py`, `worker.py`, `signal_worker.py`)
+- Change:
+  - Fixed crash-loop caused by `Path(__file__).resolve().parents[2]` in container paths (`/app/*.py` only has one parent depth before `/`).
+  - Added `stop_policy_registry.py` into both runtime app trees:
+    - `Backend/api/app/stop_policy_registry.py`
+    - `Backend/worker/app/stop_policy_registry.py`
+  - Removed brittle `sys.path` parent-hack imports and switched to local module import in each service runtime.
+- Outcome: targeted stop-policy pytest suite passes locally (`11 passed`).
+- Notes / Evidence: `/srv/mcas` deploy initially put `api`, `worker`, and `signal_worker_*` into restart loops with `IndexError: 2`; this hotfix restores startup compatibility with current Docker contexts.
