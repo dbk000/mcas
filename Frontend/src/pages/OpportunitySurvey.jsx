@@ -132,6 +132,43 @@ function withAlpha(hexColor, alphaHex = 'cc') {
   return hexColor
 }
 
+function toEpochMs(value) {
+  const n = Number(value)
+  if (Number.isFinite(n) && n > 0) {
+    return n > 1e12 ? n : n * 1000
+  }
+  const parsed = Date.parse(String(value || ''))
+  return Number.isFinite(parsed) ? parsed : null
+}
+
+function resolveOppTsMs(opp) {
+  return (
+    toEpochMs(opp?.entry_ts) ??
+    toEpochMs(opp?.payload?.entry_ts) ??
+    toEpochMs(opp?.created_ts) ??
+    toEpochMs(opp?.updated_ts)
+  )
+}
+
+function resolveOppStrategy(opp) {
+  const raw = String(opp?.setup_id ?? opp?.payload?.setup_id ?? '').trim()
+  return raw || '—'
+}
+
+function resolveOppDirection(opp) {
+  const raw = String(opp?.direction ?? opp?.decision ?? '').toLowerCase()
+  if (raw.includes('long') || raw.includes('buy')) return 'long'
+  if (raw.includes('short') || raw.includes('sell')) return 'short'
+  return 'unknown'
+}
+
+function toDateBoundaryMs(rawDate, endOfDay = false) {
+  if (!rawDate) return null
+  const timeSuffix = endOfDay ? 'T23:59:59.999Z' : 'T00:00:00.000Z'
+  const parsed = Date.parse(`${rawDate}${timeSuffix}`)
+  return Number.isFinite(parsed) ? parsed : null
+}
+
 function extractTsFromExitPoints(exitPoints, token) {
   if (!Array.isArray(exitPoints)) return null
   const tokenLower = String(token || '').toLowerCase()
@@ -212,7 +249,10 @@ export default function OpportunitySurvey() {
   const [batchOffset, setBatchOffset] = useState(0)
   const [randomSample, setRandomSample] = useState(true)
   const [presentationMode, setPresentationMode] = useState(false)
-  const [hideLevelsUntilReveal, setHideLevelsUntilReveal] = useState(false)
+  const [strategyFilter, setStrategyFilter] = useState('all')
+  const [directionFilter, setDirectionFilter] = useState('all')
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo] = useState('')
   const [revealOffsetMin, setRevealOffsetMin] = useState(ENTRY_REVEAL_OFFSET_MIN)
   const [revealMode, setRevealMode] = useState(REVEAL_MODE_OFFSET)
   const [exitPlusHoursApplied, setExitPlusHoursApplied] = useState(0)
@@ -308,9 +348,62 @@ export default function OpportunitySurvey() {
     fetchCandidates()
   }, [fetchCandidates])
 
+  const strategyOptions = useMemo(() => {
+    const unique = new Set(candidates.map((opp) => resolveOppStrategy(opp)))
+    const sorted = Array.from(unique).sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }))
+    return [
+      { value: 'all', label: 'All Strategies' },
+      ...sorted.map((value) => ({ value, label: value })),
+    ]
+  }, [candidates])
+
+  const directionOptions = useMemo(() => {
+    const available = new Set(candidates.map((opp) => resolveOppDirection(opp)))
+    const options = [{ value: 'all', label: 'All Directions' }]
+    if (available.has('long')) options.push({ value: 'long', label: 'Long' })
+    if (available.has('short')) options.push({ value: 'short', label: 'Short' })
+    if (available.has('unknown')) options.push({ value: 'unknown', label: 'Unknown' })
+    return options
+  }, [candidates])
+
+  useEffect(() => {
+    if (strategyFilter === 'all') return
+    if (!strategyOptions.some((option) => option.value === strategyFilter)) {
+      setStrategyFilter('all')
+    }
+  }, [strategyFilter, strategyOptions])
+
+  useEffect(() => {
+    if (directionFilter === 'all') return
+    if (!directionOptions.some((option) => option.value === directionFilter)) {
+      setDirectionFilter('all')
+    }
+  }, [directionFilter, directionOptions])
+
+  const filteredCandidates = useMemo(() => {
+    const fromMs = toDateBoundaryMs(dateFrom, false)
+    const toMs = toDateBoundaryMs(dateTo, true)
+
+    return candidates.filter((opp) => {
+      if (strategyFilter !== 'all' && resolveOppStrategy(opp) !== strategyFilter) return false
+      if (directionFilter !== 'all' && resolveOppDirection(opp) !== directionFilter) return false
+      if (fromMs == null && toMs == null) return true
+
+      const oppTsMs = resolveOppTsMs(opp)
+      if (oppTsMs == null) return false
+      if (fromMs != null && oppTsMs < fromMs) return false
+      if (toMs != null && oppTsMs > toMs) return false
+      return true
+    })
+  }, [candidates, strategyFilter, directionFilter, dateFrom, dateTo])
+
+  useEffect(() => {
+    setBatchOffset(0)
+  }, [strategyFilter, directionFilter, dateFrom, dateTo])
+
   const activeBatch = useMemo(
-    () => candidates.slice(batchOffset, batchOffset + batchSize),
-    [candidates, batchOffset, batchSize]
+    () => filteredCandidates.slice(batchOffset, batchOffset + batchSize),
+    [filteredCandidates, batchOffset, batchSize]
   )
 
   useEffect(() => {
@@ -391,7 +484,7 @@ export default function OpportunitySurvey() {
 
   const columns = pickColumns(presentationMode)
 
-  const totalPages = Math.ceil(candidates.length / batchSize)
+  const totalPages = Math.ceil(filteredCandidates.length / batchSize)
   const currentPage = Math.floor(batchOffset / batchSize) + 1
 
   if (oppsError) {
@@ -444,11 +537,36 @@ export default function OpportunitySurvey() {
               />
               <Toggle enabled={randomSample} onChange={setRandomSample} label="Random Sample" />
               <Toggle enabled={presentationMode} onChange={setPresentationMode} label="Presentation Mode (Landscape)" />
-              <Toggle
-                enabled={hideLevelsUntilReveal}
-                onChange={setHideLevelsUntilReveal}
-                label="Hide SL/TP Until Reveal"
+              <Select
+                value={strategyFilter}
+                onChange={(e) => setStrategyFilter(e.target.value)}
+                options={strategyOptions}
+                className="w-48"
               />
+              <Select
+                value={directionFilter}
+                onChange={(e) => setDirectionFilter(e.target.value)}
+                options={directionOptions}
+                className="w-44"
+              />
+              <div className="flex items-center gap-2">
+                <label className="text-xs text-terminal-400" htmlFor="survey-date-from">From</label>
+                <input
+                  id="survey-date-from"
+                  type="date"
+                  value={dateFrom}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                  className="px-2 py-1 rounded border border-terminal-600 bg-terminal-900 text-terminal-100 text-sm"
+                />
+                <label className="text-xs text-terminal-400" htmlFor="survey-date-to">To</label>
+                <input
+                  id="survey-date-to"
+                  type="date"
+                  value={dateTo}
+                  onChange={(e) => setDateTo(e.target.value)}
+                  className="px-2 py-1 rounded border border-terminal-600 bg-terminal-900 text-terminal-100 text-sm"
+                />
+              </div>
               <button className="btn btn-secondary btn-sm" onClick={fetchCandidates}>
                 <Shuffle className="w-4 h-4" />
                 Reload Batch
@@ -466,7 +584,7 @@ export default function OpportunitySurvey() {
                 </span>
                 <button
                   className="btn btn-ghost btn-sm"
-                  disabled={batchOffset + batchSize >= candidates.length}
+                  disabled={batchOffset + batchSize >= filteredCandidates.length}
                   onClick={() => setBatchOffset((v) => v + batchSize)}
                 >
                   Next
@@ -535,7 +653,7 @@ export default function OpportunitySurvey() {
           {oppsLoading ? (
             <div className="text-terminal-400">Loading opportunities…</div>
           ) : activeBatch.length === 0 ? (
-            <EmptyState icon={XCircle} title="No opportunities in this mode" description="Change mode or reload batch." />
+            <EmptyState icon={XCircle} title="No opportunities match these filters" description="Adjust filters or reload batch." />
           ) : (
             (() => {
               const rows = []
@@ -562,7 +680,6 @@ export default function OpportunitySurvey() {
                       exitPlusHoursApplied={exitPlusHoursApplied}
                       mode={mode}
                       presentationMode={presentationMode}
-                      hideLevelsUntilReveal={hideLevelsUntilReveal}
                     />
                   ))}
                 </div>
@@ -584,7 +701,6 @@ function SurveyRow({
   exitPlusHoursApplied,
   mode,
   presentationMode,
-  hideLevelsUntilReveal,
 }) {
   const effectiveRevealOffsetMin = windowData
     ? resolveRowRevealOffsetMin(windowData, revealMode, revealOffsetMin, exitPlusHoursApplied)
@@ -668,7 +784,6 @@ function SurveyRow({
               markers={markers}
               revealTs={revealTs}
               hideExitUntilReveal
-              hideLevels={hideLevelsUntilReveal && effectiveRevealOffsetMin <= 0}
               showLevelLineLabels={false}
               showLevelLegend={false}
               {...chartPreset}

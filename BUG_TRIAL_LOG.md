@@ -287,3 +287,17 @@ Purpose: record attempted fixes, outcomes, and regressions so later sessions avo
 - Commit: `8da3acd`
 - Outcome: `Frontend npm run build` passes; Cloudflare Pages deploy success (`https://fa32ed21.mcas.pages.dev`).
 - Notes / Evidence: User requested removal of persistent bottom-left logo from every chart tile.
+
+## 2026-03-05 (UTC) - Survey Filters (Strategy/Direction/Date) + Remove Hide Levels Toggle
+
+- Date (UTC): 2026-03-05
+- Area: Survey top control bar and batch filtering
+- Change:
+  - Added `Strategy` dropdown filter (derived from loaded batch `setup_id`).
+  - Added `Direction` dropdown filter (`Long` / `Short` / `Unknown`).
+  - Added `From` and `To` date filters (UTC day boundaries, based on entry timestamp with created/updated fallback).
+  - Removed `Hide SL/TP Until Reveal` toggle and removed hide-level prop wiring from survey row charts.
+  - Pagination now operates on the filtered set instead of raw candidates.
+- Commit: pending
+- Outcome: `Frontend npm run build` passes. Runtime validation pending after deploy.
+- Notes / Evidence: User requested strategy + direction + date filters and explicit removal of hide-level toggle.
