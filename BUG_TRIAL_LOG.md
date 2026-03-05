@@ -359,3 +359,15 @@ Purpose: record attempted fixes, outcomes, and regressions so later sessions avo
   - Removed brittle `sys.path` parent-hack imports and switched to local module import in each service runtime.
 - Outcome: targeted stop-policy pytest suite passes locally (`11 passed`).
 - Notes / Evidence: `/srv/mcas` deploy initially put `api`, `worker`, and `signal_worker_*` into restart loops with `IndexError: 2`; this hotfix restores startup compatibility with current Docker contexts.
+
+## 2026-03-05 (UTC) - X-Axis Event Markers for Survey Curves
+
+- Date (UTC): 2026-03-05
+- Area: `OpportunityCurveChart` temporal event readability
+- Change:
+  - Added compact x-axis event marker rail for trade events with short labels:
+    - `E` (entry), `T1`/`T2` (TP exits), `SL` (stop), `FX` (final exit).
+  - Markers are color-coded to match event palette and anchored to each event timestamp.
+  - Added anti-overlap lane staggering for near-adjacent events to keep labels readable.
+- Outcome: `Frontend npm run build` passes.
+- Notes / Evidence: Requested stronger visual jump-out for exactly where entry/exit actions occurred on each curve.

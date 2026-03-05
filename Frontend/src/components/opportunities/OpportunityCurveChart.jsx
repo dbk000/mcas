@@ -165,6 +165,20 @@ function normalizeExitPoints(markers, hideExitUntilReveal, revealTs) {
   return points.sort((a, b) => a.ts - b.ts)
 }
 
+function toEventShortLabel(label, isFinal = false) {
+  const text = String(label || '').toLowerCase()
+  if (isFinal || text.includes('final')) return 'FX'
+  if (text.includes('entry')) return 'E'
+  if (text.includes('stop') || text.includes('sl')) return 'SL'
+
+  const tpMatch = text.match(/tp\s*([0-9]+)/i)
+  if (tpMatch?.[1]) return `T${tpMatch[1]}`
+
+  if (text.includes('partial')) return 'PX'
+  if (text.includes('exit')) return 'X'
+  return 'EV'
+}
+
 export default function OpportunityCurveChart({
   candles = [],
   markers = {},
@@ -200,7 +214,7 @@ export default function OpportunityCurveChart({
   const priceLinesRef = useRef([])
   const markersRef = useRef(markers)
   const exitPointsRef = useRef([])
-  const [markerCoords, setMarkerCoords] = useState({ entry: null, exits: [] })
+  const [markerCoords, setMarkerCoords] = useState({ entry: null, exits: [], axisEvents: [] })
 
   const clippedCandles = useMemo(() => {
     if (!Array.isArray(candles) || candles.length === 0) return []
@@ -286,9 +300,43 @@ export default function OpportunityCurveChart({
       })
       .filter((point) => point.x !== null)
 
+    const axisEventBase = []
+    if (Number.isFinite(entryX)) {
+      axisEventBase.push({
+        key: 'entry',
+        label: 'ENTRY',
+        shortLabel: toEventShortLabel('ENTRY'),
+        x: entryX,
+        color: getEventColor('ENTRY'),
+      })
+    }
+    exits.forEach((point) => {
+      axisEventBase.push({
+        key: `exit-${point.ts}-${point.label}`,
+        label: point.label,
+        shortLabel: toEventShortLabel(point.label, point.isFinal),
+        x: point.x,
+        color: point.color,
+      })
+    })
+
+    const laneLastX = [-Infinity, -Infinity, -Infinity]
+    const axisEvents = axisEventBase
+      .sort((a, b) => a.x - b.x)
+      .map((event) => {
+        let lane = 0
+        while (lane < laneLastX.length && (event.x - laneLastX[lane]) < 44) {
+          lane += 1
+        }
+        if (lane >= laneLastX.length) lane = laneLastX.length - 1
+        laneLastX[lane] = event.x
+        return { ...event, lane }
+      })
+
     setMarkerCoords({
       entry: Number.isFinite(entryX) ? entryX : null,
       exits,
+      axisEvents,
     })
   }, [])
 
@@ -604,6 +652,30 @@ export default function OpportunityCurveChart({
                 {point.label}
               </span>
             )}
+          </div>
+        ))}
+
+        {markerCoords.axisEvents.map((event) => (
+          <div
+            key={event.key}
+            className="absolute -translate-x-1/2 flex flex-col items-center"
+            style={{ left: `${event.x}px`, bottom: `${2 + (event.lane * 13)}px` }}
+            title={event.label}
+          >
+            <div
+              className={thinTemporalMarkers ? 'w-px h-2' : 'w-px h-3'}
+              style={{ backgroundColor: event.color }}
+            />
+            <span
+              className="mt-0.5 px-1 rounded-[3px] border text-[8px] leading-tight font-bold tracking-wide font-mono"
+              style={{
+                color: event.color,
+                borderColor: `${event.color}99`,
+                backgroundColor: `${event.color}26`,
+              }}
+            >
+              {event.shortLabel}
+            </span>
           </div>
         ))}
       </div>
