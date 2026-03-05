@@ -750,6 +750,7 @@ def _format_exit_label(key: str) -> str:
 def _extract_exit_points(payload: dict[str, Any], fallback_exit_ts: datetime) -> list[dict[str, Any]]:
     """Extract all known exit-like timestamps from payload for vertical marker rendering."""
     points: dict[int, dict[str, Any]] = {}
+    fallback_exit_ts_ms = int(fallback_exit_ts.timestamp() * 1000)
 
     def add_point(ts_value: Any, label: str, is_final: bool = False) -> None:
         ts_dt = _parse_timestamp(ts_value)
@@ -766,6 +767,7 @@ def _extract_exit_points(payload: dict[str, Any], fallback_exit_ts: datetime) ->
 
     excluded_keys = {
         "entry_ts",
+        "exit_ts",
         "bar_start_ts",
         "created_ts",
         "updated_ts",
@@ -800,14 +802,35 @@ def _extract_exit_points(payload: dict[str, Any], fallback_exit_ts: datetime) ->
                     or raw.get("timestamp")
                 )
                 label = str(raw.get("label") or raw.get("reason") or f"EXIT {idx + 1}")
-                add_point(ts_value, label, is_final=(str(raw.get("is_final")).lower() == "true"))
+                ts_dt = _parse_timestamp(ts_value)
+                if not ts_dt:
+                    continue
+                ts_ms = int(ts_dt.timestamp() * 1000)
+                label_l = label.strip().lower()
+                # Historical payloads can contain stale generic EXIT points that conflict
+                # with canonical simulation final exit. Keep non-generic labels (TP/STOP/etc)
+                # and keep generic EXIT only when it matches the canonical final ts.
+                if label_l in {"exit", "close", "close exit"} and ts_ms != fallback_exit_ts_ms:
+                    continue
+                add_point(ts_dt, label, is_final=(str(raw.get("is_final")).lower() == "true"))
             else:
                 add_point(raw, f"EXIT {idx + 1}")
 
-    add_point(fallback_exit_ts, "FINAL EXIT", is_final=True)
+    # Canonicalize to avoid conflicting multi-final markers from stale payload fields.
+    # Keep only TP/STOP/PARTIAL intermediate exits, and force exactly one FINAL EXIT.
+    canonical: list[dict[str, Any]] = []
+    for point in points.values():
+        ts_ms = int(point["ts"])
+        if ts_ms == fallback_exit_ts_ms:
+            continue
+        label = str(point.get("label") or "EXIT")
+        label_l = label.lower()
+        if any(token in label_l for token in ("tp", "take_profit", "stop", "sl", "partial")):
+            canonical.append({"ts": ts_ms, "label": label, "is_final": False})
 
-    ordered = sorted(points.values(), key=lambda p: (p["ts"], 0 if p.get("is_final") else 1, p["label"]))
-    return ordered
+    canonical.append({"ts": fallback_exit_ts_ms, "label": "FINAL EXIT", "is_final": True})
+    canonical.sort(key=lambda p: (p["ts"], 0 if p.get("is_final") else 1, p["label"]))
+    return canonical
 
 
 def _parse_float(value: Any) -> Optional[float]:

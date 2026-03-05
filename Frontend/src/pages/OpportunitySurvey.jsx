@@ -103,22 +103,6 @@ function withAlpha(hexColor, alphaHex = 'cc') {
   return hexColor
 }
 
-function closestCloseAtTs(candles, ts) {
-  const target = Number(ts)
-  if (!isValidEventTs(target) || !Array.isArray(candles) || candles.length === 0) return null
-  let best = null
-  for (let i = 0; i < candles.length; i += 1) {
-    const c = candles[i]
-    if (!Number.isFinite(Number(c?.t))) continue
-    if (Number(c.t) <= target) {
-      best = c
-      continue
-    }
-    break
-  }
-  return best && isValidEventPrice(best.c) ? Number(best.c) : null
-}
-
 function extractTsFromExitPoints(exitPoints, token) {
   if (!Array.isArray(exitPoints)) return null
   const tokenLower = String(token || '').toLowerCase()
@@ -131,7 +115,7 @@ function extractTsFromExitPoints(exitPoints, token) {
   return null
 }
 
-function buildTradeEventRows(markers, candles) {
+function buildTradeEventRows(markers) {
   const exitPoints = Array.isArray(markers?.exit_points) ? markers.exit_points : []
   const tp = Array.isArray(markers?.tp_px) ? markers.tp_px : []
   const tp1Ts = extractTsFromExitPoints(exitPoints, 'tp1')
@@ -176,25 +160,6 @@ function buildTradeEventRows(markers, candles) {
       color: getEventColor('FINAL EXIT', { isFinal: true }),
     },
   ]
-
-  const mapped = new Set(
-    [tp1Ts, tp2Ts, stopTs, finalExitTs]
-      .filter((v) => isValidEventTs(v))
-      .map((v) => Number(v))
-  )
-
-  exitPoints.forEach((point, idx) => {
-    const ts = Number(point?.ts)
-    if (!isValidEventTs(ts) || mapped.has(ts)) return
-    const px = closestCloseAtTs(candles, ts)
-    rows.push({
-      key: `event-${idx}`,
-      label: String(point?.label || `EXIT ${idx + 1}`).toUpperCase(),
-      price: isValidEventPrice(px) ? px : null,
-      ts,
-      color: getEventColor(point?.label || `EXIT ${idx + 1}`, { isFinal: Boolean(point?.is_final) }),
-    })
-  })
 
   return rows
 }
@@ -580,8 +545,8 @@ function SurveyRow({
     }
   }, [windowData, finalExitPrice])
   const tradeEventRows = useMemo(
-    () => buildTradeEventRows(markers, windowData?.candles || []),
-    [markers, windowData]
+    () => buildTradeEventRows(markers),
+    [markers]
   )
 
   return (

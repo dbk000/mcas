@@ -199,7 +199,7 @@ def test_price_window_prefers_simulation_markers_over_payload(monkeypatch):
         999,  # id
         "SOLUSDT",  # symbol
         created_ts,  # created_ts
-        '{"entry_ts":"2026-02-01T10:00:00+00:00","exit_ts":"2026-02-01T12:00:00+00:00","entry_price":100.0,"exit_price":110.0,"stop_price":95.0,"tp1_price":105.0,"tp2_price":108.0}',  # payload_json
+        '{"entry_ts":"2026-02-01T10:00:00+00:00","exit_ts":"2026-02-01T12:00:00+00:00","entry_price":100.0,"exit_price":110.0,"stop_price":95.0,"tp1_price":105.0,"tp2_price":108.0,"tp1_exit_ts":"2026-02-01T10:30:00+00:00","exit_points":[{"ts":"2026-02-01T11:00:00+00:00","label":"EXIT","is_final":true},{"ts":"2026-02-01T10:30:00+00:00","label":"TP1 EXIT","is_final":false}]}' ,  # payload_json
         sr_entry_ts,  # sr.entry_ts
         sr_exit_ts,  # sr.exit_ts
         111.0,  # sr.exit_price
@@ -231,6 +231,13 @@ def test_price_window_prefers_simulation_markers_over_payload(monkeypatch):
     assert body["markers"]["exit_px"] == 111.0
     assert body["markers"]["stop_px"] == 96.0
     assert body["markers"]["tp_px"] == [106.0, 109.0]
+    labels = [str(p["label"]).upper() for p in body["markers"]["exit_points"]]
+    assert labels.count("FINAL EXIT") == 1
+    assert "EXIT" not in labels
+    assert any("TP1" in label for label in labels)
+    assert [p for p in body["markers"]["exit_points"] if p.get("is_final")] == [
+        {"ts": int(sr_exit_ts.timestamp() * 1000), "label": "FINAL EXIT", "is_final": True}
+    ]
 
     assert cursor.ohlcv_params[0] == "SOLUSDT"
     assert cursor.ohlcv_params[1] == sr_entry_ts - timedelta(seconds=3600)

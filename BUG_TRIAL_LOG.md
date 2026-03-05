@@ -241,3 +241,16 @@ Purpose: record attempted fixes, outcomes, and regressions so later sessions avo
 - Commit: `8fee4a3`
 - Outcome: `Frontend npm run build` passes; backend tests pass in container (`4 passed` on `test_opportunity_price_window.py`); Cloudflare Pages deploy success (`https://ac39af3b.mcas.pages.dev`).
 - Notes / Evidence: User reported entry candle appearing missing/disconnected from event table.
+
+## 2026-03-05 (UTC) - Canonical Final Exit Only (No Ambiguous EXIT Row)
+
+- Date (UTC): 2026-03-05
+- Area: Survey event semantics (`EXIT` vs `FINAL EXIT`)
+- Change:
+  - Normalized backend `exit_points` to enforce one canonical `FINAL EXIT`.
+  - Kept only TP/STOP/PARTIAL intermediate exits; dropped ambiguous generic `EXIT/CLOSE` points when not canonical final.
+  - Removed frontend fallback append of arbitrary extra exit rows beyond `ENTRY/TP1/TP2/STOP/FINAL EXIT`.
+  - Added test coverage for stale payload `EXIT` conflicts to ensure only one final remains.
+- Commit: pending
+- Outcome: pending build/test/deploy validation.
+- Notes / Evidence: User reported conflicting `EXIT` and `FINAL EXIT` values in survey table.
