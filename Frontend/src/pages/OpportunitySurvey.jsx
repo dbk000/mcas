@@ -599,17 +599,7 @@ function SurveyRow({
           ) : (
             <Badge variant="warning">Outcome hidden</Badge>
           )}
-          {!hideOutcome && (
-            <p className="text-terminal-500">
-              Final Exit: <span className="font-mono text-sky-300">{finalExitPrice != null ? formatPrice(finalExitPrice) : '—'}</span>
-            </p>
-          )}
           <div className="mt-2 rounded border border-terminal-700/70 bg-terminal-950/40 overflow-hidden">
-            <div className="grid grid-cols-[56px_44px_1fr] text-[9px] font-mono uppercase tracking-wide bg-terminal-900/80 text-terminal-400">
-              <div className="px-1.5 py-1 border-b border-terminal-700/60">Event</div>
-              <div className="px-1.5 py-1 border-b border-l border-terminal-700/60">TS</div>
-              <div className="px-1.5 py-1 border-b border-l border-terminal-700/60">Price</div>
-            </div>
             {tradeEventRows.map((event) => (
               <div
                 key={event.key}

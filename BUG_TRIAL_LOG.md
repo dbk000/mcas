@@ -207,3 +207,14 @@ Purpose: record attempted fixes, outcomes, and regressions so later sessions avo
 - Commit: `49c9541`
 - Outcome: `Frontend npm run build` passes; Cloudflare Pages deploy success (`https://0231e2fc.mcas.pages.dev`).
 - Notes / Evidence: User requested removing on-chart line labels and color-coding tabular event text for faster pattern inference.
+
+## 2026-03-05 (UTC) - Remove Redundant Final Exit Label + Table Headers
+
+- Date (UTC): 2026-03-05
+- Area: Survey left metadata panel noise reduction
+- Change:
+  - Removed standalone `Final Exit:` line above the event table (now fully represented inside table rows).
+  - Removed `Event / TS / Price` header row as redundant for this single-user workflow.
+- Commit: pending
+- Outcome: `Frontend npm run build` passes. Deploy pending.
+- Notes / Evidence: User requested cleaner, implicit layout with less repetitive labeling.
