@@ -147,8 +147,8 @@ Purpose: record attempted fixes, outcomes, and regressions so later sessions avo
 - Date (UTC): 2026-03-05
 - Area: Frontend chart tuning architecture
 - Change: Added shared chart preset module and migrated survey row, expired-opportunity modal, and market collector chart to consume centralized presets.
-- Commit: pending
-- Outcome: `Frontend npm run build` passes. Runtime validation pending after deploy.
+- Commit: `22413ee` (feature), `564cc71` (log sync)
+- Outcome: `Frontend npm run build` passes; Cloudflare Pages deploy success (`https://5e82e1aa.mcas.pages.dev`).
 - Notes / Evidence: Reduces duplicated chart-prop tuning logic and makes future adjustments one-source-of-truth.
 
 ## 2026-03-05 (UTC) - Survey UI Noise Reduction + Global Window Controls
