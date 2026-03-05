@@ -275,6 +275,6 @@ Purpose: record attempted fixes, outcomes, and regressions so later sessions avo
   - Switched `Up To Exit` from batch-max offset behavior to per-row exit offset.
   - Switched `Apply Exit + N` to per-row `(exit + N hours)` behavior.
   - Added control-state label text to indicate offset mode vs per-row preset modes.
-- Commit: pending
-- Outcome: pending build/deploy validation.
+- Commit: `9451aa1`
+- Outcome: `Frontend npm run build` passes; Cloudflare Pages deploy success (`https://0c18115c.mcas.pages.dev`).
 - Notes / Evidence: User reported `Up To Exit`/`Exit + N` showing same chart extent and exit alignment drift.
