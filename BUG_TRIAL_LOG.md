@@ -129,6 +129,24 @@ Purpose: record attempted fixes, outcomes, and regressions so later sessions avo
 - Date (UTC): 2026-03-05
 - Area: Survey layout behavior
 - Change: Removed responsive fallback in presentation mode; presentation mode now enforces 2 columns at all viewport widths by design.
-- Commit: pending
-- Outcome: Product preference captured to prevent future regressions back to responsive 1-column fallback.
+- Commit: `cf7a4f9`
+- Outcome: Shipped and deployed (Cloudflare success: `https://f8b2d218.mcas.pages.dev`).
 - Notes / Evidence: User explicitly requested fixed 2-column behavior for cognition/training workflow.
+
+## 2026-03-05 (UTC) - Macro Context Scale (Survey)
+
+- Date (UTC): 2026-03-05
+- Area: Survey data windowing
+- Change: Increased survey pre-entry fetch window from 1h (`pre_s=3600`) to 6h (`pre_s=21600`) to show materially more 5m candles in stack rows for macro pattern context.
+- Commit: pending
+- Outcome: `Frontend npm run build` passes. Runtime validation pending after deploy.
+- Notes / Evidence: User requested broader trend visibility (higher candle count visible before entry/exit training moments).
+
+## 2026-03-05 (UTC) - Shared Chart Presets Centralization
+
+- Date (UTC): 2026-03-05
+- Area: Frontend chart tuning architecture
+- Change: Added shared chart preset module and migrated survey row, expired-opportunity modal, and market collector chart to consume centralized presets.
+- Commit: pending
+- Outcome: `Frontend npm run build` passes. Runtime validation pending after deploy.
+- Notes / Evidence: Reduces duplicated chart-prop tuning logic and makes future adjustments one-source-of-truth.

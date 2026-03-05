@@ -30,6 +30,7 @@ import {
   isEquitiesStrategy
 } from '../utils/formatters'
 import OpportunityCurveChart from '../components/opportunities/OpportunityCurveChart'
+import { CURVE_VIEWER_CHART_PROPS } from '../components/opportunities/chartPresets'
 
 function ExpiryBadge({ expiresAt }) {
   const [label, setLabel] = useState('')
@@ -183,7 +184,7 @@ function CurveViewerModal({ opportunity, onClose }) {
           <OpportunityCurveChart
             candles={data?.candles || []}
             markers={markers}
-            height={420}
+            {...CURVE_VIEWER_CHART_PROPS}
           />
 
           {data?.data_quality?.empty && (

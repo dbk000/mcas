@@ -25,21 +25,13 @@ import {
 } from '../components/ui'
 import { formatDateTime, formatPrice } from '../utils/formatters'
 import OpportunityCurveChart from '../components/opportunities/OpportunityCurveChart'
+import { getSurveyRowChartProps } from '../components/opportunities/chartPresets'
 
 const PREDICTIONS_KEY = 'mcas_visual_predictions_v1'
 const REVEAL_STEP_MIN = 5
-const PRE_S = 3600
+// Macro context window for pattern training: 6h pre-entry history.
+const PRE_S = 21600
 const POST_S = 21600
-
-const PRESENTATION_PRICE_SPACING_TABLE = [
-  { maxPrice: 0.02, spacing: 20 },
-  { maxPrice: 0.1, spacing: 16 },
-  { maxPrice: 1, spacing: 12 },
-  { maxPrice: 10, spacing: 10 },
-  { maxPrice: 100, spacing: 8 },
-  { maxPrice: 1000, spacing: 6.5 },
-  { maxPrice: 1000000, spacing: 5.5 },
-]
 
 const modeOptions = [
   { value: 'selected', label: 'Selected Opps (Mode A)' },
@@ -634,6 +626,7 @@ function SurveyRow({
   hideLevelsUntilReveal,
 }) {
   const revealTs = windowData ? getRowRevealTs(windowData, revealOffsetMin) : null
+  const chartPreset = getSurveyRowChartProps(presentationMode)
   const outcomeClass = windowData?.outcome?.class || opp.outcome_class || 'unknown'
   const hideOutcome = mode === 'mixed' && !prediction
   const finalExitPriceRaw = windowData?.markers?.exit_px ?? opp?.exit_price ?? opp?.payload?.exit_price
@@ -691,16 +684,7 @@ function SurveyRow({
               revealTs={revealTs}
               hideExitUntilReveal
               hideLevels={hideLevelsUntilReveal && revealOffsetMin <= 0}
-              compact
-              height={presentationMode ? 210 : 190}
-              chartVariant={presentationMode ? 'classic' : 'terminal'}
-              showMovingAverages={false}
-              thinTemporalMarkers
-              showVolume={false}
-              showCloseLine={presentationMode}
-              targetBarSpacing={presentationMode ? 8 : 10}
-              autoBarSpacingByPrice={presentationMode}
-              priceBarSpacingTable={PRESENTATION_PRICE_SPACING_TABLE}
+              {...chartPreset}
             />
           )}
         </div>

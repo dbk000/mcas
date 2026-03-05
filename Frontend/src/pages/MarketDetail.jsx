@@ -20,6 +20,7 @@ import {
   formatRelativeTime
 } from '../utils/formatters'
 import OpportunityCurveChart from '../components/opportunities/OpportunityCurveChart'
+import { MARKET_LIVE_COLLECTOR_CHART_PROPS } from '../components/opportunities/chartPresets'
 
 const TF_TO_MS = {
   '1m': 60_000,
@@ -170,7 +171,7 @@ function CandlestickChart({ symbol, timeframe, limit }) {
             <OpportunityCurveChart
               candles={candles}
               markers={{}}
-              height={400}
+              {...MARKET_LIVE_COLLECTOR_CHART_PROPS}
               expectedGapMs={gapMs}
               gapLabel={`${timeframe} collector data`}
             />
