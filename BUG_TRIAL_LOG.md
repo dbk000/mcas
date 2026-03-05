@@ -215,6 +215,6 @@ Purpose: record attempted fixes, outcomes, and regressions so later sessions avo
 - Change:
   - Removed standalone `Final Exit:` line above the event table (now fully represented inside table rows).
   - Removed `Event / TS / Price` header row as redundant for this single-user workflow.
-- Commit: pending
-- Outcome: `Frontend npm run build` passes. Deploy pending.
+- Commit: `b986b3f`
+- Outcome: `Frontend npm run build` passes; Cloudflare Pages deploy success (`https://fba4cf01.mcas.pages.dev`).
 - Notes / Evidence: User requested cleaner, implicit layout with less repetitive labeling.
