@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import {
   ArrowLeft,
-  BarChart3,
   ChevronDown,
   ChevronUp,
   Shuffle,
@@ -81,6 +80,75 @@ function pickColumns(presentationMode) {
   return 2
 }
 
+function formatEventTs(ts) {
+  if (!Number.isFinite(Number(ts))) return '—'
+  return formatDateTime(new Date(Number(ts)).toISOString())
+}
+
+function closestCloseAtTs(candles, ts) {
+  const target = Number(ts)
+  if (!Number.isFinite(target) || !Array.isArray(candles) || candles.length === 0) return null
+  let best = null
+  for (let i = 0; i < candles.length; i += 1) {
+    const c = candles[i]
+    if (!Number.isFinite(Number(c?.t))) continue
+    if (Number(c.t) <= target) {
+      best = c
+      continue
+    }
+    break
+  }
+  return best && Number.isFinite(Number(best.c)) ? Number(best.c) : null
+}
+
+function extractTsFromExitPoints(exitPoints, token) {
+  if (!Array.isArray(exitPoints)) return null
+  const tokenLower = String(token || '').toLowerCase()
+  for (const point of exitPoints) {
+    const label = String(point?.label || '').toLowerCase()
+    const ts = Number(point?.ts)
+    if (!Number.isFinite(ts)) continue
+    if (label.includes(tokenLower)) return ts
+  }
+  return null
+}
+
+function buildTradeEventRows(markers, candles) {
+  const exitPoints = Array.isArray(markers?.exit_points) ? markers.exit_points : []
+  const tp = Array.isArray(markers?.tp_px) ? markers.tp_px : []
+  const tp1Ts = extractTsFromExitPoints(exitPoints, 'tp1')
+  const tp2Ts = extractTsFromExitPoints(exitPoints, 'tp2')
+  const stopTs = extractTsFromExitPoints(exitPoints, 'stop') ?? extractTsFromExitPoints(exitPoints, 'sl')
+  const finalExitTs = Number.isFinite(Number(markers?.exit_ts)) ? Number(markers.exit_ts) : null
+
+  const rows = [
+    { key: 'entry', label: 'ENTRY', price: markers?.entry_px, ts: markers?.entry_ts },
+    { key: 'tp1', label: 'TP1', price: tp[0], ts: tp1Ts },
+    { key: 'tp2', label: 'TP2', price: tp[1], ts: tp2Ts },
+    { key: 'stop', label: 'STOP', price: markers?.stop_px, ts: stopTs },
+    { key: 'final', label: 'FINAL EXIT', price: markers?.exit_px, ts: finalExitTs },
+  ]
+
+  const mapped = new Set(
+    [tp1Ts, tp2Ts, stopTs, finalExitTs]
+      .filter((v) => Number.isFinite(Number(v)))
+      .map((v) => Number(v))
+  )
+
+  exitPoints.forEach((point, idx) => {
+    const ts = Number(point?.ts)
+    if (!Number.isFinite(ts) || mapped.has(ts)) return
+    rows.push({
+      key: `event-${idx}`,
+      label: String(point?.label || `EXIT ${idx + 1}`).toUpperCase(),
+      price: closestCloseAtTs(candles, ts),
+      ts,
+    })
+  })
+
+  return rows.filter((row) => row.price != null || Number.isFinite(Number(row.ts)))
+}
+
 export default function OpportunitySurvey() {
   const { get } = useApi()
   const [searchParams] = useSearchParams()
@@ -104,11 +172,6 @@ export default function OpportunitySurvey() {
   const [candidates, setCandidates] = useState([])
   const [windowsById, setWindowsById] = useState({})
   const [windowErrorsById, setWindowErrorsById] = useState({})
-  const [loadingProgress, setLoadingProgress] = useState({ done: 0, total: 0 })
-
-  const scrollRef = useRef(null)
-  const [scrollTop, setScrollTop] = useState(0)
-  const [viewport, setViewport] = useState({ width: 0, height: 700 })
   const requestVersionRef = useRef(0)
 
   const fetchCandidates = useCallback(async () => {
@@ -201,15 +264,9 @@ export default function OpportunitySurvey() {
 
   useEffect(() => {
     const need = activeBatch.filter((opp) => windowsById[opp.id] == null && windowErrorsById[opp.id] == null)
-    if (need.length === 0) {
-      setLoadingProgress({ done: 0, total: 0 })
-      return
-    }
+    if (need.length === 0) return
 
     let cancelled = false
-    const total = need.length
-    let done = 0
-    setLoadingProgress({ done, total })
 
     const run = async () => {
       const queue = [...need]
@@ -227,19 +284,11 @@ export default function OpportunitySurvey() {
           } catch (err) {
             if (cancelled) return
             setWindowErrorsById((prev) => ({ ...prev, [opp.id]: err.message || 'Failed to load window' }))
-          } finally {
-            done += 1
-            if (!cancelled) {
-              setLoadingProgress({ done, total })
-            }
           }
         }
       })
 
       await Promise.all(workers)
-      if (!cancelled) {
-        setLoadingProgress({ done: 0, total: 0 })
-      }
     }
 
     run()
@@ -247,20 +296,6 @@ export default function OpportunitySurvey() {
       cancelled = true
     }
   }, [activeBatch, windowsById, windowErrorsById, get])
-
-  useEffect(() => {
-    const el = scrollRef.current
-    if (!el) return undefined
-    const observer = new ResizeObserver(() => {
-      setViewport({
-        width: el.clientWidth,
-        height: el.clientHeight,
-      })
-    })
-    observer.observe(el)
-    setViewport({ width: el.clientWidth, height: el.clientHeight })
-    return () => observer.disconnect()
-  }, [])
 
   const bounds = useMemo(() => {
     const available = activeBatch
@@ -299,30 +334,7 @@ export default function OpportunitySurvey() {
     setRevealOffsetMin(clamp(bounds.revealExit + plusOffsetMin, bounds.min, maxRevealAllowed))
   }, [postExitHours, bounds.revealExit, bounds.min, maxRevealAllowed])
 
-  const rowHeight = presentationMode ? 320 : 250
   const columns = pickColumns(presentationMode)
-  const rowCount = Math.ceil(activeBatch.length / columns)
-  const overscan = 2
-  const firstRow = Math.max(0, Math.floor(scrollTop / rowHeight) - overscan)
-  const lastRow = Math.min(
-    rowCount,
-    Math.ceil((scrollTop + viewport.height) / rowHeight) + overscan
-  )
-
-  const visibleRows = []
-  for (let rowIdx = firstRow; rowIdx < lastRow; rowIdx += 1) {
-    visibleRows.push(rowIdx)
-  }
-
-  useEffect(() => {
-    if (!scrollRef.current) return
-    const maxScrollTop = Math.max(0, (rowCount * rowHeight) - viewport.height)
-    if (scrollTop > maxScrollTop) {
-      const clamped = Math.max(0, maxScrollTop)
-      scrollRef.current.scrollTop = clamped
-      setScrollTop(clamped)
-    }
-  }, [rowCount, rowHeight, viewport.height, scrollTop])
 
   const totalPages = Math.ceil(candidates.length / batchSize)
   const currentPage = Math.floor(batchOffset / batchSize) + 1
@@ -453,68 +465,41 @@ export default function OpportunitySurvey() {
       )}
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <BarChart3 className="w-4 h-4 text-amber-400" />
-            Stack View
-          </CardTitle>
-          <div className="text-sm text-terminal-400">
-            {activeBatch.length} curves in batch
-            {loadingProgress.total > 0 && ` • loading ${loadingProgress.done}/${loadingProgress.total}`}
-          </div>
-        </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-3">
           {oppsLoading ? (
             <div className="text-terminal-400">Loading opportunities…</div>
           ) : activeBatch.length === 0 ? (
             <EmptyState icon={XCircle} title="No opportunities in this mode" description="Change mode or reload batch." />
           ) : (
-              <div
-                ref={scrollRef}
-                onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}
-                className={`${topPanelsCollapsed ? 'h-[84vh]' : 'h-[70vh]'} overflow-auto`}
-              >
-              <div style={{ height: rowCount * rowHeight, position: 'relative' }}>
-                {visibleRows.map((rowIdx) => {
-                  const start = rowIdx * columns
-                  const rowItems = activeBatch.slice(start, start + columns)
-                  return (
-                    <div
-                      key={rowIdx}
-                      style={{
-                        position: 'absolute',
-                        top: rowIdx * rowHeight,
-                        left: 0,
-                        right: 0,
-                        height: rowHeight,
-                        padding: 8,
-                      }}
-                    >
-                      <div
-                        style={{
-                          display: 'grid',
-                          gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
-                          gap: 10,
-                        }}
-                      >
-                        {rowItems.map((opp) => (
-                          <SurveyRow
-                            key={opp.id}
-                            opp={opp}
-                            windowData={windowsById[opp.id]}
-                            windowError={windowErrorsById[opp.id]}
-                            revealOffsetMin={revealOffsetMin}
-                            mode={mode}
-                            presentationMode={presentationMode}
-                            hideLevelsUntilReveal={hideLevelsUntilReveal}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
+            (() => {
+              const rows = []
+              for (let idx = 0; idx < activeBatch.length; idx += columns) {
+                rows.push(activeBatch.slice(idx, idx + columns))
+              }
+              return rows.map((rowItems, rowIdx) => (
+                <div
+                  key={rowIdx}
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
+                    gap: 10,
+                  }}
+                >
+                  {rowItems.map((opp) => (
+                    <SurveyRow
+                      key={opp.id}
+                      opp={opp}
+                      windowData={windowsById[opp.id]}
+                      windowError={windowErrorsById[opp.id]}
+                      revealOffsetMin={revealOffsetMin}
+                      mode={mode}
+                      presentationMode={presentationMode}
+                      hideLevelsUntilReveal={hideLevelsUntilReveal}
+                    />
+                  ))}
+                </div>
+              ))
+            })()
           )}
         </CardContent>
       </Card>
@@ -544,14 +529,17 @@ function SurveyRow({
       exit_px: windowData.markers.exit_px ?? finalExitPrice,
     }
   }, [windowData, finalExitPrice])
+  const tradeEventRows = useMemo(
+    () => buildTradeEventRows(markers, windowData?.candles || []),
+    [markers, windowData]
+  )
 
   return (
-    <div className="border border-terminal-600 rounded bg-terminal-900/40 p-3 h-[calc(100%-0px)] overflow-hidden">
-      <div className={`grid ${presentationMode ? 'grid-cols-[150px_minmax(0,1fr)]' : 'grid-cols-[170px_1fr]'} gap-3 h-full`}>
+    <div className="border border-terminal-600 rounded bg-terminal-900/40 p-3">
+      <div className={`grid ${presentationMode ? 'grid-cols-[185px_minmax(0,1fr)]' : 'grid-cols-[210px_1fr]'} gap-3`}>
         <div className="text-xs space-y-1">
           <p className="font-mono text-terminal-100 text-sm">{opp.symbol}</p>
           <p className="text-terminal-400">{(opp.direction || opp.decision || 'n/a').toUpperCase()}</p>
-          <p className="text-terminal-500">Entry: {formatDateTime(opp.entry_ts || opp.created_ts)}</p>
           <p className="text-terminal-500">Setup: {opp.setup_id}</p>
           {!hideOutcome ? (
             <Badge variant={outcomeClass === 'winner' ? 'success' : outcomeClass === 'loser' ? 'error' : 'default'}>
@@ -565,15 +553,25 @@ function SurveyRow({
               Final Exit: <span className="font-mono text-sky-300">{finalExitPrice != null ? formatPrice(finalExitPrice) : '—'}</span>
             </p>
           )}
+          <div className="mt-2 rounded border border-terminal-700/70 bg-terminal-950/40 px-2 py-2 space-y-1">
+            {tradeEventRows.map((event) => (
+              <div key={event.key} className="grid grid-cols-[72px_1fr] gap-1">
+                <span className="text-[10px] text-terminal-400 uppercase tracking-wide">{event.label}</span>
+                <span className="text-[11px] text-terminal-200 font-mono leading-tight">
+                  {event.price != null ? formatPrice(event.price) : '—'} @ {formatEventTs(event.ts)}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
 
-        <div className="h-full min-w-0">
+        <div className="min-w-0">
           {windowError ? (
-            <div className="h-full border border-terminal-600 rounded flex items-center justify-center text-xs text-red-300">
+            <div className="h-full min-h-[180px] border border-terminal-600 rounded flex items-center justify-center text-xs text-red-300">
               {windowError}
             </div>
           ) : !windowData ? (
-            <div className="h-full border border-terminal-600 rounded flex items-center justify-center text-xs text-terminal-400">
+            <div className="h-full min-h-[180px] border border-terminal-600 rounded flex items-center justify-center text-xs text-terminal-400">
               Loading curve…
             </div>
           ) : (

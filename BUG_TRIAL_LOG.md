@@ -171,3 +171,15 @@ Purpose: record attempted fixes, outcomes, and regressions so later sessions avo
 - Commit: pending
 - Outcome: `Frontend npm run build` passes. Runtime validation pending after deploy.
 - Notes / Evidence: User flagged duplicate border lines around stack region.
+
+## 2026-03-05 (UTC) - Stack Layout De-Containerized + Rich Event Info
+
+- Date (UTC): 2026-03-05
+- Area: Survey stack layout and left-side metadata panel
+- Change:
+  - Removed redundant `Stack View / N curves` header from stack card.
+  - Removed inner stack-container scroll and virtualization wrapper; stack now flows to page length and uses normal page scroll.
+  - Expanded per-chart left metadata into a compact trade-event box showing price + timestamp for entry/TP/stop/final exit and extra exit markers.
+- Commit: pending
+- Outcome: `Frontend npm run build` passes. Runtime validation pending after deploy.
+- Notes / Evidence: User requested full-page stack flow and richer event-level text details.
