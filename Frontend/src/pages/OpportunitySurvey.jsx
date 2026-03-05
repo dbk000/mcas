@@ -92,9 +92,16 @@ function isValidEventPrice(value) {
   return Number.isFinite(n) && n > 0
 }
 
-function formatEventTs(ts) {
+function formatEventTs(ts, includeDate = false) {
   if (!isValidEventTs(ts)) return '—'
-  return new Date(Number(ts)).toISOString().slice(11, 16)
+  const d = new Date(Number(ts))
+  const hh = String(d.getUTCHours()).padStart(2, '0')
+  const mm = String(d.getUTCMinutes()).padStart(2, '0')
+  if (!includeDate) return `${hh}:${mm}`
+  const dd = String(d.getUTCDate()).padStart(2, '0')
+  const mo = String(d.getUTCMonth() + 1).padStart(2, '0')
+  const yy = String(d.getUTCFullYear()).slice(-2)
+  return `${dd}/${mo}/${yy} ${hh}:${mm}`
 }
 
 function withAlpha(hexColor, alphaHex = 'cc') {
@@ -130,6 +137,7 @@ function buildTradeEventRows(markers) {
       price: isValidEventPrice(markers?.entry_px) ? Number(markers.entry_px) : null,
       ts: isValidEventTs(markers?.entry_ts) ? Number(markers.entry_ts) : null,
       color: getEventColor('ENTRY'),
+      includeDate: true,
     },
     {
       key: 'tp1',
@@ -137,6 +145,7 @@ function buildTradeEventRows(markers) {
       price: isValidEventPrice(tp[0]) ? Number(tp[0]) : null,
       ts: tp1Ts,
       color: getEventColor('TP1'),
+      includeDate: false,
     },
     {
       key: 'tp2',
@@ -144,6 +153,7 @@ function buildTradeEventRows(markers) {
       price: isValidEventPrice(tp[1]) ? Number(tp[1]) : null,
       ts: tp2Ts,
       color: getEventColor('TP2'),
+      includeDate: false,
     },
     {
       key: 'stop',
@@ -151,6 +161,7 @@ function buildTradeEventRows(markers) {
       price: isValidEventPrice(markers?.stop_px) ? Number(markers.stop_px) : null,
       ts: stopTs,
       color: getEventColor('STOP'),
+      includeDate: false,
     },
     {
       key: 'final',
@@ -158,6 +169,7 @@ function buildTradeEventRows(markers) {
       price: isValidEventPrice(markers?.exit_px) ? Number(markers.exit_px) : null,
       ts: finalExitTs,
       color: getEventColor('FINAL EXIT', { isFinal: true }),
+      includeDate: true,
     },
   ]
 
@@ -569,23 +581,23 @@ function SurveyRow({
             {tradeEventRows.map((event) => (
               <div
                 key={event.key}
-                className="grid grid-cols-[56px_44px_1fr] text-[10px] font-mono"
+                className="grid grid-cols-[50px_92px_minmax(0,1fr)] text-[10px] font-mono"
                 style={{ borderLeft: `2px solid ${event.color}` }}
               >
                 <div
-                  className="px-1.5 py-0.5 border-t border-terminal-800/80 font-semibold"
+                  className="px-1 py-0.5 border-t border-terminal-800/80 font-semibold"
                   style={{ color: event.color }}
                 >
                   {event.label}
                 </div>
                 <div
-                  className="px-1.5 py-0.5 border-t border-l border-terminal-800/80"
+                  className="px-1 py-0.5 border-t border-l border-terminal-800/80"
                   style={{ color: withAlpha(event.color) }}
                 >
-                  {formatEventTs(event.ts)}
+                  {formatEventTs(event.ts, event.includeDate)}
                 </div>
                 <div
-                  className="px-1.5 py-0.5 border-t border-l border-terminal-800/80 font-semibold"
+                  className="px-1 pr-1 py-0.5 border-t border-l border-terminal-800/80 font-semibold text-right"
                   style={{ color: event.color }}
                 >
                   {event.price != null ? formatPrice(event.price) : '—'}

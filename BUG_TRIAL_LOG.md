@@ -254,3 +254,15 @@ Purpose: record attempted fixes, outcomes, and regressions so later sessions avo
 - Commit: `185ab56`
 - Outcome: `Frontend npm run build` passes; backend tests pass in container (`4 passed` on `test_opportunity_price_window.py`); Cloudflare Pages deploy success (`https://37eaa66f.mcas.pages.dev`).
 - Notes / Evidence: User reported conflicting `EXIT` and `FINAL EXIT` values in survey table.
+
+## 2026-03-05 (UTC) - Entry/Final Timestamp Date + Table Spacing Tighten
+
+- Date (UTC): 2026-03-05
+- Area: Survey event mini-table legibility
+- Change:
+  - Entry and Final Exit timestamp now render `dd/mm/yy hh:mm` (UTC).
+  - Tightened event/ts/price cell spacing and right-aligned price to reclaim unused horizontal space.
+  - Kept TP/STOP timestamp format compact (`hh:mm`) for density.
+- Commit: pending
+- Outcome: pending build/deploy validation.
+- Notes / Evidence: User requested date visibility on Entry/Final rows and tighter information packing.
