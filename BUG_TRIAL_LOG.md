@@ -284,6 +284,6 @@ Purpose: record attempted fixes, outcomes, and regressions so later sessions avo
 - Date (UTC): 2026-03-05
 - Area: Chart rendering polish
 - Change: Disabled chart corner attribution logo in `OpportunityCurveChart` layout options.
-- Commit: pending
-- Outcome: pending build/deploy validation.
+- Commit: `8da3acd`
+- Outcome: `Frontend npm run build` passes; Cloudflare Pages deploy success (`https://fa32ed21.mcas.pages.dev`).
 - Notes / Evidence: User requested removal of persistent bottom-left logo from every chart tile.
