@@ -298,6 +298,6 @@ Purpose: record attempted fixes, outcomes, and regressions so later sessions avo
   - Added `From` and `To` date filters (UTC day boundaries, based on entry timestamp with created/updated fallback).
   - Removed `Hide SL/TP Until Reveal` toggle and removed hide-level prop wiring from survey row charts.
   - Pagination now operates on the filtered set instead of raw candidates.
-- Commit: pending
-- Outcome: `Frontend npm run build` passes. Runtime validation pending after deploy.
+- Commit: `22413ee` (feature), `564cc71`/`b610d70` (log sync)
+- Outcome: `Frontend npm run build` passes; Cloudflare Pages deploy success (`https://5e82e1aa.mcas.pages.dev`).
 - Notes / Evidence: User requested strategy + direction + date filters and explicit removal of hide-level toggle.
