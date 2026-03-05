@@ -258,7 +258,7 @@ export default function OpportunityCurveChart({
   const priceLinesRef = useRef([])
   const markersRef = useRef(markers)
   const exitPointsRef = useRef([])
-  const clippedCandlesRef = useRef(clippedCandles)
+  const clippedCandlesRef = useRef([])
   const [markerCoords, setMarkerCoords] = useState({ entry: null, exits: [], axisEvents: [] })
 
   const clippedCandles = useMemo(() => {

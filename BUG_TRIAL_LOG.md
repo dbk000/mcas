@@ -382,3 +382,13 @@ Purpose: record attempted fixes, outcomes, and regressions so later sessions avo
   - Marker rails now render at true event positions even when events occur intrabar.
 - Outcome: `Frontend npm run build` passes.
 - Notes / Evidence: User reported x-axis event markers absent on survey grid despite deploy.
+
+## 2026-03-05 (UTC) - Hotfix: Survey Crash "can't access lexical declaration ... before initialization"
+
+- Date (UTC): 2026-03-05
+- Area: `OpportunityCurveChart` runtime initialization
+- Change:
+  - Fixed TDZ initialization bug introduced by x-axis marker patch.
+  - `clippedCandlesRef` now initializes with `[]` and is hydrated in effect (instead of referencing `clippedCandles` before declaration).
+- Outcome: `Frontend npm run build` passes.
+- Notes / Evidence: User hit app-wide survey crash with lexical declaration error on `/opportunities/survey`.
