@@ -204,6 +204,6 @@ Purpose: record attempted fixes, outcomes, and regressions so later sessions avo
   - Removed survey chart level axis labels and level legend chips (line labels off).
   - Introduced shared event color palette (`chartEventPalette`) for ENTRY/TP1/TP2/STOP/FINAL EXIT.
   - Applied the same palette to per-row event mini-table text so the table is the primary implicit legend.
-- Commit: pending
-- Outcome: pending build/deploy validation.
+- Commit: `49c9541`
+- Outcome: `Frontend npm run build` passes; Cloudflare Pages deploy success (`https://0231e2fc.mcas.pages.dev`).
 - Notes / Evidence: User requested removing on-chart line labels and color-coding tabular event text for faster pattern inference.
