@@ -138,7 +138,7 @@ Purpose: record attempted fixes, outcomes, and regressions so later sessions avo
 - Date (UTC): 2026-03-05
 - Area: Survey data windowing
 - Change: Increased survey pre-entry fetch window from 1h (`pre_s=3600`) to 6h (`pre_s=21600`) to show materially more 5m candles in stack rows for macro pattern context.
-- Commit: pending
+- Commit: `22413ee`
 - Outcome: `Frontend npm run build` passes. Runtime validation pending after deploy.
 - Notes / Evidence: User requested broader trend visibility (higher candle count visible before entry/exit training moments).
 
