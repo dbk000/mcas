@@ -140,6 +140,55 @@ def normalize_parameters(params: dict, conn) -> tuple:
     return normalized, warnings
 
 
+def _ensure_stop_policy_audit_table(conn):
+    """Ensure append-only stop-policy audit table exists."""
+    with conn.cursor() as cur:
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS meta.stop_policy_audit_events (
+                event_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                ts TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                actor TEXT NOT NULL,
+                node_id UUID NOT NULL REFERENCES meta.node(node_id),
+                node_version_id UUID NOT NULL REFERENCES meta.node_version(version_id),
+                setup_id TEXT,
+                field_path TEXT NOT NULL,
+                old_value JSONB,
+                new_value JSONB,
+                source TEXT NOT NULL CHECK (source IN ('default_registry', 'user_override', 'migration_fill')),
+                reason TEXT
+            );
+        """)
+        cur.execute("""
+            CREATE INDEX IF NOT EXISTS idx_stop_policy_audit_node_ts
+            ON meta.stop_policy_audit_events(node_id, ts DESC);
+        """)
+        cur.execute("""
+            CREATE INDEX IF NOT EXISTS idx_stop_policy_audit_setup_ts
+            ON meta.stop_policy_audit_events(setup_id, ts DESC);
+        """)
+
+
+def _flatten_json(value: Any, prefix: str = "", out: Optional[dict] = None) -> dict:
+    """Flatten nested dict into dot-path map for diffing."""
+    if out is None:
+        out = {}
+    if isinstance(value, dict):
+        for k, v in value.items():
+            next_prefix = f"{prefix}.{k}" if prefix else str(k)
+            _flatten_json(v, next_prefix, out)
+    else:
+        out[prefix] = value
+    return out
+
+
+def _extract_setup_id(field_path: str) -> Optional[str]:
+    # stop_distance_factors.S9 -> S9
+    parts = field_path.split(".")
+    if len(parts) >= 2 and parts[0] == "stop_distance_factors":
+        return parts[1]
+    return None
+
+
 # =============================================================================
 # DELIVERABLE 2: Topology Endpoints
 # =============================================================================
@@ -452,6 +501,53 @@ def get_version_detail(node_id: str, version_id: str):
         "experiments": experiments,
         "compositions": compositions,
     }, t0)
+
+
+@router.get("/stop_policy/audit")
+def list_stop_policy_audit(
+    node_id: Optional[str] = Query(default=None),
+    setup_id: Optional[str] = Query(default=None),
+    limit: int = Query(default=200, ge=1, le=2000),
+):
+    """Append-only stop-policy audit stream (field-level diffs)."""
+    t0 = time.time()
+    with _get_conn() as conn:
+        _ensure_stop_policy_audit_table(conn)
+        with conn.cursor() as cur:
+            query = """
+                SELECT event_id, ts, actor, node_id, node_version_id, setup_id,
+                       field_path, old_value, new_value, source, reason
+                FROM meta.stop_policy_audit_events
+                WHERE 1=1
+            """
+            params = []
+            if node_id:
+                query += " AND node_id = %s"
+                params.append(node_id)
+            if setup_id:
+                query += " AND setup_id = %s"
+                params.append(setup_id)
+            query += " ORDER BY ts DESC LIMIT %s"
+            params.append(limit)
+            cur.execute(query, params)
+            rows = cur.fetchall()
+
+    events = []
+    for r in rows:
+        events.append({
+            "event_id": str(r[0]),
+            "ts": r[1].isoformat() if r[1] else None,
+            "actor": r[2],
+            "node_id": str(r[3]),
+            "node_version_id": str(r[4]),
+            "setup_id": r[5],
+            "field_path": r[6],
+            "old_value": r[7],
+            "new_value": r[8],
+            "source": r[9],
+            "reason": r[10],
+        })
+    return envelope({"events": events, "count": len(events)}, t0)
 
 
 # =============================================================================
@@ -1082,6 +1178,8 @@ class CreateNodeVersion(BaseModel):
     source_hash: Optional[str] = None
     status: str = "tested"
     experiment_id: Optional[str] = None
+    actor: Optional[str] = "api"
+    source: Optional[str] = "user_override"
 
 
 @router.post("/node/version")
@@ -1096,6 +1194,31 @@ def create_node_version(payload: CreateNodeVersion):
             node = cur.fetchone()
             if not node:
                 raise HTTPException(status_code=404, detail=f"Node {payload.node_id} not found")
+            node_name = str(node[0] or "")
+            is_stop_loss_node = node_name.lower() == "stop-loss config"
+
+            prev_params = {}
+            prev_version_id = None
+            if is_stop_loss_node:
+                cur.execute(
+                    """
+                    SELECT version_id, parameters
+                    FROM meta.node_version
+                    WHERE node_id = %s
+                    ORDER BY version_number DESC
+                    LIMIT 1
+                    """,
+                    (payload.node_id,),
+                )
+                prev_row = cur.fetchone()
+                if prev_row:
+                    prev_version_id = str(prev_row[0])
+                    prev_params = prev_row[1] or {}
+                    if isinstance(prev_params, str):
+                        try:
+                            prev_params = json.loads(prev_params)
+                        except Exception:
+                            prev_params = {}
 
             # Next version number
             cur.execute(
@@ -1133,6 +1256,42 @@ def create_node_version(payload: CreateNodeVersion):
                     INSERT INTO meta.experiment_version (experiment_id, version_id)
                     VALUES (%s, %s)
                 """, (payload.experiment_id, vid))
+
+            if is_stop_loss_node:
+                _ensure_stop_policy_audit_table(conn)
+                old_flat = _flatten_json(prev_params if isinstance(prev_params, dict) else {})
+                new_flat = _flatten_json(params if isinstance(params, dict) else {})
+                all_paths = sorted(set(old_flat.keys()) | set(new_flat.keys()))
+                source = payload.source or "user_override"
+                if source not in {"default_registry", "user_override", "migration_fill"}:
+                    source = "user_override"
+                actor = payload.actor or "api"
+                reason = payload.change_reason
+                for field_path in all_paths:
+                    old_val = old_flat.get(field_path, None)
+                    new_val = new_flat.get(field_path, None)
+                    if old_val == new_val:
+                        continue
+                    setup_id = _extract_setup_id(field_path)
+                    cur.execute(
+                        """
+                        INSERT INTO meta.stop_policy_audit_events
+                            (actor, node_id, node_version_id, setup_id, field_path,
+                             old_value, new_value, source, reason)
+                        VALUES (%s, %s, %s, %s, %s, %s::jsonb, %s::jsonb, %s, %s)
+                        """,
+                        (
+                            actor,
+                            payload.node_id,
+                            vid,
+                            setup_id,
+                            field_path,
+                            json.dumps(old_val),
+                            json.dumps(new_val),
+                            source,
+                            reason,
+                        ),
+                    )
 
         conn.commit()
 

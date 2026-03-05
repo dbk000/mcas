@@ -21,6 +21,7 @@ import logging
 import threading
 from datetime import datetime, timezone
 from contextlib import contextmanager
+from pathlib import Path
 
 import psycopg
 import redis
@@ -36,6 +37,12 @@ from run_executor import RunExecutor
 from runs.models import Run, RunType, RunStatus, UniverseSpec, StrategySpec, DataSpec
 from runs.repository import RunRepository
 from correlation.executor import CorrelationJobExecutor
+
+_BACKEND_ROOT = Path(__file__).resolve().parents[2]
+if str(_BACKEND_ROOT) not in sys.path:
+    sys.path.insert(0, str(_BACKEND_ROOT))
+
+from stop_policy_registry import validate_stop_registry
 
 # Configure structured JSON logging (must be before any logger usage)
 setup_logging()
@@ -402,6 +409,12 @@ def cleanup_signal_events():
 def main():
     if not DATABASE_URL:
         raise RuntimeError("DATABASE_URL not set")
+
+    stop_registry_errors = validate_stop_registry(required_setup_ids=SETUP_IDS)
+    if stop_registry_errors:
+        raise RuntimeError(
+            "Stop registry validation failed:\n- " + "\n- ".join(stop_registry_errors)
+        )
     
     # Set worker identity in logging context (appears in every log line)
     ctx_worker_id.set(WORKER_ID)

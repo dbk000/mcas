@@ -78,6 +78,8 @@ class SimulationConfig:
 
     # Exit config override (None = use defaults from exit_checker.py)
     exit_config: Optional[ExitConfig] = None
+    intrabar_policy: str = "STOP_FIRST"
+    one_event_per_bar: bool = True
     # Causal D1 entry gate (uses only information available at entry time).
     d1_causal_gate_enabled: bool = SIM_DEFAULT_D1_CAUSAL_GATE_ENABLED
     d1_causal_min_entry_price: float = SIM_DEFAULT_D1_CAUSAL_MIN_ENTRY_PRICE
@@ -150,6 +152,17 @@ class OpportunitySimulator:
 
     def _get_conn(self):
         return psycopg.connect(self.database_url)
+
+    def _resolve_stop_distance_factor(self, setup_id: str) -> float:
+        """Resolve stop multiplier safely for a strategy/setup."""
+        if self.config.stop_distance_factors:
+            val = self.config.stop_distance_factors.get(setup_id, 1.0)
+        else:
+            val = self.config.stop_distance_factor
+        try:
+            return float(val)
+        except (TypeError, ValueError):
+            return 1.0
 
     def simulate_batch(
         self,
@@ -374,7 +387,11 @@ class OpportunitySimulator:
             return result
 
         # Apply stop distance factor (Experiment B: tighter stops at simulation time)
-        _sdf = self.config.stop_distance_factors.get(setup_id, self.config.stop_distance_factor)
+        # Safety rule: when per-setup factors are provided, only those setups are
+        # overridden. Missing setup keys fall back to neutral 1.0 (not global).
+        # This prevents a single strategy tweak from unintentionally becoming
+        # a system-wide multiplier.
+        _sdf = self._resolve_stop_distance_factor(setup_id)
         if _sdf != 1.0 and stop_price is not None and entry_price is not None:
             _orig_dist = abs(entry_price - stop_price)
             _new_dist = _orig_dist * _sdf
@@ -605,6 +622,11 @@ class OpportunitySimulator:
 
         # Per-setup exit config (e.g. D1 uses no fail-fast/trailing)
         exit_cfg = SETUP_EXIT_CONFIGS.get(setup_id, self.config.exit_config)
+        if exit_cfg is None:
+            exit_cfg = ExitConfig(
+                intrabar_policy=self.config.intrabar_policy,
+                one_event_per_bar=self.config.one_event_per_bar,
+            )
 
         # Walk forward through bars checking for exit.
         # Align with backtest/paper behavior: TP1 can be a partial close

@@ -11,6 +11,15 @@ Canon exit priority order: STOP_LOSS -> FAIL_FAST -> TIME_STOP -> TRAIL_STOP -> 
 from typing import Optional
 from dataclasses import dataclass
 
+INTRABAR_STOP_FIRST = "STOP_FIRST"
+INTRABAR_TP_FIRST = "TP_FIRST"
+INTRABAR_OHLC_HEURISTIC = "OHLC_HEURISTIC"
+_VALID_INTRABAR_POLICIES = {
+    INTRABAR_STOP_FIRST,
+    INTRABAR_TP_FIRST,
+    INTRABAR_OHLC_HEURISTIC,
+}
+
 
 @dataclass
 class ExitConfig:
@@ -27,6 +36,11 @@ class ExitConfig:
     trail_breakeven_r: float = 0.75   # HWM threshold for breakeven trail (0 = disabled)
     trail_activation_r: float = 1.0   # HWM threshold for tight trail
     trail_distance_r: float = 0.5     # Distance from HWM for tight trail
+
+    # Intrabar conflict policy for same-bar stop/TP ambiguity.
+    # Conservative default: STOP_FIRST, one event per bar.
+    intrabar_policy: str = INTRABAR_STOP_FIRST
+    one_event_per_bar: bool = True
 
 
 @dataclass
@@ -80,6 +94,34 @@ def check_exit(
 
     use_through_stop = config.stop_fill_through
     use_through_target = config.target_fill_through
+
+    # --- SAME-BAR STOP/TP1 CONFLICT RESOLUTION ---
+    # When both stop and TP1 are hit inside one candle, choose a deterministic
+    # policy. Default remains conservative STOP_FIRST.
+    if tp1_price is not None:
+        if side == "long":
+            stop_hit = (low < stop_price) if use_through_stop else (low <= stop_price)
+            tp1_hit = (high > tp1_price) if use_through_target else (high >= tp1_price)
+        else:
+            stop_hit = (high > stop_price) if use_through_stop else (high >= stop_price)
+            tp1_hit = (low < tp1_price) if use_through_target else (low <= tp1_price)
+
+        if stop_hit and tp1_hit:
+            policy = config.intrabar_policy if config.intrabar_policy in _VALID_INTRABAR_POLICIES else INTRABAR_STOP_FIRST
+            if policy == INTRABAR_TP_FIRST:
+                return ("TP1", tp1_price)
+            if policy == INTRABAR_OHLC_HEURISTIC:
+                # Heuristic path:
+                # close >= open => Open->High->Low->Close
+                # close < open  => Open->Low->High->Close
+                up_bar = close >= bar_open
+                if side == "long":
+                    if up_bar:
+                        return ("TP1", tp1_price)
+                else:
+                    if not up_bar:
+                        return ("TP1", tp1_price)
+            # STOP_FIRST falls through to normal stop check below.
 
     # --- STOP_LOSS (highest priority) ---
     if side == "long":

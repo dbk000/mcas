@@ -35,7 +35,15 @@ from runs.models import (
 )
 from runs.repository import RunRepository
 from signal_engine import SignalEngine, RankedSignal
-from execution import ExecutionConfig, realistic_config, FixedBpsSlippage, TieredFees
+from execution import (
+    ExecutionConfig,
+    realistic_config,
+    FixedBpsSlippage,
+    TieredFees,
+    FillModel,
+    EntryMode,
+    FillAssumption,
+)
 from indicators import FeatureFactory, IndicatorSnapshot, OHLCV
 # S1-S7 archived — import conditionally for legacy backtest support
 try:
@@ -156,6 +164,59 @@ class RunExecutor:
                 # Make sure pgcrypto is available
                 cur.execute("CREATE EXTENSION IF NOT EXISTS pgcrypto;")
             conn.commit()
+
+    def _load_pipeline_stop_loss_config(self) -> dict:
+        """Load Stop-Loss Config parameters from meta.node_version (deployed-first)."""
+        fallback = {
+            "schema_version": "v1",
+            "sl_r": 1.0,
+            "stop_distance_factors": {},
+            "intrabar_policy": "STOP_FIRST",
+            "one_event_per_bar": True,
+            "node_version_id": None,
+        }
+        try:
+            with self._conn() as conn:
+                with conn.cursor() as cur:
+                    cur.execute(
+                        """
+                        SELECT nv.version_id, nv.parameters
+                        FROM meta.node n
+                        JOIN meta.node_version nv ON nv.node_id = n.node_id
+                        WHERE lower(n.name) = lower('Stop-Loss Config')
+                        ORDER BY
+                          CASE nv.status
+                            WHEN 'deployed' THEN 0
+                            WHEN 'promising' THEN 1
+                            WHEN 'tested' THEN 2
+                            WHEN 'baseline' THEN 3
+                            ELSE 4
+                          END,
+                          nv.version_number DESC
+                        LIMIT 1
+                        """
+                    )
+                    row = cur.fetchone()
+            if not row:
+                return fallback
+            node_version_id = str(row[0])
+            raw = row[1] or {}
+            if isinstance(raw, str):
+                raw = json.loads(raw)
+            if not isinstance(raw, dict):
+                return fallback
+            merged = dict(fallback)
+            merged.update(raw)
+            if not isinstance(merged.get("stop_distance_factors"), dict):
+                merged["stop_distance_factors"] = {}
+            if merged.get("intrabar_policy") not in {"STOP_FIRST", "TP_FIRST", "OHLC_HEURISTIC"}:
+                merged["intrabar_policy"] = "STOP_FIRST"
+            merged["one_event_per_bar"] = bool(merged.get("one_event_per_bar", True))
+            merged["node_version_id"] = node_version_id
+            return merged
+        except Exception as e:
+            logger.debug("Failed to load pipeline Stop-Loss Config: %s", e)
+            return fallback
     
     # =========================================================================
     # Run Creation
@@ -1177,6 +1238,8 @@ class RunExecutor:
         exit_config = ExitConfig(
             stop_fill_through=use_through_stop,
             target_fill_through=use_through_target,
+            intrabar_policy=getattr(exec_config.fills, "intrabar_policy", "STOP_FIRST"),
+            one_event_per_bar=getattr(exec_config.fills, "one_event_per_bar", True),
         )
 
         # Build PositionState from pos dict
@@ -1513,6 +1576,7 @@ class RunExecutor:
 
         # Get simulation config from strategy params
         setup_params = run.strategy.setup_params or {}
+        pipeline_sl = self._load_pipeline_stop_loss_config()
         position_size_usd = setup_params.get("position_size_usd", 1000.0)
         slippage_bps = setup_params.get("slippage_bps", 5.0)
         setup_ids = setup_params.get("setup_ids")  # Optional filter
@@ -1527,8 +1591,17 @@ class RunExecutor:
         to_date = setup_params.get("to_date")  # Date range upper bound
         include_dates = setup_params.get("include_dates")  # Specific dates only
         exclude_dates = setup_params.get("exclude_dates")  # Skip these dates
-        stop_distance_factor = setup_params.get("stop_distance_factor", 1.0)
-        stop_distance_factors = setup_params.get("stop_distance_factors") or {}
+        if "stop_distance_factor" in setup_params and setup_params.get("stop_distance_factor") is not None:
+            stop_distance_factor = setup_params.get("stop_distance_factor", 1.0)
+        else:
+            stop_distance_factor = float(pipeline_sl.get("sl_r", 1.0))
+
+        setup_stop_distance_factors = setup_params.get("stop_distance_factors")
+        if isinstance(setup_stop_distance_factors, dict) and setup_stop_distance_factors:
+            stop_distance_factors = setup_stop_distance_factors
+        else:
+            pipeline_factors = pipeline_sl.get("stop_distance_factors") or {}
+            stop_distance_factors = pipeline_factors if isinstance(pipeline_factors, dict) else {}
         max_bars_forward = setup_params.get("max_bars_forward", SIM_DEFAULT_MAX_BARS_FORWARD)
         min_r_preservation = setup_params.get("min_r_preservation", SIM_DEFAULT_MIN_R_PRESERVATION)
         min_r_multiple_floor = setup_params.get("min_r_multiple_floor")
@@ -1547,6 +1620,48 @@ class RunExecutor:
             "d1_causal_min_score",
             SIM_DEFAULT_D1_CAUSAL_MIN_SCORE,
         )
+        intrabar_policy = setup_params.get("intrabar_policy") or pipeline_sl.get("intrabar_policy", "STOP_FIRST")
+        if intrabar_policy not in {"STOP_FIRST", "TP_FIRST", "OHLC_HEURISTIC"}:
+            intrabar_policy = "STOP_FIRST"
+        one_event_per_bar = setup_params.get("one_event_per_bar")
+        if one_event_per_bar is None:
+            one_event_per_bar = bool(pipeline_sl.get("one_event_per_bar", True))
+        else:
+            one_event_per_bar = bool(one_event_per_bar)
+
+        # Persist deterministic resolved stop-policy snapshot for this run.
+        # This prevents drift from later config/registry changes.
+        resolved_snapshot = {
+            "schema_version": pipeline_sl.get("schema_version", "v1"),
+            "node_version_id": pipeline_sl.get("node_version_id"),
+            "sl_r": stop_distance_factor,
+            "stop_distance_factors": stop_distance_factors,
+            "intrabar_policy": intrabar_policy,
+            "one_event_per_bar": one_event_per_bar,
+        }
+        run.strategy.setup_params = dict(setup_params)
+        run.strategy.setup_params["stop_policy_snapshot"] = resolved_snapshot
+        self._update_run_strategy_json(run)
+
+        if "stop_distance_factors" not in setup_params and stop_distance_factors:
+            self.repo.add_event(RunEvent(
+                run_id=run.id,
+                event_type="INFO",
+                message=(
+                    "Loaded per-strategy stop-loss multipliers from Pipeline Stop-Loss Config "
+                    f"({len(stop_distance_factors)} strategy overrides)"
+                ),
+            ))
+        self.repo.add_event(RunEvent(
+            run_id=run.id,
+            event_type="INFO",
+            message=(
+                "Stop-policy snapshot bound: "
+                f"node_version_id={resolved_snapshot.get('node_version_id') or 'none'}, "
+                f"intrabar_policy={intrabar_policy}, "
+                f"one_event_per_bar={one_event_per_bar}"
+            ),
+        ))
 
         # If version is unspecified for a single setup run, pin to latest known
         # setup_version so simulation matches current node behavior/dataset.
@@ -1574,6 +1689,8 @@ class RunExecutor:
             d1_causal_min_stop_pct=d1_causal_min_stop_pct,
             d1_causal_min_score=d1_causal_min_score,
             min_r_multiple_floor=min_r_multiple_floor,
+            intrabar_policy=intrabar_policy,
+            one_event_per_bar=one_event_per_bar,
         )
         if d1_causal_gate_enabled and setup_ids and set(setup_ids) == {"D1"}:
             min_entry_price_label = (
@@ -1943,8 +2060,33 @@ class RunExecutor:
                 """, (json.dumps(run.data.to_dict()), run.id))
             conn.commit()
 
+    def _update_run_strategy_json(self, run: Run):
+        """Persist updated strategy_json back to the run record."""
+        with self._conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    UPDATE runs SET strategy_json = %s WHERE id = %s;
+                    """,
+                    (json.dumps(run.strategy.to_dict()), run.id),
+                )
+            conn.commit()
+
     def _build_execution_config(self, spec: ExecutionSpec) -> ExecutionConfig:
         """Build ExecutionConfig from ExecutionSpec."""
+        try:
+            entry_mode = EntryMode(spec.entry_mode)
+        except Exception:
+            entry_mode = EntryMode.NEXT_OPEN
+        try:
+            stop_fill = FillAssumption(spec.stop_fill_on)
+        except Exception:
+            stop_fill = FillAssumption.TOUCH
+        try:
+            target_fill = FillAssumption(spec.target_fill_on)
+        except Exception:
+            target_fill = FillAssumption.TOUCH
+
         return ExecutionConfig(
             slippage=FixedBpsSlippage(
                 entry_bps=spec.slippage_entry_bps,
@@ -1953,6 +2095,14 @@ class RunExecutor:
             fees=TieredFees(
                 maker_bps=spec.fee_maker_bps,
                 taker_bps=spec.fee_taker_bps,
+            ),
+            fills=FillModel(
+                entry_mode=entry_mode,
+                stop_fill=stop_fill,
+                target_fill=target_fill,
+                gap_fill_at_open=spec.gap_fill_at_open,
+                intrabar_policy=spec.intrabar_policy,
+                one_event_per_bar=spec.one_event_per_bar,
             ),
             max_positions=spec.max_positions,
             one_per_asset=spec.one_per_asset,

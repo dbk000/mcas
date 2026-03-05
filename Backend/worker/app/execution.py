@@ -254,6 +254,10 @@ class FillModel:
     
     # Gap handling
     gap_fill_at_open: bool = True  # If price gaps through stop, fill at open
+
+    # Same-bar stop/TP conflict policy (deterministic intrabar assumption)
+    intrabar_policy: str = "STOP_FIRST"  # STOP_FIRST, TP_FIRST, OHLC_HEURISTIC
+    one_event_per_bar: bool = True
     
     # Partial fills (not implemented yet)
     allow_partial: bool = False
@@ -265,6 +269,8 @@ class FillModel:
             "stop_fill": self.stop_fill.value,
             "target_fill": self.target_fill.value,
             "gap_fill_at_open": self.gap_fill_at_open,
+            "intrabar_policy": self.intrabar_policy,
+            "one_event_per_bar": self.one_event_per_bar,
             "allow_partial": self.allow_partial,
             "min_fill_pct": self.min_fill_pct,
         }

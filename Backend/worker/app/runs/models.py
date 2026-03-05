@@ -122,6 +122,8 @@ class ExecutionSpec:
     stop_fill_on: str = "TOUCH"    # TOUCH, THROUGH
     target_fill_on: str = "TOUCH"  # TOUCH, THROUGH
     gap_fill_at_open: bool = True  # If price gaps through stop
+    intrabar_policy: str = "STOP_FIRST"  # STOP_FIRST, TP_FIRST, OHLC_HEURISTIC
+    one_event_per_bar: bool = True
     
     # Position constraints
     max_positions: int = 3
@@ -148,6 +150,8 @@ class ExecutionSpec:
             "stop_fill_on": self.stop_fill_on,
             "target_fill_on": self.target_fill_on,
             "gap_fill_at_open": self.gap_fill_at_open,
+            "intrabar_policy": self.intrabar_policy,
+            "one_event_per_bar": self.one_event_per_bar,
             "max_positions": self.max_positions,
             "one_per_asset": self.one_per_asset,
             "max_exposure_pct": self.max_exposure_pct,

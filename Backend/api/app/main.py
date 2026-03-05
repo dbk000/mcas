@@ -28,6 +28,8 @@ import json
 import hmac
 import logging
 import re
+import sys
+from pathlib import Path
 from datetime import datetime, timezone, timedelta
 from typing import Optional, Any
 
@@ -58,6 +60,16 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from pydantic import BaseModel
 from middleware import RequestLoggingMiddleware
+
+_BACKEND_ROOT = Path(__file__).resolve().parents[2]
+if str(_BACKEND_ROOT) not in sys.path:
+    sys.path.insert(0, str(_BACKEND_ROOT))
+
+from stop_policy_registry import (
+    validate_stop_registry,
+    build_stop_policy_template,
+    CANONICAL_STOP_POLICY_DEFAULTS,
+)
 
 app = FastAPI(
     title="MCAS Trading Backend",
@@ -112,6 +124,15 @@ STRATEGY_REGISTRY = {
     "EQ_ATC": {"label": "EQ: After-Trading Chatter (1d)", "type": "equities", "status": "active"},
     "EQ_NVDA_MACRO": {"label": "EQ: NVDA Macro Cascade (3d)", "type": "equities", "status": "active"},
 }
+
+_stop_registry_errors = validate_stop_registry(
+    strategy_registry=STRATEGY_REGISTRY,
+    stop_policy_defaults=CANONICAL_STOP_POLICY_DEFAULTS,
+)
+if _stop_registry_errors:
+    raise RuntimeError(
+        "Stop registry validation failed:\n- " + "\n- ".join(_stop_registry_errors)
+    )
 
 # Setup IDs that are cached in Redis (signal_worker and equities_strategy_worker)
 REDIS_SETUP_IDS = [sid for sid, info in STRATEGY_REGISTRY.items() if sid != "EQFP"]
@@ -256,6 +277,14 @@ def list_strategies():
         for sid, info in STRATEGY_REGISTRY.items()
     ]
     return envelope({"strategies": strategies, "count": len(strategies)}, t0)
+
+
+@router.get("/pipeline/stop_policy_template")
+def get_stop_policy_template():
+    """Return canonical complete stop-policy template for all strategies."""
+    t0 = time.time()
+    template = build_stop_policy_template(STRATEGY_REGISTRY)
+    return envelope({"template": template}, t0)
 
 
 # -------------------------

@@ -301,3 +301,48 @@ Purpose: record attempted fixes, outcomes, and regressions so later sessions avo
 - Commit: `22413ee` (feature), `564cc71`/`b610d70` (log sync)
 - Outcome: `Frontend npm run build` passes; Cloudflare Pages deploy success (`https://5e82e1aa.mcas.pages.dev`).
 - Notes / Evidence: User requested strategy + direction + date filters and explicit removal of hide-level toggle.
+
+## 2026-03-05 (UTC) - Pipeline Stop-Loss Node as Simulation Source-of-Truth
+
+- Date (UTC): 2026-03-05
+- Area: Pipeline `Stop-Loss Config` params UI + simulation config resolution path
+- Change:
+  - Added dedicated per-strategy SL table to Pipeline params tab for `Stop-Loss Config` node (`stop_distance_factors` map).
+  - Auto-seeds missing strategy rows from `/v1/strategies` (crypto strategies) using `sl_r` baseline.
+  - Simulation run creation now omits stop-loss overrides unless explicitly supplied, so backend can resolve defaults from Pipeline.
+  - Run executor now loads deployed `Stop-Loss Config` parameters from `meta.node_version` and uses:
+    - `sl_r` as global default stop multiplier
+    - `stop_distance_factors` as per-strategy overrides
+  - Added safety rule in simulator stop-factor resolution: when per-strategy map exists, missing setup keys resolve to `1.0` (neutral) instead of inheriting global multiplier.
+  - Added targeted test coverage for stop-factor resolution isolation (`test_stop_loss_policy_resolution.py`).
+- Outcome: `python3 -m py_compile` passes for changed backend files; `Frontend npm run build` passes.
+- Notes / Evidence: User required Pipeline + Backend to share first-source config, with per-strategy stop values editable in the existing Stop-Loss panel.
+
+## 2026-03-05 (UTC) - Intrabar Conflict Policies + Pipeline-Configurable Alternatives
+
+- Date (UTC): 2026-03-05
+- Area: Exit semantics determinism for same-bar stop/TP conflicts (dual-stop readiness)
+- Change:
+  - Added explicit intrabar policy support in exit config: `STOP_FIRST` (default), `TP_FIRST`, `OHLC_HEURISTIC`.
+  - Preserved conservative default behavior (`STOP_FIRST`) and one-event-per-bar semantics.
+  - Wired execution spec/config fields (`intrabar_policy`, `one_event_per_bar`) so runs snapshot this assumption.
+  - Added simulation request support for intrabar policy overrides and validation.
+  - Extended Stop-Loss Pipeline params UI to expose intrabar policy + one-event-per-bar toggles as configurable defaults.
+  - Added targeted backend tests for deterministic conflict outcomes by policy.
+- Outcome: targeted pytest + frontend build run after patching (see latest turn for exact commands/results).
+- Notes / Evidence: User requested pre-emptive handling of the known dual-stop same-bar ambiguity bug class.
+
+## 2026-03-05 (UTC) - Startup Stop Registry Gate + Append-Only Stop Policy Audit Ledger
+
+- Date (UTC): 2026-03-05
+- Area: Production guardrails (drift prevention + field-level change auditability)
+- Change:
+  - Added canonical backend stop registry module with schema versioning + validation (`Backend/stop_policy_registry.py`).
+  - Added hard startup validation in API and worker entrypoints; process fails fast on registry/default drift.
+  - Added API template endpoint: `GET /v1/pipeline/stop_policy_template` sourced from backend registry.
+  - Added append-only DB audit ledger for stop-policy changes (`meta.stop_policy_audit_events`), with migration and auto-ensure in `meta_api`.
+  - Added field-level diff emission on Stop-Loss node version writes, including actor/source/reason and old/new values.
+  - Added read endpoint for audit stream: `GET /v1/meta/stop_policy/audit`.
+  - Bound simulation runs to persisted stop-policy snapshots (including `node_version_id`) for deterministic replay.
+- Outcome: `python3 -m py_compile` passes; targeted pytest suite passes (`10 passed`); frontend build passes.
+- Notes / Evidence: closes two explicit “not fully safe yet” gaps identified in review.

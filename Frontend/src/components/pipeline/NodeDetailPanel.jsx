@@ -121,11 +121,17 @@ export default function NodeDetailPanel({ node, onClose, graph }) {
     if (!changeReason.trim()) return
     setSaving(true)
     try {
+      const nodeType = String(node.type || node.nodeType || '').toLowerCase()
+      const nodeSubsystem = String(node.subsystem || '').toLowerCase()
+      const versionStatus = (nodeType === 'parameter' || nodeSubsystem === 'parameter')
+        ? 'deployed'
+        : 'tested'
+
       await post('/v1/meta/node/version', {
         node_id: nodeId,
         parameters: editParams,
         change_reason: changeReason,
-        status: 'tested',
+        status: versionStatus,
       })
       const resp = await get(`/v1/meta/node/${nodeId}/versions?limit=100`)
       setVersions(resp?.versions || resp?.data?.versions || [])
@@ -374,6 +380,7 @@ export default function NodeDetailPanel({ node, onClose, graph }) {
 
         {activeTab === 'params' && (
           <ParamsTab
+            node={node}
             editParams={editParams}
             setEditParams={setEditParams}
             changeReason={changeReason}

@@ -12,3 +12,6 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'worker', 'app'
 
 # Add api/app to path so we can import main, trading_api, control_api, etc.
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'api', 'app'))
+
+# Add Backend root for shared modules (e.g., stop_policy_registry.py).
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))

@@ -155,8 +155,11 @@ class SimulationRunRequest(BaseModel):
     directions: Optional[list[str]] = None  # Filter by "long", "short"
 
     # Stop distance factor (Experiment B: tighter stops at simulation time)
-    stop_distance_factor: float = Field(default=1.0, ge=0.1, le=2.0)  # Global multiplier
+    # If omitted, executor resolves from deployed Pipeline Stop-Loss Config.
+    stop_distance_factor: Optional[float] = Field(default=None, ge=0.1, le=2.0)  # Global multiplier
     stop_distance_factors: Optional[dict[str, float]] = None  # Per-setup overrides e.g. {"S7": 0.75}
+    intrabar_policy: Optional[str] = Field(default=None, description="STOP_FIRST | TP_FIRST | OHLC_HEURISTIC")
+    one_event_per_bar: Optional[bool] = Field(default=None)
 
     # Date filters
     from_date: Optional[str] = None       # ISO date "YYYY-MM-DD" — inclusive lower bound
@@ -199,6 +202,9 @@ class SimulationRunRequest(BaseModel):
             overlap = set(self.include_dates) & set(self.exclude_dates)
             if overlap:
                 raise ValueError(f"include_dates and exclude_dates overlap: {sorted(overlap)}")
+
+        if self.intrabar_policy and self.intrabar_policy not in {"STOP_FIRST", "TP_FIRST", "OHLC_HEURISTIC"}:
+            raise ValueError("intrabar_policy must be STOP_FIRST, TP_FIRST, or OHLC_HEURISTIC")
 
         return self
 
@@ -472,6 +478,8 @@ def create_backtest_run(request: BacktestRunRequest):
         "fee_taker_bps": request.fee_bps,
         "stop_fill_on": "TOUCH",
         "target_fill_on": "TOUCH",
+        "intrabar_policy": "STOP_FIRST",
+        "one_event_per_bar": True,
     })
     
     data_json = json.dumps({
@@ -657,34 +665,42 @@ def create_simulation_run(request: SimulationRunRequest):
         "venue": "binance",
     })
 
+    setup_params = {
+        "position_size_usd": request.position_size_usd,
+        "setup_ids": request.setup_ids,
+        "min_score": request.min_score,
+        "max_age_hours": request.max_age_hours,
+        "limit": request.limit,
+        "slippage_bps": request.slippage_bps,
+        "max_bars_forward": request.max_bars_forward,
+        "min_r_preservation": request.min_r_preservation,
+        "min_r_multiple_floor": request.min_r_multiple_floor,
+        "d1_causal_gate_enabled": request.d1_causal_gate_enabled,
+        "d1_causal_min_entry_price": request.d1_causal_min_entry_price,
+        "d1_causal_min_stop_pct": request.d1_causal_min_stop_pct,
+        "d1_causal_min_score": request.d1_causal_min_score,
+        "setup_version": resolved_setup_version,
+        "batch_id": request.batch_id,
+        "timeframes": request.timeframes,
+        "directions": request.directions,
+        "from_date": request.from_date,
+        "to_date": request.to_date,
+        "include_dates": request.include_dates,
+        "exclude_dates": request.exclude_dates,
+    }
+    if request.stop_distance_factor is not None:
+        setup_params["stop_distance_factor"] = request.stop_distance_factor
+    if request.stop_distance_factors:
+        setup_params["stop_distance_factors"] = request.stop_distance_factors
+    if request.intrabar_policy:
+        setup_params["intrabar_policy"] = request.intrabar_policy
+    if request.one_event_per_bar is not None:
+        setup_params["one_event_per_bar"] = request.one_event_per_bar
+
     strategy_json = json.dumps({
         "setup_id": ",".join(request.setup_ids) if request.setup_ids else "S9,U1",
         "setup_version": resolved_setup_version or "AUTO",
-        "setup_params": {
-            "position_size_usd": request.position_size_usd,
-            "setup_ids": request.setup_ids,
-            "min_score": request.min_score,
-            "max_age_hours": request.max_age_hours,
-            "limit": request.limit,
-            "slippage_bps": request.slippage_bps,
-            "max_bars_forward": request.max_bars_forward,
-            "min_r_preservation": request.min_r_preservation,
-            "min_r_multiple_floor": request.min_r_multiple_floor,
-            "d1_causal_gate_enabled": request.d1_causal_gate_enabled,
-            "d1_causal_min_entry_price": request.d1_causal_min_entry_price,
-            "d1_causal_min_stop_pct": request.d1_causal_min_stop_pct,
-            "d1_causal_min_score": request.d1_causal_min_score,
-            "setup_version": resolved_setup_version,
-            "batch_id": request.batch_id,
-            "timeframes": request.timeframes,
-            "directions": request.directions,
-            "from_date": request.from_date,
-            "to_date": request.to_date,
-            "include_dates": request.include_dates,
-            "exclude_dates": request.exclude_dates,
-            "stop_distance_factor": request.stop_distance_factor,
-            "stop_distance_factors": request.stop_distance_factors,
-        },
+        "setup_params": setup_params,
     })
 
     execution_json = json.dumps({
@@ -692,6 +708,8 @@ def create_simulation_run(request: SimulationRunRequest):
         "slippage_entry_bps": request.slippage_bps,
         "slippage_exit_bps": request.slippage_bps,
         "fee_taker_bps": 4.0,
+        "intrabar_policy": request.intrabar_policy or "STOP_FIRST",
+        "one_event_per_bar": True if request.one_event_per_bar is None else request.one_event_per_bar,
     })
 
     data_json = json.dumps({
@@ -792,6 +810,8 @@ def start_paper_trading(request: PaperStartRequest):
         "fee_maker_bps": 2.0,
         "fee_taker_bps": 4.0,
         "max_positions": request.max_positions,
+        "intrabar_policy": "STOP_FIRST",
+        "one_event_per_bar": True,
     })
     
     data_json = json.dumps({
