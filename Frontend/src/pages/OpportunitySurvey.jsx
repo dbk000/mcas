@@ -104,9 +104,8 @@ function getBoundsForWindow(windowData) {
   return { minOffset, maxOffset, exitOffset }
 }
 
-function pickColumns(presentationMode, width) {
+function pickColumns(presentationMode) {
   if (!presentationMode) return 1
-  if (width < 1500) return 1
   return 2
 }
 
@@ -357,7 +356,7 @@ export default function OpportunitySurvey() {
   }
 
   const rowHeight = presentationMode ? 320 : 250
-  const columns = pickColumns(presentationMode, viewport.width)
+  const columns = pickColumns(presentationMode)
   const rowCount = Math.ceil(activeBatch.length / columns)
   const overscan = 2
   const firstRow = Math.max(0, Math.floor(scrollTop / rowHeight) - overscan)

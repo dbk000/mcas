@@ -123,3 +123,12 @@ Purpose: record attempted fixes, outcomes, and regressions so later sessions avo
 - Commit: `1862ee4`
 - Outcome: Build passes locally (`Frontend npm run build`) and Cloudflare Pages deploy succeeded (`b93d15e` -> `https://85e8a1f7.mcas.pages.dev`).
 - Notes / Evidence: This pass targets exact “brief render then blank” behavior reported in screenshots. User runtime validation still required.
+
+## 2026-03-05 (UTC) - Presentation Mode Policy Decision
+
+- Date (UTC): 2026-03-05
+- Area: Survey layout behavior
+- Change: Removed responsive fallback in presentation mode; presentation mode now enforces 2 columns at all viewport widths by design.
+- Commit: pending
+- Outcome: Product preference captured to prevent future regressions back to responsive 1-column fallback.
+- Notes / Evidence: User explicitly requested fixed 2-column behavior for cognition/training workflow.
