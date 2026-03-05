@@ -18,9 +18,10 @@ import {
   Select,
   Toggle,
 } from '../components/ui'
-import { formatDateTime, formatPrice } from '../utils/formatters'
+import { formatPrice } from '../utils/formatters'
 import OpportunityCurveChart from '../components/opportunities/OpportunityCurveChart'
 import { getSurveyRowChartProps } from '../components/opportunities/chartPresets'
+import { getEventColor } from '../components/opportunities/chartEventPalette'
 
 const REVEAL_STEP_MIN = 5
 // Macro context window for pattern training: 6h pre-entry history.
@@ -95,6 +96,12 @@ function formatEventTs(ts) {
   return new Date(Number(ts)).toISOString().slice(11, 16)
 }
 
+function withAlpha(hexColor, alphaHex = 'cc') {
+  if (typeof hexColor !== 'string') return '#94a3b8'
+  if (/^#[0-9a-fA-F]{6}$/.test(hexColor)) return `${hexColor}${alphaHex}`
+  return hexColor
+}
+
 function closestCloseAtTs(candles, ts) {
   const target = Number(ts)
   if (!isValidEventTs(target) || !Array.isArray(candles) || candles.length === 0) return null
@@ -137,30 +144,35 @@ function buildTradeEventRows(markers, candles) {
       label: 'ENTRY',
       price: isValidEventPrice(markers?.entry_px) ? Number(markers.entry_px) : null,
       ts: isValidEventTs(markers?.entry_ts) ? Number(markers.entry_ts) : null,
+      color: getEventColor('ENTRY'),
     },
     {
       key: 'tp1',
       label: 'TP1',
       price: isValidEventPrice(tp[0]) ? Number(tp[0]) : null,
       ts: tp1Ts,
+      color: getEventColor('TP1'),
     },
     {
       key: 'tp2',
       label: 'TP2',
       price: isValidEventPrice(tp[1]) ? Number(tp[1]) : null,
       ts: tp2Ts,
+      color: getEventColor('TP2'),
     },
     {
       key: 'stop',
       label: 'STOP',
       price: isValidEventPrice(markers?.stop_px) ? Number(markers.stop_px) : null,
       ts: stopTs,
+      color: getEventColor('STOP'),
     },
     {
       key: 'final',
       label: 'FINAL EXIT',
       price: isValidEventPrice(markers?.exit_px) ? Number(markers.exit_px) : null,
       ts: finalExitTs,
+      color: getEventColor('FINAL EXIT', { isFinal: true }),
     },
   ]
 
@@ -179,6 +191,7 @@ function buildTradeEventRows(markers, candles) {
       label: String(point?.label || `EXIT ${idx + 1}`).toUpperCase(),
       price: isValidEventPrice(px) ? px : null,
       ts,
+      color: getEventColor(point?.label || `EXIT ${idx + 1}`, { isFinal: Boolean(point?.is_final) }),
     })
   })
 
@@ -598,10 +611,27 @@ function SurveyRow({
               <div className="px-1.5 py-1 border-b border-l border-terminal-700/60">Price</div>
             </div>
             {tradeEventRows.map((event) => (
-              <div key={event.key} className="grid grid-cols-[56px_44px_1fr] text-[10px] font-mono">
-                <div className="px-1.5 py-0.5 border-t border-terminal-800/80 text-terminal-300">{event.label}</div>
-                <div className="px-1.5 py-0.5 border-t border-l border-terminal-800/80 text-terminal-400">{formatEventTs(event.ts)}</div>
-                <div className="px-1.5 py-0.5 border-t border-l border-terminal-800/80 text-terminal-100">
+              <div
+                key={event.key}
+                className="grid grid-cols-[56px_44px_1fr] text-[10px] font-mono"
+                style={{ borderLeft: `2px solid ${event.color}` }}
+              >
+                <div
+                  className="px-1.5 py-0.5 border-t border-terminal-800/80 font-semibold"
+                  style={{ color: event.color }}
+                >
+                  {event.label}
+                </div>
+                <div
+                  className="px-1.5 py-0.5 border-t border-l border-terminal-800/80"
+                  style={{ color: withAlpha(event.color) }}
+                >
+                  {formatEventTs(event.ts)}
+                </div>
+                <div
+                  className="px-1.5 py-0.5 border-t border-l border-terminal-800/80 font-semibold"
+                  style={{ color: event.color }}
+                >
                   {event.price != null ? formatPrice(event.price) : '—'}
                 </div>
               </div>
@@ -625,6 +655,8 @@ function SurveyRow({
               revealTs={revealTs}
               hideExitUntilReveal
               hideLevels={hideLevelsUntilReveal && revealOffsetMin <= 0}
+              showLevelLineLabels={false}
+              showLevelLegend={false}
               {...chartPreset}
             />
           )}

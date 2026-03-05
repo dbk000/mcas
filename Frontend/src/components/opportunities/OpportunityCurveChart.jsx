@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createChart, CrosshairMode, LineStyle } from 'lightweight-charts'
+import { getEventColor } from './chartEventPalette'
 
 const FIVE_MINUTES_MS = 5 * 60 * 1000
 const MA_COLORS = ['#7dd3fc', '#a3e635', '#ef4444']
@@ -131,14 +132,6 @@ const DEFAULT_PRICE_FORMAT = {
   minMove: 0.00000001,
 }
 
-function exitPointColor(label, isFinal) {
-  if (isFinal) return '#38bdf8'
-  const labelLower = String(label || '').toLowerCase()
-  if (labelLower.includes('tp')) return '#22c55e'
-  if (labelLower.includes('stop') || labelLower.includes('sl')) return '#ef4444'
-  return '#7dd3fc'
-}
-
 function normalizeExitPoints(markers, hideExitUntilReveal, revealTs) {
   const points = []
   const seen = new Set()
@@ -151,7 +144,7 @@ function normalizeExitPoints(markers, hideExitUntilReveal, revealTs) {
     const key = `${ts}:${label}`
     if (seen.has(key)) return
     seen.add(key)
-    points.push({ ts, label, isFinal, color: exitPointColor(label, isFinal) })
+    points.push({ ts, label, isFinal, color: getEventColor(label, { isFinal }) })
   }
 
   if (Array.isArray(markers?.exit_points)) {
@@ -195,6 +188,8 @@ export default function OpportunityCurveChart({
   autoBarSpacingByPrice = false,
   priceBarSpacingTable = null,
   showCloseLine = false,
+  showLevelLineLabels = true,
+  showLevelLegend = true,
 }) {
   const containerRef = useRef(null)
   const chartRef = useRef(null)
@@ -547,21 +542,21 @@ export default function OpportunityCurveChart({
         color,
         lineWidth: compact ? 1 : 2,
         lineStyle,
-        axisLabelVisible: true,
-        title,
+        axisLabelVisible: showLevelLineLabels,
+        title: showLevelLineLabels ? title : '',
       })
       priceLinesRef.current.push(line)
     }
 
-    addLine(markers.entry_px, '#f59e0b', 'ENTRY')
-    addLine(markers.stop_px, '#ef4444', 'STOP', LineStyle.Dashed)
+    addLine(markers.entry_px, getEventColor('ENTRY'), 'ENTRY')
+    addLine(markers.stop_px, getEventColor('STOP'), 'STOP', LineStyle.Dashed)
     if (Array.isArray(markers.tp_px)) {
-      markers.tp_px.forEach((px, idx) => addLine(px, '#22c55e', `TP${idx + 1}`, LineStyle.Dashed))
+      markers.tp_px.forEach((px, idx) => addLine(px, getEventColor(`TP${idx + 1}`), `TP${idx + 1}`, LineStyle.Dashed))
     }
     if (!hideExitPrice) {
-      addLine(markers.exit_px, '#38bdf8', 'EXIT')
+      addLine(markers.exit_px, getEventColor('FINAL EXIT', { isFinal: true }), 'EXIT')
     }
-  }, [markers, hideLevels, hideExitPrice, clippedCandles.length, compact])
+  }, [markers, hideLevels, hideExitPrice, clippedCandles.length, compact, showLevelLineLabels])
 
   if (clippedCandles.length === 0) {
     return (
@@ -612,7 +607,7 @@ export default function OpportunityCurveChart({
         ))}
       </div>
 
-      {!hideLevels && levelLegend.length > 0 && (
+      {showLevelLegend && !hideLevels && levelLegend.length > 0 && (
         <div className="pointer-events-none absolute top-2 left-2 right-2 flex flex-wrap gap-1">
           {levelLegend.map((item) => (
             <span

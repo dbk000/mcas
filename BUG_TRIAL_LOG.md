@@ -195,3 +195,15 @@ Purpose: record attempted fixes, outcomes, and regressions so later sessions avo
 - Commit: pending
 - Outcome: `Frontend npm run build` passes. Runtime validation pending after deploy.
 - Notes / Evidence: User requested mini-table format similar to reference screenshot and cleaner symbol row.
+
+## 2026-03-05 (UTC) - Event Color Key + Label-Free Chart Lines
+
+- Date (UTC): 2026-03-05
+- Area: Survey chart readability (stack rows)
+- Change:
+  - Removed survey chart level axis labels and level legend chips (line labels off).
+  - Introduced shared event color palette (`chartEventPalette`) for ENTRY/TP1/TP2/STOP/FINAL EXIT.
+  - Applied the same palette to per-row event mini-table text so the table is the primary implicit legend.
+- Commit: pending
+- Outcome: pending build/deploy validation.
+- Notes / Evidence: User requested removing on-chart line labels and color-coding tabular event text for faster pattern inference.
