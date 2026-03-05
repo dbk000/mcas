@@ -263,6 +263,6 @@ Purpose: record attempted fixes, outcomes, and regressions so later sessions avo
   - Entry and Final Exit timestamp now render `dd/mm/yy hh:mm` (UTC).
   - Tightened event/ts/price cell spacing and right-aligned price to reclaim unused horizontal space.
   - Kept TP/STOP timestamp format compact (`hh:mm`) for density.
-- Commit: pending
-- Outcome: pending build/deploy validation.
+- Commit: `184844b`
+- Outcome: `Frontend npm run build` passes; Cloudflare Pages deploy success (`https://d340ff12.mcas.pages.dev`).
 - Notes / Evidence: User requested date visibility on Entry/Final rows and tighter information packing.
