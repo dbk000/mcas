@@ -472,7 +472,7 @@ export default function OpportunitySurvey() {
               <div
                 ref={scrollRef}
                 onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}
-                className={`${topPanelsCollapsed ? 'h-[84vh]' : 'h-[70vh]'} overflow-auto border border-terminal-600 rounded`}
+                className={`${topPanelsCollapsed ? 'h-[84vh]' : 'h-[70vh]'} overflow-auto`}
               >
               <div style={{ height: rowCount * rowHeight, position: 'relative' }}>
                 {visibleRows.map((rowIdx) => {

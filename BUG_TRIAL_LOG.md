@@ -162,3 +162,12 @@ Purpose: record attempted fixes, outcomes, and regressions so later sessions avo
 - Commit: pending
 - Outcome: `Frontend npm run build` passes. Runtime validation pending after deploy.
 - Notes / Evidence: User requested cleaner visual focus with global chart-window controls and no right-side prediction noise.
+
+## 2026-03-05 (UTC) - Stack View Border Cleanup
+
+- Date (UTC): 2026-03-05
+- Area: Survey stack container styling
+- Change: Removed redundant inner scroll-container border in Stack View; keep only outer `Card` border.
+- Commit: pending
+- Outcome: `Frontend npm run build` passes. Runtime validation pending after deploy.
+- Notes / Evidence: User flagged duplicate border lines around stack region.
