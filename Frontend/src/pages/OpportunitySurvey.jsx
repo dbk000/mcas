@@ -24,6 +24,7 @@ import { getSurveyRowChartProps } from '../components/opportunities/chartPresets
 import { getEventColor } from '../components/opportunities/chartEventPalette'
 
 const REVEAL_STEP_MIN = 5
+const ENTRY_REVEAL_OFFSET_MIN = 5
 // Macro context window for pattern training: 6h pre-entry history.
 const PRE_S = 21600
 const POST_S = 21600
@@ -213,7 +214,7 @@ export default function OpportunitySurvey() {
   const [randomSample, setRandomSample] = useState(true)
   const [presentationMode, setPresentationMode] = useState(false)
   const [hideLevelsUntilReveal, setHideLevelsUntilReveal] = useState(false)
-  const [revealOffsetMin, setRevealOffsetMin] = useState(0)
+  const [revealOffsetMin, setRevealOffsetMin] = useState(ENTRY_REVEAL_OFFSET_MIN)
   const [postExitHours, setPostExitHours] = useState(2)
   const [topPanelsCollapsed, setTopPanelsCollapsed] = useState(false)
   const [oppsLoading, setOppsLoading] = useState(false)
@@ -369,7 +370,7 @@ export default function OpportunitySurvey() {
   }, [bounds.min, maxRevealAllowed])
 
   const applyRevealEntry = useCallback(() => {
-    setRevealOffsetMin(clamp(0, bounds.min, maxRevealAllowed))
+    setRevealOffsetMin(clamp(ENTRY_REVEAL_OFFSET_MIN, bounds.min, maxRevealAllowed))
   }, [bounds.min, maxRevealAllowed])
 
   const applyRevealExit = useCallback(() => {

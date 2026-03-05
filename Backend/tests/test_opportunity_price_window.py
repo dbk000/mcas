@@ -11,12 +11,14 @@ class _FakeCursor:
         self._candle_rows = candle_rows
         self._result = []
         self.ohlcv_params = None
+        self.ohlcv_query = None
 
     def execute(self, query, params=None):
         q = " ".join(query.split()).lower()
         if "from opportunities o" in q:
             self._result = [self._opp_row] if self._opp_row is not None else []
         elif "from ohlcv" in q:
+            self.ohlcv_query = q
             self.ohlcv_params = params
             self._result = list(self._candle_rows)
         else:
@@ -113,6 +115,7 @@ def test_price_window_computes_bounds_and_clips_candles(monkeypatch):
     assert cursor.ohlcv_params[0] == "BTCUSDT"
     assert cursor.ohlcv_params[1] == entry_ts - timedelta(seconds=3600)
     assert cursor.ohlcv_params[2] == exit_ts + timedelta(seconds=21600)
+    assert "is_final = true" in cursor.ohlcv_query
 
 
 def test_price_window_infers_exit_from_horizon(monkeypatch):
@@ -183,3 +186,52 @@ def test_price_window_missing_exit_ts_returns_422(monkeypatch):
     assert response.status_code == 422
     assert response.json()["detail"] == "expired opp missing exit_ts"
     assert cursor.ohlcv_params is None
+
+
+def test_price_window_prefers_simulation_markers_over_payload(monkeypatch):
+    payload_entry_ts = datetime(2026, 2, 1, 10, 0, tzinfo=timezone.utc)
+    payload_exit_ts = datetime(2026, 2, 1, 12, 0, tzinfo=timezone.utc)
+    sr_entry_ts = datetime(2026, 2, 1, 10, 5, tzinfo=timezone.utc)
+    sr_exit_ts = datetime(2026, 2, 1, 12, 5, tzinfo=timezone.utc)
+    created_ts = payload_entry_ts - timedelta(minutes=15)
+
+    opp_row = (
+        999,  # id
+        "SOLUSDT",  # symbol
+        created_ts,  # created_ts
+        '{"entry_ts":"2026-02-01T10:00:00+00:00","exit_ts":"2026-02-01T12:00:00+00:00","entry_price":100.0,"exit_price":110.0,"stop_price":95.0,"tp1_price":105.0,"tp2_price":108.0}',  # payload_json
+        sr_entry_ts,  # sr.entry_ts
+        sr_exit_ts,  # sr.exit_ts
+        111.0,  # sr.exit_price
+        101.0,  # sr.entry_price
+        96.0,  # sr.stop_price
+        106.0,  # sr.tp1_price
+        109.0,  # sr.tp2_price
+        1.7,  # sr.r_multiple
+        55.0,  # sr.pnl_net
+    )
+    candle_rows = [
+        (sr_entry_ts - timedelta(hours=1), 99.0, 101.0, 98.0, 100.0, 500.0),
+        (sr_entry_ts, 101.0, 102.0, 100.5, 101.5, 550.0),
+        (sr_exit_ts, 111.0, 112.0, 110.5, 111.5, 520.0),
+    ]
+
+    client, cursor = _make_client(monkeypatch, opp_row, candle_rows)
+    response = client.get(
+        "/v1/opportunities/999/price-window?pre_s=3600&post_s=21600",
+        headers={"X-API-Key": "test-api-key"},
+    )
+
+    assert response.status_code == 200, response.text
+    body = response.json()["data"]
+
+    assert body["markers"]["entry_ts"] == int(sr_entry_ts.timestamp() * 1000)
+    assert body["markers"]["exit_ts"] == int(sr_exit_ts.timestamp() * 1000)
+    assert body["markers"]["entry_px"] == 101.0
+    assert body["markers"]["exit_px"] == 111.0
+    assert body["markers"]["stop_px"] == 96.0
+    assert body["markers"]["tp_px"] == [106.0, 109.0]
+
+    assert cursor.ohlcv_params[0] == "SOLUSDT"
+    assert cursor.ohlcv_params[1] == sr_entry_ts - timedelta(seconds=3600)
+    assert cursor.ohlcv_params[2] == sr_exit_ts + timedelta(seconds=21600)

@@ -1241,13 +1241,15 @@ def get_opportunity_price_window(
                 raise HTTPException(status_code=404, detail="Opportunity not found")
 
             payload = _parse_payload_json(row[3])
+            # Prefer simulation_results timing when available so chart markers align
+            # with the realized trade path used for outcome classification.
             entry_ts = (
-                _parse_timestamp(payload.get("entry_ts"))
+                _parse_timestamp(row[4])
+                or _parse_timestamp(payload.get("entry_ts"))
                 or _parse_timestamp(payload.get("bar_start_ts"))
-                or _parse_timestamp(row[4])
                 or _parse_timestamp(row[2])
             )
-            exit_ts = _parse_timestamp(payload.get("exit_ts")) or _parse_timestamp(row[5])
+            exit_ts = _parse_timestamp(row[5]) or _parse_timestamp(payload.get("exit_ts"))
 
             exit_ts_inferred = False
             exit_ts_source: Optional[str] = None
@@ -1276,22 +1278,23 @@ def get_opportunity_price_window(
             if not exit_ts:
                 raise HTTPException(status_code=422, detail="expired opp missing exit_ts")
 
-            entry_px = _parse_float(payload.get("entry_price"))
-            exit_px = _parse_float(payload.get("exit_price"))
-            stop_px = _parse_float(payload.get("stop_price"))
-            tp1_px = _parse_float(payload.get("tp1_price"))
-            tp2_px = _parse_float(payload.get("tp2_price"))
+            # Prefer simulation_results prices for the same reason as timestamps.
+            entry_px = _parse_float(row[7])
+            exit_px = _parse_float(row[6])
+            stop_px = _parse_float(row[8])
+            tp1_px = _parse_float(row[9])
+            tp2_px = _parse_float(row[10])
 
             if entry_px is None:
-                entry_px = _parse_float(row[7])
+                entry_px = _parse_float(payload.get("entry_price"))
             if exit_px is None:
-                exit_px = _parse_float(row[6])
+                exit_px = _parse_float(payload.get("exit_price"))
             if stop_px is None:
-                stop_px = _parse_float(row[8])
+                stop_px = _parse_float(payload.get("stop_price"))
             if tp1_px is None:
-                tp1_px = _parse_float(row[9])
+                tp1_px = _parse_float(payload.get("tp1_price"))
             if tp2_px is None:
-                tp2_px = _parse_float(row[10])
+                tp2_px = _parse_float(payload.get("tp2_price"))
 
             tp_px = [px for px in (tp1_px, tp2_px) if px is not None]
             # Preserve stable ordering while removing accidental duplicates.
@@ -1308,6 +1311,7 @@ def get_opportunity_price_window(
                   AND timeframe = '5m'
                   AND bar_start_ts >= %s
                   AND bar_start_ts <= %s
+                  AND is_final = TRUE
                 ORDER BY bar_start_ts,
                          CASE source
                              WHEN 'ws' THEN 0

@@ -229,3 +229,15 @@ Purpose: record attempted fixes, outcomes, and regressions so later sessions avo
 - Commit: `a909102`
 - Outcome: `Frontend npm run build` passes; Cloudflare Pages deploy success (`https://51d365ac.mcas.pages.dev`).
 - Notes / Evidence: User requested tighter header semantics with setup as an inline token.
+
+## 2026-03-05 (UTC) - Entry Candle Alignment Pass (Backend + Survey Reveal)
+
+- Date (UTC): 2026-03-05
+- Area: Price-window marker consistency and survey entry visibility
+- Change:
+  - `/v1/opportunities/{opp_id}/price-window` now prefers `simulation_results` timestamps/prices over payload values when present.
+  - Price-window OHLCV query now filters `is_final = TRUE` to match simulator bar semantics.
+  - Survey default/`Up To Entry` reveal offset moved from `0m` to `+5m` to include the entry candle in view.
+- Commit: pending
+- Outcome: local compile/build passes; backend container rebuilt (`backend-api-1`) and endpoint behavior verified for marker-source precedence.
+- Notes / Evidence: User reported entry candle appearing missing/disconnected from event table.
