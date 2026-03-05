@@ -226,6 +226,6 @@ Purpose: record attempted fixes, outcomes, and regressions so later sessions avo
 - Change:
   - Removed `Setup:` prefix text.
   - Moved setup token inline to the top row between symbol and direction (`SYMBOL  S9  SHORT`).
-- Commit: pending
-- Outcome: pending build/deploy validation.
+- Commit: `a909102`
+- Outcome: `Frontend npm run build` passes; Cloudflare Pages deploy success (`https://51d365ac.mcas.pages.dev`).
 - Notes / Evidence: User requested tighter header semantics with setup as an inline token.
