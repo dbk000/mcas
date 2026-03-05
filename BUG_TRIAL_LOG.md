@@ -238,6 +238,6 @@ Purpose: record attempted fixes, outcomes, and regressions so later sessions avo
   - `/v1/opportunities/{opp_id}/price-window` now prefers `simulation_results` timestamps/prices over payload values when present.
   - Price-window OHLCV query now filters `is_final = TRUE` to match simulator bar semantics.
   - Survey default/`Up To Entry` reveal offset moved from `0m` to `+5m` to include the entry candle in view.
-- Commit: pending
-- Outcome: local compile/build passes; backend container rebuilt (`backend-api-1`) and endpoint behavior verified for marker-source precedence.
+- Commit: `8fee4a3`
+- Outcome: `Frontend npm run build` passes; backend tests pass in container (`4 passed` on `test_opportunity_price_window.py`); Cloudflare Pages deploy success (`https://ac39af3b.mcas.pages.dev`).
 - Notes / Evidence: User reported entry candle appearing missing/disconnected from event table.
