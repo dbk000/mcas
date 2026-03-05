@@ -25,6 +25,10 @@ import { getEventColor } from '../components/opportunities/chartEventPalette'
 
 const REVEAL_STEP_MIN = 5
 const ENTRY_REVEAL_OFFSET_MIN = 5
+const REVEAL_MODE_OFFSET = 'offset'
+const REVEAL_MODE_ENTRY = 'entry'
+const REVEAL_MODE_EXIT = 'exit'
+const REVEAL_MODE_EXIT_PLUS = 'exit_plus'
 // Macro context window for pattern training: 6h pre-entry history.
 const PRE_S = 21600
 const POST_S = 21600
@@ -62,6 +66,24 @@ function getRowRevealTs(windowData, revealOffsetMin) {
   if (!entryTs || !tStart || !tEnd) return null
   const revealTs = entryTs + (revealOffsetMin * 60 * 1000)
   return clamp(revealTs, tStart, tEnd)
+}
+
+function getRowExitOffsetMin(windowData) {
+  const entryTs = Number(windowData?.markers?.entry_ts)
+  const exitTs = Number(windowData?.markers?.exit_ts)
+  if (!Number.isFinite(entryTs) || !Number.isFinite(exitTs)) return 0
+  return roundToStep((exitTs - entryTs) / 60000)
+}
+
+function resolveRowRevealOffsetMin(windowData, revealMode, revealOffsetMin, exitPlusHours) {
+  if (revealMode === REVEAL_MODE_ENTRY) return ENTRY_REVEAL_OFFSET_MIN
+  if (revealMode === REVEAL_MODE_EXIT) return getRowExitOffsetMin(windowData)
+  if (revealMode === REVEAL_MODE_EXIT_PLUS) {
+    const hours = Number(exitPlusHours)
+    const safeHours = Number.isFinite(hours) ? Math.max(0, hours) : 0
+    return getRowExitOffsetMin(windowData) + roundToStep(safeHours * 60)
+  }
+  return revealOffsetMin
 }
 
 function getBoundsForWindow(windowData) {
@@ -192,6 +214,8 @@ export default function OpportunitySurvey() {
   const [presentationMode, setPresentationMode] = useState(false)
   const [hideLevelsUntilReveal, setHideLevelsUntilReveal] = useState(false)
   const [revealOffsetMin, setRevealOffsetMin] = useState(ENTRY_REVEAL_OFFSET_MIN)
+  const [revealMode, setRevealMode] = useState(REVEAL_MODE_OFFSET)
+  const [exitPlusHoursApplied, setExitPlusHoursApplied] = useState(0)
   const [postExitHours, setPostExitHours] = useState(2)
   const [topPanelsCollapsed, setTopPanelsCollapsed] = useState(false)
   const [oppsLoading, setOppsLoading] = useState(false)
@@ -347,10 +371,12 @@ export default function OpportunitySurvey() {
   }, [bounds.min, maxRevealAllowed])
 
   const applyRevealEntry = useCallback(() => {
+    setRevealMode(REVEAL_MODE_ENTRY)
     setRevealOffsetMin(clamp(ENTRY_REVEAL_OFFSET_MIN, bounds.min, maxRevealAllowed))
   }, [bounds.min, maxRevealAllowed])
 
   const applyRevealExit = useCallback(() => {
+    setRevealMode(REVEAL_MODE_EXIT)
     setRevealOffsetMin(clamp(bounds.revealExit, bounds.min, maxRevealAllowed))
   }, [bounds.revealExit, bounds.min, maxRevealAllowed])
 
@@ -358,6 +384,8 @@ export default function OpportunitySurvey() {
     const hours = Number(postExitHours)
     const safeHours = Number.isFinite(hours) ? Math.max(0, hours) : 0
     const plusOffsetMin = roundToStep(safeHours * 60)
+    setRevealMode(REVEAL_MODE_EXIT_PLUS)
+    setExitPlusHoursApplied(safeHours)
     setRevealOffsetMin(clamp(bounds.revealExit + plusOffsetMin, bounds.min, maxRevealAllowed))
   }, [postExitHours, bounds.revealExit, bounds.min, maxRevealAllowed])
 
@@ -474,7 +502,15 @@ export default function OpportunitySurvey() {
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-sm text-terminal-400">
                   <span>Global offset from entry (minutes)</span>
-                  <span className="font-mono text-terminal-200">{revealOffsetMin}m</span>
+                  <span className="font-mono text-terminal-200">
+                    {revealMode === REVEAL_MODE_OFFSET
+                      ? `${revealOffsetMin}m`
+                      : revealMode === REVEAL_MODE_ENTRY
+                        ? 'entry +5m'
+                        : revealMode === REVEAL_MODE_EXIT
+                          ? 'per-row exit'
+                          : `per-row exit +${exitPlusHoursApplied}h`}
+                  </span>
                 </div>
                 <input
                   type="range"
@@ -482,7 +518,10 @@ export default function OpportunitySurvey() {
                   max={maxRevealAllowed}
                   step={REVEAL_STEP_MIN}
                   value={revealOffsetMin}
-                  onChange={(e) => setRevealOffsetMin(Number(e.target.value))}
+                  onChange={(e) => {
+                    setRevealMode(REVEAL_MODE_OFFSET)
+                    setRevealOffsetMin(Number(e.target.value))
+                  }}
                   className="w-full"
                 />
               </div>
@@ -519,6 +558,8 @@ export default function OpportunitySurvey() {
                       windowData={windowsById[opp.id]}
                       windowError={windowErrorsById[opp.id]}
                       revealOffsetMin={revealOffsetMin}
+                      revealMode={revealMode}
+                      exitPlusHoursApplied={exitPlusHoursApplied}
                       mode={mode}
                       presentationMode={presentationMode}
                       hideLevelsUntilReveal={hideLevelsUntilReveal}
@@ -539,11 +580,16 @@ function SurveyRow({
   windowData,
   windowError,
   revealOffsetMin,
+  revealMode,
+  exitPlusHoursApplied,
   mode,
   presentationMode,
   hideLevelsUntilReveal,
 }) {
-  const revealTs = windowData ? getRowRevealTs(windowData, revealOffsetMin) : null
+  const effectiveRevealOffsetMin = windowData
+    ? resolveRowRevealOffsetMin(windowData, revealMode, revealOffsetMin, exitPlusHoursApplied)
+    : revealOffsetMin
+  const revealTs = windowData ? getRowRevealTs(windowData, effectiveRevealOffsetMin) : null
   const chartPreset = getSurveyRowChartProps(presentationMode)
   const outcomeClass = windowData?.outcome?.class || opp.outcome_class || 'unknown'
   const hideOutcome = mode === 'mixed'
@@ -622,7 +668,7 @@ function SurveyRow({
               markers={markers}
               revealTs={revealTs}
               hideExitUntilReveal
-              hideLevels={hideLevelsUntilReveal && revealOffsetMin <= 0}
+              hideLevels={hideLevelsUntilReveal && effectiveRevealOffsetMin <= 0}
               showLevelLineLabels={false}
               showLevelLegend={false}
               {...chartPreset}

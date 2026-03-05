@@ -266,3 +266,15 @@ Purpose: record attempted fixes, outcomes, and regressions so later sessions avo
 - Commit: `184844b`
 - Outcome: `Frontend npm run build` passes; Cloudflare Pages deploy success (`https://d340ff12.mcas.pages.dev`).
 - Notes / Evidence: User requested date visibility on Entry/Final rows and tighter information packing.
+
+## 2026-03-05 (UTC) - Per-Row Exit Reveal Controls
+
+- Date (UTC): 2026-03-05
+- Area: Survey reveal controls (`Up To Exit`, `Apply Exit + N`)
+- Change:
+  - Switched `Up To Exit` from batch-max offset behavior to per-row exit offset.
+  - Switched `Apply Exit + N` to per-row `(exit + N hours)` behavior.
+  - Added control-state label text to indicate offset mode vs per-row preset modes.
+- Commit: pending
+- Outcome: pending build/deploy validation.
+- Notes / Evidence: User reported `Up To Exit`/`Exit + N` showing same chart extent and exit alignment drift.
