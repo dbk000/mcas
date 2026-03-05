@@ -371,3 +371,14 @@ Purpose: record attempted fixes, outcomes, and regressions so later sessions avo
   - Added anti-overlap lane staggering for near-adjacent events to keep labels readable.
 - Outcome: `Frontend npm run build` passes.
 - Notes / Evidence: Requested stronger visual jump-out for exactly where entry/exit actions occurred on each curve.
+
+## 2026-03-05 (UTC) - Fix Missing X-Axis Event Markers (Timestamp Interpolation)
+
+- Date (UTC): 2026-03-05
+- Area: `OpportunityCurveChart` event marker placement
+- Change:
+  - Fixed x-axis event markers not rendering when event timestamps do not exactly match candle open times.
+  - Implemented coordinate interpolation between neighboring candles for entry/TP/SL/final-exit timestamps.
+  - Marker rails now render at true event positions even when events occur intrabar.
+- Outcome: `Frontend npm run build` passes.
+- Notes / Evidence: User reported x-axis event markers absent on survey grid despite deploy.

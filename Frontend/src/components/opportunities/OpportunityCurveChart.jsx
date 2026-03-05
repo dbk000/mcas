@@ -179,6 +179,50 @@ function toEventShortLabel(label, isFinal = false) {
   return 'EV'
 }
 
+function toEventCoordinate(tsMs, timeScale, candles) {
+  const ts = Number(tsMs)
+  if (!Number.isFinite(ts) || !timeScale || !Array.isArray(candles) || candles.length === 0) {
+    return null
+  }
+
+  const tsSec = Math.floor(ts / 1000)
+  const exact = timeScale.timeToCoordinate(tsSec)
+  if (Number.isFinite(exact)) return exact
+
+  const firstSec = Math.floor(Number(candles[0]?.t) / 1000)
+  const lastSec = Math.floor(Number(candles[candles.length - 1]?.t) / 1000)
+  if (!Number.isFinite(firstSec) || !Number.isFinite(lastSec)) return null
+  if (tsSec < firstSec || tsSec > lastSec) return null
+
+  let lo = 0
+  let hi = candles.length - 1
+  while (lo < hi) {
+    const mid = Math.floor((lo + hi) / 2)
+    const midSec = Math.floor(Number(candles[mid]?.t) / 1000)
+    if (midSec < tsSec) lo = mid + 1
+    else hi = mid
+  }
+
+  const rightIdx = lo
+  const rightSec = Math.floor(Number(candles[rightIdx]?.t) / 1000)
+  if (rightSec === tsSec) {
+    const rightX = timeScale.timeToCoordinate(rightSec)
+    return Number.isFinite(rightX) ? rightX : null
+  }
+
+  const leftIdx = rightIdx - 1
+  if (leftIdx < 0) return null
+  const leftSec = Math.floor(Number(candles[leftIdx]?.t) / 1000)
+  if (!Number.isFinite(leftSec) || !Number.isFinite(rightSec) || rightSec <= leftSec) return null
+
+  const leftX = timeScale.timeToCoordinate(leftSec)
+  const rightX = timeScale.timeToCoordinate(rightSec)
+  if (!Number.isFinite(leftX) || !Number.isFinite(rightX)) return null
+
+  const ratio = (tsSec - leftSec) / (rightSec - leftSec)
+  return leftX + ((rightX - leftX) * ratio)
+}
+
 export default function OpportunityCurveChart({
   candles = [],
   markers = {},
@@ -214,6 +258,7 @@ export default function OpportunityCurveChart({
   const priceLinesRef = useRef([])
   const markersRef = useRef(markers)
   const exitPointsRef = useRef([])
+  const clippedCandlesRef = useRef(clippedCandles)
   const [markerCoords, setMarkerCoords] = useState({ entry: null, exits: [], axisEvents: [] })
 
   const clippedCandles = useMemo(() => {
@@ -257,6 +302,10 @@ export default function OpportunityCurveChart({
     exitPointsRef.current = exitPoints
   }, [markers, exitPoints])
 
+  useEffect(() => {
+    clippedCandlesRef.current = clippedCandles
+  }, [clippedCandles])
+
   const levelLegend = useMemo(() => {
     if (hideLevels) return []
 
@@ -283,16 +332,17 @@ export default function OpportunityCurveChart({
     const chart = chartRef.current
     const markersCurrent = markersRef.current
     const exitPointsCurrent = exitPointsRef.current
+    const candlesCurrent = clippedCandlesRef.current
     if (!chart || !markersCurrent) return
 
     const timeScale = chart.timeScale()
     const entryX = markersCurrent.entry_ts
-      ? timeScale.timeToCoordinate(Math.floor(Number(markersCurrent.entry_ts) / 1000))
+      ? toEventCoordinate(Number(markersCurrent.entry_ts), timeScale, candlesCurrent)
       : null
 
     const exits = exitPointsCurrent
       .map((point) => {
-        const x = timeScale.timeToCoordinate(Math.floor(point.ts / 1000))
+        const x = toEventCoordinate(Number(point.ts), timeScale, candlesCurrent)
         return {
           ...point,
           x: Number.isFinite(x) ? x : null,
