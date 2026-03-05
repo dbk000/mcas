@@ -80,14 +80,24 @@ function pickColumns(presentationMode) {
   return 2
 }
 
+function isValidEventTs(value) {
+  const n = Number(value)
+  return Number.isFinite(n) && n > 0
+}
+
+function isValidEventPrice(value) {
+  const n = Number(value)
+  return Number.isFinite(n) && n > 0
+}
+
 function formatEventTs(ts) {
-  if (!Number.isFinite(Number(ts))) return '—'
-  return formatDateTime(new Date(Number(ts)).toISOString())
+  if (!isValidEventTs(ts)) return '—'
+  return new Date(Number(ts)).toISOString().slice(11, 16)
 }
 
 function closestCloseAtTs(candles, ts) {
   const target = Number(ts)
-  if (!Number.isFinite(target) || !Array.isArray(candles) || candles.length === 0) return null
+  if (!isValidEventTs(target) || !Array.isArray(candles) || candles.length === 0) return null
   let best = null
   for (let i = 0; i < candles.length; i += 1) {
     const c = candles[i]
@@ -98,7 +108,7 @@ function closestCloseAtTs(candles, ts) {
     }
     break
   }
-  return best && Number.isFinite(Number(best.c)) ? Number(best.c) : null
+  return best && isValidEventPrice(best.c) ? Number(best.c) : null
 }
 
 function extractTsFromExitPoints(exitPoints, token) {
@@ -107,7 +117,7 @@ function extractTsFromExitPoints(exitPoints, token) {
   for (const point of exitPoints) {
     const label = String(point?.label || '').toLowerCase()
     const ts = Number(point?.ts)
-    if (!Number.isFinite(ts)) continue
+    if (!isValidEventTs(ts)) continue
     if (label.includes(tokenLower)) return ts
   }
   return null
@@ -119,34 +129,60 @@ function buildTradeEventRows(markers, candles) {
   const tp1Ts = extractTsFromExitPoints(exitPoints, 'tp1')
   const tp2Ts = extractTsFromExitPoints(exitPoints, 'tp2')
   const stopTs = extractTsFromExitPoints(exitPoints, 'stop') ?? extractTsFromExitPoints(exitPoints, 'sl')
-  const finalExitTs = Number.isFinite(Number(markers?.exit_ts)) ? Number(markers.exit_ts) : null
+  const finalExitTs = isValidEventTs(markers?.exit_ts) ? Number(markers.exit_ts) : null
 
   const rows = [
-    { key: 'entry', label: 'ENTRY', price: markers?.entry_px, ts: markers?.entry_ts },
-    { key: 'tp1', label: 'TP1', price: tp[0], ts: tp1Ts },
-    { key: 'tp2', label: 'TP2', price: tp[1], ts: tp2Ts },
-    { key: 'stop', label: 'STOP', price: markers?.stop_px, ts: stopTs },
-    { key: 'final', label: 'FINAL EXIT', price: markers?.exit_px, ts: finalExitTs },
+    {
+      key: 'entry',
+      label: 'ENTRY',
+      price: isValidEventPrice(markers?.entry_px) ? Number(markers.entry_px) : null,
+      ts: isValidEventTs(markers?.entry_ts) ? Number(markers.entry_ts) : null,
+    },
+    {
+      key: 'tp1',
+      label: 'TP1',
+      price: isValidEventPrice(tp[0]) ? Number(tp[0]) : null,
+      ts: tp1Ts,
+    },
+    {
+      key: 'tp2',
+      label: 'TP2',
+      price: isValidEventPrice(tp[1]) ? Number(tp[1]) : null,
+      ts: tp2Ts,
+    },
+    {
+      key: 'stop',
+      label: 'STOP',
+      price: isValidEventPrice(markers?.stop_px) ? Number(markers.stop_px) : null,
+      ts: stopTs,
+    },
+    {
+      key: 'final',
+      label: 'FINAL EXIT',
+      price: isValidEventPrice(markers?.exit_px) ? Number(markers.exit_px) : null,
+      ts: finalExitTs,
+    },
   ]
 
   const mapped = new Set(
     [tp1Ts, tp2Ts, stopTs, finalExitTs]
-      .filter((v) => Number.isFinite(Number(v)))
+      .filter((v) => isValidEventTs(v))
       .map((v) => Number(v))
   )
 
   exitPoints.forEach((point, idx) => {
     const ts = Number(point?.ts)
-    if (!Number.isFinite(ts) || mapped.has(ts)) return
+    if (!isValidEventTs(ts) || mapped.has(ts)) return
+    const px = closestCloseAtTs(candles, ts)
     rows.push({
       key: `event-${idx}`,
       label: String(point?.label || `EXIT ${idx + 1}`).toUpperCase(),
-      price: closestCloseAtTs(candles, ts),
+      price: isValidEventPrice(px) ? px : null,
       ts,
     })
   })
 
-  return rows.filter((row) => row.price != null || Number.isFinite(Number(row.ts)))
+  return rows
 }
 
 export default function OpportunitySurvey() {
@@ -538,8 +574,10 @@ function SurveyRow({
     <div className="border border-terminal-600 rounded bg-terminal-900/40 p-3">
       <div className={`grid ${presentationMode ? 'grid-cols-[185px_minmax(0,1fr)]' : 'grid-cols-[210px_1fr]'} gap-3`}>
         <div className="text-xs space-y-1">
-          <p className="font-mono text-terminal-100 text-sm">{opp.symbol}</p>
-          <p className="text-terminal-400">{(opp.direction || opp.decision || 'n/a').toUpperCase()}</p>
+          <div className="flex items-baseline justify-between gap-2">
+            <p className="font-mono text-terminal-100 text-sm">{opp.symbol}</p>
+            <p className="font-mono text-terminal-400 text-[11px]">{(opp.direction || opp.decision || 'n/a').toUpperCase()}</p>
+          </div>
           <p className="text-terminal-500">Setup: {opp.setup_id}</p>
           {!hideOutcome ? (
             <Badge variant={outcomeClass === 'winner' ? 'success' : outcomeClass === 'loser' ? 'error' : 'default'}>
@@ -553,13 +591,19 @@ function SurveyRow({
               Final Exit: <span className="font-mono text-sky-300">{finalExitPrice != null ? formatPrice(finalExitPrice) : '—'}</span>
             </p>
           )}
-          <div className="mt-2 rounded border border-terminal-700/70 bg-terminal-950/40 px-2 py-2 space-y-1">
+          <div className="mt-2 rounded border border-terminal-700/70 bg-terminal-950/40 overflow-hidden">
+            <div className="grid grid-cols-[56px_44px_1fr] text-[9px] font-mono uppercase tracking-wide bg-terminal-900/80 text-terminal-400">
+              <div className="px-1.5 py-1 border-b border-terminal-700/60">Event</div>
+              <div className="px-1.5 py-1 border-b border-l border-terminal-700/60">TS</div>
+              <div className="px-1.5 py-1 border-b border-l border-terminal-700/60">Price</div>
+            </div>
             {tradeEventRows.map((event) => (
-              <div key={event.key} className="grid grid-cols-[72px_1fr] gap-1">
-                <span className="text-[10px] text-terminal-400 uppercase tracking-wide">{event.label}</span>
-                <span className="text-[11px] text-terminal-200 font-mono leading-tight">
-                  {event.price != null ? formatPrice(event.price) : '—'} @ {formatEventTs(event.ts)}
-                </span>
+              <div key={event.key} className="grid grid-cols-[56px_44px_1fr] text-[10px] font-mono">
+                <div className="px-1.5 py-0.5 border-t border-terminal-800/80 text-terminal-300">{event.label}</div>
+                <div className="px-1.5 py-0.5 border-t border-l border-terminal-800/80 text-terminal-400">{formatEventTs(event.ts)}</div>
+                <div className="px-1.5 py-0.5 border-t border-l border-terminal-800/80 text-terminal-100">
+                  {event.price != null ? formatPrice(event.price) : '—'}
+                </div>
               </div>
             ))}
           </div>

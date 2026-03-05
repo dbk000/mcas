@@ -183,3 +183,15 @@ Purpose: record attempted fixes, outcomes, and regressions so later sessions avo
 - Commit: pending
 - Outcome: `Frontend npm run build` passes. Runtime validation pending after deploy.
 - Notes / Evidence: User requested full-page stack flow and richer event-level text details.
+
+## 2026-03-05 (UTC) - Event Table Compact Format + Direction Inline
+
+- Date (UTC): 2026-03-05
+- Area: Survey left metadata panel readability
+- Change:
+  - Converted event detail block to compact mini-table (`Event | TS | Price`) to prevent wrapping/noise.
+  - Moved direction (`LONG/SHORT`) onto same row as symbol.
+  - Filtered invalid placeholder event values (`0`, epoch `1970`) to render as missing (`—`) instead of misleading values.
+- Commit: pending
+- Outcome: `Frontend npm run build` passes. Runtime validation pending after deploy.
+- Notes / Evidence: User requested mini-table format similar to reference screenshot and cleaner symbol row.
