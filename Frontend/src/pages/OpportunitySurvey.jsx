@@ -3,11 +3,8 @@ import { Link, useSearchParams } from 'react-router-dom'
 import {
   ArrowLeft,
   BarChart3,
-  CheckCircle2,
   ChevronDown,
   ChevronUp,
-  Pause,
-  Play,
   Shuffle,
   XCircle,
 } from 'lucide-react'
@@ -18,7 +15,6 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-  DataRow,
   EmptyState,
   Select,
   Toggle,
@@ -27,7 +23,6 @@ import { formatDateTime, formatPrice } from '../utils/formatters'
 import OpportunityCurveChart from '../components/opportunities/OpportunityCurveChart'
 import { getSurveyRowChartProps } from '../components/opportunities/chartPresets'
 
-const PREDICTIONS_KEY = 'mcas_visual_predictions_v1'
 const REVEAL_STEP_MIN = 5
 // Macro context window for pattern training: 6h pre-entry history.
 const PRE_S = 21600
@@ -57,21 +52,6 @@ function parseIds(raw) {
     .map((part) => Number(part))
     .filter((n) => Number.isFinite(n))
   return Array.from(new Set(ids))
-}
-
-function readPredictionStore() {
-  try {
-    const raw = localStorage.getItem(PREDICTIONS_KEY)
-    if (!raw) return {}
-    const parsed = JSON.parse(raw)
-    return parsed && typeof parsed === 'object' ? parsed : {}
-  } catch {
-    return {}
-  }
-}
-
-function writePredictionStore(store) {
-  localStorage.setItem(PREDICTIONS_KEY, JSON.stringify(store))
 }
 
 function getRowRevealTs(windowData, revealOffsetMin) {
@@ -116,9 +96,8 @@ export default function OpportunitySurvey() {
   const [randomSample, setRandomSample] = useState(true)
   const [presentationMode, setPresentationMode] = useState(false)
   const [hideLevelsUntilReveal, setHideLevelsUntilReveal] = useState(false)
-  const [revealOffsetMin, setRevealOffsetMin] = useState(0) // Assumption: default reveal at entry.
-  const [autoplayMs, setAutoplayMs] = useState(500)
-  const [autoplayOn, setAutoplayOn] = useState(false)
+  const [revealOffsetMin, setRevealOffsetMin] = useState(0)
+  const [postExitHours, setPostExitHours] = useState(2)
   const [topPanelsCollapsed, setTopPanelsCollapsed] = useState(false)
   const [oppsLoading, setOppsLoading] = useState(false)
   const [oppsError, setOppsError] = useState('')
@@ -126,8 +105,6 @@ export default function OpportunitySurvey() {
   const [windowsById, setWindowsById] = useState({})
   const [windowErrorsById, setWindowErrorsById] = useState({})
   const [loadingProgress, setLoadingProgress] = useState({ done: 0, total: 0 })
-  const [confidenceDraft, setConfidenceDraft] = useState({})
-  const [predictions, setPredictions] = useState(() => readPredictionStore())
 
   const scrollRef = useRef(null)
   const [scrollTop, setScrollTop] = useState(0)
@@ -272,10 +249,6 @@ export default function OpportunitySurvey() {
   }, [activeBatch, windowsById, windowErrorsById, get])
 
   useEffect(() => {
-    writePredictionStore(predictions)
-  }, [predictions])
-
-  useEffect(() => {
     const el = scrollRef.current
     if (!el) return undefined
     const observer = new ResizeObserver(() => {
@@ -305,47 +278,26 @@ export default function OpportunitySurvey() {
     }
   }, [activeBatch, windowsById])
 
-  const committedForBatch = useMemo(
-    () => activeBatch.length > 0 && activeBatch.every((opp) => !!predictions[opp.id]),
-    [activeBatch, predictions]
-  )
-
-  const maxRevealAllowed = committedForBatch ? bounds.max : 0
+  const maxRevealAllowed = bounds.max
 
   useEffect(() => {
     setRevealOffsetMin((prev) => clamp(prev, bounds.min, maxRevealAllowed))
   }, [bounds.min, maxRevealAllowed])
 
-  useEffect(() => {
-    if (!autoplayOn) return undefined
-    if (!committedForBatch) return undefined
+  const applyRevealEntry = useCallback(() => {
+    setRevealOffsetMin(clamp(0, bounds.min, maxRevealAllowed))
+  }, [bounds.min, maxRevealAllowed])
 
-    const interval = setInterval(() => {
-      setRevealOffsetMin((prev) => {
-        const next = prev + REVEAL_STEP_MIN
-        if (next >= bounds.max) {
-          setAutoplayOn(false)
-          return bounds.max
-        }
-        return next
-      })
-    }, autoplayMs)
+  const applyRevealExit = useCallback(() => {
+    setRevealOffsetMin(clamp(bounds.revealExit, bounds.min, maxRevealAllowed))
+  }, [bounds.revealExit, bounds.min, maxRevealAllowed])
 
-    return () => clearInterval(interval)
-  }, [autoplayOn, autoplayMs, bounds.max, committedForBatch])
-
-  const commitPrediction = (oppId, predictedClass) => {
-    const confidence = Number(confidenceDraft[oppId] || 3)
-    setPredictions((prev) => ({
-      ...prev,
-      [oppId]: {
-        predicted_class: predictedClass,
-        confidence,
-        reveal_offset_at_commit: revealOffsetMin,
-        created_at: new Date().toISOString(),
-      },
-    }))
-  }
+  const applyRevealExitPlusHours = useCallback(() => {
+    const hours = Number(postExitHours)
+    const safeHours = Number.isFinite(hours) ? Math.max(0, hours) : 0
+    const plusOffsetMin = roundToStep(safeHours * 60)
+    setRevealOffsetMin(clamp(bounds.revealExit + plusOffsetMin, bounds.min, maxRevealAllowed))
+  }, [postExitHours, bounds.revealExit, bounds.min, maxRevealAllowed])
 
   const rowHeight = presentationMode ? 320 : 250
   const columns = pickColumns(presentationMode)
@@ -409,9 +361,6 @@ export default function OpportunitySurvey() {
             {topPanelsCollapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
             {topPanelsCollapsed ? 'Show Top Panels' : 'Collapse Top Panels'}
           </button>
-          <Badge variant={committedForBatch ? 'success' : 'warning'}>
-            {committedForBatch ? 'Predictions Committed' : 'Commit Required Before Forward Reveal'}
-          </Badge>
         </div>
       </div>
 
@@ -465,62 +414,27 @@ export default function OpportunitySurvey() {
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex flex-wrap items-center gap-2">
-                <button className="btn btn-ghost btn-sm" onClick={() => setRevealOffsetMin((v) => clamp(v - 30, bounds.min, maxRevealAllowed))}>-30m</button>
-                <button className="btn btn-ghost btn-sm" onClick={() => setRevealOffsetMin((v) => clamp(v - 5, bounds.min, maxRevealAllowed))}>-5m</button>
-                <button
-                  className="btn btn-secondary btn-sm"
-                  disabled={!committedForBatch}
-                  onClick={() => setRevealOffsetMin((v) => clamp(v + 5, bounds.min, maxRevealAllowed))}
-                >
-                  +5m
-                </button>
-                <button
-                  className="btn btn-secondary btn-sm"
-                  disabled={!committedForBatch}
-                  onClick={() => setRevealOffsetMin((v) => clamp(v + 30, bounds.min, maxRevealAllowed))}
-                >
-                  +30m
-                </button>
-                <button className="btn btn-ghost btn-sm" onClick={() => setRevealOffsetMin(0)}>Jump Entry</button>
-                <button
-                  className="btn btn-ghost btn-sm"
-                  disabled={!committedForBatch}
-                  onClick={() => setRevealOffsetMin(clamp(bounds.revealExit, bounds.min, maxRevealAllowed))}
-                >
-                  Reveal Exit
-                </button>
-                <button
-                  className="btn btn-primary btn-sm"
-                  disabled={!committedForBatch}
-                  onClick={() => setRevealOffsetMin(maxRevealAllowed)}
-                >
-                  Reveal All
-                </button>
-
-                <button
-                  className="btn btn-ghost btn-sm"
-                  disabled={!committedForBatch}
-                  onClick={() => setAutoplayOn((v) => !v)}
-                >
-                  {autoplayOn ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-                  {autoplayOn ? 'Stop' : 'Autoplay'}
-                </button>
-
-                <Select
-                  value={autoplayMs}
-                  onChange={(e) => setAutoplayMs(Number(e.target.value))}
-                  options={[
-                    { value: 250, label: '250ms' },
-                    { value: 500, label: '500ms' },
-                    { value: 1000, label: '1000ms' },
-                  ]}
-                  className="w-24"
-                />
+                <button className="btn btn-secondary btn-sm" onClick={applyRevealEntry}>Up To Entry</button>
+                <button className="btn btn-secondary btn-sm" onClick={applyRevealExit}>Up To Exit</button>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-terminal-400">N hours post-exit</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.5"
+                    value={postExitHours}
+                    onChange={(e) => setPostExitHours(e.target.value)}
+                    className="w-20 px-2 py-1 rounded border border-terminal-600 bg-terminal-900 text-terminal-100 text-sm"
+                  />
+                  <button className="btn btn-primary btn-sm" onClick={applyRevealExitPlusHours}>
+                    Apply Exit + N
+                  </button>
+                </div>
               </div>
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-sm text-terminal-400">
-                  <span>Offset from entry (minutes)</span>
+                  <span>Global offset from entry (minutes)</span>
                   <span className="font-mono text-terminal-200">{revealOffsetMin}m</span>
                 </div>
                 <input
@@ -592,10 +506,6 @@ export default function OpportunitySurvey() {
                             revealOffsetMin={revealOffsetMin}
                             mode={mode}
                             presentationMode={presentationMode}
-                            prediction={predictions[opp.id]}
-                            onCommit={commitPrediction}
-                            confidence={Number(confidenceDraft[opp.id] || predictions[opp.id]?.confidence || 3)}
-                            onConfidenceChange={(v) => setConfidenceDraft((prev) => ({ ...prev, [opp.id]: Number(v) }))}
                             hideLevelsUntilReveal={hideLevelsUntilReveal}
                           />
                         ))}
@@ -619,16 +529,12 @@ function SurveyRow({
   revealOffsetMin,
   mode,
   presentationMode,
-  prediction,
-  onCommit,
-  confidence,
-  onConfidenceChange,
   hideLevelsUntilReveal,
 }) {
   const revealTs = windowData ? getRowRevealTs(windowData, revealOffsetMin) : null
   const chartPreset = getSurveyRowChartProps(presentationMode)
   const outcomeClass = windowData?.outcome?.class || opp.outcome_class || 'unknown'
-  const hideOutcome = mode === 'mixed' && !prediction
+  const hideOutcome = mode === 'mixed'
   const finalExitPriceRaw = windowData?.markers?.exit_px ?? opp?.exit_price ?? opp?.payload?.exit_price
   const finalExitPrice = Number.isFinite(Number(finalExitPriceRaw)) ? Number(finalExitPriceRaw) : null
   const markers = useMemo(() => {
@@ -641,7 +547,7 @@ function SurveyRow({
 
   return (
     <div className="border border-terminal-600 rounded bg-terminal-900/40 p-3 h-[calc(100%-0px)] overflow-hidden">
-      <div className={`grid ${presentationMode ? 'grid-cols-[140px_minmax(0,1fr)_150px]' : 'grid-cols-[170px_1fr_220px]'} gap-3 h-full`}>
+      <div className={`grid ${presentationMode ? 'grid-cols-[150px_minmax(0,1fr)]' : 'grid-cols-[170px_1fr]'} gap-3 h-full`}>
         <div className="text-xs space-y-1">
           <p className="font-mono text-terminal-100 text-sm">{opp.symbol}</p>
           <p className="text-terminal-400">{(opp.direction || opp.decision || 'n/a').toUpperCase()}</p>
@@ -658,13 +564,6 @@ function SurveyRow({
             <p className="text-terminal-500">
               Final Exit: <span className="font-mono text-sky-300">{finalExitPrice != null ? formatPrice(finalExitPrice) : '—'}</span>
             </p>
-          )}
-          {prediction && !hideOutcome && outcomeClass !== 'unknown' && (
-            prediction.predicted_class === outcomeClass ? (
-              <Badge variant="success"><CheckCircle2 className="w-3 h-3 mr-1" />Correct</Badge>
-            ) : (
-              <Badge variant="error"><XCircle className="w-3 h-3 mr-1" />Miss</Badge>
-            )
           )}
         </div>
 
@@ -689,33 +588,6 @@ function SurveyRow({
           )}
         </div>
 
-        <div className="text-xs space-y-2 border-l border-terminal-700 pl-3">
-          <p className="text-terminal-400 uppercase tracking-wide">Commit</p>
-          <div>
-            <label className="text-terminal-500 block mb-1">Confidence</label>
-            <Select
-              value={confidence}
-              onChange={(e) => onConfidenceChange(e.target.value)}
-              options={[1, 2, 3, 4, 5].map((v) => ({ value: v, label: `${v}` }))}
-            />
-          </div>
-          <div className="flex gap-2">
-            <button className="btn btn-secondary btn-sm flex-1" onClick={() => onCommit(opp.id, 'winner')}>
-              Predict Winner
-            </button>
-            <button className="btn btn-secondary btn-sm flex-1" onClick={() => onCommit(opp.id, 'loser')}>
-              Predict Loser
-            </button>
-          </div>
-          {prediction ? (
-            <div className="text-terminal-300 bg-terminal-800 rounded px-2 py-1">
-              <DataRow label="Pred" value={prediction.predicted_class} />
-              <DataRow label="Conf" value={prediction.confidence} />
-            </div>
-          ) : (
-            <p className="text-amber-300">Commit to unlock forward reveal.</p>
-          )}
-        </div>
       </div>
     </div>
   )

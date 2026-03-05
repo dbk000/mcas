@@ -150,3 +150,15 @@ Purpose: record attempted fixes, outcomes, and regressions so later sessions avo
 - Commit: pending
 - Outcome: `Frontend npm run build` passes. Runtime validation pending after deploy.
 - Notes / Evidence: Reduces duplicated chart-prop tuning logic and makes future adjustments one-source-of-truth.
+
+## 2026-03-05 (UTC) - Survey UI Noise Reduction + Global Window Controls
+
+- Date (UTC): 2026-03-05
+- Area: Survey stack row UI and reveal controls
+- Change:
+  - Removed per-row Commit / Predict Winner / Predict Loser panel.
+  - Added top-level global controls to set chart window to `Up To Entry`, `Up To Exit`, and `Exit + N hours`.
+  - Kept one global reveal offset slider for fine adjustment across all charts.
+- Commit: pending
+- Outcome: `Frontend npm run build` passes. Runtime validation pending after deploy.
+- Notes / Evidence: User requested cleaner visual focus with global chart-window controls and no right-side prediction noise.
