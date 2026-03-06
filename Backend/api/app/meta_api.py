@@ -1257,13 +1257,41 @@ def create_node_version(payload: CreateNodeVersion):
                     VALUES (%s, %s)
                 """, (payload.experiment_id, vid))
 
-            if is_stop_loss_node:
+            # Audit trail: write per-field diffs for stop-loss and strategy nodes
+            _AUDITABLE_NODES = {"stop-loss config", "d1 dormancy-to-ignition",
+                                "u1 unicorn ignition", "s9 short reversion", "s10 bb squeeze"}
+            if node_name.lower() in _AUDITABLE_NODES:
                 _ensure_stop_policy_audit_table(conn)
+                # Fetch previous params if not already loaded (stop-loss fetches above)
+                if not is_stop_loss_node:
+                    cur.execute(
+                        """
+                        SELECT version_id, parameters
+                        FROM meta.node_version
+                        WHERE node_id = %s AND version_id != %s
+                        ORDER BY version_number DESC
+                        LIMIT 1
+                        """,
+                        (payload.node_id, vid),
+                    )
+                    prev_row = cur.fetchone()
+                    if prev_row:
+                        prev_params = prev_row[1] or {}
+                        if isinstance(prev_params, str):
+                            try:
+                                prev_params = json.loads(prev_params)
+                            except Exception:
+                                prev_params = {}
+
                 old_flat = _flatten_json(prev_params if isinstance(prev_params, dict) else {})
                 new_flat = _flatten_json(params if isinstance(params, dict) else {})
                 all_paths = sorted(set(old_flat.keys()) | set(new_flat.keys()))
                 source = payload.source or "user_override"
-                if source not in {"default_registry", "user_override", "migration_fill"}:
+                _VALID_SOURCES = {
+                    "default_registry", "user_override", "migration_fill",
+                    "startup_sync", "hot_reload", "pipeline_ui",
+                }
+                if source not in _VALID_SOURCES:
                     source = "user_override"
                 actor = payload.actor or "api"
                 reason = payload.change_reason
@@ -1293,12 +1321,36 @@ def create_node_version(payload: CreateNodeVersion):
                         ),
                     )
 
+            # Bump global config version so LiveConfig consumers detect the change.
+            # Requires migration: 20260306_add_config_version_and_extend_audit.sql
+            try:
+                cur.execute("""
+                    UPDATE meta.config_version
+                    SET version = version + 1, updated_ts = now()
+                    WHERE id = 1
+                """)
+            except Exception as e:
+                logger.warning("config_version bump failed (migration not run?): %s", e)
+
         conn.commit()
+
+    # Read the new config version for the response
+    config_version = None
+    try:
+        with _get_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT version FROM meta.config_version WHERE id = 1")
+                row = cur.fetchone()
+                if row:
+                    config_version = row[0]
+    except Exception as e:
+        logger.warning("Failed to read config_version for response: %s", e)
 
     return envelope({
         "version_id": vid,
         "version_number": next_ver,
         "node_name": node[0],
+        "config_version": config_version,
     }, t0)
 
 

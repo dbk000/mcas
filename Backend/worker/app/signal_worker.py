@@ -37,6 +37,7 @@ from setups import S10Evaluator, S10Signal
 from setups.u1_unicorn_ignition import U1Evaluator, U1State, U1Phase, U1Config, load_funding_rates
 from setups.d1_dormancy_ignition import D1Evaluator, D1State, D1Phase, D1Config, is_d1_excluded
 from setup_base import Direction
+from config_reader import LiveConfig
 from s9_microstructure import (
     fetch_1s_klines_batch, analyze_tape, analyze_exit_tape,
     MicrostructureContext,
@@ -131,6 +132,11 @@ class SignalWorker:
         self.s10_evaluator = S10Evaluator()
         self.d1_evaluator = D1Evaluator()
         self._d1_prev_states: dict[str, D1State] = {}  # keyed by "symbol:tf"
+        # LiveConfig: poll meta.config_version for hot-reload
+        self._live_config = LiveConfig(
+            database_url=DATABASE_URL,
+            poll_interval_s=float(os.getenv("CONFIG_POLL_INTERVAL_S", "10")),
+        ) if DATABASE_URL else None
         # Diagnostic counters (reset per logging cycle)
         self._diag = {
             "evaluated": 0, "snapshot_fail": 0, "candle_fail": 0,
@@ -150,9 +156,9 @@ class SignalWorker:
 
         logger.info("Cache ready, starting stream consumption")
 
-        # Auto-sync live parameters to meta.node_version on startup.
-        # This ensures Pipeline always shows the ACTUAL code values,
-        # not stale manually-inserted params.
+        # Startup config sync: Pipeline is source of truth.
+        # If Pipeline has deployed config -> load into evaluator (Pipeline wins).
+        # If no deployed config -> bootstrap code defaults into Pipeline.
         self._sync_node_parameters()
 
         timeframes = get_timeframes(self.r)
@@ -190,6 +196,10 @@ class SignalWorker:
 
                 # Periodic tasks
                 now = time.time()
+
+                # Hot-reload config from Pipeline (time-throttled internally)
+                self._maybe_hot_reload_config()
+
                 if now - self.last_reconcile > RECONCILE_INTERVAL_S:
                     self._reconcile()
                     self.last_reconcile = now
@@ -545,12 +555,15 @@ class SignalWorker:
     }
 
     def _sync_node_parameters(self):
-        """Sync live evaluator parameters to meta.node_version on startup.
+        """Sync parameters between code and Pipeline at startup.
 
-        Reads each evaluator's .parameters property (which reflects the actual
-        D1Config / U1Config values including env-var overrides) and upserts
-        into meta.node_version.parameters. Runs once at startup — every deploy
-        restarts the worker, so parameters are always current.
+        Pipeline is the source of truth. Precedence:
+          1. Pipeline deployed version (highest — if it exists, it wins)
+          2. Environment variables (override code defaults, used for bootstrap)
+          3. Code defaults (lowest — fallback when nothing else is set)
+
+        If a deployed version exists in meta.node_version -> code reads FROM Pipeline.
+        If no deployed version exists -> code writes TO Pipeline (bootstrap).
 
         Only worker_index=0 writes to avoid concurrent upserts from multiple workers.
         """
@@ -559,6 +572,13 @@ class SignalWorker:
         if not DATABASE_URL:
             return
 
+        NODE_NAMES = {
+            "D1": "D1 Dormancy-to-Ignition",
+            "U1": "U1 Unicorn Ignition",
+            "S9": "S9 Short Reversion",
+            "S10": "S10 BB Squeeze",
+        }
+
         evaluators = [
             ("D1", self.d1_evaluator),
             ("U1", self.u1_evaluator),
@@ -566,93 +586,194 @@ class SignalWorker:
 
         for setup_id, evaluator in evaluators:
             try:
-                # Build parameters dict from live SetupParameter objects
-                if not hasattr(evaluator, 'parameters'):
-                    logger.debug(f"{setup_id} evaluator has no .parameters property — skipping")
-                    continue
-                params = {}
-                for p in evaluator.parameters:
-                    params[p.name] = p.default
-
-                # Add gate descriptions for D1
-                if setup_id == "D1":
-                    params["dormancy_require_neg_volume_z"] = D1Config.DORMANCY_REQUIRE_NEG_VOLUME_Z
-                    params["trigger_require_dormancy"] = D1Config.TRIGGER_REQUIRE_DORMANCY
-                    params["trigger_require_compression"] = D1Config.TRIGGER_REQUIRE_COMPRESSION
-                    params["require_accum_divergence_gate"] = D1Config.REQUIRE_ACCUM_DIVERGENCE_GATE
-                    params["gates"] = {
-                        "Gate 1 - Dormancy": f"dormancy_score >= {D1Config.DORMANCY_THRESHOLD} "
-                                             f"(fraction of 48 bars where (high-low)/close < {D1Config.DORMANCY_RANGE_THRESHOLD})",
-                        "Gate 2 - Compression": f"bb_width < {D1Config.BB_WIDTH_COMPRESS}",
-                        "Gate 3 - Volume spike": f"volume_z >= {D1Config.VOLUME_Z_SPIKE} AND rvol >= {D1Config.RVOL_MIN}",
-                        "Gate 4 - Breakout": "close > prev_compression_box_high (previous donchian_high_20)",
-                        "Gate 5 - BB expanding": "bb_width expanding (regime transition)",
-                        "Optional Gate - Accum divergence": (
-                            f"enabled={D1Config.REQUIRE_ACCUM_DIVERGENCE_GATE}, "
-                            f"accum_divergence >= {D1Config.ACCUM_DIVERGENCE_MIN}"
-                        ),
-                    }
-                    params["exit_config"] = {
-                        "stop_pct": D1Config.STOP_PCT,
-                        "tp1_pct": D1Config.TP1_PCT,
-                        "tp2_pct": D1Config.TP2_PCT,
-                        "time_stop_bars_1h": D1Config.TIME_STOP_BARS_1H,
-                        "trail": "none",
-                    }
-                    params["scoring_weights"] = {
-                        "dormancy": D1Config.W_DORMANCY,
-                        "vol_z": D1Config.W_VOL_Z,
-                        "accum_div": D1Config.W_ACCUM_DIV,
-                        "bb_expansion": D1Config.W_BB_EXPANSION,
-                        "rvol": D1Config.W_RVOL,
-                        "btc_adj_ret": D1Config.W_BTC_ADJ_RET,
-                    }
-
-                if setup_id == "U1":
-                    params["exit_config"] = {
-                        "stop_pct": U1Config.STOP_PCT,
-                        "tp1_pct": U1Config.TP1_PCT,
-                        "tp2_pct": U1Config.TP2_PCT,
-                        "time_stop_bars": U1Config.TIME_STOP_BARS,
-                    }
-
-                version_label = self.SETUP_VERSIONS.get(setup_id, f"{setup_id}_v1.0")
-                params_json = json.dumps(params)
-
-                # Map setup_id to exact node name in meta.node
-                NODE_NAMES = {
-                    "D1": "D1 Dormancy-to-Ignition",
-                    "U1": "U1 Unicorn Ignition",
-                    "S9": "S9 Short Reversion",
-                    "S10": "S10 BB Squeeze",
-                }
                 node_name = NODE_NAMES.get(setup_id)
                 if not node_name:
-                    logger.debug(f"No node name mapping for {setup_id} — skipping param sync")
                     continue
 
-                with psycopg.connect(DATABASE_URL) as conn:
-                    with conn.cursor() as cur:
-                        # Upsert: update parameters on the latest version for this node
-                        cur.execute("""
-                            UPDATE meta.node_version nv
-                            SET parameters = %s::jsonb
-                            FROM meta.node n
-                            WHERE nv.node_id = n.node_id
-                              AND n.name = %s
-                              AND nv.version_number = (
-                                  SELECT MAX(nv2.version_number)
-                                  FROM meta.node_version nv2
-                                  WHERE nv2.node_id = n.node_id
-                              )
-                        """, (params_json, node_name))
-                        if cur.rowcount > 0:
-                            logger.info(f"Synced {setup_id} live parameters to meta.node_version ({len(params)} keys)")
+                # Check if Pipeline has ANY version (deployed, tested, etc.)
+                any_version_exists = self._node_has_any_version(node_name)
+
+                if any_version_exists:
+                    # Pipeline has a version — try to load deployed params into evaluator
+                    deployed_params = None
+                    if self._live_config:
+                        deployed_params = self._live_config.get_strategy_params(
+                            setup_id, force_reload=True
+                        )
+                    if deployed_params and hasattr(evaluator, 'update_config'):
+                        changed = evaluator.update_config(deployed_params)
+                        if changed:
+                            logger.info(
+                                "%s: loaded config from Pipeline (%d params changed)",
+                                setup_id, len(changed),
+                            )
                         else:
-                            logger.debug(f"No meta.node_version found for {setup_id} — skipping param sync")
-                    conn.commit()
+                            logger.info("%s: Pipeline config matches code defaults", setup_id)
+                    elif deployed_params:
+                        logger.info("%s: loaded Pipeline config (no update_config method yet)", setup_id)
+                    else:
+                        logger.info(
+                            "%s: Pipeline has version(s) but none deployed — keeping code defaults",
+                            setup_id,
+                        )
+                else:
+                    # No Pipeline version at all — bootstrap code defaults
+                    self._bootstrap_node_params(setup_id, evaluator, node_name)
+
             except Exception as e:
-                logger.warning(f"Failed to sync {setup_id} parameters to meta: {e}")
+                logger.warning(f"Failed to sync {setup_id} parameters: {e}")
+
+    def _node_has_any_version(self, node_name: str) -> bool:
+        """Check if any version exists for this node (any status)."""
+        try:
+            with psycopg.connect(DATABASE_URL) as conn:
+                with conn.cursor() as cur:
+                    cur.execute("""
+                        SELECT EXISTS(
+                            SELECT 1
+                            FROM meta.node n
+                            JOIN meta.node_version nv ON nv.node_id = n.node_id
+                            WHERE lower(n.name) = lower(%s)
+                              AND nv.parameters IS NOT NULL
+                              AND nv.parameters != '{}'::jsonb
+                        )
+                    """, (node_name,))
+                    return cur.fetchone()[0]
+        except Exception as e:
+            logger.warning("Failed to check node versions for %s: %s", node_name, e)
+            return False
+
+    def _bootstrap_node_params(self, setup_id: str, evaluator, node_name: str):
+        """Write code defaults to meta.node_version (bootstrap — no version exists at all)."""
+        if not hasattr(evaluator, 'parameters'):
+            return
+
+        params = {}
+        for p in evaluator.parameters:
+            params[p.name] = p.default
+
+        # Add structured params for D1
+        if setup_id == "D1":
+            params["trigger_require_dormancy"] = D1Config.TRIGGER_REQUIRE_DORMANCY
+            params["trigger_require_compression"] = D1Config.TRIGGER_REQUIRE_COMPRESSION
+            params["require_accum_divergence_gate"] = D1Config.REQUIRE_ACCUM_DIVERGENCE_GATE
+            params["gates"] = {
+                "Gate 1 - Dormancy": f"dormancy_score >= {D1Config.DORMANCY_THRESHOLD} "
+                                     f"(fraction of 48 bars where (high-low)/close < {D1Config.DORMANCY_RANGE_THRESHOLD})",
+                "Gate 2 - Compression": f"bb_width < {D1Config.BB_WIDTH_COMPRESS}",
+                "Gate 3 - Volume spike": f"volume_z >= {D1Config.VOLUME_Z_SPIKE} AND rvol >= {D1Config.RVOL_MIN}",
+                "Gate 4 - Breakout": "close > prev_compression_box_high (previous donchian_high_20)",
+                "Gate 5 - BB expanding": "bb_width expanding (regime transition)",
+                "Optional Gate - Accum divergence": (
+                    f"enabled={D1Config.REQUIRE_ACCUM_DIVERGENCE_GATE}, "
+                    f"accum_divergence >= {D1Config.ACCUM_DIVERGENCE_MIN}"
+                ),
+            }
+            params["exit_config"] = {
+                "stop_pct": D1Config.STOP_PCT,
+                "tp1_pct": D1Config.TP1_PCT,
+                "tp2_pct": D1Config.TP2_PCT,
+                "time_stop_bars_1h": D1Config.TIME_STOP_BARS_1H,
+                "trail": "none",
+            }
+            params["scoring_weights"] = {
+                "dormancy": D1Config.W_DORMANCY,
+                "vol_z": D1Config.W_VOL_Z,
+                "accum_div": D1Config.W_ACCUM_DIV,
+                "bb_expansion": D1Config.W_BB_EXPANSION,
+                "rvol": D1Config.W_RVOL,
+                "btc_adj_ret": D1Config.W_BTC_ADJ_RET,
+            }
+
+        if setup_id == "U1":
+            params["exit_config"] = {
+                "stop_pct": U1Config.STOP_PCT,
+                "tp1_pct": U1Config.TP1_PCT,
+                "tp2_pct": U1Config.TP2_PCT,
+                "time_stop_bars": U1Config.TIME_STOP_BARS,
+            }
+
+        params_json = json.dumps(params)
+
+        with psycopg.connect(DATABASE_URL) as conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    UPDATE meta.node_version nv
+                    SET parameters = %s::jsonb
+                    FROM meta.node n
+                    WHERE nv.node_id = n.node_id
+                      AND n.name = %s
+                      AND nv.version_number = (
+                          SELECT MAX(nv2.version_number)
+                          FROM meta.node_version nv2
+                          WHERE nv2.node_id = n.node_id
+                      )
+                """, (params_json, node_name))
+                if cur.rowcount > 0:
+                    logger.info(f"Bootstrapped {setup_id} code defaults to meta.node_version ({len(params)} keys)")
+                else:
+                    logger.debug(f"No meta.node_version found for {setup_id} — skipping bootstrap")
+            conn.commit()
+
+    def _maybe_hot_reload_config(self):
+        """Check for Pipeline config changes and hot-reload evaluator configs.
+
+        Time-throttled by LiveConfig.has_changed() (CONFIG_POLL_INTERVAL_S).
+        On change: apply new params, validate, invalidate stale Redis signals.
+        """
+        if not self._live_config:
+            return
+        if not self._live_config.has_changed():
+            return
+
+        # D1 hot-reload
+        try:
+            d1_params = self._live_config.get_strategy_params("D1")
+            if d1_params:
+                changed = self.d1_evaluator.update_config(d1_params)
+                if changed:
+                    # Invalidate Redis signals — they have stale prices baked in
+                    d1_tfs = self.d1_evaluator.metadata.timeframe_affinity
+                    self._invalidate_redis_signals("D1", d1_tfs)
+                    logger.info(
+                        "CONFIG_RELOAD setup=D1 changed=%s version=%d",
+                        list(changed.keys()),
+                        self._live_config._cached_version,
+                    )
+        except Exception as e:
+            logger.error("D1 hot-reload failed (keeping previous config): %s", e)
+
+        # U1 hot-reload (placeholder — add update_config() to U1Evaluator when ready)
+        # S9, S10 follow same pattern
+        # Note: stop policy is not consumed by signal_worker (it's a sim-time concern
+        # in run_executor, which already reads it per-simulation). No reload needed here.
+
+    def _invalidate_redis_signals(self, setup_id: str, timeframes: list[str]):
+        """Delete Redis signals for a setup after config change.
+
+        Signals carry baked-in entry/stop/TP prices from the old config.
+        After config reload, those prices are wrong. Delete them so the
+        next evaluation cycle writes fresh signals with the new config.
+        """
+        from cache_contract import score_zset_key, ts_zset_key
+        for tf in timeframes:
+            sc_key = score_zset_key(setup_id, tf)
+            ts_key = ts_zset_key(setup_id, tf)
+            # Get all symbols in the ZSET to delete their individual signal keys
+            members = self.r.zrange(sc_key, 0, -1)
+            if members:
+                pipe = self.r.pipeline(transaction=True)
+                for sym in members:
+                    symbol = sym if isinstance(sym, str) else sym.decode()
+                    pipe.delete(f"sig:{symbol}:{tf}:{setup_id}")
+                    pipe.delete(f"sig_meta:{symbol}:{tf}:{setup_id}")
+                pipe.delete(sc_key)
+                pipe.delete(ts_key)
+                pipe.execute()
+                logger.info(
+                    "Invalidated %d Redis signals for %s:%s (config changed)",
+                    len(members), setup_id, tf,
+                )
 
     def _persist_signal_to_pg(self, symbol: str, tf: str, setup_id: str,
                                score: float, reason: str, payload: dict):

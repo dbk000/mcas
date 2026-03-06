@@ -401,6 +401,81 @@ class D1Evaluator(SetupBase):
                            "Time stop in bars (1h)", 24, 168, param_type="int"),
         ]
 
+    def update_config(self, params: dict) -> dict:
+        """Hot-reload config from Pipeline. Does not reset runtime state.
+
+        Accepts the nested parameter dict as stored in meta.node_version
+        (with sub-objects: gates, exit_config, scoring_weights).
+        Returns dict of changed keys with old/new values.
+        """
+        changed = {}
+
+        # Flat top-level parameters → D1Config class attrs
+        _FLAT_MAP = {
+            "dormancy_threshold": "DORMANCY_THRESHOLD",
+            "dormancy_range_threshold": "DORMANCY_RANGE_THRESHOLD",
+            "bb_width_compress": "BB_WIDTH_COMPRESS",
+            "volume_z_spike": "VOLUME_Z_SPIKE",
+            "rvol_min": "RVOL_MIN",
+            "accum_divergence_min": "ACCUM_DIVERGENCE_MIN",
+            "trigger_require_dormancy": "TRIGGER_REQUIRE_DORMANCY",
+            "trigger_require_compression": "TRIGGER_REQUIRE_COMPRESSION",
+            "require_accum_divergence_gate": "REQUIRE_ACCUM_DIVERGENCE_GATE",
+            "cooldown_bars_1h": "COOLDOWN_BARS_1H",
+            "min_volume_usd": "MIN_VOLUME_USD",
+            "max_volume_usd": "MAX_VOLUME_USD",
+            "dormancy_require_neg_volume_z": "DORMANCY_REQUIRE_NEG_VOLUME_Z",
+        }
+
+        # Apply flat params
+        for param_key, config_attr in _FLAT_MAP.items():
+            if param_key in params:
+                old = getattr(D1Config, config_attr, None)
+                new = params[param_key]
+                if old != new:
+                    setattr(D1Config, config_attr, new)
+                    changed[config_attr] = {"old": old, "new": new}
+
+        # Apply nested exit_config
+        exit_cfg = params.get("exit_config", {})
+        if isinstance(exit_cfg, dict):
+            _EXIT_MAP = {
+                "stop_pct": "STOP_PCT",
+                "tp1_pct": "TP1_PCT",
+                "tp2_pct": "TP2_PCT",
+                "time_stop_bars_1h": "TIME_STOP_BARS_1H",
+            }
+            for param_key, config_attr in _EXIT_MAP.items():
+                if param_key in exit_cfg:
+                    old = getattr(D1Config, config_attr, None)
+                    new = exit_cfg[param_key]
+                    if old != new:
+                        setattr(D1Config, config_attr, new)
+                        changed[config_attr] = {"old": old, "new": new}
+
+        # Apply nested scoring_weights (existing _compute_score normalises by sum)
+        weights_cfg = params.get("scoring_weights", {})
+        if isinstance(weights_cfg, dict):
+            _WEIGHT_MAP = {
+                "dormancy": "W_DORMANCY",
+                "vol_z": "W_VOL_Z",
+                "accum_div": "W_ACCUM_DIV",
+                "bb_expansion": "W_BB_EXPANSION",
+                "rvol": "W_RVOL",
+                "btc_adj_ret": "W_BTC_ADJ_RET",
+            }
+            for param_key, config_attr in _WEIGHT_MAP.items():
+                if param_key in weights_cfg:
+                    old = getattr(D1Config, config_attr, None)
+                    new = weights_cfg[param_key]
+                    if old != new:
+                        setattr(D1Config, config_attr, new)
+                        changed[config_attr] = {"old": old, "new": new}
+
+        if changed:
+            logger.info("D1Config hot-reloaded: %s", changed)
+        return changed
+
     def compute_state(
         self,
         snapshot: IndicatorSnapshot,
