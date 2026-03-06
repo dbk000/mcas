@@ -19,34 +19,41 @@ INSERT INTO meta.config_version (id, version) VALUES (1, 0) ON CONFLICT DO NOTHI
 --    The existing CHECK only allows: default_registry, user_override, migration_fill.
 --    We need: startup_sync, hot_reload, pipeline_ui.
 --    Postgres doesn't support ALTER CONSTRAINT, so drop+recreate.
+-- 2) Extend source CHECK on stop_policy_audit_events to allow new sources.
+--    Only runs if the table exists (it may not on dev).
 DO $$
 BEGIN
-    -- Drop existing CHECK constraint on source column (name varies)
     IF EXISTS (
-        SELECT 1 FROM information_schema.table_constraints tc
-        JOIN information_schema.check_constraints cc ON cc.constraint_name = tc.constraint_name
-        WHERE tc.table_schema = 'meta'
-          AND tc.table_name = 'stop_policy_audit_events'
-          AND cc.check_clause LIKE '%source%'
+        SELECT 1 FROM information_schema.tables
+        WHERE table_schema = 'meta' AND table_name = 'stop_policy_audit_events'
     ) THEN
-        EXECUTE (
-            SELECT 'ALTER TABLE meta.stop_policy_audit_events DROP CONSTRAINT ' || tc.constraint_name
-            FROM information_schema.table_constraints tc
+        -- Drop existing CHECK constraint on source column (name varies)
+        IF EXISTS (
+            SELECT 1 FROM information_schema.table_constraints tc
             JOIN information_schema.check_constraints cc ON cc.constraint_name = tc.constraint_name
             WHERE tc.table_schema = 'meta'
               AND tc.table_name = 'stop_policy_audit_events'
               AND cc.check_clause LIKE '%source%'
-            LIMIT 1
-        );
+        ) THEN
+            EXECUTE (
+                SELECT 'ALTER TABLE meta.stop_policy_audit_events DROP CONSTRAINT ' || tc.constraint_name
+                FROM information_schema.table_constraints tc
+                JOIN information_schema.check_constraints cc ON cc.constraint_name = tc.constraint_name
+                WHERE tc.table_schema = 'meta'
+                  AND tc.table_name = 'stop_policy_audit_events'
+                  AND cc.check_clause LIKE '%source%'
+                LIMIT 1
+            );
+        END IF;
+
+        ALTER TABLE meta.stop_policy_audit_events
+            ADD CONSTRAINT stop_policy_audit_source_check
+            CHECK (source IN (
+                'default_registry', 'user_override', 'migration_fill',
+                'startup_sync', 'hot_reload', 'pipeline_ui'
+            ));
     END IF;
 END $$;
-
-ALTER TABLE meta.stop_policy_audit_events
-    ADD CONSTRAINT stop_policy_audit_source_check
-    CHECK (source IN (
-        'default_registry', 'user_override', 'migration_fill',
-        'startup_sync', 'hot_reload', 'pipeline_ui'
-    ));
 
 SELECT pg_advisory_unlock(20260306);
 
