@@ -1,0 +1,12 @@
+{
+  "snapshot": "pre_honesty_fixes",
+  "date": "2026-03-07",
+  "description": "Baseline D1 sim results BEFORE any honesty fixes (A1 entry bar, A2 gap cap, A3 r-floor)",
+  "total": 4120,
+  "winners": 650,
+  "losers": 3470,
+  "avg_pnl": -2.2728,
+  "aggregate_pf": 0.7706,
+  "exit_reasons": "STOP_LOSS, TIME_STOP, TP1, TP1+STOP_LOSS, TP1+TIME_STOP, TP1+TP2",
+  "note": "This PF was computed from existing sim results in DB, not a fresh sim run"
+}

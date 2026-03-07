@@ -24,7 +24,7 @@ Coins transitioning from prolonged dormancy (flatline price, near-zero relative 
   - Optional accumulation divergence gate
 - Current simulator defaults (for D1 causal gate):
   - Enabled: `min_stop_pct=1.5%`
-  - Disabled by default: `min_entry_price`, `min_score`, `min_r_multiple_floor`
+  - Disabled by default: `min_entry_price`, `min_score`
 
 ## Data Requirements
 

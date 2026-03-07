@@ -1604,7 +1604,6 @@ class RunExecutor:
             stop_distance_factors = pipeline_factors if isinstance(pipeline_factors, dict) else {}
         max_bars_forward = setup_params.get("max_bars_forward", SIM_DEFAULT_MAX_BARS_FORWARD)
         min_r_preservation = setup_params.get("min_r_preservation", SIM_DEFAULT_MIN_R_PRESERVATION)
-        min_r_multiple_floor = setup_params.get("min_r_multiple_floor")
         d1_causal_gate_enabled = setup_params.get("d1_causal_gate_enabled")
         if d1_causal_gate_enabled is None:
             d1_causal_gate_enabled = bool(setup_ids and set(setup_ids) == {"D1"})
@@ -1688,7 +1687,6 @@ class RunExecutor:
             d1_causal_min_entry_price=d1_causal_min_entry_price,
             d1_causal_min_stop_pct=d1_causal_min_stop_pct,
             d1_causal_min_score=d1_causal_min_score,
-            min_r_multiple_floor=min_r_multiple_floor,
             intrabar_policy=intrabar_policy,
             one_event_per_bar=one_event_per_bar,
         )

@@ -149,10 +149,12 @@ def fetch_klines_paginated(
                     timeout=BINANCE_TIMEOUT,
                 )
                 if resp.status_code in (418, 429):
-                    wait = (2 ** attempt) * 2
+                    retry_after = int(resp.headers.get("Retry-After", "0"))
+                    backoff = (2 ** attempt) * 2
+                    wait = max(retry_after, backoff) if retry_after else backoff
                     logger.warning(
-                        "Rate limited (%d) for %s %s, backoff %ds",
-                        resp.status_code, symbol, interval, wait,
+                        "Rate limited (%d) for %s %s, backoff %ds (Retry-After: %s)",
+                        resp.status_code, symbol, interval, wait, retry_after or "none",
                     )
                     _limiter.trigger_backoff(wait)
                     time.sleep(wait)

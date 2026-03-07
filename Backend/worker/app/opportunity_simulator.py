@@ -85,8 +85,6 @@ class SimulationConfig:
     d1_causal_min_entry_price: float = SIM_DEFAULT_D1_CAUSAL_MIN_ENTRY_PRICE
     d1_causal_min_stop_pct: float = SIM_DEFAULT_D1_CAUSAL_MIN_STOP_PCT
     d1_causal_min_score: float = SIM_DEFAULT_D1_CAUSAL_MIN_SCORE
-    # Optional post-sim floor used by D1 matrix summaries (drop extreme < -1.05R outliers)
-    min_r_multiple_floor: Optional[float] = None
 
 
 @dataclass
@@ -650,34 +648,21 @@ class OpportunitySimulator:
         exit_slip_bps = self.config.slippage_exit_bps
 
         # MAE/MFE tracking (using high/low, not close)
-        # Initialize from entry_with_slip, then immediately process entry bar (bar 0).
-        # The loop starts at entry_bar_idx + 1, so entry bar is NOT iterated —
-        # we must capture its high/low here or miss entry-bar excursions.
         mae_price = entry_with_slip
         mfe_price = entry_with_slip
         mae_bar = 0
         mfe_bar = 0
-
-        # Process entry bar as "bar 0" — price gaps against you on the entry bar itself
-        if direction == "long":
-            if entry_bar["low"] < mae_price:
-                mae_price = entry_bar["low"]
-            if entry_bar["high"] > mfe_price:
-                mfe_price = entry_bar["high"]
-        else:  # short
-            if entry_bar["high"] > mae_price:
-                mae_price = entry_bar["high"]
-            if entry_bar["low"] < mfe_price:
-                mfe_price = entry_bar["low"]
 
         max_bar_idx = min(
             entry_bar_idx + self.config.max_bars_forward,
             len(bars) - 1
         )
 
-        for i in range(entry_bar_idx + 1, max_bar_idx + 1):
+        for i in range(entry_bar_idx, max_bar_idx + 1):
             bar = bars[i]
-            bars_held += 1
+            is_entry_bar = (i == entry_bar_idx)
+            if not is_entry_bar:
+                bars_held += 1
 
             # Update MAE/MFE using high/low (captures intra-bar excursions)
             if direction == "long":
@@ -708,6 +693,7 @@ class OpportunitySimulator:
                 high_water_mark=hwm,
                 half_r_touched=half_r_touched,
                 config=exit_cfg,
+                is_entry_bar=is_entry_bar,
             )
 
             hwm = new_hwm
@@ -757,13 +743,53 @@ class OpportunitySimulator:
             exit_ts = last_bar["bar_start_ts"]
 
         # Final leg (or full leg if TP1 partial never triggered)
-        if exit_reason != "STOP_LOSS":
+        # Detect gap-through for slippage and observability
+        gap_through_info = None
+        if exit_reason == "STOP_LOSS":
+            # Normal stop fills at stop_price (limit order) — no slippage.
+            # Gap-through fills at bar_open (market sweep) — apply directional slippage.
+            is_gap_stop = (exit_price != sim_stop_price)
+            if is_gap_stop:
+                # Gap-through: sweeps thin order book, apply directional slippage
+                if direction == "long":
+                    exit_with_slip = exit_price * (1 - exit_slip_bps / 10000)
+                else:
+                    exit_with_slip = exit_price * (1 + exit_slip_bps / 10000)
+                gap_through_info = {
+                    "type": "adverse",
+                    "fill_price": exit_price,
+                    "stop_price": sim_stop_price,
+                    "gap_r": round(abs(exit_price - sim_stop_price) / actual_r_value, 4) if actual_r_value > 0 else None,
+                }
+            else:
+                exit_with_slip = exit_price  # limit order at stop_price, no slippage
+        elif exit_reason in ("TP1", "TP2"):
+            # Detect TP windfall gaps for observability
+            tp_ref = tp1_price if exit_reason == "TP1" else tp2_price
+            is_windfall = False
+            if tp_ref is not None:
+                if direction == "long" and exit_price > tp_ref:
+                    is_windfall = True
+                elif direction == "short" and exit_price < tp_ref:
+                    is_windfall = True
+            if is_windfall:
+                gap_through_info = {
+                    "type": "windfall",
+                    "fill_price": exit_price,
+                    "tp_price": tp_ref,
+                    "windfall_r": round(abs(exit_price - tp_ref) / actual_r_value, 4) if actual_r_value > 0 else None,
+                }
+            # All non-STOP_LOSS exits get directional slippage
             if direction == "long":
                 exit_with_slip = exit_price * (1 - exit_slip_bps / 10000)
             else:
                 exit_with_slip = exit_price * (1 + exit_slip_bps / 10000)
         else:
-            exit_with_slip = exit_price
+            # TIME_STOP, TRAIL_STOP, FAIL_FAST — normal directional slippage
+            if direction == "long":
+                exit_with_slip = exit_price * (1 - exit_slip_bps / 10000)
+            else:
+                exit_with_slip = exit_price * (1 + exit_slip_bps / 10000)
 
         if direction == "long":
             final_leg_gross = (exit_with_slip - entry_with_slip) * remaining_size
@@ -806,19 +832,6 @@ class OpportunitySimulator:
         result.pnl_net = pnl_net
         result.r_multiple = r_multiple
 
-        # Align with D1 matrix post-simulation slicing behavior:
-        # drop pathological tail outcomes below configured R floor.
-        if (
-            self.config.min_r_multiple_floor is not None
-            and r_multiple < self.config.min_r_multiple_floor
-        ):
-            result.data_available = False
-            result.error_message = (
-                f"R-multiple below floor: {r_multiple:.2f} "
-                f"< {self.config.min_r_multiple_floor:.2f}"
-            )
-            return result
-
         # Extract trace data from opportunity payload for correlation analysis
         result.trace_json = self._extract_trace_from_payload(
             payload, direction, result.exit_reason, bars_held
@@ -840,6 +853,10 @@ class OpportunitySimulator:
                 "bars_to_mae": mae_bar,
                 "bars_to_mfe": mfe_bar,
             }
+
+        # Merge gap-through info into trace
+        if gap_through_info and result.trace_json:
+            result.trace_json["gap_through"] = gap_through_info
 
         # Merge TP invalidation into trace
         if result.tp_invalidated and result.trace_json:

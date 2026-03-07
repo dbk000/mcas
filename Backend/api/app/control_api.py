@@ -144,7 +144,6 @@ class SimulationRunRequest(BaseModel):
     slippage_bps: float = Field(default=5.0, ge=0, le=50)
     max_bars_forward: int = Field(default=200, ge=1, le=2000)
     min_r_preservation: float = Field(default=0.5, ge=0.5, le=1.0)
-    min_r_multiple_floor: Optional[float] = Field(default=None, ge=-10.0, le=0.0)
     d1_causal_gate_enabled: Optional[bool] = None
     d1_causal_min_entry_price: float = Field(default=0.0, ge=0.0)
     d1_causal_min_stop_pct: float = Field(default=0.0, ge=0.0, le=1.0)
@@ -674,7 +673,6 @@ def create_simulation_run(request: SimulationRunRequest):
         "slippage_bps": request.slippage_bps,
         "max_bars_forward": request.max_bars_forward,
         "min_r_preservation": request.min_r_preservation,
-        "min_r_multiple_floor": request.min_r_multiple_floor,
         "d1_causal_gate_enabled": request.d1_causal_gate_enabled,
         "d1_causal_min_entry_price": request.d1_causal_min_entry_price,
         "d1_causal_min_stop_pct": request.d1_causal_min_stop_pct,

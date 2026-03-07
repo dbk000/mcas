@@ -18,6 +18,7 @@ Human-in-loop: Signals are identification + ranking only. No auto-execution.
 
 import logging
 import os
+import time as _time
 import numpy as np
 from dataclasses import dataclass, field
 from datetime import datetime, timezone, timedelta
@@ -135,6 +136,9 @@ class D1Config:
     # Cooldown after trigger
     COOLDOWN_BARS_1H = _env_int("D1_COOLDOWN_BARS_1H", 24)  # 1 day
 
+    # Social silence lookback (soft feature, not a gate)
+    SOCIAL_SILENCE_LOOKBACK_DAYS = _env_int("D1_SOCIAL_SILENCE_LOOKBACK_DAYS", 30)
+
     # Scoring weights (sum to 1.0)
     W_DORMANCY = _env_float("D1_W_DORMANCY", 0.20)
     W_VOL_Z = _env_float("D1_W_VOL_Z", 0.25)
@@ -180,6 +184,68 @@ def is_d1_excluded(symbol: str) -> bool:
     if any(base.endswith(p) for p in D1Config.LEVERAGE_PATTERNS):
         return True
     return False
+
+
+# =============================================================================
+# Social Mentions (soft feature — count, not gate)
+# =============================================================================
+
+_social_count_cache: dict[str, int] = {}       # symbol -> mention_count
+_social_count_cache_ts: dict[str, float] = {}  # symbol -> last query epoch
+_SOCIAL_COUNT_CACHE_TTL: float = 1800.0        # 30 minutes
+
+
+def get_social_mentions_count(
+    symbol: str,
+    database_url: str,
+    trigger_bar_start_ts: Optional[datetime] = None,
+    lookback_days: Optional[int] = None,
+) -> int:
+    """Return total mention_count from social_features_1h in the lookback window.
+
+    Uses strict `< trigger_bar_start_ts` to exclude the trigger bar itself
+    (it captures the reaction, not the pre-breakout silence).
+
+    Returns 0 if the table doesn't exist or query fails.
+    Results cached per-symbol for 30 minutes.
+    """
+    if lookback_days is None:
+        lookback_days = D1Config.SOCIAL_SILENCE_LOOKBACK_DAYS
+
+    now = _time.time()
+    cache_key = symbol
+    if cache_key in _social_count_cache and (now - _social_count_cache_ts.get(cache_key, 0)) < _SOCIAL_COUNT_CACHE_TTL:
+        return _social_count_cache[cache_key]
+
+    try:
+        import psycopg
+        with psycopg.connect(database_url) as conn:
+            if trigger_bar_start_ts is not None:
+                row = conn.execute(
+                    "SELECT COALESCE(SUM(mention_count), 0) "
+                    "FROM social_features_1h "
+                    "WHERE symbol = %s "
+                    "  AND bar_start_ts >= %s - %s * INTERVAL '1 day' "
+                    "  AND bar_start_ts < %s",
+                    (symbol, trigger_bar_start_ts, lookback_days, trigger_bar_start_ts),
+                ).fetchone()
+            else:
+                row = conn.execute(
+                    "SELECT COALESCE(SUM(mention_count), 0) "
+                    "FROM social_features_1h "
+                    "WHERE symbol = %s "
+                    "  AND bar_start_ts >= NOW() - %s * INTERVAL '1 day' "
+                    "  AND bar_start_ts < NOW()",
+                    (symbol, lookback_days),
+                ).fetchone()
+        result = int(row[0]) if row else 0
+    except Exception as e:
+        logger.debug("Social mentions count failed for %s: %s", symbol, e)
+        result = 0
+
+    _social_count_cache[cache_key] = result
+    _social_count_cache_ts[cache_key] = now
+    return result
 
 
 # =============================================================================
@@ -322,6 +388,9 @@ class D1Signal:
     # Score breakdown
     score_components: dict = field(default_factory=dict)
 
+    # Social silence (soft feature — not a gate)
+    social_mentions_30d: int = 0
+
     # Explainability
     explain: Optional[ExplainPayload] = None
 
@@ -425,6 +494,7 @@ class D1Evaluator(SetupBase):
             "min_volume_usd": "MIN_VOLUME_USD",
             "max_volume_usd": "MAX_VOLUME_USD",
             "dormancy_require_neg_volume_z": "DORMANCY_REQUIRE_NEG_VOLUME_Z",
+            "social_silence_lookback_days": "SOCIAL_SILENCE_LOOKBACK_DAYS",
         }
 
         # Apply flat params

@@ -71,30 +71,42 @@ class RankedSignal:
 
 class OHLCVCache:
     """
-    In-memory cache for OHLCV data.
+    In-memory cache for OHLCV data with per-key thread safety.
     Key: (symbol, timeframe)
     Value: list of OHLCV candles
     """
-    
+
     def __init__(self, max_bars: int = 500):
         self.max_bars = max_bars
         self._cache: dict[tuple[str, str], list[OHLCV]] = {}
-    
+        self._locks: dict[tuple[str, str], threading.Lock] = {}
+        self._master_lock = threading.Lock()
+
+    def _get_lock(self, key: tuple[str, str]) -> threading.Lock:
+        if key not in self._locks:
+            with self._master_lock:
+                if key not in self._locks:
+                    self._locks[key] = threading.Lock()
+        return self._locks[key]
+
     def get(self, symbol: str, tf: str) -> Optional[list[OHLCV]]:
-        return self._cache.get((symbol, tf))
-    
+        key = (symbol, tf)
+        with self._get_lock(key):
+            return self._cache.get(key)
+
     def set(self, symbol: str, tf: str, candles: list[OHLCV]):
-        # Trim to max_bars
-        self._cache[(symbol, tf)] = candles[-self.max_bars:]
-    
+        key = (symbol, tf)
+        with self._get_lock(key):
+            self._cache[key] = candles[-self.max_bars:]
+
     def append(self, symbol: str, tf: str, candle: OHLCV):
         key = (symbol, tf)
-        if key not in self._cache:
-            self._cache[key] = []
-        self._cache[key].append(candle)
-        # Trim
-        if len(self._cache[key]) > self.max_bars:
-            self._cache[key] = self._cache[key][-self.max_bars:]
+        with self._get_lock(key):
+            if key not in self._cache:
+                self._cache[key] = []
+            self._cache[key].append(candle)
+            if len(self._cache[key]) > self.max_bars:
+                self._cache[key] = self._cache[key][-self.max_bars:]
 
 
 class IndicatorCache:
@@ -179,8 +191,8 @@ class BinanceClient:
                 resp = requests.get(url, params=params, timeout=self.timeout)
                 if resp.status_code in (418, 429):
                     retry_after = int(resp.headers.get("Retry-After", "5"))
-                    wait = min(retry_after, 2 ** attempt + random.uniform(0, 1),
-                               MAX_RETRY_WAIT_S)
+                    wait = max(retry_after, min(2 ** attempt + random.uniform(0, 1),
+                                                  MAX_RETRY_WAIT_S))
                     logger.warning("Binance rate limit, retrying", extra={
                         "event": "rate_limit_retry", "symbol": symbol,
                         "interval": interval, "attempt": attempt + 1,

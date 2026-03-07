@@ -62,6 +62,7 @@ def check_exit(
     max_bars: int,
     state: PositionState,
     config: ExitConfig = None,
+    is_entry_bar: bool = False,
 ) -> Optional[tuple[str, float]]:
     """
     Check if position should exit. Returns (reason, exit_price) or None.
@@ -109,6 +110,11 @@ def check_exit(
         if stop_hit and tp1_hit:
             policy = config.intrabar_policy if config.intrabar_policy in _VALID_INTRABAR_POLICIES else INTRABAR_STOP_FIRST
             if policy == INTRABAR_TP_FIRST:
+                # Windfall gap: if bar opened past TP, fill at bar_open
+                if side == "long" and bar_open > tp1_price:
+                    return ("TP1", bar_open)
+                elif side == "short" and bar_open < tp1_price:
+                    return ("TP1", bar_open)
                 return ("TP1", tp1_price)
             if policy == INTRABAR_OHLC_HEURISTIC:
                 # Heuristic path:
@@ -117,30 +123,28 @@ def check_exit(
                 up_bar = close >= bar_open
                 if side == "long":
                     if up_bar:
-                        return ("TP1", tp1_price)
+                        tp_fill = bar_open if bar_open > tp1_price else tp1_price
+                        return ("TP1", tp_fill)
                 else:
                     if not up_bar:
-                        return ("TP1", tp1_price)
+                        tp_fill = bar_open if bar_open < tp1_price else tp1_price
+                        return ("TP1", tp_fill)
             # STOP_FIRST falls through to normal stop check below.
 
     # --- STOP_LOSS (highest priority) ---
     if side == "long":
         stop_triggered = (low < stop_price) if use_through_stop else (low <= stop_price)
         if stop_triggered:
-            if bar_open < stop_price:
-                # Gap-through: cap worst fill at stop_price - 2R
-                worst_fill = stop_price - 2 * r_value if r_value > 0 else bar_open
-                fill_price = max(bar_open, worst_fill)
+            if bar_open < stop_price and not is_entry_bar:
+                fill_price = bar_open  # honest gap-through fill (slippage applied by simulator)
             else:
                 fill_price = stop_price
             return ("STOP_LOSS", fill_price)
     else:
         stop_triggered = (high > stop_price) if use_through_stop else (high >= stop_price)
         if stop_triggered:
-            if bar_open > stop_price:
-                # Gap-through: cap worst fill at stop_price + 2R
-                worst_fill = stop_price + 2 * r_value if r_value > 0 else bar_open
-                fill_price = min(bar_open, worst_fill)
+            if bar_open > stop_price and not is_entry_bar:
+                fill_price = bar_open  # honest gap-through fill (slippage applied by simulator)
             else:
                 fill_price = stop_price
             return ("STOP_LOSS", fill_price)
@@ -230,10 +234,15 @@ def check_exit(
         if side == "long":
             tp1_hit = (high > tp1_price) if use_through_target else (high >= tp1_price)
             if tp1_hit:
+                # Windfall gap: bar opened past TP, fill at bar_open (better than TP)
+                if bar_open > tp1_price:
+                    return ("TP1", bar_open)
                 return ("TP1", tp1_price)
         else:
             tp1_hit = (low < tp1_price) if use_through_target else (low <= tp1_price)
             if tp1_hit:
+                if bar_open < tp1_price:
+                    return ("TP1", bar_open)
                 return ("TP1", tp1_price)
 
     # --- TP2 ---
@@ -241,10 +250,14 @@ def check_exit(
         if side == "long":
             tp2_hit = (high > tp2_price) if use_through_target else (high >= tp2_price)
             if tp2_hit:
+                if bar_open > tp2_price:
+                    return ("TP2", bar_open)
                 return ("TP2", tp2_price)
         else:
             tp2_hit = (low < tp2_price) if use_through_target else (low <= tp2_price)
             if tp2_hit:
+                if bar_open < tp2_price:
+                    return ("TP2", bar_open)
                 return ("TP2", tp2_price)
 
     return None
@@ -263,6 +276,7 @@ def check_exit_simple(
     high_water_mark: Optional[float] = None,
     half_r_touched: bool = False,
     config: ExitConfig = None,
+    is_entry_bar: bool = False,
 ) -> tuple[Optional[tuple[str, float]], Optional[float], bool]:
     """
     Simplified exit check that doesn't require PositionState object.
@@ -288,6 +302,7 @@ def check_exit_simple(
         max_bars=max_bars,
         state=state,
         config=config,
+        is_entry_bar=is_entry_bar,
     )
 
     return result, state.high_water_mark, state.half_r_touched

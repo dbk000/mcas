@@ -14,6 +14,7 @@ import json
 import time
 import logging
 from dataclasses import dataclass, asdict
+from datetime import datetime, timezone
 
 import redis
 import psycopg
@@ -35,7 +36,7 @@ from indicators import IndicatorSnapshot
 from setups import S9Evaluator, S9Signal, S9State
 from setups import S10Evaluator, S10Signal
 from setups.u1_unicorn_ignition import U1Evaluator, U1State, U1Phase, U1Config, load_funding_rates
-from setups.d1_dormancy_ignition import D1Evaluator, D1State, D1Phase, D1Config, is_d1_excluded
+from setups.d1_dormancy_ignition import D1Evaluator, D1State, D1Phase, D1Config, is_d1_excluded, get_social_mentions_count
 from setup_base import Direction
 from config_reader import LiveConfig
 from s9_microstructure import (
@@ -387,6 +388,20 @@ class SignalWorker:
 
             self._diag["d1_signal"] += 1
 
+            # Social mentions (soft feature — not a gate)
+            if DATABASE_URL:
+                trigger_ts = None
+                if bar_start_ts:
+                    try:
+                        trigger_ts = datetime.fromtimestamp(
+                            int(bar_start_ts) / 1000, tz=timezone.utc
+                        )
+                    except (ValueError, TypeError):
+                        pass
+                sig.social_mentions_30d = get_social_mentions_count(
+                    symbol, DATABASE_URL, trigger_bar_start_ts=trigger_ts,
+                )
+
             # Build payload
             calib_mult = SETUP_SCORE_MULTIPLIERS.get("D1", 1.0)
             calibrated_score = min(sig.setup_score * calib_mult, 1.0)
@@ -416,6 +431,7 @@ class SignalWorker:
                 "rvol_at_trigger": sig.rvol_at_trigger,
                 "bb_width_at_trigger": sig.bb_width_at_trigger,
                 "btc_beta": sig.btc_beta,
+                "social_mentions_30d": sig.social_mentions_30d,
                 "score_components": sig.score_components,
                 "gates": {
                     "Gate 1 - Dormancy": f"dormancy_score >= {D1Config.DORMANCY_THRESHOLD}",
