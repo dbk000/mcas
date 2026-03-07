@@ -110,10 +110,10 @@ def check_exit_vectorized(
         exit_reason = "TIME_STOP"
     else:
         # MAX_BARS — no exit triggered
-        return "MAX_BARS", float(closes[-1]), n_bars
+        return "MAX_BARS", float(closes[-1]), int(n_bars)
 
     # --- Compute exit price ---
-    bars_held = exit_bar + 1  # 0-indexed bar -> 1-indexed count
+    bars_held = int(exit_bar) + 1  # 0-indexed bar -> 1-indexed count (cast from numpy)
 
     if exit_reason == "STOP_LOSS":
         bar_open = float(opens[exit_bar])
