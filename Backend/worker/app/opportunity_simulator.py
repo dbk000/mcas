@@ -962,41 +962,46 @@ class OpportunitySimulator:
         return trace
 
     def _store_results(self, results: list[SimulationResult], run_id: str):
-        """Store simulation results in the database."""
+        """Store simulation results in the database using batch inserts."""
         import json
 
         if not results:
             return
 
+        BATCH_SIZE = 500
+        INSERT_SQL = """
+            INSERT INTO simulation_results (
+                id, run_id, opportunity_id, symbol, timeframe,
+                setup_id, direction, opportunity_created_ts,
+                entry_ts, entry_price, entry_price_with_slippage,
+                position_size, stop_price, tp1_price, tp2_price,
+                r_value, exit_ts, exit_price, exit_price_with_slippage,
+                exit_reason, bars_held, pnl_gross, fees, pnl_net,
+                r_multiple, data_available, error_message, trace_json
+            ) VALUES (
+                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                %s, %s, %s, %s
+            );
+        """
+
         with self._get_conn() as conn:
             with conn.cursor() as cur:
-                for r in results:
-                    # Serialize trace_json
-                    trace_json_str = json.dumps(r.trace_json) if r.trace_json else None
-
-                    cur.execute("""
-                        INSERT INTO simulation_results (
-                            id, run_id, opportunity_id, symbol, timeframe,
-                            setup_id, direction, opportunity_created_ts,
-                            entry_ts, entry_price, entry_price_with_slippage,
-                            position_size, stop_price, tp1_price, tp2_price,
-                            r_value, exit_ts, exit_price, exit_price_with_slippage,
-                            exit_reason, bars_held, pnl_gross, fees, pnl_net,
-                            r_multiple, data_available, error_message, trace_json
-                        ) VALUES (
-                            %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
-                            %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
-                            %s, %s, %s, %s
-                        );
-                    """, (
-                        str(uuid.uuid4()), run_id, r.opportunity_id, r.symbol,
-                        r.timeframe, r.setup_id, r.direction, r.opportunity_created_ts,
-                        r.entry_ts, r.entry_price, r.entry_price_with_slippage,
-                        r.position_size, r.stop_price, r.tp1_price, r.tp2_price,
-                        r.r_value, r.exit_ts, r.exit_price, r.exit_price_with_slippage,
-                        r.exit_reason, r.bars_held, r.pnl_gross, r.fees, r.pnl_net,
-                        r.r_multiple, r.data_available, r.error_message, trace_json_str,
-                    ))
+                for batch_start in range(0, len(results), BATCH_SIZE):
+                    batch = results[batch_start:batch_start + BATCH_SIZE]
+                    values = []
+                    for r in batch:
+                        trace_json_str = json.dumps(r.trace_json) if r.trace_json else None
+                        values.append((
+                            str(uuid.uuid4()), run_id, r.opportunity_id, r.symbol,
+                            r.timeframe, r.setup_id, r.direction, r.opportunity_created_ts,
+                            r.entry_ts, r.entry_price, r.entry_price_with_slippage,
+                            r.position_size, r.stop_price, r.tp1_price, r.tp2_price,
+                            r.r_value, r.exit_ts, r.exit_price, r.exit_price_with_slippage,
+                            r.exit_reason, r.bars_held, r.pnl_gross, r.fees, r.pnl_net,
+                            r.r_multiple, r.data_available, r.error_message, trace_json_str,
+                        ))
+                    cur.executemany(INSERT_SQL, values)
             conn.commit()
 
     def compute_summary(
