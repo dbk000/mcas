@@ -43,6 +43,7 @@ from s9_microstructure import (
     fetch_1s_klines_batch, analyze_tape, analyze_exit_tape,
     MicrostructureContext,
 )
+from trace_context import TraceContext, TRACE_ENABLED
 
 logger = logging.getLogger("signal_worker")
 
@@ -355,10 +356,75 @@ class SignalWorker:
                 "score_components": sig.score_components,
             }
 
+            # --- TRACE ---
+            trace_dict = None
+            if TRACE_ENABLED:
+                trace = TraceContext(strategy="S10", symbol=symbol, timeframe=tf)
+                if snapshot.ohlcv:
+                    trace.record_candle_window(
+                        first_ts=snapshot.ohlcv[0].timestamp,
+                        last_ts=snapshot.ohlcv[-1].timestamp,
+                        bar_count=len(snapshot.ohlcv),
+                        timeframe=tf,
+                    )
+                trace.record_indicator_params({
+                    "n_atr": 14, "n_rsi": 14, "n_bb": 20,
+                    "k_bb": 2.0, "n_kc": 20, "n_volz": 20,
+                })
+                trace.record_indicators_bulk({
+                    "macd_histogram": snapshot.macd_histogram,
+                    "macd_prev_histogram": snapshot.macd_prev_histogram,
+                    "rvol": snapshot.rvol,
+                    "sma_20": snapshot.sma_20,
+                    "sma_200": snapshot.sma_200,
+                    "atr": snapshot.atr,
+                    "bb_width": snapshot.bb_width,
+                    "volume_z": snapshot.volume_z,
+                })
+                trace.record_state({
+                    "above_sma200": state.above_sma200,
+                    "above_sma20": state.above_sma20,
+                    "price_vs_sma20_atr": state.price_vs_sma20_atr,
+                    "macd_histogram": state.macd_histogram,
+                    "macd_prev_histogram": state.macd_prev_histogram,
+                    "macd_crossover_bull": state.macd_crossover_bull,
+                    "flat_top_detected": state.flat_top_detected,
+                    "flat_top_level": state.flat_top_level,
+                    "flat_top_touches": state.flat_top_touches,
+                    "breakout": state.breakout,
+                    "rvol": state.rvol,
+                    "entry_valid": state.entry_valid,
+                }, is_hydrated=False)
+                trace.record_gate("above_sma200", state.above_sma200, True, "==", state.above_sma200)
+                trace.record_gate("macd_crossover_bull", state.macd_crossover_bull, True, "==", state.macd_crossover_bull)
+                trace.record_gate("flat_top_detected", state.flat_top_detected, True, "==", state.flat_top_detected)
+                trace.record_gate("breakout", state.breakout, True, "==", state.breakout)
+                trace.record_gate("rvol", state.rvol, self.s10_evaluator.RVOL_MIN, ">=", True)
+                trace.record_gate("sma20_proximity", abs(state.price_vs_sma20_atr),
+                                  self.s10_evaluator.SMA20_PROXIMITY_ATR, "<=", True)
+                trace.record_score(
+                    sig.score_components, sig.setup_score,
+                    calib_mult, calibrated_score, promotion_threshold=0.0,
+                )
+                trace.record_config({
+                    "RVOL_MIN": self.s10_evaluator.RVOL_MIN,
+                    "FLAT_TOP_LOOKBACK": self.s10_evaluator.FLAT_TOP_LOOKBACK,
+                    "FLAT_TOP_TOLERANCE_ATR": self.s10_evaluator.FLAT_TOP_TOLERANCE_ATR,
+                    "FLAT_TOP_MIN_TOUCHES": self.s10_evaluator.FLAT_TOP_MIN_TOUCHES,
+                    "SMA20_PROXIMITY_ATR": self.s10_evaluator.SMA20_PROXIMITY_ATR,
+                    "STOP_ATR_MULT": self.s10_evaluator.STOP_ATR_MULT,
+                    "TP1_R_MULT": self.s10_evaluator.TP1_R_MULT,
+                    "TP2_R_MULT": self.s10_evaluator.TP2_R_MULT,
+                    "TIME_STOP_BARS": self.s10_evaluator.TIME_STOP_BARS,
+                })
+                setup_version = self.SETUP_VERSIONS.get("S10", "S10_v1.0")
+                trace_dict = trace.seal(setup_version)
+
             store_signal(self.r, symbol, tf, "S10", payload,
                          calibrated_score, bar_start_ts or "")
             reason = "; ".join(sig.explain.why_items) if sig.explain else None
-            self._persist_signal_to_pg(symbol, tf, "S10", calibrated_score, reason, payload)
+            self._persist_signal_to_pg(symbol, tf, "S10", calibrated_score,
+                                       reason, payload, trace_json=trace_dict)
 
             logger.info(
                 "Signal: S10 LONG %s:%s score=%.3f rvol=%.1fx macd_hist=%.6f",
@@ -460,10 +526,71 @@ class SignalWorker:
                 },
             }
 
+            # --- TRACE ---
+            trace_dict = None
+            if TRACE_ENABLED:
+                trace = TraceContext(strategy="D1", symbol=symbol, timeframe=tf)
+                if snapshot.ohlcv:
+                    trace.record_candle_window(
+                        first_ts=snapshot.ohlcv[0].timestamp,
+                        last_ts=snapshot.ohlcv[-1].timestamp,
+                        bar_count=len(snapshot.ohlcv),
+                        timeframe=tf,
+                    )
+                trace.record_indicator_params({
+                    "n_atr": 14, "n_rsi": 14, "n_bb": 20,
+                    "k_bb": 2.0, "n_kc": 20, "n_volz": 20,
+                })
+                trace.record_indicators_bulk({
+                    "dormancy_score": snapshot.dormancy_score,
+                    "bb_width": snapshot.bb_width,
+                    "volume_z": snapshot.volume_z,
+                    "rvol": snapshot.rvol,
+                    "accum_divergence": snapshot.accum_divergence,
+                    "donchian_high_20": snapshot.donchian_high_20,
+                    "donchian_low_20": snapshot.donchian_low_20,
+                    "atr": snapshot.atr,
+                    "rsi": snapshot.rsi,
+                })
+                is_hydrated = getattr(state, '_hydrated', False)
+                trace.record_state(state.to_dict(), is_hydrated=is_hydrated)
+                close = snapshot.ohlcv[-1].close if snapshot.ohlcv else 0.0
+                trace.record_gate("dormancy", state.dormancy_score,
+                                  D1Config.DORMANCY_THRESHOLD, ">=", True)
+                trace.record_gate("compression", state.bb_width,
+                                  D1Config.BB_WIDTH_COMPRESS, "<", True)
+                trace.record_gate("volume_z", state.volume_z,
+                                  D1Config.VOLUME_Z_SPIKE, ">=", True)
+                trace.record_gate("rvol", state.rvol,
+                                  D1Config.RVOL_MIN, ">=", True)
+                trace.record_gate("breakout", close,
+                                  state.prev_compression_box_high, ">", True,
+                                  note="close > prev_compression_box_high")
+                trace.record_gate("bb_expanding", state.bb_width,
+                                  state.bb_width_prev, ">", True,
+                                  note="bb_width > bb_width_prev")
+                trace.record_score(
+                    sig.score_components, sig.setup_score,
+                    calib_mult, calibrated_score, promotion_threshold=0.0,
+                )
+                trace.record_config({
+                    "DORMANCY_THRESHOLD": D1Config.DORMANCY_THRESHOLD,
+                    "BB_WIDTH_COMPRESS": D1Config.BB_WIDTH_COMPRESS,
+                    "VOLUME_Z_SPIKE": D1Config.VOLUME_Z_SPIKE,
+                    "RVOL_MIN": D1Config.RVOL_MIN,
+                    "STOP_PCT": D1Config.STOP_PCT,
+                    "TP1_PCT": D1Config.TP1_PCT,
+                    "TP2_PCT": D1Config.TP2_PCT,
+                    "TIME_STOP_BARS_1H": D1Config.TIME_STOP_BARS_1H,
+                })
+                setup_version = self.SETUP_VERSIONS.get("D1", "D1_v1.0")
+                trace_dict = trace.seal(setup_version)
+
             store_signal(self.r, symbol, tf, "D1", payload,
                          calibrated_score, bar_start_ts or "")
             reason = "; ".join(sig.explain.why_items) if sig.explain else None
-            self._persist_signal_to_pg(symbol, tf, "D1", calibrated_score, reason, payload)
+            self._persist_signal_to_pg(symbol, tf, "D1", calibrated_score,
+                                       reason, payload, trace_json=trace_dict)
 
             logger.info(
                 "Signal: D1 LONG %s:%s score=%.3f dormancy=%.0f%% vol_z=%.1f rvol=%.1fx",
@@ -507,9 +634,67 @@ class SignalWorker:
         # Evaluate trigger
         u1_signal = self.u1_evaluator.evaluate_trigger(candles, u1_state, symbol, tf, funding_rates=funding_rates, database_url=DATABASE_URL)
         if u1_signal:
-            self._store_u1_signal(u1_signal, symbol, tf, bar_start_ts)
+            # --- TRACE ---
+            trace_dict = None
+            if TRACE_ENABLED:
+                trace = TraceContext(strategy="U1", symbol=symbol, timeframe=tf)
+                if candles:
+                    trace.record_candle_window(
+                        first_ts=candles[0].timestamp,
+                        last_ts=candles[-1].timestamp,
+                        bar_count=len(candles),
+                        timeframe=tf,
+                    )
+                trace.record_indicator_params({
+                    "n_atr": 14, "n_rsi": 14, "n_bb": 20,
+                    "k_bb": 2.0, "n_kc": 20, "n_volz": 20,
+                })
+                trace.record_indicators_bulk({
+                    "rel_volume": u1_signal.rel_volume,
+                    "compression_box_high": u1_signal.compression_box_high,
+                    "compression_box_low": u1_signal.compression_box_low,
+                    "tradability_score": u1_signal.tradability_score,
+                    "participation_score": u1_signal.participation_score,
+                    "compression_score": u1_signal.compression_score,
+                    "embryo_active_score": u1_signal.embryo_active_score,
+                })
+                trace.record_state(u1_state.to_dict(), is_hydrated=False)
+                trace.record_gate("phase", u1_state.phase.value,
+                                  "EMBRYO_ACTIVE|IGNITION_WATCH", "in", True)
+                trace.record_gate("gate1_tradability", u1_state.gate1_passed,
+                                  True, "==", u1_state.gate1_passed)
+                trace.record_gate("gate2_participation", u1_state.gate2_passed,
+                                  True, "==", u1_state.gate2_passed)
+                trace.record_gate("gate3_compression", u1_state.gate3_passed,
+                                  True, "==", u1_state.gate3_passed)
+                trace.record_gate("ignition_score",
+                                  getattr(u1_state, 'ignition_score', 0.0),
+                                  U1Config.IGNITION_SCORE_THRESHOLD, ">=", True)
+                trace.record_score(
+                    {"setup_score": u1_signal.setup_score},
+                    u1_signal.setup_score, 1.0, u1_signal.setup_score,
+                    promotion_threshold=U1Config.IGNITION_SCORE_THRESHOLD,
+                )
+                trace.record_config({
+                    "TRADABILITY_IMPROVEMENT_FACTOR": U1Config.TRADABILITY_IMPROVEMENT_FACTOR,
+                    "PARTICIPATION_GROWTH_FACTOR": U1Config.PARTICIPATION_GROWTH_FACTOR,
+                    "RANGE_PCT_THRESHOLD": U1Config.RANGE_PCT_THRESHOLD,
+                    "REL_VOL_IGNITION_MIN": U1Config.REL_VOL_IGNITION_MIN,
+                    "VOL_Z_MIN": U1Config.VOL_Z_MIN,
+                    "IGNITION_SCORE_THRESHOLD": U1Config.IGNITION_SCORE_THRESHOLD,
+                    "STOP_RANGE_MULT": U1Config.STOP_RANGE_MULT,
+                    "MIN_STOP_PCT": U1Config.MIN_STOP_PCT,
+                    "TP1_R": U1Config.TP1_R,
+                    "TP2_R": U1Config.TP2_R,
+                    "TIME_STOP_BARS_5M": U1Config.TIME_STOP_BARS_5M,
+                })
+                setup_version = self.SETUP_VERSIONS.get("U1", "U1_v1.0")
+                trace_dict = trace.seal(setup_version)
+            self._store_u1_signal(u1_signal, symbol, tf, bar_start_ts,
+                                  trace_json=trace_dict)
 
-    def _store_u1_signal(self, signal, symbol: str, tf: str, bar_start_ts: str):
+    def _store_u1_signal(self, signal, symbol: str, tf: str, bar_start_ts: str,
+                         trace_json: dict = None):
         """Store U1 signal in Redis."""
         payload = {
             "setup_id": "U1",
@@ -554,7 +739,8 @@ class SignalWorker:
 
         # Persist to Postgres for durability (expired filter)
         reason = "; ".join(signal.explain.why_items) if signal.explain else None
-        self._persist_signal_to_pg(symbol, tf, "U1", signal.setup_score, reason, payload)
+        self._persist_signal_to_pg(symbol, tf, "U1", signal.setup_score,
+                                   reason, payload, trace_json=trace_json)
 
         logger.info(
             f"Signal: U1 {signal.direction.value} {symbol}:{tf} "
@@ -792,7 +978,8 @@ class SignalWorker:
                 )
 
     def _persist_signal_to_pg(self, symbol: str, tf: str, setup_id: str,
-                               score: float, reason: str, payload: dict):
+                               score: float, reason: str, payload: dict,
+                               trace_json: dict = None):
         """Persist signal to Postgres opportunities table for durability.
 
         If an active record already exists for this (symbol, tf, setup_id),
@@ -804,7 +991,8 @@ class SignalWorker:
         if not DATABASE_URL:
             return
         try:
-            payload_json = json.dumps(payload)
+            payload_str = json.dumps(payload)
+            trace_str = json.dumps(trace_json) if trace_json else None
             setup_version = self.SETUP_VERSIONS.get(setup_id, f"{setup_id}_v1.0")
             with psycopg.connect(DATABASE_URL) as conn:
                 with conn.cursor() as cur:
@@ -812,11 +1000,12 @@ class SignalWorker:
                     cur.execute("""
                         UPDATE opportunities
                         SET score = %s, reason = %s, payload_json = %s,
-                            setup_version = %s, updated_ts = NOW()
+                            setup_version = %s, trace_json = %s,
+                            updated_ts = NOW()
                         WHERE symbol = %s AND timeframe = %s AND setup_id = %s
                           AND status = 'active'
                         RETURNING id;
-                    """, (score, reason, payload_json, setup_version,
+                    """, (score, reason, payload_str, setup_version, trace_str,
                           symbol, tf, setup_id))
                     updated = cur.fetchone()
 
@@ -825,10 +1014,10 @@ class SignalWorker:
                         cur.execute("""
                             INSERT INTO opportunities
                                 (symbol, timeframe, setup_id, decision, score, reason,
-                                 payload_json, status, setup_version)
-                            VALUES (%s, %s, %s, %s, %s, %s, %s, 'active', %s);
+                                 payload_json, status, setup_version, trace_json)
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, 'active', %s, %s);
                         """, (symbol, tf, setup_id, 'SIGNAL', score, reason,
-                              payload_json, setup_version))
+                              payload_str, setup_version, trace_str))
                 conn.commit()
         except Exception as e:
             logger.debug(f"Postgres persist failed for {setup_id}:{symbol}:{tf}: {e}")
@@ -1009,6 +1198,19 @@ class SignalWorker:
         bar_start_ts = str(hour_start_ms)
         count = 0
 
+        # Shared cross-sectional context for trace (computed once)
+        eval_hour_iso = datetime.fromtimestamp(
+            hour_start_ms / 1000, tz=timezone.utc
+        ).isoformat()
+        s9_cross_ctx = {
+            "universe_size": len(symbol_data),
+            "breadth": breadth,
+            "breadth_threshold": S9Evaluator.BREADTH_THRESHOLD,
+            "decile_threshold_ret_4h": top_decile[-1][1][0] if top_decile else 0.0,
+            "symbols_in_decile": decile_n,
+            "eval_hour": eval_hour_iso,
+        } if TRACE_ENABLED else None
+
         for rank, (symbol, (ret_4h, ret_24h, close)) in enumerate(top_decile):
             signal = S9Evaluator.build_signal(
                 symbol=symbol, close=close,
@@ -1084,11 +1286,77 @@ class SignalWorker:
                 payload["setup_score"] = final_score
                 payload["skip_reason"] = micro_ctx.reason
 
+            # --- TRACE ---
+            trace_dict = None
+            if TRACE_ENABLED:
+                trace = TraceContext(strategy="S9", symbol=symbol, timeframe="1h")
+                # 1h candle window
+                sym_candles = get_candles_as_ohlcv(self.r, symbol, "1h")
+                if sym_candles and len(sym_candles) >= 5:
+                    trace.record_candle_window(
+                        first_ts=sym_candles[-5].timestamp,
+                        last_ts=sym_candles[-1].timestamp,
+                        bar_count=5, timeframe="1h",
+                    )
+                # 1s microstructure window
+                if micro_ctx:
+                    trace.record_candle_window(
+                        first_ts=str(hour_start_ms + 1000),
+                        last_ts=str(hour_start_ms + 300000),
+                        bar_count=micro_ctx.n_klines,
+                        timeframe="1s", note="microstructure tape",
+                    )
+                trace.record_indicator_params({
+                    "ret_4h_window": S9Evaluator.RET_LOOKBACK,
+                    "ret_24h_window": 24,
+                    "breadth_threshold": S9Evaluator.BREADTH_THRESHOLD,
+                    "decile_pct": S9Evaluator.PERCENTILE / 100.0,
+                })
+                trace.record_indicators_bulk({
+                    "ret_4h": ret_4h,
+                    "ret_24h": ret_24h,
+                    "close": close,
+                    "rank": rank + 1,
+                })
+                trace.record_state({"is_hydrated": False})
+                trace.record_cross_sectional_context(s9_cross_ctx)
+                trace.record_gate("breadth", breadth,
+                                  S9Evaluator.BREADTH_THRESHOLD, ">", True)
+                trace.record_gate("top_decile", rank + 1, decile_n, "<=", True,
+                                  note="rank <= decile_size")
+                trace.record_gate("ret_4h_positive", ret_4h, 0.0, ">", True)
+                if micro_ctx:
+                    trace.record_microstructure({
+                        "n_klines": micro_ctx.n_klines,
+                        "entry_type": micro_ctx.entry_type,
+                        "suggested_entry_price": micro_ctx.suggested_entry_price,
+                        "drift_bps": round(micro_ctx.drift_bps, 1),
+                        "still_climbing": micro_ctx.still_climbing,
+                        "already_reverted": micro_ctx.already_reverted,
+                    })
+                trace.record_score(
+                    {"rank_score": signal.rank_score,
+                     "breadth_score": signal.breadth_score,
+                     "magnitude_score": signal.magnitude_score},
+                    signal.setup_score, 1.0, final_score,
+                    promotion_threshold=0.0,
+                )
+                trace.record_config({
+                    "BREADTH_THRESHOLD": S9Evaluator.BREADTH_THRESHOLD,
+                    "PERCENTILE": S9Evaluator.PERCENTILE,
+                    "RET_LOOKBACK": S9Evaluator.RET_LOOKBACK,
+                    "HOLD_BARS": S9Evaluator.HOLD_BARS,
+                    "COST_BPS": S9Evaluator.COST_BPS,
+                })
+                setup_version = self.SETUP_VERSIONS.get("S9", "S9_v1.0")
+                trace_dict = trace.seal(setup_version)
+
             store_signal(self.r, symbol, "1h", "S9", payload,
                          final_score, bar_start_ts)
             reason = "; ".join(signal.explain.why_items) if signal.explain else None
             self._persist_signal_to_pg(symbol, "1h", "S9",
-                                       final_score, reason, payload)
+                                       final_score, reason, payload,
+                                       trace_json=trace_dict)
             count += 1
 
         self._diag["s9_signal"] += count

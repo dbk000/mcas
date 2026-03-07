@@ -346,7 +346,9 @@ CREATE TABLE IF NOT EXISTS opportunities (
     score FLOAT NOT NULL DEFAULT 0,
     reason TEXT,
     payload_json TEXT,
-    status TEXT NOT NULL DEFAULT 'active'
+    status TEXT NOT NULL DEFAULT 'active',
+    setup_version TEXT,
+    trace_json JSONB DEFAULT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_opps_status_score_ts ON opportunities(status, score DESC, updated_ts DESC);
