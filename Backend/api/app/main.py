@@ -1431,7 +1431,8 @@ def get_opportunity(opp_id: int):
     with psycopg.connect(DATABASE_URL) as conn:
         with conn.cursor() as cur:
             cur.execute("""
-                SELECT id, signal_id, symbol, timeframe, setup_id, decision, score, reason, payload_json, status, updated_ts
+                SELECT id, signal_id, symbol, timeframe, setup_id, decision,
+                       score, reason, payload_json, status, updated_ts, trace_json
                 FROM opportunities
                 WHERE id = %s;
             """, (opp_id,))
@@ -1441,6 +1442,10 @@ def get_opportunity(opp_id: int):
         raise HTTPException(status_code=404, detail="Opportunity not found")
 
     payload = json.loads(r_[8]) if r_[8] else None
+    trace = r_[11] if r_[11] else None
+    # trace_json is JSONB so psycopg returns it as dict already
+    if isinstance(trace, str):
+        trace = json.loads(trace)
     return envelope({
         "id": r_[0],
         "signal_id": r_[1],
@@ -1455,6 +1460,7 @@ def get_opportunity(opp_id: int):
         "status": r_[9],
         "candle_ts": r_[10].isoformat() if r_[10] else None,
         "updated_ts": r_[10].isoformat() if r_[10] else None,
+        "trace": trace,
     }, t0)
 
 

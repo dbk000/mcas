@@ -24,6 +24,7 @@ import {
   copyToClipboard,
   isEquitiesStrategy
 } from '../utils/formatters'
+import TraceViewer from '../components/TraceViewer'
 
 function parseCompositeId(id) {
   if (!id || !id.includes(':')) return null
@@ -321,6 +322,18 @@ export default function OpportunityDetail() {
               </CardHeader>
               <CardContent>
                 <p className="text-terminal-200">{opp.reason}</p>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Computation Trace */}
+          {opp.trace && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Computation Trace</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <TraceViewer trace={opp.trace} />
               </CardContent>
             </Card>
           )}
