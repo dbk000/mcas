@@ -21,6 +21,9 @@ import PipelineSidebar from '../components/pipeline/PipelineSidebar'
 import usePipelineGraph from '../hooks/usePipelineGraph'
 import usePipelineUrlState from '../hooks/usePipelineUrlState'
 import { PIPELINE_FEATURES } from '../config/pipelineFeatures'
+import { useToast } from '../context/ToastContext'
+
+const LAYOUT_STORAGE_KEY = 'pipeline-layout-positions'
 
 // Subsystem colors
 const SUBSYSTEM_COLORS = {
@@ -106,8 +109,11 @@ export default PipelineGate
 
 function PipelineInner() {
   const { get } = useApi()
+  const { addToast } = useToast()
   const [nodes, setNodes, onNodesChange] = useNodesState([])
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
+  const [usingSavedLayout, setUsingSavedLayout] = useState(false)
+  const [layoutVersion, setLayoutVersion] = useState(0)
   const [topologyData, setTopologyData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -501,15 +507,37 @@ function PipelineInner() {
     return { flowNodes: nodes, flowEdges: edges }
   }, [topologyData, collapsedGroups, facets])
 
-  // Layout effect: use Web Worker for dagre, with requestId staleness check
+  // Save current node positions as default layout
+  const saveLayoutPositions = useCallback(() => {
+    const positions = {}
+    for (const n of nodes) {
+      if (n.position) positions[n.id] = { x: n.position.x, y: n.position.y }
+    }
+    try {
+      localStorage.setItem(LAYOUT_STORAGE_KEY, JSON.stringify(positions))
+      setUsingSavedLayout(true)
+      addToast('Layout saved as default', 'success')
+    } catch (e) { /* localStorage full or unavailable */ }
+  }, [nodes, addToast])
+
+  // Clear saved layout and re-run dagre
+  const clearLayoutPositions = useCallback(() => {
+    localStorage.removeItem(LAYOUT_STORAGE_KEY)
+    setUsingSavedLayout(false)
+    setLayoutVersion(v => v + 1) // trigger layout effect re-run
+    addToast('Layout reset to auto', 'success')
+  }, [addToast])
+
+  // Layout effect: use saved positions if available, else Web Worker dagre
   useEffect(() => {
     if (flowNodes.length === 0) return
 
     const requestId = ++layoutRequestIdRef.current
     const workerNodes = flowNodes.map(n => ({ id: n.id, subsystem: n.data.subsystem }))
     const workerEdges = flowEdges.map(e => ({ source: e.source, target: e.target }))
+    const nodeIds = new Set(flowNodes.map(n => n.id))
 
-    function applyPositions(positions) {
+    function applyPositions(positions, isSaved = false) {
       // Check staleness
       if (requestId !== layoutRequestIdRef.current) return
 
@@ -520,17 +548,32 @@ function PipelineInner() {
       layoutRef.current = { nodes: layouted, edges: flowEdges }
       setNodes(layouted)
       setEdges(flowEdges)
+      setUsingSavedLayout(isSaved)
 
       setTimeout(() => {
         reactFlowRef.current?.fitView({ padding: 0.15, duration: 300 })
       }, 100)
     }
 
+    // Try saved layout first
+    try {
+      const raw = localStorage.getItem(LAYOUT_STORAGE_KEY)
+      if (raw) {
+        const saved = JSON.parse(raw)
+        // Use saved layout if it covers all current nodes
+        const allCovered = [...nodeIds].every(id => saved[id])
+        if (allCovered) {
+          applyPositions(saved, true)
+          return
+        }
+      }
+    } catch (e) { /* corrupted localStorage, fall through to dagre */ }
+
     if (layoutWorker) {
       const handler = (e) => {
         if (e.data.requestId !== requestId) return // discard stale
         layoutWorker.removeEventListener('message', handler)
-        applyPositions(e.data.positions)
+        applyPositions(e.data.positions, false)
       }
       layoutWorker.addEventListener('message', handler)
       layoutWorker.postMessage({ requestId, nodes: workerNodes, edges: workerEdges })
@@ -553,10 +596,10 @@ function PipelineInner() {
           const pos = g.node(n.id)
           positions[n.id] = { x: pos.x - 250, y: pos.y - 160 }
         })
-        applyPositions(positions)
+        applyPositions(positions, false)
       })
     }
-  }, [flowNodes, flowEdges, setNodes, setEdges])
+  }, [flowNodes, flowEdges, setNodes, setEdges, layoutVersion])
 
   // Panel-aware fitView (Wave 1.7)
   // Subtracts panel widths so fitView doesn't center behind open panels
@@ -923,6 +966,23 @@ function PipelineInner() {
               >
                 Fit
               </button>
+              {usingSavedLayout ? (
+                <button
+                  onClick={clearLayoutPositions}
+                  className="bg-terminal-800/90 backdrop-blur border border-amber-500 rounded-lg px-3 py-2 text-xs text-amber-400 hover:text-terminal-100 hover:bg-terminal-700 transition-colors pipeline-touch-target flex items-center justify-center"
+                  title="Clear saved layout and revert to auto-layout"
+                >
+                  Reset Layout
+                </button>
+              ) : (
+                <button
+                  onClick={saveLayoutPositions}
+                  className="bg-terminal-800/90 backdrop-blur border border-terminal-600 rounded-lg px-3 py-2 text-xs text-terminal-300 hover:text-terminal-100 hover:bg-terminal-700 transition-colors pipeline-touch-target flex items-center justify-center"
+                  title="Save current node positions as default layout"
+                >
+                  Set Default
+                </button>
+              )}
               <button
                 onClick={() => setTvMode(prev => !prev)}
                 className={`bg-terminal-800/90 backdrop-blur border rounded-lg px-3 py-2 text-xs hover:text-terminal-100 hover:bg-terminal-700 transition-colors pipeline-touch-target flex items-center justify-center ${
