@@ -150,7 +150,8 @@ def check_exit(
             return ("STOP_LOSS", fill_price)
 
     # --- FAIL_FAST: close on wrong side of entry within first N bars ---
-    if bars_held <= config.fail_fast_bars:
+    # bars_held=0 is the entry bar — trade hasn't had time to "fail fast" yet
+    if bars_held > 0 and bars_held <= config.fail_fast_bars:
         threshold = config.fail_fast_threshold
         if side == "long" and close < entry_price * (1 - threshold):
             return ("FAIL_FAST", close)
