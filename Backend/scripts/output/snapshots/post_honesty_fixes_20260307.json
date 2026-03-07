@@ -1,0 +1,36 @@
+{
+  "snapshot": "post_honesty_fixes_v2",
+  "date": "2026-03-07",
+  "run_id": "ef437217-a157-4c64-b60a-9a92e30144f7",
+  "run_name": "post-honesty-fixes-v2-maxpos15",
+  "max_positions": 15,
+  "description": "D1 sim results AFTER all honesty fixes: A1 entry bar exit eval, A2 gap cap removal + windfall TPs + gap slippage, A3 r-floor removal, FAIL_FAST entry bar guard",
+  "total_results": 1535,
+  "data_available": 1437,
+  "winners": 246,
+  "losers": 1191,
+  "profit_factor": 0.9080,
+  "total_pnl": -1930.33,
+  "exit_breakdown": {
+    "STOP_LOSS": 1181,
+    "TIME_STOP": 72,
+    "TP1+STOP_LOSS": 75,
+    "TP1+TIME_STOP": 48,
+    "TP1+TP2": 61
+  },
+  "comparison_vs_pre_fix": {
+    "pre_fix_pf": 0.7706,
+    "post_fix_pf": 0.9080,
+    "pf_change": "+0.1374",
+    "note": "PF INCREASED. Windfall TP gap fills (bar_open > TP = better fill) more than offset honest gap-through stop fills. Different opportunity count (425 vs historical 4120) due to fresh sim vs accumulated DB results."
+  },
+  "fixes_applied": [
+    "A1: Entry bar exit evaluation (exit loop starts at entry_bar_idx, bars_held=0)",
+    "A1: is_entry_bar suppresses gap-through on entry bar",
+    "A2: Removed fabricated 2R gap-through cap — stops fill at bar_open",
+    "A2: Windfall TP gaps — TPs fill at bar_open when favorable gap",
+    "A2: Directional exit slippage on gap-through stops",
+    "A3: Removed dead min_r_multiple_floor code",
+    "FAIL_FAST: bars_held > 0 guard prevents firing on entry bar"
+  ]
+}
