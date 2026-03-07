@@ -44,7 +44,6 @@ import argparse
 import json
 import logging
 import math
-import multiprocessing
 import os
 import sys
 import time
@@ -62,7 +61,6 @@ if os.path.isdir("/app"):
 import psycopg
 from psycopg.rows import dict_row
 from exit_checker import ExitConfig, check_exit_simple
-from exit_checker_vectorized import check_exit_vectorized
 
 logging.basicConfig(
     level=logging.INFO,
@@ -114,49 +112,6 @@ EXIT_CONFIGS = {
     "G": {"desc": "Binary 20% TP (8R), 2.5% stop, 3d TS",      "tp_pct": 20.0, "stop_pct": 2.5, "ts": THREE_DAY_BARS, "ec": NO_TRAIL, "split_exit": False},
     "H": {"desc": "Split: 50% at TP1, remainder breakeven stop","tp_pct": 10.0, "stop_pct": 1.5, "ts": THREE_DAY_BARS, "ec": NO_TRAIL, "split_exit": True, "tp2_pct": 20.0},
 }
-
-# Module-level shared data for multiprocessing — set before Pool fork, COW
-_SIM_OHLCV_CACHE = None   # {cache_key: [bar_dicts]}
-_SIM_OPPS = None           # list[dict]
-_SIM_METAS = None          # list[dict]
-_SIM_SLIPPAGE = None       # float
-
-
-def _simulate_config(config_key: str) -> tuple[str, list[dict]]:
-    """Multiprocessing worker: simulate all opportunities for one exit config.
-
-    Uses fork-inherited globals (COW). Returns (config_key, results).
-    """
-    cfg = EXIT_CONFIGS[config_key]
-    ohlcv_cache = _SIM_OHLCV_CACHE
-    opps = _SIM_OPPS
-    metas = _SIM_METAS
-    slippage_bps = _SIM_SLIPPAGE
-
-    results = []
-    for opp, meta in zip(opps, metas):
-        cache_key = f"{meta['symbol']}_{meta['timeframe']}"
-        bars = ohlcv_cache.get(cache_key, [])
-        tf = meta["timeframe"]
-        ts_bars = cfg["ts"].get(tf, 72)
-
-        result = simulate_opportunity(
-            opp_ts=meta["created_ts"],
-            direction=meta["direction"],
-            entry_price=meta["entry_price"],
-            bars=bars,
-            tf=tf,
-            stop_pct=cfg["stop_pct"],
-            tp_pct=cfg["tp_pct"],
-            time_stop_bars=ts_bars,
-            exit_config=cfg["ec"],
-            slippage_bps=slippage_bps,
-            split_exit=cfg.get("split_exit", False),
-            tp2_pct=cfg.get("tp2_pct"),
-        )
-        results.append(result)
-
-    return config_key, results
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -387,78 +342,6 @@ def simulate_opportunity(
     position_size = SIM_POSITION_USD / entry_slip
     max_bar_idx = min(entry_bar_idx + MAX_BARS_FORWARD, len(bars) - 1)
 
-    # ── Vectorized fast path for simple configs ──
-    # Eligible: no trail (activation_r >= 999), no fail-fast, no split exit
-    use_vectorized = (
-        not split_exit
-        and exit_config.fail_fast_bars == 0
-        and exit_config.trail_activation_r >= 999.0
-    )
-
-    if use_vectorized:
-        sim_bars = bars[entry_bar_idx + 1:max_bar_idx + 1]
-        if sim_bars:
-            highs = np.array([b["high"] for b in sim_bars])
-            lows = np.array([b["low"] for b in sim_bars])
-            opens = np.array([b["open"] for b in sim_bars])
-            closes = np.array([b["close"] for b in sim_bars])
-
-            vec_result = check_exit_vectorized(
-                direction=direction,
-                entry_slip=entry_slip,
-                stop_price=stop_price,
-                tp1_price=tp1_price,
-                r_value=actual_r,
-                time_stop_bars=time_stop_bars,
-                highs=highs, lows=lows, opens=opens, closes=closes,
-            )
-
-            if vec_result:
-                exit_reason, exit_price, bars_held = vec_result
-            else:
-                exit_reason = "MAX_BARS"
-                exit_price = float(closes[-1]) if len(closes) > 0 else entry_slip
-                bars_held = len(sim_bars)
-        else:
-            exit_reason = "MAX_BARS"
-            exit_price = bars[entry_bar_idx]["close"]
-            bars_held = 0
-
-        # Compute PnL (no split exit in vectorized path)
-        if exit_reason != "STOP_LOSS":
-            if direction == "long":
-                exit_slip = exit_price * (1 - slippage_bps / 10000)
-            else:
-                exit_slip = exit_price * (1 + slippage_bps / 10000)
-        else:
-            exit_slip = exit_price
-
-        if direction == "long":
-            pnl_gross = (exit_slip - entry_slip) * position_size
-        else:
-            pnl_gross = (entry_slip - exit_slip) * position_size
-
-        entry_fee = entry_slip * position_size * SIM_FEE_BPS / 10000
-        exit_fee = exit_slip * position_size * SIM_FEE_BPS / 10000
-        total_pnl = pnl_gross - entry_fee - exit_fee
-        r_multiple = total_pnl / (actual_r * position_size) if actual_r * position_size > 0 else 0
-
-        return {
-            "data_available": True,
-            "pnl_net": round(total_pnl, 4),
-            "r_multiple": round(r_multiple, 4),
-            "exit_reason": exit_reason,
-            "bars_held": bars_held,
-            "entry_bar_idx": entry_bar_idx,
-            "entry_ts": entry_bar_ts,
-            "entry_slip": entry_slip,
-            "stop_price": stop_price,
-            "tp1_price": tp1_price,
-            "actual_r": actual_r,
-            "position_size": position_size,
-        }
-
-    # ── Scalar path (split exit, trailing stops, fail-fast) ──
     hwm = None
     half_r_touched = False
     exit_reason = None
@@ -1268,30 +1151,41 @@ def main():
     log.info("  BTC bars loaded: %d", len(btc_bars))
 
     # ══════════════════════════════════════════════════════════════════════
-    #  RUN SIMULATION FOR EACH EXIT CONFIG (8 configs in parallel)
+    #  RUN SIMULATION FOR EACH EXIT CONFIG
     # ══════════════════════════════════════════════════════════════════════
-    global _SIM_OHLCV_CACHE, _SIM_OPPS, _SIM_METAS, _SIM_SLIPPAGE
-    _SIM_OHLCV_CACHE = ohlcv_cache
-    _SIM_OPPS = opps
-    _SIM_METAS = metas
-    _SIM_SLIPPAGE = slippage_bps
-
     all_config_results: dict[str, list[dict]] = {}
-    config_keys = sorted(EXIT_CONFIGS.keys())
-    n_workers = min(len(config_keys), 8)
 
-    t_sim = time.time()
-    log.info("  Simulating %d configs across %d workers...", len(config_keys), n_workers)
+    for config_key, cfg in EXIT_CONFIGS.items():
+        t1 = time.time()
+        results = []
 
-    with multiprocessing.Pool(n_workers) as pool:
-        for config_key, results in pool.imap_unordered(_simulate_config, config_keys):
-            cfg = EXIT_CONFIGS[config_key]
-            all_config_results[config_key] = results
-            traded = sum(1 for r in results if r.get("data_available") and r.get("pnl_net") is not None)
-            log.info("  Config %s (%s): %d/%d simulated",
-                     config_key, cfg["desc"], traded, len(results))
+        for opp, meta in zip(opps, metas):
+            cache_key = f"{meta['symbol']}_{meta['timeframe']}"
+            bars = ohlcv_cache.get(cache_key, [])
 
-    log.info("  All configs simulated in %.1fs (parallel)", time.time() - t_sim)
+            tf = meta["timeframe"]
+            ts_bars = cfg["ts"].get(tf, 72)
+
+            result = simulate_opportunity(
+                opp_ts=meta["created_ts"],
+                direction=meta["direction"],
+                entry_price=meta["entry_price"],
+                bars=bars,
+                tf=tf,
+                stop_pct=cfg["stop_pct"],
+                tp_pct=cfg["tp_pct"],
+                time_stop_bars=ts_bars,
+                exit_config=cfg["ec"],
+                slippage_bps=slippage_bps,
+                split_exit=cfg.get("split_exit", False),
+                tp2_pct=cfg.get("tp2_pct"),
+            )
+            results.append(result)
+
+        all_config_results[config_key] = results
+        traded = sum(1 for r in results if r.get("data_available") and r.get("pnl_net") is not None)
+        log.info("  Config %s (%s): %d/%d simulated in %.1fs",
+                 config_key, cfg["desc"], traded, len(results), time.time() - t1)
 
     # ── Print matrix ──────────────────────────────────────────────────────
     print_matrix(all_config_results, metas)
