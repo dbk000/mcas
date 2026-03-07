@@ -1162,3 +1162,163 @@ def get_queue_status():
         ],
         "count": len(rows),
     }, t0)
+
+
+# =========================================================================
+# Audits
+# =========================================================================
+
+@router.post("/audits/s9-causality")
+def run_s9_causality_audit(limit: int = Query(5000, ge=1, le=500000)):
+    """
+    Run S9 causality audit — proves no lookahead bias in S9 opportunities.
+
+    Computes data_leak_seconds for every opp: the gap between the latest
+    market data timestamp used and the opportunity's as_of_ts.
+    Positive = time-travel leak (future data used).
+
+    Returns summary + CSV path. Full results in the CSV file.
+    """
+    t0 = time.time()
+
+    import csv
+    import logging
+    from io import StringIO
+
+    logger = logging.getLogger("s9_causality_audit")
+
+    OUTPUT_DIR = "/scripts/output"
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    ts_tag = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    out_path = os.path.join(OUTPUT_DIR, f"s9_causality_proof_{ts_tag}.csv")
+
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT id, symbol, created_ts, payload_json
+                FROM opportunities
+                WHERE setup_id = 'S9' AND status = 'expired'
+                ORDER BY created_ts DESC
+                LIMIT %s
+            """, (limit,))
+            rows = cur.fetchall()
+
+    if not rows:
+        return envelope({
+            "total_audited": 0,
+            "message": "No S9 expired opportunities found",
+        }, t0)
+
+    fieldnames = [
+        "id", "symbol", "created_ts",
+        "trigger_bar_start_ts", "trigger_bar_start_utc",
+        "eval_candle_close_utc",
+        "as_of_ts", "as_of_utc",
+        "micro_entry_type", "suggested_entry_price",
+        "micro_n_klines", "micro_tape_end_utc",
+        "latest_data_ts", "latest_data_utc",
+        "created_epoch",
+        "data_leak_seconds",
+        "is_strictly_causal",
+        "is_upsert_refreshed",
+    ]
+
+    results = []
+    violations = 0
+
+    for row in rows:
+        opp_id, symbol, created_ts, payload_str = row
+        payload = json.loads(payload_str) if isinstance(payload_str, str) else payload_str
+
+        created_epoch = created_ts.timestamp()
+
+        bar_start_ts_ms = int(payload.get("bar_start_ts", "0"))
+        bar_start_ts_epoch = bar_start_ts_ms / 1000.0
+        bar_start_utc = datetime.fromtimestamp(bar_start_ts_epoch, tz=timezone.utc)
+        eval_candle_close_utc = bar_start_utc
+
+        as_of_ts = float(payload.get("as_of_ts", 0))
+        as_of_utc = datetime.fromtimestamp(as_of_ts, tz=timezone.utc)
+
+        micro = payload.get("microstructure", {}) or {}
+        micro_entry_type = micro.get("entry_type")
+        suggested_entry = micro.get("suggested_entry_price")
+        n_klines = micro.get("n_klines")
+
+        if n_klines and int(n_klines) > 0:
+            micro_tape_end_epoch = bar_start_ts_epoch + int(n_klines)
+            micro_tape_end_utc = datetime.fromtimestamp(micro_tape_end_epoch, tz=timezone.utc)
+        else:
+            micro_tape_end_epoch = None
+            micro_tape_end_utc = None
+
+        data_timestamps = [bar_start_ts_epoch]
+        if micro_tape_end_epoch:
+            data_timestamps.append(micro_tape_end_epoch)
+
+        latest_data_ts = max(data_timestamps)
+        latest_data_utc = datetime.fromtimestamp(latest_data_ts, tz=timezone.utc)
+
+        data_leak_seconds = round(latest_data_ts - as_of_ts, 2)
+        is_causal = data_leak_seconds <= 0
+        is_upsert_refreshed = abs(created_epoch - as_of_ts) > 10
+
+        if not is_causal:
+            violations += 1
+
+        results.append({
+            "id": opp_id,
+            "symbol": symbol,
+            "created_ts": created_ts.isoformat(),
+            "trigger_bar_start_ts": bar_start_ts_ms,
+            "trigger_bar_start_utc": bar_start_utc.isoformat(),
+            "eval_candle_close_utc": eval_candle_close_utc.isoformat(),
+            "as_of_ts": as_of_ts,
+            "as_of_utc": as_of_utc.isoformat(),
+            "micro_entry_type": micro_entry_type or "",
+            "suggested_entry_price": suggested_entry or "",
+            "micro_n_klines": n_klines or "",
+            "micro_tape_end_utc": micro_tape_end_utc.isoformat() if micro_tape_end_utc else "",
+            "latest_data_ts": latest_data_ts,
+            "latest_data_utc": latest_data_utc.isoformat(),
+            "created_epoch": round(created_epoch, 3),
+            "data_leak_seconds": data_leak_seconds,
+            "is_strictly_causal": is_causal,
+            "is_upsert_refreshed": is_upsert_refreshed,
+        })
+
+    # Write CSV
+    with open(out_path, "w", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(results)
+
+    causal_count = sum(1 for r in results if r["is_strictly_causal"])
+    leak_values = [r["data_leak_seconds"] for r in results]
+    with_micro = sum(1 for r in results if r["micro_entry_type"])
+
+    worst_violations = []
+    if violations > 0:
+        worst = sorted([r for r in results if not r["is_strictly_causal"]],
+                       key=lambda x: x["data_leak_seconds"], reverse=True)[:5]
+        worst_violations = [
+            {"id": w["id"], "symbol": w["symbol"], "leak_seconds": w["data_leak_seconds"]}
+            for w in worst
+        ]
+
+    return envelope({
+        "total_audited": len(results),
+        "strictly_causal": causal_count,
+        "causal_pct": round(causal_count / len(results) * 100, 1),
+        "violations": violations,
+        "data_leak_seconds": {
+            "min": min(leak_values),
+            "max": max(leak_values),
+            "avg": round(sum(leak_values) / len(leak_values), 2),
+        },
+        "with_microstructure": with_micro,
+        "without_microstructure": len(results) - with_micro,
+        "worst_violations": worst_violations,
+        "csv_path": out_path,
+        "verdict": "ALL CAUSAL" if violations == 0 else f"{violations} VIOLATIONS FOUND",
+    }, t0)

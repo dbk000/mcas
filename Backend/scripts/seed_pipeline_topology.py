@@ -149,6 +149,12 @@ def seed():
              'Paper trading engine with persistent state, position management, exit monitoring.',
              'worker/app/paper_trading.py')
 
+    # -- Audits
+    add_node('s9_causality_audit', 'S9 Causality Audit', 'custom', 'meta',
+             'Proves causal integrity of S9 opportunities — computes data_leak_seconds per opp. '
+             'Triggerable via POST /v1/control/audits/s9-causality.',
+             'scripts/s9_causality_audit.py')
+
     print(f"  Created {len(nodes)} nodes")
 
     # =========================================================================
