@@ -136,9 +136,9 @@ def fetch_1s_klines(
         try:
             resp = requests.get(BINANCE_KLINE_URL, params=params, timeout=timeout)
             if resp.status_code in (418, 429):
-                retry_after = int(resp.headers.get("Retry-After", "5"))
-                wait = min(retry_after, 2 ** attempt + random.uniform(0, 1),
-                           MAX_RETRY_WAIT_S)
+                retry_after = int(resp.headers.get("Retry-After", "0"))
+                backoff = 2 ** attempt + random.uniform(0, 1)
+                wait = max(retry_after, min(backoff, MAX_RETRY_WAIT_S))
                 logger.warning(
                     "Binance 1s rate limit for %s, retry in %.1fs (attempt %d)",
                     symbol, wait, attempt + 1,

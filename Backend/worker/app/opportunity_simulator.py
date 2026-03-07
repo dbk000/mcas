@@ -478,46 +478,75 @@ class OpportunitySimulator:
         result.stop_price = stop_price
         result.r_value = r_value
 
-        # Find the first bar after opportunity timestamp (NEXT_OPEN fill)
+        # Determine fill model: NEXT_OPEN (default) or PAYLOAD_ENTRY.
+        # S9 has sub-bar microstructure entry — the payload contains a precise
+        # entry price derived from 1s tape analysis at +300s after the hourly
+        # close. Using next bar's open would place entry ~55min late,
+        # destroying the strategy's math.
+        micro = payload.get("microstructure") if isinstance(payload, dict) else None
+        use_micro_entry = (
+            isinstance(micro, dict)
+            and micro.get("entry_type") not in (None, "SKIP")
+            and micro.get("suggested_entry_price") is not None
+        )
+
         entry_bar_idx = None
         for i, bar in enumerate(bars):
             bar_ts = bar["bar_start_ts"]
             if bar_ts.tzinfo is None:
                 bar_ts = bar_ts.replace(tzinfo=timezone.utc)
             if bar_ts > opp_ts:
-                entry_bar_idx = i
+                if use_micro_entry and i > 0:
+                    # Sub-bar entry: use the bar CONTAINING opp_ts
+                    entry_bar_idx = i - 1
+                else:
+                    # NEXT_OPEN: first bar after signal
+                    entry_bar_idx = i
                 break
+
+        # Handle opp_ts within or after last bar (micro entry edge case)
+        if entry_bar_idx is None and use_micro_entry and bars:
+            last_ts = bars[-1]["bar_start_ts"]
+            if hasattr(last_ts, 'replace') and last_ts.tzinfo is None:
+                last_ts = last_ts.replace(tzinfo=timezone.utc)
+            if last_ts <= opp_ts:
+                entry_bar_idx = len(bars) - 1
 
         if entry_bar_idx is None:
             result.data_available = False
-            result.error_message = "No bar found after opportunity timestamp"
+            result.error_message = "No bar found near opportunity timestamp"
             return result
 
-        # Reject if first available bar is too far from signal creation.
-        # Max 3 bars of staleness — beyond that the setup thesis is stale.
-        tf_delta = {
-            "1m": timedelta(minutes=1), "5m": timedelta(minutes=5),
-            "15m": timedelta(minutes=15), "30m": timedelta(minutes=30),
-            "1h": timedelta(hours=1), "4h": timedelta(hours=4),
-            "1d": timedelta(days=1),
-        }
-        bar_duration = tf_delta.get(timeframe, timedelta(hours=1))
-        max_entry_delay = bar_duration * 3
         entry_bar = bars[entry_bar_idx]
-        entry_bar_ts = entry_bar["bar_start_ts"]
-        if entry_bar_ts.tzinfo is None:
-            entry_bar_ts = entry_bar_ts.replace(tzinfo=timezone.utc)
-        entry_delay = entry_bar_ts - opp_ts
-        if entry_delay > max_entry_delay:
-            result.data_available = False
-            result.error_message = (
-                f"No OHLCV data near signal time "
-                f"(first bar {entry_delay} after signal, max {max_entry_delay})"
-            )
-            return result
 
-        # Entry at next bar's open (NEXT_OPEN fill model)
-        actual_entry_price = entry_bar["open"]
+        # Staleness check (NEXT_OPEN only — micro entry bar contains opp_ts)
+        if not use_micro_entry:
+            tf_delta = {
+                "1m": timedelta(minutes=1), "5m": timedelta(minutes=5),
+                "15m": timedelta(minutes=15), "30m": timedelta(minutes=30),
+                "1h": timedelta(hours=1), "4h": timedelta(hours=4),
+                "1d": timedelta(days=1),
+            }
+            bar_duration = tf_delta.get(timeframe, timedelta(hours=1))
+            max_entry_delay = bar_duration * 3
+            entry_bar_ts = entry_bar["bar_start_ts"]
+            if entry_bar_ts.tzinfo is None:
+                entry_bar_ts = entry_bar_ts.replace(tzinfo=timezone.utc)
+            entry_delay = entry_bar_ts - opp_ts
+            if entry_delay > max_entry_delay:
+                result.data_available = False
+                result.error_message = (
+                    f"No OHLCV data near signal time "
+                    f"(first bar {entry_delay} after signal, max {max_entry_delay})"
+                )
+                return result
+
+        if use_micro_entry:
+            # Sub-bar microstructure entry: use the tape-derived price
+            actual_entry_price = micro["suggested_entry_price"]
+        else:
+            # Standard NEXT_OPEN: entry at next bar's open
+            actual_entry_price = entry_bar["open"]
 
         # Apply entry slippage
         slip_bps = self.config.slippage_entry_bps

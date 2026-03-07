@@ -173,7 +173,10 @@ def build_opportunity_payload(sig, micro_ctx):
         decile_size=sig["decile_size"], state=state,
     )
 
-    bar_start_ts = str(int(sig["eval_hour"].timestamp() * 1000))
+    # bar_start_ts matches the live signal_worker: the hour boundary when
+    # the candle closes (eval_hour + 1h), NOT the candle's own bar_start_ts.
+    candle_close = sig["eval_hour"] + timedelta(hours=1)
+    bar_start_ts = str(int(candle_close.timestamp() * 1000))
 
     micro_payload = {}
     if micro_ctx and micro_ctx.n_klines >= 10:
@@ -217,7 +220,7 @@ def build_opportunity_payload(sig, micro_ctx):
         "r_value": signal.r_value,
         "time_stop_bars": signal.time_stop_bars,
         "bar_start_ts": bar_start_ts,
-        "as_of_ts": sig["eval_hour"].timestamp() + 300,
+        "as_of_ts": candle_close.timestamp() + 300,
         "why_items": signal.explain.why_items if signal.explain else [],
         "state": {
             "ret_4h": sig["ret_4h"],
@@ -335,8 +338,12 @@ def run_backfill(days=30):
 
         total_signals += len(signals)
 
-        # Fetch 1s klines for this hour's signals
-        hour_start_ms = int(hour.timestamp() * 1000) + 1000
+        # Fetch 1s klines for this hour's signals.
+        # The candle at eval_hour closes 1h later; 1s tape starts after close.
+        # Live signal_worker evaluates at +300s after the hour boundary,
+        # using candles[-1] which is the JUST-CLOSED candle.
+        candle_close = hour + timedelta(hours=1)
+        hour_start_ms = int(candle_close.timestamp() * 1000) + 1000
         symbols = [s["symbol"] for s in signals]
 
         kline_batch = {}
@@ -358,7 +365,7 @@ def run_backfill(days=30):
             payload, score, reason = build_opportunity_payload(sig, micro_ctx)
 
             pending_rows.append({
-                "created_ts": hour + timedelta(seconds=300),
+                "created_ts": candle_close + timedelta(seconds=300),
                 "symbol": sig["symbol"],
                 "score": score,
                 "reason": reason,
