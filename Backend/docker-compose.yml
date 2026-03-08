@@ -12,6 +12,7 @@ services:
       - ./caddy/Caddyfile:/etc/caddy/Caddyfile
       - caddy_data:/data
       - caddy_config:/config
+    mem_limit: 256m
     networks:
       - backend
 
@@ -26,6 +27,7 @@ services:
       - .env
     environment:
       SERVICE_NAME: api
+    mem_limit: 512m
     networks:
       - backend
 
@@ -60,12 +62,14 @@ services:
       interval: 10s
       retries: 3
       start_period: 30s
+    mem_limit: 4g
     networks:
       - backend
 
   redis:
     image: redis:7
     restart: unless-stopped
+    mem_limit: 1g
     networks:
       - backend
 
@@ -79,6 +83,7 @@ services:
     environment:
       SERVICE_NAME: ingestor
     command: ["python", "-u", "ingestor.py"]
+    mem_limit: 512m
     networks:
       - backend
 
@@ -94,6 +99,7 @@ services:
       WORKER_INDEX: "0"
       N_WORKERS: "2"
     command: ["python", "-u", "indicator_worker.py"]
+    mem_limit: 1g
     networks:
       - backend
 
@@ -109,6 +115,7 @@ services:
       WORKER_INDEX: "1"
       N_WORKERS: "2"
     command: ["python", "-u", "indicator_worker.py"]
+    mem_limit: 1g
     networks:
       - backend
 
@@ -124,6 +131,7 @@ services:
       WORKER_INDEX: "0"
       N_WORKERS: "2"
     command: ["python", "-u", "signal_worker.py"]
+    mem_limit: 512m
     networks:
       - backend
 
@@ -139,6 +147,7 @@ services:
       WORKER_INDEX: "1"
       N_WORKERS: "2"
     command: ["python", "-u", "signal_worker.py"]
+    mem_limit: 512m
     networks:
       - backend
 
@@ -153,6 +162,7 @@ services:
       SERVICE_NAME: unicorn_pipeline
       UNICORN_PIPELINE_INTERVAL_S: "300"
     command: ["python", "-u", "unicorn_pipeline.py"]
+    mem_limit: 512m
     networks:
       - backend
 
@@ -166,6 +176,7 @@ services:
     environment:
       SERVICE_NAME: ohlcv_persister
     command: ["python", "-u", "ohlcv_persister.py"]
+    mem_limit: 256m
     networks:
       - backend
 
@@ -181,6 +192,7 @@ services:
     volumes:
       - ./social_collector/app:/app
       - social_telegram_sessions:/app/sessions
+    mem_limit: 512m
     networks:
       - backend
 
@@ -198,6 +210,7 @@ services:
     command: ["python", "-u", "/scripts/derivatives_collector.py"]
     volumes:
       - ./scripts:/scripts
+    mem_limit: 512m
     networks:
       - backend
 
@@ -215,6 +228,7 @@ services:
     command: ["python", "-u", "/scripts/onchain_collector.py"]
     volumes:
       - ./scripts:/scripts
+    mem_limit: 1g
     networks:
       - backend
 
@@ -281,6 +295,7 @@ services:
     command: ["python", "-u", "/app/equities_strategy_worker.py"]
     volumes:
       - ./scripts:/scripts
+    mem_limit: 1g
     depends_on:
       - postgres
       - redis
@@ -299,6 +314,7 @@ services:
     command: ["python", "-u", "/scripts/equities_task_worker_loop.py"]
     volumes:
       - ./scripts:/scripts
+    mem_limit: 1g
     networks:
       - backend
 
@@ -315,6 +331,7 @@ services:
     command: ["python", "-u", "/scripts/expired_opportunity_exit_settler.py", "--loop", "--interval-seconds", "3600", "--limit", "5000"]
     volumes:
       - ./scripts:/scripts
+    mem_limit: 1g
     depends_on:
       - postgres
     networks:
