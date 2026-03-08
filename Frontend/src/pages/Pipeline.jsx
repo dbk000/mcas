@@ -45,6 +45,60 @@ const SUBSYSTEM_ORDER = [
   'parameter', 'backtest', 'metrics', 'risk', 'execution'
 ]
 
+// Default grid layout — pixel-perfect alignment by row
+// Horizontal spacing: 210px between node left edges, centered on widest row (9 nodes = 1680px)
+// Vertical spacing: 190px between row tops
+const DEFAULT_GRID_POSITIONS = {
+  // Row 0 (y=0): Data Ingestion — 3 nodes, start_x=630
+  'dbb7452f-ab52-44e6-bb30-d29cca9e9005': { x: 630, y: 0 },   // Derivatives Data Feed
+  '0e70a279-0a31-40c8-87d2-ce985b2ab8a0': { x: 840, y: 0 },   // OHLCV Data Feed
+  '0124ed33-738a-4f57-940b-9775354c2290': { x: 1050, y: 0 },  // Social Sentiment Feed
+
+  // Row 1 (y=190): Feature Engineering — 4 nodes, start_x=525
+  'fbc404e0-9684-4f53-9a25-2e2a03b60196': { x: 525, y: 190 },  // Indicator Engine
+  '34f65bb1-20b0-4c61-bd93-5ba8dab536be': { x: 735, y: 190 },  // Rolling Statistics
+  '678c8948-31bf-48ca-a727-2359e98ae9b2': { x: 945, y: 190 },  // Dormancy Score
+  'a9d78bc2-6d69-4d10-b426-37c903a36333': { x: 1155, y: 190 }, // Accumulation Divergence
+
+  // Row 2 (y=380): Filtering — 2 nodes, start_x=735
+  'cb6f034c-c741-4bb4-ac44-f5c616a30750': { x: 735, y: 380 },  // Structural Filters
+  '9fb9b539-0f4d-4c2a-ae3e-44c98c838159': { x: 945, y: 380 },  // Universe Filter
+
+  // Row 3 (y=570): Parameters/Config — 5 nodes, start_x=420
+  'a76af2f3-a171-44eb-8d84-b4d8b996e741': { x: 420, y: 570 },  // TP1 Take-Profit
+  '316c09aa-f812-49ff-a105-8003b43c70f5': { x: 630, y: 570 },  // Stop-Loss Config
+  '97c34b89-180d-4bde-893b-5a917add5167': { x: 840, y: 570 },  // Volume Z Threshold
+  '13a0fc5e-18cf-49d7-bfa5-ff713799b326': { x: 1050, y: 570 }, // Trailing Stop Config
+  'ffda1c91-508e-40a9-9560-991699a786d5': { x: 1260, y: 570 }, // Time Stop Config
+
+  // Row 4 (y=760): Strategy/Backtest/Execution — 6 nodes, start_x=315
+  '305ff981-8265-4d56-b6bc-30af2a39c74e': { x: 315, y: 760 },  // Slippage Model
+  '3c321c3a-52ff-4fd8-8495-f2f397c46438': { x: 525, y: 760 },  // Walk-Forward Validator
+  '0ef932ab-433d-4fb7-9c69-8a4703cf7316': { x: 735, y: 760 },  // Metric Aggregator
+  'bbbd1c6e-bd64-4260-a490-cbe09887fa1d': { x: 945, y: 760 },  // U1 Strategy Assembly
+  '07217426-6b8b-4835-9075-db46e6e2e271': { x: 1155, y: 760 }, // Execution Engine
+  '5879264b-b331-4802-bafa-8a792ad0971a': { x: 1365, y: 760 }, // Risk Manager
+
+  // Row 5 (y=950): Signal Generators — 6 nodes, start_x=315
+  '5b61711c-5282-4a08-ac2a-4c2a396de9cf': { x: 315, y: 950 },  // S9 Short Reversion
+  '396037d1-13c8-4f17-8bf9-e9f95546f419': { x: 525, y: 950 },  // S10 MACD Scalp
+  'db16d8c1-259c-4ad1-9197-a39edf32c9b0': { x: 735, y: 950 },  // U1 Unicorn Ignition
+  '8a3e4d49-b88e-465c-80a1-37a1af845b1e': { x: 945, y: 950 },  // S1 BB Squeeze (Legacy)
+  '43e39128-8327-43c7-b3c1-8362762b6d56': { x: 1155, y: 950 }, // S2 Golden Cross (Legacy)
+  'd83ee551-d609-4aa2-8c1d-096cab0c736a': { x: 1365, y: 950 }, // D1 Dormancy-to-Ignition
+
+  // Row 6 (y=1140): Meta/Workflow — 9 nodes, start_x=0
+  '014f6fc8-a3ab-4ed9-9260-5d96ca134392': { x: 0, y: 1140 },    // Requirement Capture
+  'a7067064-31b8-4630-a48b-26b593ced2aa': { x: 210, y: 1140 },  // Exploration
+  '31bc7c10-3532-4689-9709-f98d6859e7a4': { x: 420, y: 1140 },  // Plan Design
+  '964e8b23-15b2-4f3a-b4ad-31be53e0f2a1': { x: 630, y: 1140 },  // Implementation
+  '1cf501e2-cdcd-4d23-b825-821debb52c77': { x: 840, y: 1140 },  // Layout Tuning
+  'b7e630b4-644b-4ec5-b3c1-8522495649ca': { x: 1050, y: 1140 }, // Deploy (CF Pages)
+  '2657bdf4-ec03-4a32-9dc2-62ce718267f4': { x: 1260, y: 1140 }, // Production Verify
+  '5f0ca30f-6c1f-4a4c-bdd4-a8a68f559ce0': { x: 1470, y: 1140 }, // Lessons Learned
+  '9c78d2f9-45e8-4e94-b308-2d548cfb0ae4': { x: 1680, y: 1140 }, // S9 Causality Audit
+}
+
 // Custom node types
 const nodeTypes = { pipeline: PipelineNode }
 
@@ -520,15 +574,15 @@ function PipelineInner() {
     } catch (e) { /* localStorage full or unavailable */ }
   }, [nodes, addToast])
 
-  // Clear saved layout and re-run dagre
+  // Clear saved layout and revert to default grid
   const clearLayoutPositions = useCallback(() => {
     localStorage.removeItem(LAYOUT_STORAGE_KEY)
     setUsingSavedLayout(false)
     setLayoutVersion(v => v + 1) // trigger layout effect re-run
-    addToast('Layout reset to auto', 'success')
+    addToast('Layout reset to default grid', 'success')
   }, [addToast])
 
-  // Layout effect: use saved positions if available, else Web Worker dagre
+  // Layout effect: saved positions > default grid > dagre (for unknown nodes only)
   useEffect(() => {
     if (flowNodes.length === 0) return
 
@@ -567,37 +621,41 @@ function PipelineInner() {
           return
         }
       }
-    } catch (e) { /* corrupted localStorage, fall through to dagre */ }
+    } catch (e) { /* corrupted localStorage, fall through to default grid */ }
 
-    if (layoutWorker) {
-      const handler = (e) => {
-        if (e.data.requestId !== requestId) return // discard stale
-        layoutWorker.removeEventListener('message', handler)
-        applyPositions(e.data.positions, false)
-      }
-      layoutWorker.addEventListener('message', handler)
-      layoutWorker.postMessage({ requestId, nodes: workerNodes, edges: workerEdges })
+    // Use hardcoded default grid layout — pixel-perfect aligned rows
+    // For any nodes not in the grid (e.g. newly added), fall back to dagre for those
+    const allInGrid = [...nodeIds].every(id => DEFAULT_GRID_POSITIONS[id])
+    if (allInGrid) {
+      applyPositions(DEFAULT_GRID_POSITIONS, false)
     } else {
-      // Main-thread fallback (dagre imported dynamically)
-      import('dagre').then(({ default: dagre }) => {
-        const g = new dagre.graphlib.Graph()
-        g.setDefaultEdgeLabel(() => ({}))
-        g.setGraph({ rankdir: 'LR', nodesep: 25, ranksep: 40, marginx: 25, marginy: 25 })
-        const SUBSYSTEM_ORDER_LOCAL = ['ingestion','feature','signal','filtering','strategy','parameter','backtest','metrics','risk','execution']
-        workerNodes.forEach(n => {
-          const ri = SUBSYSTEM_ORDER_LOCAL.indexOf(n.subsystem)
-          const rank = n.subsystem === 'parameter' ? SUBSYSTEM_ORDER_LOCAL.indexOf('strategy') : (ri >= 0 ? ri : SUBSYSTEM_ORDER_LOCAL.length)
-          g.setNode(n.id, { width: 500, height: 320, rank })
-        })
-        workerEdges.forEach(e => g.setEdge(e.source, e.target))
-        dagre.layout(g)
-        const positions = {}
-        workerNodes.forEach(n => {
-          const pos = g.node(n.id)
-          positions[n.id] = { x: pos.x - 250, y: pos.y - 160 }
-        })
-        applyPositions(positions, false)
+      // Hybrid: use grid positions for known nodes, dagre for unknown ones
+      const unknownNodes = workerNodes.filter(n => !DEFAULT_GRID_POSITIONS[n.id])
+      const unknownEdges = workerEdges.filter(e => {
+        const srcUnknown = !DEFAULT_GRID_POSITIONS[e.source]
+        const tgtUnknown = !DEFAULT_GRID_POSITIONS[e.target]
+        return srcUnknown || tgtUnknown
       })
+      if (unknownNodes.length > 0 && layoutWorker) {
+        const handler = (e) => {
+          if (e.data.requestId !== requestId) return
+          layoutWorker.removeEventListener('message', handler)
+          const merged = { ...DEFAULT_GRID_POSITIONS, ...e.data.positions }
+          applyPositions(merged, false)
+        }
+        layoutWorker.addEventListener('message', handler)
+        layoutWorker.postMessage({ requestId, nodes: unknownNodes, edges: unknownEdges })
+      } else {
+        // Main-thread fallback for unknown nodes
+        const merged = { ...DEFAULT_GRID_POSITIONS }
+        // Place unknown nodes in a row below the last grid row
+        let offsetX = 0
+        for (const n of unknownNodes) {
+          merged[n.id] = { x: offsetX, y: 1330 }
+          offsetX += 210
+        }
+        applyPositions(merged, false)
+      }
     }
   }, [flowNodes, flowEdges, setNodes, setEdges, layoutVersion])
 
