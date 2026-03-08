@@ -318,6 +318,34 @@ services:
     networks:
       - backend
 
+  d2_paper_trader:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      SERVICE_NAME: d2_paper_trader
+      D2_ENTRY_THRESHOLD: "0.25"
+      D2_STOP_PCT: "0.15"
+      D2_TIME_STOP_HOURS: "72"
+      D2_MAX_WATCH_HOURS: "48"
+      D2_MANIA_GATE_PCT: "40.0"
+      D2_LIQUIDITY_GATE_USD: "1000000"
+      D2_CANDLE_INTERVAL: "1m"
+      D2_POLL_INTERVAL_S: "60"
+      D2_CLUSTER_POLL_S: "30"
+      D2_MAX_CONCURRENT: "3"
+      D2_FNG_SOFT_GATE: "log_only"
+    command: ["python", "-u", "d2_paper_trader.py"]
+    mem_limit: 1g
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - backend
+
   expired_opp_exit_settler:
     build:
       context: ./worker

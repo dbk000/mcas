@@ -109,6 +109,7 @@ STRATEGY_REGISTRY = {
     "S10": {"label": "S10 (MACD Scalp)", "type": "crypto", "status": "active"},
     "U1": {"label": "U1 (Unicorn)", "type": "crypto", "status": "active"},
     "D1": {"label": "D1 (Dormancy Ignition)", "type": "crypto", "status": "active"},
+    "D2": {"label": "D2 (Fade the Casino)", "type": "crypto", "status": "paper"},
     "EQFP": {"label": "EQ: Forward Predictor", "type": "equities", "status": "active"},
     "EQ_TSMOM": {"label": "EQ: TSMOM (20d)", "type": "equities", "status": "active"},
     "EQ_XSMOM": {"label": "EQ: XS Momentum (20d)", "type": "equities", "status": "active"},
@@ -1558,3 +1559,42 @@ try:
     app.include_router(meta_router, prefix="/v1", dependencies=[Depends(require_api_key)])
 except ImportError:
     pass
+
+# D2 Paper Trader status endpoint
+d2_router = APIRouter(prefix="/d2", tags=["d2"])
+
+@d2_router.get("/status")
+async def d2_status():
+    """Current D2 paper trader state: active clusters, positions, stats."""
+    t0 = time.time()
+    with psycopg.connect(DATABASE_URL) as conn:
+        with conn.cursor() as cur:
+            # Active/recent cluster events
+            cur.execute("""
+                SELECT id, symbol, status, alert_count, max_pct_change,
+                       pre_pump_price, cluster_start_ts, created_ts, gate_reason
+                FROM d2_cluster_events
+                ORDER BY created_ts DESC LIMIT 50
+            """)
+            cols = [d[0] for d in cur.description]
+            clusters = [dict(zip(cols, row)) for row in cur.fetchall()]
+
+            # D2 paper positions
+            cur.execute("""
+                SELECT id, symbol, status, side, entry_price, exit_price,
+                       exit_reason, r_multiple, entry_ts, exit_ts
+                FROM paper_positions
+                WHERE setup_id = 'D2'
+                ORDER BY COALESCE(exit_ts, entry_ts) DESC LIMIT 50
+            """)
+            cols = [d[0] for d in cur.description]
+            positions = [dict(zip(cols, row)) for row in cur.fetchall()]
+
+    return envelope({
+        "clusters": clusters,
+        "positions": positions,
+        "cluster_count": len(clusters),
+        "position_count": len(positions),
+    }, t0)
+
+app.include_router(d2_router, prefix="/v1", dependencies=[Depends(require_api_key)])

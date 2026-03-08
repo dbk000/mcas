@@ -16,7 +16,7 @@ STOP_POLICY_SCHEMA_VERSION = "v1"
 # Include all currently known setup ids (crypto + equities) so startup
 # validation can catch drift against API strategy registry.
 KNOWN_SETUP_IDS = [
-    "S1", "S2", "S6", "S9", "S10", "U1", "D1",
+    "S1", "S2", "S6", "S9", "S10", "U1", "D1", "D2",
     "EQFP", "EQ_TSMOM", "EQ_XSMOM", "EQ_REV1A", "EQ_REV1B", "EQ_VPD", "EQ_ATC", "EQ_NVDA_MACRO",
 ]
 

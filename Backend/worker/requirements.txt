@@ -1,6 +1,7 @@
 psycopg[binary]
 redis
 requests
+aiohttp
 numpy
 scipy
 python-json-logger
