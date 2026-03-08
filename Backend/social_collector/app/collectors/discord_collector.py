@@ -168,8 +168,7 @@ class DiscordCollector:
         async def on_disconnect():
             logger.warning("Discord: disconnected, will auto-reconnect")
 
-        # bot=False for user token, bot=True for bot token
-        await client.start(token, bot=not is_user)
+        await client.start(token)
 
     def collect_cycle(self) -> int:
         """No-op for Discord — it's event-driven, not polled."""
