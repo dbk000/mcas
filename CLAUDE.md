@@ -198,6 +198,26 @@ Every plan that creates or modifies a script must address:
 - NEVER mix inclusive/exclusive range boundaries — standardise on half-open `[start, end)`
 - NEVER place `%s` inside SQL string literals with psycopg3 — use `%s * INTERVAL '1 day'`
 
+## Simulation Execution Pattern (Canonical — Do Not Regress)
+- NEVER use per-row `cur.execute()` loops in `_store_results()` or any bulk insert path — always `cur.executemany()` in batches of 500 (psycopg3 pipelining). The old per-row pattern was ~500 round-trips; the batch pattern is ~1-2 calls. This was profiled and fixed 2026-03-07.
+- NEVER pass the OHLCV cache as an argument to multiprocessing workers — always load it as a COW global in the parent process before fork (`_OHLCV_CACHE`, `_OPPS`, `_METAS` as module globals). Workers inherit via OS page tables, zero pickling overhead. See `backfill_d1_opportunities.py` lines 673-684 and `sim_d1_matrix.py` for the established pattern.
+- NEVER simulate 8 exit configs in a serial for-loop — use `multiprocessing.Pool(8)`, one worker per config. The 8 configs have near-identical cost (~1.1× ratio), so the load is balanced. Worker function signature: `_simulate_config(config_key) → (config_key, results)`.
+- The vectorized exit checker (`exit_checker_vectorized.py`) handles configs without trailing stops or stateful logic (configs A/B/C/E/G). Configs F (runner trail) and H (split exit) always use the scalar path — they have stateful HWM/partial-close logic that cannot be vectorized.
+
+## Batch Management Protocol
+- NEVER insert a pruned subset batch without first confirming the source sim baseline is snapshotted to `/scripts/output/snapshots/pre_prune_baseline/`.
+- To create a filtered subset from an existing batch: use `prune_batch_subset.py --source-batch-id <id> --new-batch-id <id> --dormancy-min <N> --volume-z-min <N> [--dry-run]`. Always run with `--dry-run` first to see per-gate filter rates before committing.
+- Single source of truth for gate filtering: always use `payload_json::jsonb` (not `trace_json->gates`). Backfilled opps have `trace_json = NULL`; even when populated, payload_json contains identical gate values written from the same evaluation.
+
+## Delta Backfill Protocol
+- NEVER attempt to derive a delta batch via SQL filtering when the underlying state machine uses non-linear phase transitions — loosening a threshold changes when phase transitions fire (SCANNING → DORMANT_CONFIRMED → ACCUMULATING → TRIGGERED), cascading to different trigger bars. Must re-evaluate the full state machine.
+- `delta_backfill_d1.py` loads **signal keys only** from the reference batch: `{(symbol, timeframe, created_ts)}` — the set of bars where a signal actually fired (~5K–50K entries), NOT all evaluated bars (~52M). A Python set of 50K tuples is trivial in memory.
+- Zero-overlap verification is mandatory (SQL count = 0). Union completeness is not practically verifiable without running the full backfill — replace with spot-check protocol (see below).
+
+## Signal Replay Oracle
+- `replay_d1_signal.py` is the ground-truth oracle for D1 signal spot-checks. Args: `--symbol`, `--timeframe`, `--bar-ts`, `--dormancy-threshold`. Loads OHLCV from Postgres, runs D1 state machine from scratch, prints trigger bar + direction. Use for: (a) verifying delta backfill spot-checks, (b) debugging missed or unexpected signals, (c) confirming trace_json gate values against a fresh re-evaluation.
+- This tool was built ground-up (2026-03-07) with no dependencies on backfill or sim infrastructure.
+
 ## Process
 - NEVER proceed to implement after feedback without showing updated plan for approval
 - NEVER commit signal-affecting changes without flagging stale opportunities + regen commands
@@ -232,6 +252,23 @@ Ingestor fetches OHLCV from Binance → Indicator workers compute features → S
 ## 3.4 Universe Model
 - **Known Universe** (~1024): Top USDT pairs by 24h quote volume. Hourly REST OHLCV → Postgres. Redis `universe:known` SET.
 - **Monitored Universe** (~150-300): Known filtered by `MIN_24H_QUOTE_VOLUME_USD` with hysteresis. WS 1m streams + full compute pipeline. Redis `universe:monitored` SET.
+
+## 3.4a Computation Trace / Lineage System
+Every opportunity written to the `opportunities` table carries a sealed audit trace in the `trace_json JSONB` column (schema v1.0, migration `20260307_add_trace_json.sql`).
+
+**What the trace contains:** candle window boundaries (first_ts/last_ts/bar_count), indicator snapshot (all values at trigger), indicator params (n_atr, n_bb, etc.), full strategy state (D1State/S10State/etc. including `is_hydrated` flag), structured gate evaluations (`{gate, value, threshold, op, passed}`), score breakdown (components, raw, calibration_mult, calibrated, **promotion_threshold**), config snapshot + config_hash (16-char SHA-256), indicator_params_hash, trace_hash (SHA-256 of full sealed dict, sort_keys=True), and promotion metadata.
+
+**Implementation:** `worker/app/trace_context.py` — `TraceContext` class + `TRACE_SCHEMA_VERSION = "1.0"` + `_deterministic_json()` (sort_keys=True, no whitespace). Controlled by `TRACE_ENABLED` env var (default: true). When false, no TraceContext created, zero overhead.
+
+**Wire-up:** TraceContext is created at the start of each `_evaluate_*()` call in `signal_worker.py` and passed through recording steps. It is **not** passed into `evaluate_trigger()` — gates are reconstructed after the signal returns (all gates passed by definition). Sealed trace is passed to `_persist_signal_to_pg()` as `trace_json=`.
+
+**When adding a new setup:** follow the pattern in `_evaluate_d1()` — create TraceContext, record indicators/state/gates/score/config, seal, pass to persist. The TraceContext methods are generic; your setup provides its own keys.
+
+**Hashing rules:** `config_hash` and `indicator_params_hash` are first 16 hex chars of SHA-256 (not 8 — 8-char is 32-bit and collides). `trace_hash` is full 64-char SHA-256 over the entire sealed dict serialised with `json.dumps(d, sort_keys=True, separators=(',', ':'))`. Never use `json.dumps(d)` without these flags — key order is non-deterministic across Python versions and environments.
+
+**Querying:** `WHERE trace_json->>'config_hash' = 'abc123...'` / `WHERE trace_json->'gates' @> '[{"gate": "dormancy", "passed": false}]'`. GIN index can be added later if analytical queries need it.
+
+**Backfill scripts:** Phase 3 (wiring trace into backfill scripts) is deferred — backfilled opps have `trace_json = NULL`. Acceptable; the column is nullable by design.
 
 ## 3.5 Adding a New Setup
 1. Create `Backend/worker/app/setups/s<N>_name.py` extending `SetupBase`
@@ -413,3 +450,29 @@ deep, invisible from reading _process_fold alone. The correct audit question is:
   Rule: When a prompt says "look at the data before designing features," the feature set must be derived from observed patterns, not pre-engineered from theory. Hardcoded dictionaries (MEME_TOKENS, TECH_TOKENS, etc.) and theory-driven categories are anchors. Mechanical string features are acceptable (they make no semantic claim). External metadata (CoinGecko categories) is acceptable because it's empirical data, not theory. Also: don't reimplement simulation logic that already exists — import it.
   What happened: First version of u1_ticker_name_analysis.py pre-engineered 22 features from theory with hardcoded token dictionaries, reimplemented 120 lines of Config A simulator instead of importing from sim_u1v4_matrix, and called a "numerology proxy" (letter_sum) a feature.
   Key insight: The difference between "data first" and "theory first" is whether the feature set was designed before or after looking at the data. Mechanical features (string length, vowel ratio) are data-first because they make no prediction about what matters. Hardcoded MEME_TOKENS = ["DOGE", "SHIB", ...] is theory-first because it assumes meme coins behave differently before checking.
+
+### 2026-03-07 — OHLCV Load Was the Bottleneck, Not Compute [PATHFINDING]
+**Goal:** Speed up `sim_d1_matrix.py` (was ~90s total).
+**What cProfile showed:** `load_ohlcv_batch` = 74% of runtime (5.0s cumtime / 6.7s total in the profiled run, 85.5s on the pre-optimization run). 427 individual `cur.execute()` calls at ~6ms each + 1.26s fetchall. `check_exit_simple` and `simulate_opportunity` were invisible in the top 60 — compute was never the bottleneck.
+**Dead ends:** Assumed Python scalar loop (`check_exit_simple`) was the dominator. cProfile disproved this.
+**Winning path:** (1) COW globals for OHLCV cache — load once in parent, workers inherit via fork. (2) `multiprocessing.Pool(8)` one worker per exit config. (3) `cur.executemany()` batches of 500 for `_store_results()`. Result: 85.5s → 6.6s (14× speedup), bit-for-bit identical output.
+**Key insight:** The symptom of a DB I/O bottleneck is not "slow query" — it's hundreds of fast queries in a Python loop. 427 × 6ms = 2.6s just in execute calls, 1.26s in fetchall. The fix is to load everything once before forking, not to parallelise the queries.
+
+### 2026-03-07 — Multiprocessing IPC vs COW Globals Confusion
+**Rule:** When using `multiprocessing.Pool` with fork semantics, OHLCV caches and opportunity lists must be set as **module-level globals before the Pool is created**, not passed as arguments to worker functions. Passing them as arguments triggers pickling (serialisation + copy per worker = potential GB of RAM and seconds of overhead). COW fork semantics mean the parent's memory pages are shared read-only with all workers at zero copy cost. Worker args should be tiny (config key strings, not data).
+**Key insight:** This is distinct from `ProcessPoolExecutor.map()` where data is always passed as arguments. The COW pattern only works with `fork` start method (Linux default). See `backfill_d1_opportunities.py` lines 673-684 for the established pattern — always follow that, never reinvent.
+
+### 2026-03-07 — Delta Backfill Reference Key Scoping
+**Rule:** When building `_REFERENCE_KEYS` for delta backfill deduplication, load **signal keys only** (bars where a signal fired in the reference batch) — NOT all bars that were evaluated. 2000 symbols × 3 years × 1h = ~52M evaluated bars = ~4GB RAM. The actual signal set is ~5K–50K entries = trivial. The distinction is: `SELECT (symbol, timeframe, created_ts) FROM opportunities WHERE batch_id = <ref>`, not a scan of the ohlcv table.
+
+### 2026-03-07 — Vectorized Exit Checker Validation Must Be Stratified
+**Rule:** When validating the vectorized exit checker against the scalar path, assert 100% agreement stratified by exit type: STOP_LOSS only, TP1 only, TP2 only, TIME_STOP (with and without half-R progress), MAX_BARS. A random sample will miss exit paths that only trigger on 2-3% of opportunities. One disagreement in any bucket = bug in that path.
+
+### 2026-03-07 — Replay Oracle Must Be Ground-Up, No Historical Baggage
+**Rule:** `replay_d1_signal.py` was built from scratch with no imports from backfill or sim infrastructure. When building a diagnostic/oracle tool, do not anchor it to existing pipeline code — the whole point is to be an independent ground-truth re-evaluation. Dependencies on the pipeline being debugged defeat the purpose.
+
+### 2026-03-08 — r_multiple < -1.05 Filter Silently Discarding Gap-Through Trades
+**What happened:** `sim_d1_matrix.py:slice_results()` filtered by `r_multiple < -1.05` before PF calculation. This discarded 373 trades where stops were gapped through on illiquid symbols. Config D appeared as PF 6.08 / WR 52.7% / N=188. True figures: PF 1.11 / WR 17.6% / N=561. The 6.08 was a two-layer mirage: R_PRESERVATION_FAILED silently cherry-picked the 188 cleanest entries (Layer 1), and r_multiple filtering then discarded the gap-through casualties from those 188 (Layer 2).
+**Rule:** NEVER filter simulation results by r_multiple or any exit-quality threshold before computing PF metrics. Gap-throughs are real trading outcomes. A simulation that excludes them is modelling a broker that doesn't exist.
+**Fix:** Report PF on all simulated trades. Add a separate gap-through distribution section (r_multiple histogram for stop-loss exits) as diagnostic output, not a gate.
+**Key insight:** Gap-through rate is a signal quality metric, not an outlier to remove. High gap-through rate on a symbol means the stop distance is too small relative to the symbol's tick/liquidity profile. The correct fix is a liquidity gate at signal generation time. The wrong fix is cleaning up the results after the fact.
