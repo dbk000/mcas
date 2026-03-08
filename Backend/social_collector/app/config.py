@@ -16,6 +16,10 @@ TELEGRAM_API_ID = os.getenv("TELEGRAM_API_ID", "")
 TELEGRAM_API_HASH = os.getenv("TELEGRAM_API_HASH", "")
 TELEGRAM_SESSION_PATH = os.getenv("TELEGRAM_SESSION_PATH", "/app/sessions/mcas")
 
+# Discord
+DISCORD_BOT_TOKEN = os.getenv("DISCORD_BOT_TOKEN", "")
+DISCORD_ENABLED = os.getenv("DISCORD_ENABLED", "false").lower() in ("true", "1", "yes")
+
 # Anthropic (Brain 2)
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 BRAIN2_MODEL = "claude-haiku-4-5-20251001"

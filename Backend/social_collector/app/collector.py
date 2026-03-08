@@ -24,6 +24,7 @@ from collectors.reddit import RedditCollector
 from collectors.rss import RssCollector
 from collectors.coingecko import CoinGeckoCollector
 from collectors.telegram import TelegramCollector
+from collectors.discord_collector import DiscordCollector
 from brain1 import aggregate_hour
 from brain2 import run_brain2_cycle
 
@@ -141,6 +142,10 @@ def main():
     # Telegram collector (event-driven, not polled)
     telegram = TelegramCollector(matcher)
     telegram.start()  # Logs its own status
+
+    # Discord collector (event-driven, not polled)
+    discord_collector = DiscordCollector(matcher)
+    discord_collector.start()  # Logs its own status
 
     # Brain scheduler (Brain 1 + Brain 2)
     t = threading.Thread(target=brain_scheduler, daemon=True, name="brain-scheduler")
