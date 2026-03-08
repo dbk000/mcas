@@ -306,7 +306,7 @@ async def fetch_pre_pump_price(conn, symbol: str, cluster_start_ts: datetime) ->
         """, (symbol, cluster_start_ts))
         row = cur.fetchone()
         if row:
-            return float(row[0])
+            return float(row["close"] if isinstance(row, dict) else row[0])
 
     # Fallback: Binance REST
     import aiohttp
@@ -354,8 +354,9 @@ class ClusterDetector:
     def _init_last_seen(self):
         """Start from the latest post_id to avoid replaying history."""
         with self.conn.cursor() as cur:
-            cur.execute("SELECT COALESCE(MAX(id), 0) FROM social_posts")
-            self.last_seen_id = cur.fetchone()[0]
+            cur.execute("SELECT COALESCE(MAX(id), 0) AS max_id FROM social_posts")
+            row = cur.fetchone()
+            self.last_seen_id = row["max_id"] if isinstance(row, dict) else row[0]
         logger.info("Cluster detector: starting from post_id > %d", self.last_seen_id)
 
     def poll(self) -> list[dict]:
@@ -531,7 +532,8 @@ def write_cluster_event(conn, cluster: dict, status: str, gate_reason: str = Non
             cluster.get("source_post_ids"),
             json.dumps(metadata),
         ))
-        event_id = cur.fetchone()[0]
+        row = cur.fetchone()
+        event_id = row["id"] if isinstance(row, dict) else row[0]
     conn.commit()
     return event_id
 
@@ -648,7 +650,7 @@ def _get_or_create_d2_run(conn) -> str:
         """)
         row = cur.fetchone()
         if row:
-            _D2_RUN_ID = str(row[0])
+            _D2_RUN_ID = str(row["id"] if isinstance(row, dict) else row[0])
             return _D2_RUN_ID
 
         # Create new D2 run
