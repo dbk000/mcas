@@ -18,6 +18,7 @@ TELEGRAM_SESSION_PATH = os.getenv("TELEGRAM_SESSION_PATH", "/app/sessions/mcas")
 
 # Discord
 DISCORD_BOT_TOKEN = os.getenv("DISCORD_BOT_TOKEN", "")
+DISCORD_USER_TOKEN = os.getenv("DISCORD_USER_TOKEN", "")
 DISCORD_ENABLED = os.getenv("DISCORD_ENABLED", "false").lower() in ("true", "1", "yes")
 
 # Anthropic (Brain 2)

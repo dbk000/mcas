@@ -6,4 +6,4 @@ praw
 telethon
 feedparser
 anthropic
-discord.py
+discord.py-self

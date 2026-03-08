@@ -1,9 +1,9 @@
 """
 Discord Collector — Forward-only message ingestion from crypto servers.
 
-Connects via discord.py bot, listens to configured channels, writes raw
-messages to social_posts with source='discord'. No parsing beyond basic
-symbol extraction via SymbolMatcher.
+Connects as a user account (selfbot) via discord.py-self, listens to all
+servers the user has joined, writes raw messages to social_posts with
+source='discord'. No parsing beyond basic symbol extraction via SymbolMatcher.
 
 Feature-flagged: DISCORD_ENABLED=false by default.
 
@@ -39,11 +39,11 @@ def load_discord_config() -> dict:
 
 class DiscordCollector:
     """
-    Discord message collector using discord.py.
+    Discord message collector using discord.py-self (user account).
 
-    Listens to configured channels via Gateway WebSocket. Messages arrive
-    as events — no polling needed. Writes to social_posts with ON CONFLICT
-    DO NOTHING for idempotent restarts.
+    Listens to all servers the user account has joined via Gateway WebSocket.
+    Messages arrive as events — no polling needed. Writes to social_posts
+    with ON CONFLICT DO NOTHING for idempotent restarts.
     """
 
     def __init__(self, matcher: SymbolMatcher):
@@ -53,7 +53,7 @@ class DiscordCollector:
         self._running = False
         self._monitored_channel_ids = set()
 
-        # Build set of channel IDs to monitor
+        # Build set of channel IDs to monitor (empty = listen to all)
         for server in self.discord_config.get("servers", []):
             for ch in server.get("channels", []):
                 if ch.get("monitor", True):
@@ -61,22 +61,29 @@ class DiscordCollector:
                     if ch_id:
                         self._monitored_channel_ids.add(int(ch_id))
 
+    def _get_token(self) -> str | None:
+        """Return the best available Discord token. Prefer user token for selfbot."""
+        return config.DISCORD_USER_TOKEN or config.DISCORD_BOT_TOKEN or None
+
     def start(self):
         """Start the Discord listener if configured."""
         if not config.DISCORD_ENABLED:
             logger.info("Discord collector disabled (DISCORD_ENABLED=false)")
             return
 
-        if not config.DISCORD_BOT_TOKEN:
-            logger.info("Discord collector disabled — no DISCORD_BOT_TOKEN in env")
+        token = self._get_token()
+        if not token:
+            logger.info("Discord collector disabled — no DISCORD_USER_TOKEN or DISCORD_BOT_TOKEN in env")
             return
 
+        is_user = bool(config.DISCORD_USER_TOKEN)
+        mode = "user account (selfbot)" if is_user else "bot"
         if not self._monitored_channel_ids:
             logger.info("Discord collector: no channels configured, will listen to all "
-                        "channels the bot has access to")
+                        "channels accessible to the %s", mode)
 
-        logger.info("Discord: starting listener (monitoring %d channels)",
-                     len(self._monitored_channel_ids))
+        logger.info("Discord: starting %s listener (monitoring %d specific channels)",
+                     mode, len(self._monitored_channel_ids))
         self._running = True
         self._thread = threading.Thread(target=self._run_loop, daemon=True,
                                         name="discord-collector")
@@ -98,14 +105,14 @@ class DiscordCollector:
         try:
             import discord
         except ImportError:
-            logger.error("discord.py not installed. Add 'discord.py' to requirements.txt")
+            logger.error("discord.py-self not installed. Add 'discord.py-self' to requirements.txt")
             return
 
-        intents = discord.Intents.default()
-        intents.message_content = True
-        intents.guilds = True
+        is_user = bool(config.DISCORD_USER_TOKEN)
+        token = self._get_token()
 
-        client = discord.Client(intents=intents)
+        # discord.py-self handles user tokens natively with the same Client API
+        client = discord.Client()
 
         @client.event
         async def on_ready():
@@ -115,8 +122,8 @@ class DiscordCollector:
 
         @client.event
         async def on_message(message):
-            # Skip bot messages
-            if message.author.bot:
+            # Skip own messages
+            if message.author.id == client.user.id:
                 return
 
             # Skip if not in monitored channels (if channels are configured)
@@ -161,7 +168,8 @@ class DiscordCollector:
         async def on_disconnect():
             logger.warning("Discord: disconnected, will auto-reconnect")
 
-        await client.start(config.DISCORD_BOT_TOKEN)
+        # bot=False for user token, bot=True for bot token
+        await client.start(token, bot=not is_user)
 
     def collect_cycle(self) -> int:
         """No-op for Discord — it's event-driven, not polled."""

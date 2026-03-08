@@ -38,7 +38,9 @@
     {"username": "CryptoScanner100eyes",     "category": "technical_alerts",     "priority": "medium"},
     {"username": "lunarcrush",               "category": "social_analytics",     "priority": "medium"},
 
-    {"username": "bybitcryptofeed",          "category": "exchange_news",        "priority": "low"}
+    {"username": "bybitcryptofeed",          "category": "exchange_news",        "priority": "low"},
+
+    {"username": "TodayWePush",              "category": "pump_coordination",    "priority": "high"}
   ],
 
   "_pruning_log": [],
