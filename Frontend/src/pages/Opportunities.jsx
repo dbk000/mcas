@@ -132,8 +132,8 @@ function sortOpportunities(opps, sortBy) {
   switch (sortBy) {
     case 'newest':
       sorted.sort((a, b) => {
-        const tsA = a.as_of_ts || 0
-        const tsB = b.as_of_ts || 0
+        const tsA = a.created_ts ? new Date(a.created_ts).getTime() : 0
+        const tsB = b.created_ts ? new Date(b.created_ts).getTime() : 0
         return tsB - tsA
       })
       break
