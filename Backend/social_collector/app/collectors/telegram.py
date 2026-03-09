@@ -1,5 +1,6 @@
 """
-Telegram Collector — Phase 0 stub.
+Telegram Collector
+==================
 
 Checks for credentials and session file. If configured and authenticated,
 listens to configured channels. Otherwise logs a clear message and returns.
@@ -8,6 +9,7 @@ Full Telethon integration requires interactive first-auth by Darren.
 """
 
 import os
+import re
 import json
 import logging
 import asyncio
@@ -21,6 +23,15 @@ from symbol_matcher import SymbolMatcher
 logger = logging.getLogger("telegram")
 
 CHANNELS_FILE = os.path.join(os.path.dirname(__file__), '..', 'telegram_channels.json')
+
+# Bot-alert channels that use structured message formats (e.g. "SYMBOL/USDT").
+# Downstream consumers (D2 paper trader) parse these directly — bypass the
+# symbol matcher which misses obscure coins not in symbol_aliases.
+_BOT_ALERT_CATEGORIES = {"whale_alerts", "alt_monitor", "liquidations",
+                          "pump_coordination", "technical_alerts"}
+
+# Regex to extract "SYMBOL/USDT" from bot-alert messages
+_PAIR_RE = re.compile(r'\b([A-Z0-9]{2,20})/USDT\b')
 
 
 def load_channel_list() -> list[dict]:
@@ -99,12 +110,14 @@ class TelegramCollector:
         await self.client.start()
         logger.info("Telegram client connected")
 
-        # Resolve channel entities
+        # Build channel_id → category lookup for bot-alert bypass
         channel_entities = []
+        entity_category = {}  # entity.id → category string
         for ch in self.channels:
             try:
                 entity = await self.client.get_entity(ch["username"])
                 channel_entities.append(entity)
+                entity_category[entity.id] = ch.get("category", "")
                 logger.info("Telegram: resolved channel %s", ch["username"])
             except Exception as e:
                 logger.warning("Telegram: could not resolve channel %s: %s",
@@ -122,15 +135,28 @@ class TelegramCollector:
                 if not text:
                     return
 
-                symbols = self.matcher.extract_symbols(text)
-                if not symbols:
-                    return
-
+                # Determine channel info
+                chat_id = event.chat_id
                 channel_name = ""
                 if hasattr(event.chat, 'username') and event.chat.username:
                     channel_name = event.chat.username
                 elif hasattr(event.chat, 'title') and event.chat.title:
                     channel_name = event.chat.title
+
+                category = entity_category.get(chat_id, "")
+
+                # Symbol extraction: use matcher first, fall back to pair regex
+                # for bot-alert channels that use structured "SYMBOL/USDT" format
+                symbols = self.matcher.extract_symbols(text)
+                is_bot_alert = category in _BOT_ALERT_CATEGORIES
+
+                if not symbols and is_bot_alert:
+                    # Extract from "SYMBOL/USDT" pattern
+                    pair_matches = _PAIR_RE.findall(text)
+                    symbols = sorted({f"{s}USDT" for s in pair_matches})
+
+                if not symbols and not is_bot_alert:
+                    return
 
                 post = {
                     "source": "telegram",
