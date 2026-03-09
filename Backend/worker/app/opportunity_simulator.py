@@ -400,6 +400,66 @@ class OpportunitySimulator:
             opportunity_created_ts=opp_ts,
         )
 
+        # ── Pre-settled passthrough ──────────────────────────────────
+        # Some setups (e.g. D2 Fade the Casino) pre-compute exit results
+        # during backfill. If payload_json contains a complete settlement
+        # (exit_settler marker + exit fields), skip walk-forward entirely
+        # and use the baked-in results.
+        if payload.get("exit_settler"):
+            _exit_ts_raw = payload.get("exit_ts") or payload.get("entry_ts")
+            _exit_ts = None
+            if isinstance(_exit_ts_raw, str):
+                try:
+                    _exit_ts = datetime.fromisoformat(_exit_ts_raw.replace("Z", "+00:00"))
+                except Exception:
+                    _exit_ts = opp_ts
+            elif isinstance(_exit_ts_raw, datetime):
+                _exit_ts = _exit_ts_raw
+            else:
+                _exit_ts = opp_ts
+
+            _entry_ts_raw = payload.get("entry_ts")
+            _entry_ts = None
+            if isinstance(_entry_ts_raw, str):
+                try:
+                    _entry_ts = datetime.fromisoformat(_entry_ts_raw.replace("Z", "+00:00"))
+                except Exception:
+                    _entry_ts = opp_ts
+            elif isinstance(_entry_ts_raw, datetime):
+                _entry_ts = _entry_ts_raw
+            else:
+                _entry_ts = opp_ts
+
+            _entry_px = payload.get("entry_price", 0)
+            _exit_px = payload.get("exit_price", 0)
+            _stop_px = payload.get("stop_price", 0)
+            _pnl_pct = payload.get("pnl_after_costs_pct", payload.get("pnl_pct", 0))
+            _pos_usd = self.config.position_size_usd
+            _pnl_net = _pos_usd * (_pnl_pct / 100.0) if _pnl_pct else 0.0
+
+            result.entry_ts = _entry_ts
+            result.entry_price = _entry_px
+            result.entry_price_with_slippage = _entry_px  # costs already in pnl_after_costs_pct
+            result.stop_price = _stop_px
+            result.tp1_price = payload.get("tp_price") or payload.get("tp1_price")
+            result.exit_ts = _exit_ts
+            result.exit_price = _exit_px
+            result.exit_price_with_slippage = _exit_px
+            result.exit_reason = payload.get("exit_reason", "UNKNOWN")
+            result.r_multiple = payload.get("r_multiple", 0)
+            result.r_value = abs(_entry_px - _stop_px) if _entry_px and _stop_px else 0
+            result.pnl_gross = _pnl_net  # pre-settled includes costs
+            result.fees = 0.0
+            result.pnl_net = _pnl_net
+            result.position_size = _pos_usd / _entry_px if _entry_px else 0
+            result.data_available = True
+            # Compute bars_held from timestamps
+            if _entry_ts and _exit_ts and _entry_ts != _exit_ts:
+                tf_hours = {"1m": 1/60, "5m": 5/60, "15m": 0.25, "1h": 1, "4h": 4, "1d": 24}
+                bar_h = tf_hours.get(timeframe, 1)
+                result.bars_held = max(1, int((_exit_ts - _entry_ts).total_seconds() / 3600 / bar_h))
+            return result
+
         # Get OHLCV bars
         key = f"{symbol}_{timeframe}"
         bars = ohlcv_cache.get(key, [])
