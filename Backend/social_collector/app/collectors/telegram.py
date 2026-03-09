@@ -110,14 +110,16 @@ class TelegramCollector:
         await self.client.start()
         logger.info("Telegram client connected")
 
-        # Build channel_id → category lookup for bot-alert bypass
+        # Build username → category lookup for bot-alert bypass.
+        # We key by username (not entity.id) because event.chat_id returns
+        # marked IDs for channels (-100XXXX) which don't match entity.id.
         channel_entities = []
-        entity_category = {}  # entity.id → category string
+        username_category = {}  # channel username → category string
         for ch in self.channels:
             try:
                 entity = await self.client.get_entity(ch["username"])
                 channel_entities.append(entity)
-                entity_category[entity.id] = ch.get("category", "")
+                username_category[ch["username"]] = ch.get("category", "")
                 logger.info("Telegram: resolved channel %s", ch["username"])
             except Exception as e:
                 logger.warning("Telegram: could not resolve channel %s: %s",
@@ -136,14 +138,13 @@ class TelegramCollector:
                     return
 
                 # Determine channel info
-                chat_id = event.chat_id
                 channel_name = ""
                 if hasattr(event.chat, 'username') and event.chat.username:
                     channel_name = event.chat.username
                 elif hasattr(event.chat, 'title') and event.chat.title:
                     channel_name = event.chat.title
 
-                category = entity_category.get(chat_id, "")
+                category = username_category.get(channel_name, "")
 
                 # Symbol extraction: use matcher first, fall back to pair regex
                 # for bot-alert channels that use structured "SYMBOL/USDT" format
