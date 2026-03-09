@@ -16,10 +16,14 @@ All indicators use ring buffers for efficiency.
 ATR-normalised where appropriate for cross-asset comparability.
 """
 
+import os
 import re
 import numpy as np
 from dataclasses import dataclass, field
 from typing import Optional
+
+# Dark mode: compute expansion indicators when enabled (default: off)
+COMPUTE_DARK_INDICATORS = os.getenv("COMPUTE_DARK_INDICATORS", "false").lower() in {"1", "true", "yes"}
 
 
 # =============================================================================
@@ -79,6 +83,7 @@ class IndicatorDef:
     expression_type: str = "value"     # value, slope, cross, percentile
     implementation: str = ""           # method name on FeatureFactory
     version: str = "1.0.0"
+    active: bool = True                # False = dark mode (computed only when COMPUTE_DARK_INDICATORS=true)
 
 
 INDICATOR_REGISTRY: dict[str, IndicatorDef] = {}
@@ -332,6 +337,7 @@ _register(IndicatorDef(
     inputs=["high", "low", "volume"], params={},
     implementation="(high - low) / (volume + 1e-10)",
     version="1.0.0",
+    active=False,  # Dark mode — not wired into any strategy
 ))
 
 # Tier 1 — L2 Proxy: Volume Acceleration (volume surge vs 20-bar SMA)
@@ -340,6 +346,95 @@ _register(IndicatorDef(
     inputs=["volume"], params={"n": 20},
     implementation="volume[-1] / SMA(volume, 20)",
     version="1.0.0",
+    active=False,  # Dark mode — not wired into any strategy
+))
+
+# =============================================================================
+# Dark-mode expansion indicators (active=False)
+# Computed only when COMPUTE_DARK_INDICATORS=true env var is set.
+# No live strategy consumes these without explicit walk-forward validation.
+# =============================================================================
+
+# Tier 1 — Stochastic Oscillator (14, 3)
+_register(IndicatorDef(
+    indicator_id=generate_indicator_id("STOCH_K", 14), name="Stochastic %K (14, 3)", tier=1,
+    inputs=["high", "low", "close"], params={"k_period": 14, "d_period": 3},
+    implementation="FeatureFactory._stochastic",
+    active=False,
+))
+_register(IndicatorDef(
+    indicator_id=generate_indicator_id("STOCH_D", 14), name="Stochastic %D (14, 3)", tier=1,
+    inputs=["high", "low", "close"], params={"k_period": 14, "d_period": 3},
+    implementation="SMA(stoch_k, 3)",
+    active=False,
+))
+
+# Tier 1 — Williams %R (14)
+_register(IndicatorDef(
+    indicator_id=generate_indicator_id("WILLR", 14), name="Williams %R (14)", tier=1,
+    inputs=["high", "low", "close"], params={"n": 14},
+    implementation="(highest_high - close) / (highest_high - lowest_low) * -100",
+    active=False,
+))
+
+# Tier 2 — ADX (Average Directional Index, 14)
+_register(IndicatorDef(
+    indicator_id=generate_indicator_id("ADX", 14), name="ADX (14)", tier=2,
+    inputs=["high", "low", "close"], params={"n": 14},
+    implementation="FeatureFactory._adx",
+    active=False,
+))
+
+# Tier 2 — OBV Slope (On-Balance Volume slope, ATR-normalised)
+_register(IndicatorDef(
+    indicator_id=generate_indicator_id("OBV_SLOPE", 20, "ATR"),
+    name="OBV Slope (20-bar, ATR-normalised)", tier=2,
+    inputs=["close", "volume"], params={"n": 20},
+    expression_type="slope",
+    implementation="(OBV[-1] - OBV[-20]) / (20 * atr * mean_vol)",
+    active=False,
+))
+
+# Tier 2 — MFI (Money Flow Index, 14)
+_register(IndicatorDef(
+    indicator_id=generate_indicator_id("MFI", 14), name="Money Flow Index (14)", tier=2,
+    inputs=["high", "low", "close", "volume"], params={"n": 14},
+    implementation="FeatureFactory._mfi",
+    active=False,
+))
+
+# Tier 2 — CCI (Commodity Channel Index, 20)
+_register(IndicatorDef(
+    indicator_id=generate_indicator_id("CCI", 20), name="CCI (20)", tier=2,
+    inputs=["high", "low", "close"], params={"n": 20},
+    implementation="(TP - SMA(TP, 20)) / (0.015 * MeanDev(TP, 20))",
+    active=False,
+))
+
+# Tier 2 — ROC (Rate of Change, 12)
+_register(IndicatorDef(
+    indicator_id=generate_indicator_id("ROC", 12), name="Rate of Change (12)", tier=2,
+    inputs=["close"], params={"n": 12},
+    implementation="(close - close[-12]) / close[-12] * 100",
+    active=False,
+))
+
+# Tier 2 — Chaikin Volatility (10-bar EMA of high-low range change)
+_register(IndicatorDef(
+    indicator_id=generate_indicator_id("CHAIKIN_VOL", 10), name="Chaikin Volatility (10)", tier=2,
+    inputs=["high", "low"], params={"n": 10},
+    implementation="(EMA(H-L, 10) - EMA(H-L, 10)[-10]) / EMA(H-L, 10)[-10]",
+    active=False,
+))
+
+# Tier 2 — Price Distance from EMA 20 (ATR-normalised, mean reversion signal)
+_register(IndicatorDef(
+    indicator_id=generate_indicator_id("PRICE_DIST_EMA20", "ATR"),
+    name="Price Distance from EMA20 (ATR-norm)", tier=2,
+    inputs=["close"], params={"n_ema": 20},
+    expression_type="value",
+    implementation="(close - ema20) / atr",
+    active=False,
 ))
 
 # Canon §1.6: Module-level uniqueness assertion — fail fast on ID collisions
@@ -437,6 +532,18 @@ class IndicatorSnapshot:
     # L2 Proxy Features (dark mode — computed but not wired into any strategy)
     range_to_volume_ratio: float = 0.0   # (high - low) / volume — price impact proxy
     volume_acceleration: float = 1.0     # volume / SMA(volume, 20) — surge ratio
+
+    # Dark-mode expansion indicators (only populated when COMPUTE_DARK_INDICATORS=true)
+    stoch_k: Optional[float] = None       # Stochastic %K (14, 3)
+    stoch_d: Optional[float] = None       # Stochastic %D (14, 3)
+    williams_r: Optional[float] = None    # Williams %R (14)
+    adx: Optional[float] = None           # ADX (14)
+    obv_slope_atr: Optional[float] = None # OBV slope (20-bar, ATR-normalised)
+    mfi: Optional[float] = None           # Money Flow Index (14)
+    cci: Optional[float] = None           # CCI (20)
+    roc: Optional[float] = None           # Rate of Change (12)
+    chaikin_vol: Optional[float] = None   # Chaikin Volatility (10)
+    price_dist_ema20_atr: Optional[float] = None  # (close - EMA20) / ATR
 
     # Tier 2 - Dormancy / Accumulation (for D1)
     dormancy_score: float = 0.0       # Fraction of trailing N bars with tight range
@@ -596,7 +703,30 @@ class FeatureFactory:
             htf_close = htf_closes[-1]
             htf_sma50 = self._sma(htf_closes, 50)[-1]
             htf_bb_mb = self._sma(htf_closes, 20)[-1]
-        
+
+        # Dark-mode expansion indicators (only computed when flag is set)
+        stoch_k = None
+        stoch_d = None
+        williams_r = None
+        adx_val = None
+        obv_slope_atr = None
+        mfi_val = None
+        cci_val = None
+        roc_val = None
+        chaikin_vol_val = None
+        price_dist_ema20_atr = None
+
+        if COMPUTE_DARK_INDICATORS:
+            stoch_k, stoch_d = self._stochastic(highs, lows, closes, 14, 3)
+            williams_r = self._williams_r(highs, lows, closes, 14)
+            adx_val = self._adx(highs, lows, closes, 14)
+            obv_slope_atr = self._obv_slope(closes, volumes, 20, atr)
+            mfi_val = self._mfi(highs, lows, closes, volumes, 14)
+            cci_val = self._cci(highs, lows, closes, 20)
+            roc_val = self._roc(closes, 12)
+            chaikin_vol_val = self._chaikin_volatility(highs, lows, 10)
+            price_dist_ema20_atr = (closes[-1] - ema_20) / atr if atr > 0 else None
+
         return IndicatorSnapshot(
             ohlcv=candles,
             atr=atr,
@@ -643,6 +773,16 @@ class FeatureFactory:
             htf_close=htf_close,
             htf_sma50=htf_sma50,
             htf_bb_mb=htf_bb_mb,
+            stoch_k=stoch_k,
+            stoch_d=stoch_d,
+            williams_r=williams_r,
+            adx=adx_val,
+            obv_slope_atr=obv_slope_atr,
+            mfi=mfi_val,
+            cci=cci_val,
+            roc=roc_val,
+            chaikin_vol=chaikin_vol_val,
+            price_dist_ema20_atr=price_dist_ema20_atr,
         )
     
     # -------------------------------------------------------------------------
@@ -900,6 +1040,194 @@ class FeatureFactory:
         if len(data) < n:
             return float(np.std(data))
         return float(np.std(data[-n:]))
+
+    # -------------------------------------------------------------------------
+    # Dark-mode indicator calculations
+    # -------------------------------------------------------------------------
+
+    def _stochastic(self, highs: np.ndarray, lows: np.ndarray, closes: np.ndarray,
+                    k_period: int = 14, d_period: int = 3) -> tuple[float, float]:
+        """Stochastic Oscillator %K and %D."""
+        if len(closes) < k_period:
+            return 50.0, 50.0
+
+        hh = np.max(highs[-k_period:])
+        ll = np.min(lows[-k_period:])
+        denom = hh - ll
+        if denom <= 0:
+            k = 50.0
+        else:
+            k = float((closes[-1] - ll) / denom * 100)
+
+        # %D = SMA of %K over d_period (approximate with current bar only)
+        # For proper %D, compute %K series then SMA
+        if len(closes) < k_period + d_period:
+            return k, k
+
+        k_series = []
+        for i in range(d_period):
+            idx = -(d_period - i)
+            end = len(highs) + idx + 1 if idx < -1 else len(highs)
+            start = end - k_period
+            if start < 0:
+                k_series.append(50.0)
+                continue
+            hh_i = np.max(highs[start:end])
+            ll_i = np.min(lows[start:end])
+            d_i = hh_i - ll_i
+            if d_i <= 0:
+                k_series.append(50.0)
+            else:
+                k_series.append((closes[end - 1] - ll_i) / d_i * 100)
+
+        d = float(np.mean(k_series))
+        return k, d
+
+    def _williams_r(self, highs: np.ndarray, lows: np.ndarray, closes: np.ndarray,
+                    n: int = 14) -> float:
+        """Williams %R."""
+        if len(closes) < n:
+            return -50.0
+
+        hh = np.max(highs[-n:])
+        ll = np.min(lows[-n:])
+        denom = hh - ll
+        if denom <= 0:
+            return -50.0
+        return float((hh - closes[-1]) / denom * -100)
+
+    def _adx(self, highs: np.ndarray, lows: np.ndarray, closes: np.ndarray,
+             n: int = 14) -> float:
+        """Average Directional Index."""
+        if len(closes) < n * 2:
+            return 25.0  # neutral default
+
+        # +DM / -DM
+        up_move = np.diff(highs)
+        down_move = -np.diff(lows)
+        plus_dm = np.where((up_move > down_move) & (up_move > 0), up_move, 0.0)
+        minus_dm = np.where((down_move > up_move) & (down_move > 0), down_move, 0.0)
+
+        # True Range
+        tr = np.zeros(len(closes) - 1)
+        for i in range(len(tr)):
+            tr[i] = max(
+                highs[i + 1] - lows[i + 1],
+                abs(highs[i + 1] - closes[i]),
+                abs(lows[i + 1] - closes[i])
+            )
+
+        # Wilder smoothing
+        atr_smooth = np.zeros(len(tr))
+        plus_di_smooth = np.zeros(len(tr))
+        minus_di_smooth = np.zeros(len(tr))
+
+        atr_smooth[n - 1] = np.mean(tr[:n])
+        plus_di_smooth[n - 1] = np.mean(plus_dm[:n])
+        minus_di_smooth[n - 1] = np.mean(minus_dm[:n])
+
+        for i in range(n, len(tr)):
+            atr_smooth[i] = (atr_smooth[i - 1] * (n - 1) + tr[i]) / n
+            plus_di_smooth[i] = (plus_di_smooth[i - 1] * (n - 1) + plus_dm[i]) / n
+            minus_di_smooth[i] = (minus_di_smooth[i - 1] * (n - 1) + minus_dm[i]) / n
+
+        # +DI / -DI
+        safe_atr = np.where(atr_smooth > 0, atr_smooth, 1.0)
+        plus_di = 100 * plus_di_smooth / safe_atr
+        minus_di = 100 * minus_di_smooth / safe_atr
+
+        # DX
+        di_sum = plus_di + minus_di
+        safe_di_sum = np.where(di_sum > 0, di_sum, 1.0)
+        dx = 100 * np.abs(plus_di - minus_di) / safe_di_sum
+
+        # ADX = Wilder smoothed DX
+        if len(dx) < 2 * n:
+            return float(np.mean(dx[n:]) if len(dx) > n else 25.0)
+
+        adx_series = np.zeros(len(dx))
+        adx_series[2 * n - 2] = np.mean(dx[n - 1:2 * n - 1])
+        for i in range(2 * n - 1, len(dx)):
+            adx_series[i] = (adx_series[i - 1] * (n - 1) + dx[i]) / n
+
+        return float(adx_series[-1])
+
+    def _obv_slope(self, closes: np.ndarray, volumes: np.ndarray,
+                   n: int = 20, atr: float = 1.0) -> float:
+        """OBV slope over n bars, normalised by ATR and mean volume."""
+        if len(closes) < n + 1:
+            return 0.0
+
+        # OBV for last n+1 bars
+        c = closes[-(n + 1):]
+        v = volumes[-(n + 1):]
+        direction = np.sign(np.diff(c))
+        obv = np.cumsum(direction * v[1:])
+
+        slope = (obv[-1] - obv[0]) / n
+        mean_vol = np.mean(v) if np.mean(v) > 0 else 1.0
+        normalizer = atr * mean_vol if atr > 0 else mean_vol
+        return float(slope / normalizer)
+
+    def _mfi(self, highs: np.ndarray, lows: np.ndarray, closes: np.ndarray,
+             volumes: np.ndarray, n: int = 14) -> float:
+        """Money Flow Index."""
+        if len(closes) < n + 1:
+            return 50.0
+
+        tp = (highs + lows + closes) / 3
+        raw_mf = tp * volumes
+
+        pos_mf = 0.0
+        neg_mf = 0.0
+        for i in range(-n, 0):
+            if tp[i] > tp[i - 1]:
+                pos_mf += raw_mf[i]
+            elif tp[i] < tp[i - 1]:
+                neg_mf += raw_mf[i]
+
+        if neg_mf == 0:
+            return 100.0
+        mfr = pos_mf / neg_mf
+        return float(100 - 100 / (1 + mfr))
+
+    def _cci(self, highs: np.ndarray, lows: np.ndarray, closes: np.ndarray,
+             n: int = 20) -> float:
+        """Commodity Channel Index."""
+        if len(closes) < n:
+            return 0.0
+
+        tp = (highs[-n:] + lows[-n:] + closes[-n:]) / 3
+        tp_mean = np.mean(tp)
+        mean_dev = np.mean(np.abs(tp - tp_mean))
+        if mean_dev == 0:
+            return 0.0
+        return float((tp[-1] - tp_mean) / (0.015 * mean_dev))
+
+    def _roc(self, closes: np.ndarray, n: int = 12) -> float:
+        """Rate of Change (percentage)."""
+        if len(closes) < n + 1:
+            return 0.0
+        prev = closes[-(n + 1)]
+        if prev == 0:
+            return 0.0
+        return float((closes[-1] - prev) / prev * 100)
+
+    def _chaikin_volatility(self, highs: np.ndarray, lows: np.ndarray, n: int = 10) -> float:
+        """Chaikin Volatility: % change in EMA of high-low range."""
+        if len(highs) < 2 * n:
+            return 0.0
+
+        hl_range = highs - lows
+        ema_hl = self._ema(hl_range, n)
+
+        if len(ema_hl) < n + 1:
+            return 0.0
+
+        prev = ema_hl[-(n + 1)]
+        if prev == 0:
+            return 0.0
+        return float((ema_hl[-1] - prev) / prev * 100)
 
 
 # -----------------------------------------------------------------------------
