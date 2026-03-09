@@ -1,4 +1,5 @@
 psycopg[binary]
+psycopg_pool
 redis
 requests
 aiohttp

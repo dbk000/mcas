@@ -8,38 +8,22 @@ from datetime import datetime, timezone
 from typing import Any, Optional
 
 import psycopg
-from psycopg_pool import ConnectionPool
 from fastapi import APIRouter, HTTPException, Query
+
+from db_pool import get_conn as _pool_get_conn
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 router = APIRouter(prefix="/equities", tags=["equities-forward-predictor"])
 
-# Connection pool: reuse connections instead of creating one per request
-_pool: ConnectionPool | None = None
-
-
-def _get_pool() -> ConnectionPool:
-    global _pool
-    if _pool is None:
-        if not DATABASE_URL:
-            raise HTTPException(status_code=500, detail="Database not configured")
-        _pool = ConnectionPool(
-            DATABASE_URL,
-            min_size=2,
-            max_size=8,
-            kwargs={"row_factory": psycopg.rows.dict_row},
-        )
-    return _pool
-
 
 def get_conn():
-    """Return a connection context manager from the pool.
+    """Return a connection context manager from the shared pool.
 
-    Usage: `with get_conn() as conn:` — connection is automatically
+    Usage: `with get_conn() as conn:` -- connection is automatically
     returned to the pool when the block exits.
     """
-    return _get_pool().connection()
+    return _pool_get_conn()
 
 
 def envelope(data: Any, compute_start: float, as_of_ts: float = None) -> dict:

@@ -16,6 +16,8 @@ import psycopg
 from fastapi import APIRouter, Request, HTTPException
 from pydantic import BaseModel, ConfigDict
 
+from db_pool import get_conn as _pool_get_conn
+
 logger = logging.getLogger("telemetry_api")
 
 router = APIRouter()
@@ -128,7 +130,7 @@ async def ingest_frontend_logs(batch: FrontendLogBatch, request: Request):
         ))
 
     try:
-        with psycopg.connect(DATABASE_URL) as conn:
+        with _pool_get_conn() as conn:
             with conn.cursor() as cur:
                 cur.executemany("""
                     INSERT INTO frontend_logs

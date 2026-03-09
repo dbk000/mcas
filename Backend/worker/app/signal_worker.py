@@ -19,6 +19,8 @@ from datetime import datetime, timezone
 import redis
 import psycopg
 
+from db_pool import get_conn as _pool_get_conn
+
 from cache_contract import (
     read_fresh_snapshot, read_indicator_snapshot,
     check_staleness, store_signal, prune_stale_signals,
@@ -36,7 +38,7 @@ from indicators import IndicatorSnapshot
 from setups import S9Evaluator, S9Signal, S9State
 from setups import S10Evaluator, S10Signal
 from setups.u1_unicorn_ignition import U1Evaluator, U1State, U1Phase, U1Config, load_funding_rates
-from setups.d1_dormancy_ignition import D1Evaluator, D1State, D1Phase, D1Config, is_d1_excluded, get_social_mentions_count
+from setups.d1_dormancy_ignition import D1Evaluator, D1State, D1Phase, D1Config, is_d1_excluded, get_social_mentions_count, get_social_silence_count, get_exchange_netflow
 from setup_base import Direction
 from config_reader import LiveConfig
 from s9_microstructure import (
@@ -44,6 +46,7 @@ from s9_microstructure import (
     MicrostructureContext,
 )
 from trace_context import TraceContext, TRACE_ENABLED
+from dxy_regime import get_dxy_multiplier, DXY_REGIME_ENABLED
 
 logger = logging.getLogger("signal_worker")
 
@@ -63,6 +66,11 @@ XREAD_BLOCK_MS = 5000
 XREAD_COUNT = 50
 PRUNE_INTERVAL_S = 300  # Prune stale signals every 5 min
 SYMBOL_QUALITY_FILTER = os.getenv("SYMBOL_QUALITY_FILTER", "0") == "1"
+
+# Signal congestion control: daily budget (0 = unlimited)
+SIGNAL_TOP_N_DAILY = int(os.getenv("SIGNAL_TOP_N_DAILY", "10"))
+# Capacity-aware ranking: volume threshold for full score (USD)
+CAPACITY_THRESHOLD_USD = float(os.getenv("CAPACITY_THRESHOLD_USD", "1000000"))
 
 # Cross-setup score calibration (env-overridable)
 SETUP_SCORE_MULTIPLIERS = {
@@ -145,8 +153,12 @@ class SignalWorker:
             "symbol_quality_excluded": 0,
             "s10_signal": 0, "d1_signal": 0,
             "s9_signal": 0, "s9_breadth_fail": 0,
+            "congestion_dropped": 0,
         }
         self._last_diag_log = 0.0
+        # 24h volume cache: {symbol: volume_usd}, refreshed every 5 min
+        self._volume_cache: dict[str, float] = {}
+        self._volume_cache_ts: float = 0.0
 
     def run(self):
         """Main loop."""
@@ -317,6 +329,121 @@ class SignalWorker:
         self._refresh_excluded_symbols_cache()
         return symbol in self._excluded_symbols_cache
 
+    # ------------------------------------------------------------------
+    # Signal Congestion Control
+    # ------------------------------------------------------------------
+
+    def _daily_count_key(self) -> str:
+        """Redis key for today's signal count."""
+        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        return f"signals:daily_count:{today}"
+
+    def _get_daily_signal_count(self) -> int:
+        """Read today's emitted signal count from Redis."""
+        try:
+            val = self.r.get(self._daily_count_key())
+            return int(val) if val else 0
+        except Exception:
+            return 0
+
+    def _increment_daily_signal_count(self) -> int:
+        """Atomically increment today's signal count. Returns new value."""
+        key = self._daily_count_key()
+        try:
+            new_val = self.r.incr(key)
+            # Set TTL on first increment (48h to span timezone edge)
+            if new_val == 1:
+                self.r.expire(key, 48 * 3600)
+            return new_val
+        except Exception:
+            return 0
+
+    def _is_budget_exhausted(self) -> bool:
+        """Check if daily signal budget is exhausted.
+
+        Returns False (budget available) if SIGNAL_TOP_N_DAILY == 0 (unlimited).
+        """
+        if SIGNAL_TOP_N_DAILY <= 0:
+            return False
+        return self._get_daily_signal_count() >= SIGNAL_TOP_N_DAILY
+
+    def _try_emit_signal(self, symbol: str, tf: str, setup_id: str,
+                         calibrated_score: float) -> bool:
+        """Check congestion control before emitting a signal.
+
+        Returns True if the signal should be emitted, False if dropped.
+        Logs dropped signals for observability.
+        """
+        if SIGNAL_TOP_N_DAILY <= 0:
+            return True  # Unlimited
+
+        current = self._get_daily_signal_count()
+        if current >= SIGNAL_TOP_N_DAILY:
+            self._diag["congestion_dropped"] += 1
+            logger.info(
+                "CONGESTION_DROP %s %s:%s score=%.3f budget=%d/%d",
+                setup_id, symbol, tf, calibrated_score,
+                current, SIGNAL_TOP_N_DAILY,
+            )
+            return False
+
+        self._increment_daily_signal_count()
+        return True
+
+    # ------------------------------------------------------------------
+    # Capacity-Aware Symbol Ranking
+    # ------------------------------------------------------------------
+
+    def _refresh_volume_cache(self):
+        """Refresh 24h volume cache from OHLCV candle data in Redis (every 5 min).
+
+        Estimates 24h quote volume by summing close * volume for the most
+        recent 24 1h candles. This avoids an extra Binance API call and uses
+        data already in Redis.
+        """
+        now = time.time()
+        if now - self._volume_cache_ts < 300:
+            return
+
+        try:
+            all_symbols = get_universe(self.r)
+            vol_map = {}
+            for symbol in all_symbols:
+                candles = get_candles_as_ohlcv(self.r, symbol, "1h")
+                if not candles or len(candles) < 24:
+                    continue
+                # Sum close * volume for last 24 bars as USD volume proxy
+                recent = candles[-24:]
+                vol_usd = sum(c.close * c.volume for c in recent)
+                vol_map[symbol] = vol_usd
+
+            self._volume_cache = vol_map
+            self._volume_cache_ts = now
+        except Exception as e:
+            logger.debug("Failed to refresh volume cache: %s", e)
+
+    def _capacity_adjusted_score(self, symbol: str,
+                                  calibrated_score: float) -> float:
+        """Apply capacity weighting to score based on 24h volume.
+
+        adjusted = calibrated_score * min(1.0, avg_24h_vol / CAPACITY_THRESHOLD_USD)
+
+        Symbols below CAPACITY_THRESHOLD_USD get proportionally penalized.
+        Symbols above the threshold are unaffected (multiplier capped at 1.0).
+        """
+        if CAPACITY_THRESHOLD_USD <= 0:
+            return calibrated_score
+
+        self._refresh_volume_cache()
+        vol_24h = self._volume_cache.get(symbol, 0.0)
+
+        if vol_24h <= 0:
+            # No volume data — don't penalize (conservative default)
+            return calibrated_score
+
+        capacity_mult = min(1.0, vol_24h / CAPACITY_THRESHOLD_USD)
+        return calibrated_score * capacity_mult
+
     def _evaluate_s10(self, symbol: str, tf: str, snapshot, bar_start_ts: str):
         """Run S10 MACD Scalp evaluator on 5m bars."""
         try:
@@ -331,13 +458,24 @@ class SignalWorker:
             calib_mult = SETUP_SCORE_MULTIPLIERS.get("S10", 1.0)
             calibrated_score = min(sig.setup_score * calib_mult, 1.0)
 
+            # DXY regime gate: soft penalty/boost based on dollar strength
+            dxy_mult = get_dxy_multiplier(self.r)
+            calibrated_score = min(calibrated_score * dxy_mult, 1.0)
+
+            # Capacity-aware ranking: penalize low-volume symbols
+            adjusted_score = self._capacity_adjusted_score(symbol, calibrated_score)
+
+            # Congestion control: check daily budget before emitting
+            if not self._try_emit_signal(symbol, tf, "S10", adjusted_score):
+                return
+
             payload = {
                 "setup_id": "S10",
                 "setup_name": "MACD Scalp v1.0",
                 "symbol": symbol,
                 "timeframe": tf,
                 "direction": sig.direction.value,
-                "setup_score": calibrated_score,
+                "setup_score": adjusted_score,
                 "raw_score": sig.setup_score,
                 "entry_price": sig.entry_price,
                 "stop_price": sig.stop_price,
@@ -421,14 +559,15 @@ class SignalWorker:
                 trace_dict = trace.seal(setup_version)
 
             store_signal(self.r, symbol, tf, "S10", payload,
-                         calibrated_score, bar_start_ts or "")
+                         adjusted_score, bar_start_ts or "")
             reason = "; ".join(sig.explain.why_items) if sig.explain else None
-            self._persist_signal_to_pg(symbol, tf, "S10", calibrated_score,
+            self._persist_signal_to_pg(symbol, tf, "S10", adjusted_score,
                                        reason, payload, trace_json=trace_dict)
 
             logger.info(
-                "Signal: S10 LONG %s:%s score=%.3f rvol=%.1fx macd_hist=%.6f",
-                symbol, tf, calibrated_score, sig.rvol, sig.macd_histogram,
+                "Signal: S10 LONG %s:%s score=%.3f (adj=%.3f) rvol=%.1fx macd_hist=%.6f",
+                symbol, tf, calibrated_score, adjusted_score,
+                sig.rvol, sig.macd_histogram,
             )
         except Exception as e:
             logger.debug("S10 eval error %s:%s: %s", symbol, tf, e)
@@ -448,13 +587,33 @@ class SignalWorker:
             )
             self._d1_prev_states[state_key] = state
 
+            # Query social silence BEFORE evaluate_trigger so it flows into scoring.
+            # Only query when state is in a triggerable phase (avoid unnecessary DB hits).
+            if state.phase in (D1Phase.DORMANT_CONFIRMED, D1Phase.ACCUMULATING):
+                trigger_ts = None
+                if bar_start_ts:
+                    try:
+                        trigger_ts = datetime.fromtimestamp(
+                            int(bar_start_ts) / 1000, tz=timezone.utc
+                        )
+                    except (ValueError, TypeError):
+                        pass
+                state.social_mention_count = get_social_silence_count(
+                    symbol, trigger_bar_start_ts=trigger_ts,
+                )
+                # Query on-chain exchange net flow (only when gate is enabled)
+                if D1Config.ONCHAIN_GATE_ENABLED:
+                    state.onchain_netflow = get_exchange_netflow(
+                        symbol, as_of_ts=trigger_ts,
+                    )
+
             sig = self.d1_evaluator.evaluate_trigger(snapshot, state, symbol, tf)
             if sig is None:
                 return
 
             self._diag["d1_signal"] += 1
 
-            # Social mentions (soft feature — not a gate)
+            # Social mentions 30d (informational field — broader window for payload)
             if DATABASE_URL:
                 trigger_ts = None
                 if bar_start_ts:
@@ -472,13 +631,30 @@ class SignalWorker:
             calib_mult = SETUP_SCORE_MULTIPLIERS.get("D1", 1.0)
             calibrated_score = min(sig.setup_score * calib_mult, 1.0)
 
+            # DXY regime gate: soft penalty/boost based on dollar strength
+            dxy_mult = get_dxy_multiplier(self.r)
+            calibrated_score = min(calibrated_score * dxy_mult, 1.0)
+
+            # Capacity-aware ranking: penalize low-volume symbols
+            adjusted_score = self._capacity_adjusted_score(symbol, calibrated_score)
+
+            # Congestion control: check daily budget before emitting
+            if not self._try_emit_signal(symbol, tf, "D1", adjusted_score):
+                return
+
+            # Determine social silence gate result for payload
+            social_silence_passed = (
+                state.social_mention_count < 0  # data unavailable -> neutral (not failed)
+                or state.social_mention_count <= D1Config.SOCIAL_SILENCE_MAX_MENTIONS
+            )
+
             payload = {
                 "setup_id": "D1",
                 "setup_name": "Dormancy-to-Ignition v1.2",
                 "symbol": symbol,
                 "timeframe": tf,
                 "direction": sig.direction.value,
-                "setup_score": calibrated_score,
+                "setup_score": adjusted_score,
                 "raw_score": sig.setup_score,
                 "entry_price": sig.entry_price,
                 "stop_price": sig.stop_price,
@@ -498,6 +674,10 @@ class SignalWorker:
                 "bb_width_at_trigger": sig.bb_width_at_trigger,
                 "btc_beta": sig.btc_beta,
                 "social_mentions_30d": sig.social_mentions_30d,
+                "social_mentions_24h": state.social_mention_count,
+                "social_silence_passed": social_silence_passed,
+                "onchain_netflow": state.onchain_netflow,
+                "onchain_gate_enabled": D1Config.ONCHAIN_GATE_ENABLED,
                 "score_components": sig.score_components,
                 "gates": {
                     "Gate 1 - Dormancy": f"dormancy_score >= {D1Config.DORMANCY_THRESHOLD}",
@@ -508,6 +688,15 @@ class SignalWorker:
                     ),
                     "Gate 4 - Breakout": "close > prev_compression_box_high (previous donchian_high_20)",
                     "Gate 5 - BB expanding": "bb_width > bb_width_prev",
+                    "Gate 6 - Social silence (soft)": (
+                        f"mentions_24h <= {D1Config.SOCIAL_SILENCE_MAX_MENTIONS} "
+                        f"(actual: {state.social_mention_count}, score weight: {D1Config.W_SOCIAL_SILENCE})"
+                    ),
+                    "Gate 7 - Exchange net flow (soft)": (
+                        f"netflow < 0 = accumulation "
+                        f"(actual: {state.onchain_netflow}, enabled: {D1Config.ONCHAIN_GATE_ENABLED}, "
+                        f"score weight: {D1Config.W_ONCHAIN_FLOW})"
+                    ),
                 },
                 "exit_config": {
                     "trail": "none",
@@ -523,6 +712,8 @@ class SignalWorker:
                     "bb_expansion": D1Config.W_BB_EXPANSION,
                     "rvol": D1Config.W_RVOL,
                     "btc_adj_ret": D1Config.W_BTC_ADJ_RET,
+                    "social_silence": D1Config.W_SOCIAL_SILENCE,
+                    "onchain_flow": D1Config.W_ONCHAIN_FLOW,
                 },
             }
 
@@ -569,6 +760,22 @@ class SignalWorker:
                 trace.record_gate("bb_expanding", state.bb_width,
                                   state.bb_width_prev, ">", True,
                                   note="bb_width > bb_width_prev")
+                trace.record_gate("social_silence", state.social_mention_count,
+                                  D1Config.SOCIAL_SILENCE_MAX_MENTIONS, "<=",
+                                  social_silence_passed,
+                                  note=f"soft gate: mentions_24h={state.social_mention_count}, "
+                                       f"threshold={D1Config.SOCIAL_SILENCE_MAX_MENTIONS}, "
+                                       f"score_weight={D1Config.W_SOCIAL_SILENCE}")
+                # On-chain exchange net flow gate (soft — scoring only)
+                onchain_passed = (
+                    state.onchain_netflow is None  # no data -> neutral (not failed)
+                    or state.onchain_netflow < 0   # negative = accumulation
+                )
+                trace.record_gate("onchain_netflow", state.onchain_netflow,
+                                  0, "<", onchain_passed,
+                                  note=f"soft gate: netflow={state.onchain_netflow}, "
+                                       f"enabled={D1Config.ONCHAIN_GATE_ENABLED}, "
+                                       f"score_weight={D1Config.W_ONCHAIN_FLOW}")
                 trace.record_score(
                     sig.score_components, sig.setup_score,
                     calib_mult, calibrated_score, promotion_threshold=0.0,
@@ -582,19 +789,25 @@ class SignalWorker:
                     "TP1_PCT": D1Config.TP1_PCT,
                     "TP2_PCT": D1Config.TP2_PCT,
                     "TIME_STOP_BARS_1H": D1Config.TIME_STOP_BARS_1H,
+                    "SOCIAL_SILENCE_LOOKBACK_HOURS": D1Config.SOCIAL_SILENCE_LOOKBACK_HOURS,
+                    "SOCIAL_SILENCE_MAX_MENTIONS": D1Config.SOCIAL_SILENCE_MAX_MENTIONS,
+                    "ONCHAIN_GATE_ENABLED": D1Config.ONCHAIN_GATE_ENABLED,
+                    "ONCHAIN_NETFLOW_LOOKBACK_HOURS": D1Config.ONCHAIN_NETFLOW_LOOKBACK_HOURS,
+                    "W_ONCHAIN_FLOW": D1Config.W_ONCHAIN_FLOW,
                 })
                 setup_version = self.SETUP_VERSIONS.get("D1", "D1_v1.0")
                 trace_dict = trace.seal(setup_version)
 
             store_signal(self.r, symbol, tf, "D1", payload,
-                         calibrated_score, bar_start_ts or "")
+                         adjusted_score, bar_start_ts or "")
             reason = "; ".join(sig.explain.why_items) if sig.explain else None
-            self._persist_signal_to_pg(symbol, tf, "D1", calibrated_score,
+            self._persist_signal_to_pg(symbol, tf, "D1", adjusted_score,
                                        reason, payload, trace_json=trace_dict)
 
             logger.info(
-                "Signal: D1 LONG %s:%s score=%.3f dormancy=%.0f%% vol_z=%.1f rvol=%.1fx",
-                symbol, tf, calibrated_score, sig.dormancy_score * 100,
+                "Signal: D1 LONG %s:%s score=%.3f (adj=%.3f) dormancy=%.0f%% vol_z=%.1f rvol=%.1fx",
+                symbol, tf, calibrated_score, adjusted_score,
+                sig.dormancy_score * 100,
                 sig.volume_z_at_trigger, sig.rvol_at_trigger,
             )
         except Exception as e:
@@ -696,12 +909,23 @@ class SignalWorker:
     def _store_u1_signal(self, signal, symbol: str, tf: str, bar_start_ts: str,
                          trace_json: dict = None):
         """Store U1 signal in Redis."""
+        # DXY regime gate: soft penalty/boost based on dollar strength
+        dxy_mult = get_dxy_multiplier(self.r)
+        u1_calibrated = min(signal.setup_score * dxy_mult, 1.0)
+
+        # Capacity-aware ranking: penalize low-volume symbols
+        adjusted_score = self._capacity_adjusted_score(symbol, u1_calibrated)
+
+        # Congestion control: check daily budget before emitting
+        if not self._try_emit_signal(symbol, tf, "U1", adjusted_score):
+            return
+
         payload = {
             "setup_id": "U1",
             "symbol": symbol,
             "timeframe": tf,
             "direction": signal.direction.value,
-            "setup_score": signal.setup_score,
+            "setup_score": adjusted_score,
             "entry_price": signal.entry_price,
             "stop_price": signal.stop_price,
             "tp1_price": signal.tp1_price,
@@ -733,18 +957,19 @@ class SignalWorker:
         store_signal(
             self.r, symbol, tf, "U1",
             signal_payload=payload,
-            setup_score=signal.setup_score,
+            setup_score=adjusted_score,
             bar_start_ts=bar_start_ts,
         )
 
         # Persist to Postgres for durability (expired filter)
         reason = "; ".join(signal.explain.why_items) if signal.explain else None
-        self._persist_signal_to_pg(symbol, tf, "U1", signal.setup_score,
+        self._persist_signal_to_pg(symbol, tf, "U1", adjusted_score,
                                    reason, payload, trace_json=trace_json)
 
         logger.info(
             f"Signal: U1 {signal.direction.value} {symbol}:{tf} "
-            f"score={signal.setup_score:.3f} rel_vol={signal.rel_volume:.1f}x "
+            f"score={adjusted_score:.3f} (raw={signal.setup_score:.3f}) "
+            f"rel_vol={signal.rel_volume:.1f}x "
             f"path={getattr(signal, 'trigger_path', 'traditional')}"
         )
 
@@ -828,7 +1053,7 @@ class SignalWorker:
     def _node_has_any_version(self, node_name: str) -> bool:
         """Check if any version exists for this node (any status)."""
         try:
-            with psycopg.connect(DATABASE_URL) as conn:
+            with _pool_get_conn() as conn:
                 with conn.cursor() as cur:
                     cur.execute("""
                         SELECT EXISTS(
@@ -897,7 +1122,7 @@ class SignalWorker:
 
         params_json = json.dumps(params)
 
-        with psycopg.connect(DATABASE_URL) as conn:
+        with _pool_get_conn() as conn:
             with conn.cursor() as cur:
                 cur.execute("""
                     UPDATE meta.node_version nv
@@ -994,7 +1219,7 @@ class SignalWorker:
             payload_str = json.dumps(payload)
             trace_str = json.dumps(trace_json) if trace_json else None
             setup_version = self.SETUP_VERSIONS.get(setup_id, f"{setup_id}_v1.0")
-            with psycopg.connect(DATABASE_URL) as conn:
+            with _pool_get_conn() as conn:
                 with conn.cursor() as cur:
                     # Try to update existing active record in place
                     cur.execute("""
@@ -1031,7 +1256,7 @@ class SignalWorker:
         if not DATABASE_URL:
             return
         try:
-            with psycopg.connect(DATABASE_URL) as conn:
+            with _pool_get_conn() as conn:
                 with conn.cursor() as cur:
                     cur.execute("""
                         UPDATE opportunities
@@ -1056,6 +1281,10 @@ class SignalWorker:
         raw_score = signal.setup_score
         calib_mult = SETUP_SCORE_MULTIPLIERS.get(setup_id, 1.0)
         calibrated_score = min(raw_score * calib_mult, 1.0)
+
+        # DXY regime gate: soft penalty/boost based on dollar strength
+        dxy_mult = get_dxy_multiplier(self.r)
+        calibrated_score = min(calibrated_score * dxy_mult, 1.0)
 
         payload = {
             "setup_id": setup_id,
@@ -1283,8 +1512,19 @@ class SignalWorker:
             final_score = signal.setup_score
             if micro_ctx and micro_ctx.entry_type == "SKIP":
                 final_score = signal.setup_score * 0.5
-                payload["setup_score"] = final_score
                 payload["skip_reason"] = micro_ctx.reason
+
+            # DXY regime gate: soft penalty/boost based on dollar strength
+            dxy_mult = get_dxy_multiplier(self.r)
+            final_score = min(final_score * dxy_mult, 1.0)
+
+            # Capacity-aware ranking: penalize low-volume symbols
+            final_score = self._capacity_adjusted_score(symbol, final_score)
+            payload["setup_score"] = final_score
+
+            # Congestion control: check daily budget before emitting
+            if not self._try_emit_signal(symbol, "1h", "S9", final_score):
+                continue
 
             # --- TRACE ---
             trace_dict = None
@@ -1401,7 +1641,7 @@ class SignalWorker:
         """Query open S9 opportunities and check for early exit via 1s tape."""
         import requests as _req
 
-        with psycopg.connect(DATABASE_URL) as conn:
+        with _pool_get_conn() as conn:
             with conn.cursor() as cur:
                 # Find S9 opportunities that are still active and within 48h window
                 cur.execute("""
@@ -1509,7 +1749,7 @@ class SignalWorker:
                     payload["early_exit_unrealized_pct"] = round(pos["unrealized_pct"], 2)
                     payload["early_exit_ts"] = time.time()
 
-                    with psycopg.connect(DATABASE_URL) as conn:
+                    with _pool_get_conn() as conn:
                         with conn.cursor() as cur:
                             cur.execute("""
                                 UPDATE opportunities

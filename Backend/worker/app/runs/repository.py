@@ -14,6 +14,8 @@ from contextlib import contextmanager
 
 import psycopg
 
+from db_pool import get_conn as _pool_get_conn
+
 from .models import (
     Run, RunType, RunStatus,
     RunTrade, RunEvent, RunSummary,
@@ -59,12 +61,9 @@ class RunRepository:
     
     @contextmanager
     def _conn(self):
-        """Context manager for database connections."""
-        conn = psycopg.connect(self.database_url)
-        try:
+        """Context manager for database connections from the pool."""
+        with _pool_get_conn() as conn:
             yield conn
-        finally:
-            conn.close()
     
     def ensure_schema(self):
         """Create tables if they don't exist."""

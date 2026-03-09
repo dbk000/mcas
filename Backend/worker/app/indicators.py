@@ -326,6 +326,22 @@ _register(IndicatorDef(
     implementation="FeatureFactory._accumulation_divergence",
 ))
 
+# Tier 1 — L2 Proxy: Range-to-Volume Ratio (liquidity depth proxy)
+_register(IndicatorDef(
+    indicator_id=generate_indicator_id("RVR"), name="Range-to-Volume Ratio", tier=1,
+    inputs=["high", "low", "volume"], params={},
+    implementation="(high - low) / (volume + 1e-10)",
+    version="1.0.0",
+))
+
+# Tier 1 — L2 Proxy: Volume Acceleration (volume surge vs 20-bar SMA)
+_register(IndicatorDef(
+    indicator_id=generate_indicator_id("VOL_ACCEL", 20), name="Volume Acceleration (20-bar)", tier=1,
+    inputs=["volume"], params={"n": 20},
+    implementation="volume[-1] / SMA(volume, 20)",
+    version="1.0.0",
+))
+
 # Canon §1.6: Module-level uniqueness assertion — fail fast on ID collisions
 assert len(INDICATOR_REGISTRY) == len(set(d.indicator_id for d in INDICATOR_REGISTRY.values())), \
     "Indicator ID collision detected in INDICATOR_REGISTRY!"
@@ -417,6 +433,10 @@ class IndicatorSnapshot:
     vwap_upper_2sd: Optional[float] = None
     vwap_lower_2sd: Optional[float] = None
     vwap_distance_atr: Optional[float] = None
+
+    # L2 Proxy Features (dark mode — computed but not wired into any strategy)
+    range_to_volume_ratio: float = 0.0   # (high - low) / volume — price impact proxy
+    volume_acceleration: float = 1.0     # volume / SMA(volume, 20) — surge ratio
 
     # Tier 2 - Dormancy / Accumulation (for D1)
     dormancy_score: float = 0.0       # Fraction of trailing N bars with tight range
@@ -544,6 +564,14 @@ class FeatureFactory:
         vol_mean_20 = float(np.mean(volumes[-20:])) if len(volumes) >= 20 else float(np.mean(volumes))
         rvol = float(volumes[-1] / vol_mean_20) if vol_mean_20 > 0 else 1.0
 
+        # L2 Proxy Features (dark mode — computed but not wired into any strategy)
+        # Range-to-Volume Ratio: (high - low) / volume. High values = thin book.
+        range_to_volume_ratio = float(
+            (highs[-1] - lows[-1]) / (volumes[-1] + 1e-10)
+        )
+        # Volume Acceleration: volume / SMA(volume, 20). Pure ratio without min threshold.
+        volume_acceleration = float(volumes[-1] / vol_mean_20) if vol_mean_20 > 0 else 1.0
+
         # Tier 2 - Donchian Channels (20-bar) (for S7)
         donchian_high_20 = float(np.max(highs[-20:])) if len(highs) >= 20 else float(np.max(highs))
         donchian_low_20 = float(np.min(lows[-20:])) if len(lows) >= 20 else float(np.min(lows))
@@ -601,6 +629,8 @@ class FeatureFactory:
             macd_histogram=macd_histogram,
             macd_prev_histogram=macd_prev_histogram,
             rvol=rvol,
+            range_to_volume_ratio=range_to_volume_ratio,
+            volume_acceleration=volume_acceleration,
             donchian_high_20=donchian_high_20,
             donchian_low_20=donchian_low_20,
             donchian_mid_20=donchian_mid_20,

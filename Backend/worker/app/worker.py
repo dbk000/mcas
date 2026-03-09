@@ -25,6 +25,7 @@ from contextlib import contextmanager
 import psycopg
 import redis
 
+from db_pool import get_conn as _pool_get_conn, close_pool
 from json_logging import setup_logging, ctx_worker_id, ctx_run_id
 from signal_engine import (
     SignalEngine,
@@ -63,12 +64,9 @@ r = redis.Redis.from_url(REDIS_URL, decode_responses=True)
 
 @contextmanager
 def get_conn():
-    """Get database connection."""
-    conn = psycopg.connect(DATABASE_URL)
-    try:
+    """Get database connection from the pool."""
+    with _pool_get_conn() as conn:
         yield conn
-    finally:
-        conn.close()
 
 
 def heartbeat():
@@ -270,20 +268,21 @@ class QueueSubscriber(threading.Thread):
         self.pubsub = r.pubsub()
         self.running = True
         self._new_run_event = threading.Event()
-    
+        self._emergency_event = threading.Event()
+
     def run(self):
         """Listen for queue notifications."""
-        self.pubsub.subscribe("run_queue", "run_control", "paper_control")
-        
+        self.pubsub.subscribe("run_queue", "run_control", "paper_control", "emergency_control")
+
         for message in self.pubsub.listen():
             if not self.running:
                 break
-            
+
             if message["type"] == "message":
                 try:
                     data = json.loads(message["data"])
                     channel = message["channel"]
-                    
+
                     if channel == "run_queue":
                         # New run queued - wake up the main loop
                         self._new_run_event.set()
@@ -307,7 +306,18 @@ class QueueSubscriber(threading.Thread):
                             "event": "paper_control", "action": action,
                             "run_id": run_id,
                         })
-                
+
+                    elif channel == "emergency_control":
+                        action = data.get("action")
+                        reason = data.get("reason", "")
+                        logger.warning("Emergency control command received", extra={
+                            "event": "emergency_control", "action": action,
+                            "reason": reason,
+                        })
+                        # Wake up main loop immediately so it re-checks kill switch
+                        self._emergency_event.set()
+                        self._new_run_event.set()
+
                 except Exception as e:
                     logger.error(f"Error processing message: {e}")
     
@@ -491,6 +501,27 @@ def main():
     try:
         while True:
             heartbeat()
+
+            # Check kill switch — full stop, skip all work
+            if r.get("kill_switch:active") == "1":
+                logger.warning("Kill switch active — skipping all work")
+                subscriber.wait_for_notification(10)
+                continue
+
+            # Check trading paused — skip new runs but allow monitoring
+            if r.get("trading_paused") == "1":
+                logger.info("Trading paused — skipping queue processing, monitoring continues")
+                # Still sync position monitoring while paused
+                now = time.time()
+                if price_feed and (now - last_position_sync_time >= POSITION_SYNC_INTERVAL):
+                    open_symbols = get_open_position_symbols()
+                    for sym in open_symbols:
+                        if sym not in price_feed.symbols:
+                            price_feed.add_symbol(sym)
+                    last_position_sync_time = now
+                subscriber.wait_for_notification(5)
+                continue
+
             check_queue_depth()
 
             # Daily cleanup of old frontend telemetry logs
@@ -579,6 +610,7 @@ def main():
             position_monitor.stop()
         if price_feed:
             price_feed.stop()
+        close_pool()
         r.hset(f"worker:{WORKER_ID}", "status", "stopped")
         logger.info("Worker stopped", extra={
             "event": "worker_stop", "runs_executed": runs_executed,

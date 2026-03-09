@@ -23,6 +23,8 @@ from datetime import datetime, timezone, date
 import redis
 import psycopg
 
+from db_pool import get_conn as _pool_get_conn
+
 from cache_contract import (
     get_candles, b2s, get_timeframes, is_cache_ready, TF_SECONDS,
     get_known_universe,
@@ -251,7 +253,7 @@ class OHLCVPersister:
 
         batch_size = len(self._buffer)
         try:
-            with psycopg.connect(DATABASE_URL) as conn:
+            with _pool_get_conn() as conn:
                 with conn.cursor() as cur:
                     cur.executemany("""
                         INSERT INTO ohlcv (
@@ -336,7 +338,7 @@ class OHLCVPersister:
         self._last_prune_date = today
 
         try:
-            with psycopg.connect(DATABASE_URL) as conn:
+            with _pool_get_conn() as conn:
                 with conn.cursor() as cur:
                     # 1m candles: keep 90 days
                     cur.execute("""

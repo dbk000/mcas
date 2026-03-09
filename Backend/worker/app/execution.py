@@ -16,6 +16,26 @@ from typing import Optional
 from abc import ABC, abstractmethod
 
 
+# =============================================================================
+# Timeframe-Scaled Slippage Profile (CLAUDE.md §4.4)
+# =============================================================================
+# Slippage scales with timeframe: shorter bars = thinner books at that instant
+# = more market impact. These are empirical estimates for liquid crypto pairs.
+SLIPPAGE_PROFILE_BPS: dict[str, float] = {
+    "4h": 3.0,
+    "1h": 5.0,
+    "15m": 10.0,
+    "5m": 15.0,
+    "1d": 2.0,   # Daily is most liquid
+    "1m": 20.0,  # 1-minute is most impactful
+}
+DEFAULT_SLIPPAGE_BPS = 5.0  # Fallback for unlisted timeframes
+
+# Multi-symbol strategies (XSM-type) get an additional penalty because
+# cross-symbol execution requires sweeping multiple order books.
+XSM_SLIPPAGE_PENALTY_BPS = 5.0
+
+
 class EntryMode(Enum):
     """How entries are executed."""
     NEXT_OPEN = "NEXT_OPEN"      # Enter at next bar's open
@@ -97,6 +117,65 @@ class FixedBpsSlippage(SlippageModel):
             "entry_bps": self.entry_bps,
             "exit_bps": self.exit_bps,
         }
+
+
+@dataclass
+class TimeframeScaledSlippage(SlippageModel):
+    """
+    Slippage that scales by timeframe per CLAUDE.md §4.4.
+
+    Shorter timeframes have higher slippage because the order book is thinner
+    at any given instant, and the market impact of a taker sweep is larger
+    relative to the bar's price range.
+
+    Optionally adds +5 bps for multi-symbol strategies (XSM-type).
+    """
+    timeframe: str = "1h"
+    is_xsm: bool = False  # Multi-symbol strategy penalty
+    profile: dict[str, float] = field(default_factory=lambda: dict(SLIPPAGE_PROFILE_BPS))
+
+    @property
+    def _effective_bps(self) -> float:
+        base = self.profile.get(self.timeframe, DEFAULT_SLIPPAGE_BPS)
+        if self.is_xsm:
+            base += XSM_SLIPPAGE_PENALTY_BPS
+        return base
+
+    def calculate(
+        self,
+        price: float,
+        side: str,
+        volume: float = 0,
+        is_entry: bool = True,
+        atr: float = 0,
+    ) -> float:
+        return price * (self._effective_bps / 10000)
+
+    def to_dict(self) -> dict:
+        return {
+            "model": "TIMEFRAME_SCALED",
+            "timeframe": self.timeframe,
+            "effective_bps": self._effective_bps,
+            "is_xsm": self.is_xsm,
+        }
+
+
+def get_slippage_bps_for_timeframe(
+    timeframe: str,
+    is_xsm: bool = False,
+    profile: Optional[dict[str, float]] = None,
+) -> float:
+    """
+    Utility: look up slippage bps for a timeframe string.
+
+    Useful for callers that need the raw number (e.g. sim_d1_matrix.py)
+    without constructing a full SlippageModel instance.
+    """
+    p = profile or SLIPPAGE_PROFILE_BPS
+    bps = p.get(timeframe, DEFAULT_SLIPPAGE_BPS)
+    if is_xsm:
+        bps += XSM_SLIPPAGE_PENALTY_BPS
+    return bps
 
 
 @dataclass
@@ -340,18 +419,32 @@ class ExecutionConfig:
 # Preset Configurations
 # =============================================================================
 
-def realistic_config() -> ExecutionConfig:
+def realistic_config(
+    timeframe: Optional[str] = None,
+    is_xsm: bool = False,
+) -> ExecutionConfig:
     """
     Realistic execution config for production backtests.
-    
+
+    Args:
+        timeframe: If provided, uses TimeframeScaledSlippage for that
+                   timeframe (CLAUDE.md §4.4). If None, falls back to
+                   flat 5 bps (backwards compatible).
+        is_xsm:   If True, adds +5 bps XSM penalty (CLAUDE.md §4.4).
+
     Assumes:
-    - 5 bps slippage each way
+    - Timeframe-scaled slippage (or flat 5 bps if no timeframe given)
     - Standard Binance fees (0.02% maker, 0.04% taker)
     - Entry at next bar open
     - Stops fill on touch
     """
+    if timeframe is not None:
+        slippage = TimeframeScaledSlippage(timeframe=timeframe, is_xsm=is_xsm)
+    else:
+        slippage = FixedBpsSlippage(entry_bps=5.0, exit_bps=5.0)
+
     return ExecutionConfig(
-        slippage=FixedBpsSlippage(entry_bps=5.0, exit_bps=5.0),
+        slippage=slippage,
         fees=TieredFees(maker_bps=2.0, taker_bps=4.0),
         fills=FillModel(
             entry_mode=EntryMode.NEXT_OPEN,

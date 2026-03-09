@@ -15,13 +15,14 @@ module to ensure exit logic consistency with BACKTEST/PAPER runs.
 
 import os
 import logging
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone, timedelta
 from typing import Optional
 import uuid
 
 import psycopg
 
+from db_pool import get_conn as _pool_get_conn
 from exit_checker import check_exit_simple, ExitConfig
 from ohlcv_backfill import backfill_for_simulation
 
@@ -47,6 +48,26 @@ SETUP_EXIT_CONFIGS: dict[str, ExitConfig] = {
         fail_fast_bars=0, fail_fast_threshold=0.0,
         trail_breakeven_r=0, trail_activation_r=999.0, trail_distance_r=0.5,
     ),
+    # S9 Short Reversion v1.0: pure 48h time-stop exit, 10% protective stop.
+    # Cross-sectional mean-reversion — no fail-fast, no trailing.
+    # Validated: 4/5 WF folds, holdout PF 2.56, DSR p=0.961.
+    "S9": ExitConfig(
+        fail_fast_bars=0, fail_fast_threshold=0.0,
+        trail_breakeven_r=0, trail_activation_r=999.0, trail_distance_r=0.5,
+    ),
+    # S10 MACD Scalp v1.0: 5m scalper, 1.2 ATR stop, TP at 1.5R/2R, 12-bar TS.
+    # Quick in-and-out — keep fail-fast (2 bars, 0.3%), no trailing.
+    "S10": ExitConfig(
+        fail_fast_bars=2, fail_fast_threshold=0.003,
+        trail_breakeven_r=0, trail_activation_r=999.0, trail_distance_r=0.5,
+    ),
+    # U1 Unicorn Ignition v4.0: microcap breakout, volatility envelope stop.
+    # Rare-event model — wider exits outperform tighter ones (§5 2026-02-19).
+    # No fail-fast (kills winners), no trailing (caps MFE on true positives).
+    "U1": ExitConfig(
+        fail_fast_bars=0, fail_fast_threshold=0.0,
+        trail_breakeven_r=0, trail_activation_r=999.0, trail_distance_r=0.5,
+    ),
 }
 
 
@@ -59,9 +80,14 @@ def _env_float(name: str, default: float) -> float:
 class SimulationConfig:
     """Configuration for opportunity simulation."""
     position_size_usd: float = 1000.0
-    slippage_entry_bps: float = 5.0
-    slippage_exit_bps: float = 5.0
+    slippage_entry_bps: float = 5.0   # Flat fallback (used when timeframe not in profile)
+    slippage_exit_bps: float = 5.0    # Flat fallback (used when timeframe not in profile)
     fee_taker_bps: float = 4.0
+    # Timeframe-scaled slippage profile (CLAUDE.md §4.4).
+    # When set, the simulator looks up the opportunity's timeframe here first.
+    # Falls back to slippage_entry_bps / slippage_exit_bps if the timeframe
+    # is not in the profile or the profile is empty.
+    slippage_profile: dict[str, float] = field(default_factory=dict)
     max_bars_forward: int = SIM_DEFAULT_MAX_BARS_FORWARD  # Max bars to simulate forward
     time_stop_bars: int = 50    # Default time stop if not specified
     max_fee_r_ratio: float = _env_float("SIM_MAX_FEE_R_RATIO", 0.3)    # Skip trades where fees > this fraction of risk
@@ -149,7 +175,7 @@ class OpportunitySimulator:
         self.config = config or SimulationConfig()
 
     def _get_conn(self):
-        return psycopg.connect(self.database_url)
+        return _pool_get_conn()
 
     def _resolve_stop_distance_factor(self, setup_id: str) -> float:
         """Resolve stop multiplier safely for a strategy/setup."""
@@ -161,6 +187,17 @@ class OpportunitySimulator:
             return float(val)
         except (TypeError, ValueError):
             return 1.0
+
+    def _resolve_slippage_bps(self, timeframe: str, is_entry: bool = True) -> float:
+        """Resolve slippage bps for a timeframe using the profile, with flat fallback.
+
+        CLAUDE.md §4.4: slippage scales by timeframe (4h→3, 1h→5, 15m→10, 5m→15).
+        If slippage_profile is set and contains the timeframe, use it.
+        Otherwise fall back to slippage_entry_bps / slippage_exit_bps.
+        """
+        if self.config.slippage_profile and timeframe in self.config.slippage_profile:
+            return self.config.slippage_profile[timeframe]
+        return self.config.slippage_entry_bps if is_entry else self.config.slippage_exit_bps
 
     def simulate_batch(
         self,
@@ -548,8 +585,8 @@ class OpportunitySimulator:
             # Standard NEXT_OPEN: entry at next bar's open
             actual_entry_price = entry_bar["open"]
 
-        # Apply entry slippage
-        slip_bps = self.config.slippage_entry_bps
+        # Apply entry slippage (timeframe-scaled if profile is set)
+        slip_bps = self._resolve_slippage_bps(timeframe, is_entry=True)
         if direction == "long":
             entry_with_slip = actual_entry_price * (1 + slip_bps / 10000)
         else:
@@ -608,8 +645,9 @@ class OpportunitySimulator:
 
         # Guard 2: invalidate TP1/TP2 if too close to entry to cover costs
         # Minimum distance = exit slippage + round-trip fees (entry + exit)
+        exit_slip_bps_for_guard = self._resolve_slippage_bps(timeframe, is_entry=False)
         min_tp_distance = entry_with_slip * (
-            self.config.slippage_exit_bps + 2 * self.config.fee_taker_bps
+            exit_slip_bps_for_guard + 2 * self.config.fee_taker_bps
         ) / 10000
         if direction == "long":
             if tp1_price is not None and (tp1_price - entry_with_slip) < min_tp_distance:
@@ -674,7 +712,7 @@ class OpportunitySimulator:
         realized_gross = 0.0
         realized_exit_fees = 0.0
         fee_bps = self.config.fee_taker_bps
-        exit_slip_bps = self.config.slippage_exit_bps
+        exit_slip_bps = self._resolve_slippage_bps(timeframe, is_entry=False)
 
         # MAE/MFE tracking (using high/low, not close)
         mae_price = entry_with_slip
@@ -961,6 +999,48 @@ class OpportunitySimulator:
 
         return trace
 
+    def _build_config_json(self, setup_id: str) -> str:
+        """Build deterministic JSON snapshot of execution config for reproducibility.
+
+        Captures SimulationConfig + resolved ExitConfig so any simulation result
+        can be exactly reproduced from the stored config.
+        """
+        import json
+
+        exit_cfg = SETUP_EXIT_CONFIGS.get(setup_id, self.config.exit_config)
+        if exit_cfg is None:
+            exit_cfg = ExitConfig(
+                intrabar_policy=self.config.intrabar_policy,
+                one_event_per_bar=self.config.one_event_per_bar,
+            )
+
+        config_dict = {
+            "simulation": {
+                "position_size_usd": self.config.position_size_usd,
+                "slippage_entry_bps": self.config.slippage_entry_bps,
+                "slippage_exit_bps": self.config.slippage_exit_bps,
+                "fee_taker_bps": self.config.fee_taker_bps,
+                "slippage_profile": self.config.slippage_profile,
+                "max_bars_forward": self.config.max_bars_forward,
+                "time_stop_bars": self.config.time_stop_bars,
+                "max_fee_r_ratio": self.config.max_fee_r_ratio,
+                "min_r_preservation": self.config.min_r_preservation,
+                "stop_distance_factor": self.config.stop_distance_factor,
+                "stop_distance_factors": self.config.stop_distance_factors,
+                "min_short_price": self.config.min_short_price,
+                "max_stop_pct": self.config.max_stop_pct,
+                "intrabar_policy": self.config.intrabar_policy,
+                "one_event_per_bar": self.config.one_event_per_bar,
+                "d1_causal_gate_enabled": self.config.d1_causal_gate_enabled,
+                "d1_causal_min_entry_price": self.config.d1_causal_min_entry_price,
+                "d1_causal_min_stop_pct": self.config.d1_causal_min_stop_pct,
+                "d1_causal_min_score": self.config.d1_causal_min_score,
+            },
+            "exit_config": asdict(exit_cfg),
+            "setup_id": setup_id,
+        }
+        return json.dumps(config_dict, sort_keys=True, separators=(',', ':'))
+
     def _store_results(self, results: list[SimulationResult], run_id: str):
         """Store simulation results in the database using batch inserts."""
         import json
@@ -977,13 +1057,17 @@ class OpportunitySimulator:
                 position_size, stop_price, tp1_price, tp2_price,
                 r_value, exit_ts, exit_price, exit_price_with_slippage,
                 exit_reason, bars_held, pnl_gross, fees, pnl_net,
-                r_multiple, data_available, error_message, trace_json
+                r_multiple, data_available, error_message, trace_json,
+                config_json
             ) VALUES (
                 %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
                 %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
-                %s, %s, %s, %s
+                %s, %s, %s, %s, %s
             );
         """
+
+        # Pre-build config_json per setup_id (same config for all results of a setup)
+        config_json_cache: dict[str, str] = {}
 
         with self._get_conn() as conn:
             with conn.cursor() as cur:
@@ -992,6 +1076,8 @@ class OpportunitySimulator:
                     values = []
                     for r in batch:
                         trace_json_str = json.dumps(r.trace_json) if r.trace_json else None
+                        if r.setup_id not in config_json_cache:
+                            config_json_cache[r.setup_id] = self._build_config_json(r.setup_id)
                         values.append((
                             str(uuid.uuid4()), run_id, r.opportunity_id, r.symbol,
                             r.timeframe, r.setup_id, r.direction, r.opportunity_created_ts,
@@ -1000,6 +1086,7 @@ class OpportunitySimulator:
                             r.r_value, r.exit_ts, r.exit_price, r.exit_price_with_slippage,
                             r.exit_reason, r.bars_held, r.pnl_gross, r.fees, r.pnl_net,
                             r.r_multiple, r.data_available, r.error_message, trace_json_str,
+                            config_json_cache[r.setup_id],
                         ))
                     cur.executemany(INSERT_SQL, values)
             conn.commit()

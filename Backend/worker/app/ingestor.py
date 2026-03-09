@@ -892,13 +892,13 @@ class Ingestor:
 
         # Bulk insert to Postgres
         try:
-            import psycopg
+            from db_pool import get_conn as _pool_get_conn
             db_url = os.getenv("DATABASE_URL")
             if not db_url:
                 logger.warning("DATABASE_URL not set, skipping OHLCV persistence")
                 return
 
-            with psycopg.connect(db_url) as conn:
+            with _pool_get_conn() as conn:
                 with conn.cursor() as cur:
                     cur.executemany("""
                         INSERT INTO ohlcv (

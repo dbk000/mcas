@@ -27,6 +27,8 @@ import hashlib
 
 import psycopg
 
+from db_pool import get_conn as _pool_get_conn
+
 from runs.models import (
     Run, RunType, RunStatus,
     RunTrade, RunEvent, RunSummary,
@@ -150,12 +152,9 @@ class RunExecutor:
     
     @contextmanager
     def _conn(self):
-        """Get database connection."""
-        conn = psycopg.connect(self.database_url)
-        try:
+        """Get database connection from the pool."""
+        with _pool_get_conn() as conn:
             yield conn
-        finally:
-            conn.close()
     
     def _ensure_full_schema(self):
         """Ensure all required tables exist."""

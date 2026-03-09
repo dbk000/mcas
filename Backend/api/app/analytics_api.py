@@ -22,6 +22,8 @@ import psycopg
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
+from db_pool import get_conn as _pool_get_conn
+
 logger = logging.getLogger(__name__)
 
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -61,10 +63,10 @@ class CorrelationResponse(BaseModel):
 # =============================================================================
 
 def _get_conn():
-    """Get database connection."""
+    """Get database connection from the pool."""
     if not DATABASE_URL:
         raise HTTPException(status_code=500, detail="Database not configured")
-    return psycopg.connect(DATABASE_URL)
+    return _pool_get_conn()
 
 
 def _compute_config_hash(run_ids: list[str], setup_id: Optional[str], min_trades: int) -> str:

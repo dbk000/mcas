@@ -87,8 +87,8 @@ def load_funding_rates(database_url: str) -> dict[str, float]:
         return _funding_cache
 
     try:
-        import psycopg
-        with psycopg.connect(database_url) as conn:
+        from db_pool import get_conn as _pool_get_conn
+        with _pool_get_conn() as conn:
             rows = conn.execute(
                 "SELECT DISTINCT ON (symbol) symbol, funding_rate "
                 "FROM derivatives_features_1h "
@@ -165,8 +165,8 @@ def has_social_mentions_30d(symbol: str, database_url: str) -> bool:
         return _social_cache[symbol]
 
     try:
-        import psycopg
-        with psycopg.connect(database_url) as conn:
+        from db_pool import get_conn as _pool_get_conn
+        with _pool_get_conn() as conn:
             row = conn.execute(
                 "SELECT 1 FROM social_features_1h "
                 "WHERE symbol = %s AND ts >= NOW() - INTERVAL '30 days' "

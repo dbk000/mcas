@@ -42,6 +42,8 @@ from contextlib import contextmanager
 
 import psycopg
 
+from db_pool import get_conn as _pool_get_conn
+
 from runs.models import (
     Run, RunType, RunStatus,
     RunTrade, RunEvent, RunSummary,
@@ -94,12 +96,9 @@ class PaperTradingEngine:
     
     @contextmanager
     def _conn(self):
-        """Get database connection."""
-        conn = psycopg.connect(self.database_url)
-        try:
+        """Get database connection from the pool."""
+        with _pool_get_conn() as conn:
             yield conn
-        finally:
-            conn.close()
     
     # =========================================================================
     # Run Lifecycle

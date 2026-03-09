@@ -432,6 +432,7 @@ CREATE TABLE IF NOT EXISTS simulation_results (
     -- Metadata
     data_available BOOLEAN NOT NULL DEFAULT TRUE,
     error_message TEXT,
+    config_json JSONB DEFAULT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 

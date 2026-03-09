@@ -507,6 +507,18 @@ def create_version_events(conn, commit_info, node_files_map):
             event_id = str(cur.fetchone()[0])
             direct_created += 1
 
+            # Populate caused_by on the node_version (if column exists)
+            # Links the version to the commit that changed it
+            try:
+                cur.execute("""
+                    UPDATE meta.node_version
+                    SET caused_by = %s, caused_by_type = 'commit'
+                    WHERE version_id = %s
+                      AND caused_by IS NULL
+                """, (commit_info["sha"], version_id))
+            except Exception:
+                pass  # Column may not exist yet (migration not applied)
+
             # Propagate downstream staleness if the change is functional
             if combined_event_type != "code_change:annotation":
                 change_summary = f"{combined_event_type.split(':')[1]} change in {len(matched_files)} file(s)"

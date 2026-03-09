@@ -227,10 +227,17 @@ CREATE TABLE IF NOT EXISTS meta.node_version (
     superseded_by UUID REFERENCES meta.node_version(version_id),
     metrics_run_id UUID REFERENCES runs(id),
     change_reason TEXT,
+    -- Causal event chaining (WP-4): link version to its motivating event
+    caused_by TEXT DEFAULT NULL,
+    caused_by_type TEXT DEFAULT NULL CHECK (caused_by_type IS NULL OR caused_by_type IN (
+        'commit', 'experiment', 'manual', 'config_change'
+    )),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     UNIQUE(node_id, version_number)
 );
 COMMENT ON TABLE meta.node_version IS 'THE HEART. Every meaningful state a node has ever held. The cutlery drawer — every version simultaneously accessible.';
+COMMENT ON COLUMN meta.node_version.caused_by IS 'Reference to commit hash, experiment ID, or event that motivated this version.';
+COMMENT ON COLUMN meta.node_version.caused_by_type IS 'Classification: commit, experiment, manual, config_change.';
 COMMENT ON COLUMN meta.node_version.derived_from IS 'Multi-parent ancestry for compositions: {"tp1_node": "version_7_id", "stop_node": "version_3_id"}. parent_version for simple linear lineage.';
 COMMENT ON COLUMN meta.node_version.metrics_context IS 'Mandatory context: date_range, symbols_tested, timeframe, trade_count, slippage_model, data_source.';
 COMMENT ON COLUMN meta.node_version.source_hash IS 'Git SHA or content hash of source code that produced this version. Detects code changes that dont alter parameters.';

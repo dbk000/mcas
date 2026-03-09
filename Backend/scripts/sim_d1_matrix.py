@@ -61,6 +61,10 @@ if os.path.isdir("/app"):
 import psycopg
 from psycopg.rows import dict_row
 from exit_checker import ExitConfig, check_exit_simple
+from execution import (
+    SLIPPAGE_PROFILE_BPS, DEFAULT_SLIPPAGE_BPS, XSM_SLIPPAGE_PENALTY_BPS,
+    get_slippage_bps_for_timeframe,
+)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -81,6 +85,8 @@ THREE_DAY_BARS = {"1h": 72}
 FIVE_DAY_BARS = {"1h": 120}
 
 # Simulation parameters
+# Flat fallback — used only when --no-scaled-slippage is passed.
+# Default behavior is timeframe-scaled via SLIPPAGE_PROFILE_BPS (execution.py).
 SIM_SLIPPAGE_BPS = 5.0
 SIM_FEE_BPS = 4.0
 SIM_POSITION_USD = 1000.0
@@ -248,8 +254,9 @@ class OpenPosition:
     breakeven_stop_active: bool = False
     # For OHLCV lookup
     cache_key: str = ""
-    # Slippage for this position
+    # Slippage for this position (set per-opportunity from timeframe profile)
     slippage_bps: float = SIM_SLIPPAGE_BPS
+    timeframe: str = "1h"
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -1045,8 +1052,10 @@ def main():
     parser.add_argument("--position-pct", type=float, default=5.0,
                         help="Position size as %% of equity for compounding (default: 5.0)")
     # Slippage
-    parser.add_argument("--slippage-bps", type=float, default=SIM_SLIPPAGE_BPS,
-                        help="Base slippage in bps (default: 5)")
+    parser.add_argument("--slippage-bps", type=float, default=None,
+                        help="Override slippage in bps (flat, disables timeframe scaling)")
+    parser.add_argument("--no-scaled-slippage", action="store_true",
+                        help="Disable timeframe-scaled slippage, use flat 5 bps")
     # Walk-forward
     parser.add_argument("--skip-walkforward", action="store_true",
                         help="Skip walk-forward validation")
@@ -1086,7 +1095,9 @@ def main():
         log.error("DATABASE_URL not set")
         sys.exit(1)
 
-    slippage_bps = args.slippage_bps
+    # Slippage mode: timeframe-scaled by default, flat if overridden
+    use_scaled_slippage = not args.no_scaled_slippage and args.slippage_bps is None
+    flat_slippage_bps = args.slippage_bps if args.slippage_bps is not None else SIM_SLIPPAGE_BPS
     position_usd = args.position_usd
 
     # Parse max-concurrent sweep
@@ -1130,7 +1141,10 @@ def main():
     log.info("  Symbols: %d unique", n_symbols)
     log.info("  Date range: %s to %s", date_min.date(), date_max.date())
     log.info("  Position size: $%.0f", position_usd)
-    log.info("  Slippage: %.1f bps", slippage_bps)
+    if use_scaled_slippage:
+        log.info("  Slippage: timeframe-scaled %s", {k: f"{v}bps" for k, v in SLIPPAGE_PROFILE_BPS.items()})
+    else:
+        log.info("  Slippage: flat %.1f bps", flat_slippage_bps)
     if max_concurrent_values:
         log.info("  Position limit sweep: %s", max_concurrent_values)
     if args.account_equity:
@@ -1166,6 +1180,13 @@ def main():
             tf = meta["timeframe"]
             ts_bars = cfg["ts"].get(tf, 72)
 
+            # Resolve slippage: timeframe-scaled or flat override
+            opp_slippage = (
+                get_slippage_bps_for_timeframe(tf)
+                if use_scaled_slippage
+                else flat_slippage_bps
+            )
+
             result = simulate_opportunity(
                 opp_ts=meta["created_ts"],
                 direction=meta["direction"],
@@ -1176,7 +1197,7 @@ def main():
                 tp_pct=cfg["tp_pct"],
                 time_stop_bars=ts_bars,
                 exit_config=cfg["ec"],
-                slippage_bps=slippage_bps,
+                slippage_bps=opp_slippage,
                 split_exit=cfg.get("split_exit", False),
                 tp2_pct=cfg.get("tp2_pct"),
             )
@@ -1416,7 +1437,9 @@ def main():
         "n_symbols": n_symbols,
         "date_range": [date_min.isoformat(), date_max.isoformat()],
         "sim_parameters": {
-            "slippage_bps": slippage_bps,
+            "slippage_mode": "timeframe_scaled" if use_scaled_slippage else "flat",
+            "slippage_profile": SLIPPAGE_PROFILE_BPS if use_scaled_slippage else None,
+            "slippage_flat_bps": flat_slippage_bps if not use_scaled_slippage else None,
             "fee_bps": SIM_FEE_BPS,
             "position_usd": position_usd,
             "max_bars_forward": MAX_BARS_FORWARD,

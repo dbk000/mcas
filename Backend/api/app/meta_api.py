@@ -20,6 +20,8 @@ import psycopg
 from fastapi import APIRouter, Query, HTTPException, Body
 from pydantic import BaseModel
 
+from db_pool import get_conn as _pool_get_conn
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/meta", tags=["Pipeline Introspection"])
@@ -34,7 +36,7 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 def _get_conn():
     if not DATABASE_URL:
         raise HTTPException(status_code=500, detail="DATABASE_URL not configured")
-    return psycopg.connect(DATABASE_URL)
+    return _pool_get_conn()
 
 
 def envelope(data: Any, compute_start: float, as_of_ts: float = None) -> dict:

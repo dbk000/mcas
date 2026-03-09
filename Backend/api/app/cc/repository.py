@@ -18,6 +18,8 @@ from contextlib import contextmanager
 
 import psycopg
 
+from db_pool import get_conn as _pool_get_conn
+
 from .models import (
     Variant, VariantStatus, VariantModule,
     Module, ModuleKind, DiffType,
@@ -63,25 +65,20 @@ class CCRepository:
 
     @contextmanager
     def _conn(self):
-        """Context manager for database connections."""
-        conn = psycopg.connect(self.database_url)
-        try:
+        """Context manager for database connections from the pool."""
+        with _pool_get_conn() as conn:
             yield conn
-        finally:
-            conn.close()
 
     @contextmanager
     def _transaction(self):
         """Context manager for transactions with commit/rollback."""
-        conn = psycopg.connect(self.database_url)
-        try:
-            yield conn
-            conn.commit()
-        except Exception:
-            conn.rollback()
-            raise
-        finally:
-            conn.close()
+        with _pool_get_conn() as conn:
+            try:
+                yield conn
+                conn.commit()
+            except Exception:
+                conn.rollback()
+                raise
 
     # =========================================================================
     # MODULES

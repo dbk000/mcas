@@ -420,15 +420,15 @@ class PositionMonitor:
     
     def _monitor_loop(self):
         """Main monitoring loop."""
-        import psycopg
-        
+        from db_pool import get_conn as _pool_get_conn
+
         while self._running:
             try:
-                with psycopg.connect(self.database_url) as conn:
+                with _pool_get_conn() as conn:
                     self._check_positions(conn)
             except Exception as e:
                 logger.error(f"Monitor error: {e}")
-            
+
             time.sleep(self.check_interval)
     
     def _check_positions(self, conn):

@@ -608,10 +608,10 @@ class UnicornPipeline:
         if not DATABASE_URL:
             return
         try:
-            import psycopg
+            from db_pool import get_conn as _pool_get_conn
             payload_json = json.dumps(payload)
             setup_version = self.SETUP_VERSIONS.get(setup_id, f"{setup_id}_v1.0")
-            with psycopg.connect(DATABASE_URL) as conn:
+            with _pool_get_conn() as conn:
                 with conn.cursor() as cur:
                     # Try to update existing active record in place
                     cur.execute("""

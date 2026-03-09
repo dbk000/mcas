@@ -20,6 +20,8 @@ from typing import Any
 import psycopg
 from fastapi import APIRouter, Query, HTTPException
 
+from db_pool import get_conn as _pool_get_conn
+
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 router = APIRouter(prefix="/trading", tags=["trading"])
@@ -43,10 +45,10 @@ def envelope(data: Any, compute_start: float, as_of_ts: float = None) -> dict:
 
 
 def get_conn():
-    """Get database connection."""
+    """Get database connection from the pool."""
     if not DATABASE_URL:
         raise HTTPException(status_code=500, detail="Database not configured")
-    return psycopg.connect(DATABASE_URL)
+    return _pool_get_conn()
 
 
 # =============================================================================

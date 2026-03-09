@@ -21,6 +21,8 @@ from contextlib import contextmanager
 
 import psycopg
 
+from db_pool import get_conn as _pool_get_conn
+
 from .stats import CorrelationReport
 
 logger = logging.getLogger(__name__)
@@ -280,11 +282,8 @@ class InsightsStore:
 
     @contextmanager
     def _conn(self):
-        conn = psycopg.connect(self.database_url)
-        try:
+        with _pool_get_conn() as conn:
             yield conn
-        finally:
-            conn.close()
 
     def save_draft(
         self,

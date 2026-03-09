@@ -31,6 +31,8 @@ from typing import Optional
 
 import psycopg
 
+from db_pool import get_conn as _pool_get_conn
+
 logger = logging.getLogger("config_reader")
 
 # Node name → setup_id mapping (must match meta.node entries)
@@ -134,7 +136,7 @@ class LiveConfig:
 
     def _read_config_version(self) -> int:
         """Read the singleton config_version counter. O(1) query."""
-        with psycopg.connect(self._database_url) as conn:
+        with _pool_get_conn() as conn:
             with conn.cursor() as cur:
                 cur.execute("SELECT version FROM meta.config_version WHERE id = 1")
                 row = cur.fetchone()
@@ -143,7 +145,7 @@ class LiveConfig:
     def _reload_all(self):
         """Reload all cached config from meta.node_version."""
         try:
-            with psycopg.connect(self._database_url) as conn:
+            with _pool_get_conn() as conn:
                 for setup_id, node_name in _SETUP_TO_NODE_NAME.items():
                     params = self._fetch_deployed_params(conn, node_name)
                     if params is not None:
@@ -161,7 +163,7 @@ class LiveConfig:
             logger.warning("No node name mapping for setup_id=%s", setup_id)
             return
         try:
-            with psycopg.connect(self._database_url) as conn:
+            with _pool_get_conn() as conn:
                 params = self._fetch_deployed_params(conn, node_name)
                 if params is not None:
                     self._strategy_params[setup_id] = params
@@ -196,7 +198,7 @@ class LiveConfig:
     def _reload_stop_policy(self):
         """Reload stop policy config."""
         try:
-            with psycopg.connect(self._database_url) as conn:
+            with _pool_get_conn() as conn:
                 self._reload_stop_policy_with_conn(conn)
         except Exception as e:
             logger.error("Failed to reload stop policy: %s", e)

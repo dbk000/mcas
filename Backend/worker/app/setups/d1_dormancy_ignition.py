@@ -136,16 +136,30 @@ class D1Config:
     # Cooldown after trigger
     COOLDOWN_BARS_1H = _env_int("D1_COOLDOWN_BARS_1H", 24)  # 1 day
 
-    # Social silence lookback (soft feature, not a gate)
+    # Social silence: soft scoring component (not a hard gate).
+    # "Social silence" = low mention activity during dormancy confirms quiet accumulation.
+    # Lookback window and max mentions threshold are configurable.
+    SOCIAL_SILENCE_LOOKBACK_HOURS = _env_int("D1_SOCIAL_SILENCE_LOOKBACK_HOURS", 24)
+    SOCIAL_SILENCE_MAX_MENTIONS = _env_int("D1_SOCIAL_SILENCE_MAX_MENTIONS", 3)
     SOCIAL_SILENCE_LOOKBACK_DAYS = _env_int("D1_SOCIAL_SILENCE_LOOKBACK_DAYS", 30)
 
+    # On-chain exchange net flow: optional soft accumulation confirmation gate.
+    # Negative net flow (outflows > inflows = tokens leaving exchanges) confirms accumulation.
+    # Ships DISABLED: ONCHAIN_GATE_ENABLED=False and W_ONCHAIN_FLOW=0.0 → zero behaviour change.
+    ONCHAIN_GATE_ENABLED = _env_bool("D1_ONCHAIN_GATE_ENABLED", False)
+    ONCHAIN_NETFLOW_LOOKBACK_HOURS = _env_int("D1_ONCHAIN_NETFLOW_LOOKBACK_HOURS", 48)
+    W_ONCHAIN_FLOW = _env_float("D1_W_ONCHAIN_FLOW", 0.0)
+
     # Scoring weights (sum to 1.0)
+    # Social silence gets 0.10 — redistributed from RVOL (0.10 -> 0.05) and BTC_ADJ_RET (0.15 -> 0.10)
+    # W_ONCHAIN_FLOW defaults to 0.0 — ships disabled. When enabled, redistribute from existing weights.
     W_DORMANCY = _env_float("D1_W_DORMANCY", 0.20)
     W_VOL_Z = _env_float("D1_W_VOL_Z", 0.25)
     W_ACCUM_DIV = _env_float("D1_W_ACCUM_DIV", 0.15)
     W_BB_EXPANSION = _env_float("D1_W_BB_EXPANSION", 0.15)
-    W_RVOL = _env_float("D1_W_RVOL", 0.10)
-    W_BTC_ADJ_RET = _env_float("D1_W_BTC_ADJ_RET", 0.15)
+    W_RVOL = _env_float("D1_W_RVOL", 0.05)
+    W_BTC_ADJ_RET = _env_float("D1_W_BTC_ADJ_RET", 0.10)
+    W_SOCIAL_SILENCE = _env_float("D1_W_SOCIAL_SILENCE", 0.10)
 
     # Dormancy score lookback for detection
     DORMANCY_LOOKBACK = 48  # bars
@@ -218,8 +232,8 @@ def get_social_mentions_count(
         return _social_count_cache[cache_key]
 
     try:
-        import psycopg
-        with psycopg.connect(database_url) as conn:
+        from db_pool import get_conn as _pool_get_conn
+        with _pool_get_conn() as conn:
             if trigger_bar_start_ts is not None:
                 row = conn.execute(
                     "SELECT COALESCE(SUM(mention_count), 0) "
@@ -245,6 +259,132 @@ def get_social_mentions_count(
 
     _social_count_cache[cache_key] = result
     _social_count_cache_ts[cache_key] = now
+    return result
+
+
+# --- Social silence (short-window, for scoring) ---
+
+_social_silence_cache: dict[str, int] = {}       # symbol -> mention_count (24h window)
+_social_silence_cache_ts: dict[str, float] = {}   # symbol -> last query epoch
+_SOCIAL_SILENCE_CACHE_TTL: float = 600.0           # 10 minutes (shorter — scoring-critical)
+
+
+def get_social_silence_count(
+    symbol: str,
+    trigger_bar_start_ts: Optional[datetime] = None,
+    lookback_hours: Optional[int] = None,
+) -> int:
+    """Return total mention_count from social_features_1h in the last N hours.
+
+    Designed for the social silence scoring gate: short window (default 24h).
+    Uses strict `< trigger_bar_start_ts` to exclude the trigger bar itself.
+
+    Returns -1 if the table doesn't exist or query fails (caller treats as neutral).
+    Results cached per-symbol for 10 minutes.
+    """
+    if lookback_hours is None:
+        lookback_hours = D1Config.SOCIAL_SILENCE_LOOKBACK_HOURS
+
+    now = _time.time()
+    cache_key = symbol
+    if cache_key in _social_silence_cache and (now - _social_silence_cache_ts.get(cache_key, 0)) < _SOCIAL_SILENCE_CACHE_TTL:
+        return _social_silence_cache[cache_key]
+
+    try:
+        from db_pool import get_conn as _pool_get_conn
+        with _pool_get_conn() as conn:
+            if trigger_bar_start_ts is not None:
+                row = conn.execute(
+                    "SELECT COALESCE(SUM(mention_count), 0) "
+                    "FROM social_features_1h "
+                    "WHERE symbol = %s "
+                    "  AND bar_start_ts >= %s - %s * INTERVAL '1 hour' "
+                    "  AND bar_start_ts < %s",
+                    (symbol, trigger_bar_start_ts, lookback_hours, trigger_bar_start_ts),
+                ).fetchone()
+            else:
+                row = conn.execute(
+                    "SELECT COALESCE(SUM(mention_count), 0) "
+                    "FROM social_features_1h "
+                    "WHERE symbol = %s "
+                    "  AND bar_start_ts >= NOW() - %s * INTERVAL '1 hour' "
+                    "  AND bar_start_ts < NOW()",
+                    (symbol, lookback_hours),
+                ).fetchone()
+        result = int(row[0]) if row else 0
+    except Exception as e:
+        logger.debug("Social silence count failed for %s: %s", symbol, e)
+        result = -1  # -1 signals data unavailable -> neutral score
+
+    _social_silence_cache[cache_key] = result
+    _social_silence_cache_ts[cache_key] = now
+    return result
+
+
+# =============================================================================
+# On-Chain Exchange Net Flow (soft feature — accumulation confirmation)
+# =============================================================================
+
+_netflow_cache: dict[str, Optional[float]] = {}       # symbol -> sum_netflow
+_netflow_cache_ts: dict[str, float] = {}               # symbol -> last query epoch
+_NETFLOW_CACHE_TTL: float = 1800.0                     # 30 minutes
+
+
+def get_exchange_netflow(
+    symbol: str,
+    as_of_ts: Optional[datetime] = None,
+    lookback_hours: Optional[int] = None,
+) -> Optional[float]:
+    """Return sum of exchange_netflow from exchange_flows over the lookback window.
+
+    Negative = outflows > inflows = tokens leaving exchanges = accumulation.
+    Positive = inflows > outflows = distribution.
+    Returns None if no data available (caller treats as neutral score).
+
+    The exchange_flows table has daily granularity from Santiment.
+    lookback_hours is converted to days for the query (48h = 2 days).
+
+    Results cached per-symbol for 30 minutes.
+    """
+    if not D1Config.ONCHAIN_GATE_ENABLED:
+        return None
+
+    if lookback_hours is None:
+        lookback_hours = D1Config.ONCHAIN_NETFLOW_LOOKBACK_HOURS
+
+    now = _time.time()
+    cache_key = symbol
+    if cache_key in _netflow_cache and (now - _netflow_cache_ts.get(cache_key, 0)) < _NETFLOW_CACHE_TTL:
+        return _netflow_cache[cache_key]
+
+    try:
+        from db_pool import get_conn as _pool_get_conn
+        with _pool_get_conn() as conn:
+            if as_of_ts is not None:
+                row = conn.execute(
+                    "SELECT SUM(exchange_netflow) "
+                    "FROM exchange_flows "
+                    "WHERE symbol = %s "
+                    "  AND timestamp >= %s - %s * INTERVAL '1 hour' "
+                    "  AND timestamp < %s",
+                    (symbol, as_of_ts, lookback_hours, as_of_ts),
+                ).fetchone()
+            else:
+                row = conn.execute(
+                    "SELECT SUM(exchange_netflow) "
+                    "FROM exchange_flows "
+                    "WHERE symbol = %s "
+                    "  AND timestamp >= NOW() - %s * INTERVAL '1 hour' "
+                    "  AND timestamp < NOW()",
+                    (symbol, lookback_hours),
+                ).fetchone()
+        result = float(row[0]) if row and row[0] is not None else None
+    except Exception as e:
+        logger.debug("Exchange netflow query failed for %s: %s", symbol, e)
+        result = None
+
+    _netflow_cache[cache_key] = result
+    _netflow_cache_ts[cache_key] = now
     return result
 
 
@@ -301,6 +441,13 @@ class D1State:
     bar_index: int = 0
     cooldown_until_bar: int = 0
 
+    # Social silence (computed at trigger time via DB query)
+    social_mention_count: int = -1  # -1 = not yet queried; 0+ = actual count
+
+    # On-chain exchange net flow (computed at trigger time via DB query)
+    # None = not queried or no data; float = sum of netflow over lookback
+    onchain_netflow: Optional[float] = None
+
     # Score components (computed at trigger time)
     score_components: dict = field(default_factory=dict)
 
@@ -322,6 +469,8 @@ class D1State:
             "btc_beta": self.btc_beta,
             "bar_index": self.bar_index,
             "cooldown_until_bar": self.cooldown_until_bar,
+            "social_mention_count": self.social_mention_count,
+            "onchain_netflow": self.onchain_netflow,
             "score_components": self.score_components,
         }
 
@@ -344,6 +493,8 @@ class D1State:
             btc_beta=float(d.get("btc_beta", 1.0)),
             bar_index=int(d.get("bar_index", 0)),
             cooldown_until_bar=int(d.get("cooldown_until_bar", 0)),
+            social_mention_count=int(d.get("social_mention_count", -1)),
+            onchain_netflow=d.get("onchain_netflow"),  # None if absent
             score_components=dict(d.get("score_components", {})),
         )
 
@@ -495,6 +646,10 @@ class D1Evaluator(SetupBase):
             "max_volume_usd": "MAX_VOLUME_USD",
             "dormancy_require_neg_volume_z": "DORMANCY_REQUIRE_NEG_VOLUME_Z",
             "social_silence_lookback_days": "SOCIAL_SILENCE_LOOKBACK_DAYS",
+            "social_silence_lookback_hours": "SOCIAL_SILENCE_LOOKBACK_HOURS",
+            "social_silence_max_mentions": "SOCIAL_SILENCE_MAX_MENTIONS",
+            "onchain_gate_enabled": "ONCHAIN_GATE_ENABLED",
+            "onchain_netflow_lookback_hours": "ONCHAIN_NETFLOW_LOOKBACK_HOURS",
         }
 
         # Apply flat params
@@ -533,6 +688,8 @@ class D1Evaluator(SetupBase):
                 "bb_expansion": "W_BB_EXPANSION",
                 "rvol": "W_RVOL",
                 "btc_adj_ret": "W_BTC_ADJ_RET",
+                "social_silence": "W_SOCIAL_SILENCE",
+                "onchain_flow": "W_ONCHAIN_FLOW",
             }
             for param_key, config_attr in _WEIGHT_MAP.items():
                 if param_key in weights_cfg:
@@ -744,6 +901,36 @@ class D1Evaluator(SetupBase):
             f"Price broke above compression box {state.prev_compression_box_high:.8g}",
             f"BB width expanding {state.bb_width_prev:.4f} → {state.bb_width:.4f}",
         ]
+        # Social silence explain
+        if state.social_mention_count < 0:
+            why_items.append("Social silence: data unavailable (neutral)")
+        elif state.social_mention_count <= D1Config.SOCIAL_SILENCE_MAX_MENTIONS:
+            why_items.append(
+                f"Social silence confirmed: {state.social_mention_count} mentions in {D1Config.SOCIAL_SILENCE_LOOKBACK_HOURS}h "
+                f"(max {D1Config.SOCIAL_SILENCE_MAX_MENTIONS}) — boosts score"
+            )
+        else:
+            why_items.append(
+                f"Social chatter detected: {state.social_mention_count} mentions in {D1Config.SOCIAL_SILENCE_LOOKBACK_HOURS}h "
+                f"(max {D1Config.SOCIAL_SILENCE_MAX_MENTIONS}) — penalizes score"
+            )
+        # On-chain exchange net flow explain
+        if D1Config.ONCHAIN_GATE_ENABLED and D1Config.W_ONCHAIN_FLOW > 0:
+            if state.onchain_netflow is None:
+                why_items.append(
+                    f"Exchange net flow: no data for {symbol} "
+                    f"(lookback {D1Config.ONCHAIN_NETFLOW_LOOKBACK_HOURS}h) — neutral"
+                )
+            elif state.onchain_netflow < 0:
+                why_items.append(
+                    f"Exchange net flow {state.onchain_netflow:+.2f} (negative = accumulation) "
+                    f"over {D1Config.ONCHAIN_NETFLOW_LOOKBACK_HOURS}h — boosts score"
+                )
+            else:
+                why_items.append(
+                    f"Exchange net flow {state.onchain_netflow:+.2f} (positive = distribution) "
+                    f"over {D1Config.ONCHAIN_NETFLOW_LOOKBACK_HOURS}h — penalizes score"
+                )
         if not idio_positive:
             why_items.append("Caution: return correlated with BTC (beta-driven)")
 
@@ -788,6 +975,8 @@ class D1Evaluator(SetupBase):
             + D1Config.W_BB_EXPANSION
             + D1Config.W_RVOL
             + D1Config.W_BTC_ADJ_RET
+            + D1Config.W_SOCIAL_SILENCE
+            + D1Config.W_ONCHAIN_FLOW
         )
         if w_sum <= 0:
             w_sum = 1.0
@@ -797,6 +986,8 @@ class D1Evaluator(SetupBase):
         w_bb_expansion = D1Config.W_BB_EXPANSION / w_sum
         w_rvol = D1Config.W_RVOL / w_sum
         w_btc_adj_ret = D1Config.W_BTC_ADJ_RET / w_sum
+        w_social_silence = D1Config.W_SOCIAL_SILENCE / w_sum
+        w_onchain_flow = D1Config.W_ONCHAIN_FLOW / w_sum
 
         # Dormancy: higher is better (more dormant before breakout)
         components["dormancy"] = w_dormancy * min(
@@ -834,6 +1025,33 @@ class D1Evaluator(SetupBase):
         else:
             btc_adj_score = 0.5
         components["btc_adj_ret"] = w_btc_adj_ret * btc_adj_score
+
+        # Social silence: low mentions during dormancy = higher conviction.
+        # -1 means not queried (table missing or error) -> neutral 0.5.
+        # 0 mentions (true silence) -> 1.0.
+        # <= max threshold -> 1.0.
+        # > max threshold -> 0.0 (chatter detected, lower conviction).
+        if state.social_mention_count < 0:
+            social_score = 0.5  # Data unavailable — neutral
+        elif state.social_mention_count <= D1Config.SOCIAL_SILENCE_MAX_MENTIONS:
+            social_score = 1.0  # Silence confirmed
+        else:
+            social_score = 0.0  # Social chatter detected
+        components["social_silence"] = w_social_silence * social_score
+
+        # On-chain exchange net flow: negative = accumulation (tokens leaving exchanges).
+        # None means no data or gate disabled -> neutral 0.5.
+        # Negative netflow (accumulation) -> 1.0.
+        # Positive or zero netflow (distribution) -> 0.0.
+        # Only contributes when W_ONCHAIN_FLOW > 0 (disabled by default).
+        if D1Config.W_ONCHAIN_FLOW > 0:
+            if state.onchain_netflow is None:
+                onchain_score = 0.5  # No data — neutral
+            elif state.onchain_netflow < 0:
+                onchain_score = 1.0  # Accumulation confirmed (outflows)
+            else:
+                onchain_score = 0.0  # Distribution (inflows)
+            components["onchain_flow"] = w_onchain_flow * onchain_score
 
         return components
 

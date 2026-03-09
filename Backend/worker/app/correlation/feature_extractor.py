@@ -18,6 +18,8 @@ from typing import Optional
 
 import psycopg
 
+from db_pool import get_conn as _pool_get_conn
+
 logger = logging.getLogger(__name__)
 
 
@@ -49,12 +51,9 @@ class FeatureExtractor:
 
     @contextmanager
     def _conn(self):
-        """Context manager for database connections."""
-        conn = psycopg.connect(self.database_url)
-        try:
+        """Context manager for database connections from the pool."""
+        with _pool_get_conn() as conn:
             yield conn
-        finally:
-            conn.close()
 
     def extract_from_runs(
         self,

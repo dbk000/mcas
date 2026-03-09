@@ -27,6 +27,8 @@ import redis
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field, model_validator
 
+from db_pool import get_conn as _pool_get_conn
+
 logger = logging.getLogger(__name__)
 
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -45,7 +47,7 @@ DEFAULT_COST_BPS = 3.0
 def _get_conn():
     if not DATABASE_URL:
         raise HTTPException(status_code=500, detail="Database not configured")
-    return psycopg.connect(DATABASE_URL)
+    return _pool_get_conn()
 
 
 def _envelope(data, t0=None, **extra):

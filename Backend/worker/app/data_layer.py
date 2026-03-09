@@ -26,6 +26,8 @@ from contextlib import contextmanager
 import requests
 import psycopg
 
+from db_pool import get_conn as _pool_get_conn
+
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
@@ -37,12 +39,9 @@ _DATABASE_URL: str | None = os.getenv("DATABASE_URL")
 
 @contextmanager
 def get_conn():
-    """Get a database connection using DATABASE_URL env var."""
-    conn = psycopg.connect(_DATABASE_URL)
-    try:
+    """Get a database connection from the pool."""
+    with _pool_get_conn() as conn:
         yield conn
-    finally:
-        conn.close()
 
 
 def log_signal_event(
@@ -149,12 +148,9 @@ class OHLCVRepository:
     
     @contextmanager
     def _conn(self):
-        """Get database connection."""
-        conn = psycopg.connect(self.database_url)
-        try:
+        """Get database connection from the pool."""
+        with _pool_get_conn() as conn:
             yield conn
-        finally:
-            conn.close()
     
     def ensure_schema(self):
         """

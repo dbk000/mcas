@@ -22,6 +22,8 @@ from datetime import datetime, timezone, timedelta
 import psycopg
 import redis
 
+from db_pool import get_conn as _pool_get_conn
+
 # Docker import path handling (Corrections Log 2026-02-12)
 if os.path.isdir('/app'):
     sys.path.insert(0, '/app')
@@ -434,7 +436,7 @@ def main():
 
     if args.once:
         logger.info("Running single evaluation (--once mode)")
-        with psycopg.connect(DATABASE_URL) as conn:
+        with _pool_get_conn() as conn:
             result = evaluate_once(conn, r)
         logger.info("Result: %s", json.dumps(result, indent=2))
         return
@@ -458,7 +460,7 @@ def main():
 
             # Freshness retry loop
             for attempt in range(MAX_FRESHNESS_RETRIES):
-                with psycopg.connect(DATABASE_URL) as conn:
+                with _pool_get_conn() as conn:
                     is_fresh, msg = check_data_freshness(conn)
                 if is_fresh:
                     break
@@ -471,7 +473,7 @@ def main():
                 continue
 
             # Evaluate
-            with psycopg.connect(DATABASE_URL) as conn:
+            with _pool_get_conn() as conn:
                 result = evaluate_once(conn, r)
 
             if "strategy_counts" in result:

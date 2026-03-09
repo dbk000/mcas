@@ -28,6 +28,8 @@ import redis
 from fastapi import APIRouter, Query, HTTPException, Body
 from pydantic import BaseModel, Field, model_validator
 
+from db_pool import get_conn as _pool_get_conn
+
 DATABASE_URL = os.getenv("DATABASE_URL")
 REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
 
@@ -36,10 +38,10 @@ r = redis.Redis.from_url(REDIS_URL, decode_responses=True)
 
 
 def get_conn():
-    """Get database connection."""
+    """Get database connection from the pool."""
     if not DATABASE_URL:
         raise HTTPException(status_code=500, detail="Database not configured")
-    return psycopg.connect(DATABASE_URL)
+    return _pool_get_conn()
 
 
 def _resolve_symbols(requested: list[str] | None) -> list[str]:

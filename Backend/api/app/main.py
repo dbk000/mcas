@@ -35,6 +35,7 @@ import requests
 import psycopg
 import redis
 
+from db_pool import get_conn as _pool_get_conn, pool_stats, close_pool
 from json_logging import setup_logging
 
 # Initialize structured JSON logging before anything else
@@ -238,13 +239,55 @@ def health():
         return {"status": "unhealthy", "error": "DATABASE_URL not set"}
 
     t1 = time.time()
-    with psycopg.connect(DATABASE_URL) as conn:
+    with _pool_get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute("SELECT 1;")
             cur.fetchone()
     pg_ms = int((time.time() - t1) * 1000)
 
-    return {"status": "healthy", "redis_ms": redis_ms, "pg_ms": pg_ms}
+    # Emergency state
+    kill_switch_active = r.get("kill_switch:active") == "1"
+    trading_paused = r.get("trading_paused") == "1"
+
+    status = "healthy"
+    if kill_switch_active:
+        status = "killed"
+    elif trading_paused:
+        status = "paused"
+
+    # Signal congestion score
+    signal_budget = int(os.getenv("SIGNAL_TOP_N_DAILY", "10"))
+    today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    try:
+        signals_today = int(r.get(f"signals:daily_count:{today_str}") or 0)
+    except Exception:
+        signals_today = 0
+    utilization_pct = (
+        round(signals_today / signal_budget * 100, 1) if signal_budget > 0 else 0.0
+    )
+
+    return {
+        "status": status,
+        "redis_ms": redis_ms,
+        "pg_ms": pg_ms,
+        "kill_switch_active": kill_switch_active,
+        "trading_paused": trading_paused,
+        "db_pool": pool_stats(),
+        "signal_congestion": {
+            "signals_today": signals_today,
+            "budget": signal_budget,
+            "utilization_pct": utilization_pct,
+        },
+    }
+
+
+# -------------------------
+# Lifecycle hooks
+# -------------------------
+@app.on_event("shutdown")
+def on_shutdown():
+    """Close DB connection pool on graceful shutdown."""
+    close_pool()
 
 
 # -------------------------
@@ -329,7 +372,7 @@ def get_ohlcv(
     symbol_norm = symbol.strip().upper()
     tf_norm = tf.strip().lower()
 
-    with psycopg.connect(DATABASE_URL) as conn:
+    with _pool_get_conn() as conn:
         with conn.cursor() as cur:
             # Deduplicate per bar timestamp while preferring freshest rows and WS source.
             cur.execute("""
@@ -476,7 +519,7 @@ def queue_signal(req: SignalRequest):
     if not DATABASE_URL:
         raise HTTPException(status_code=500, detail="Database not configured")
 
-    with psycopg.connect(DATABASE_URL) as conn:
+    with _pool_get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute("""
                 INSERT INTO signal_queue (symbol, timeframe, setup_id)
@@ -500,7 +543,7 @@ def get_top_signals(
     if not DATABASE_URL:
         raise HTTPException(status_code=500, detail="Database not configured")
 
-    with psycopg.connect(DATABASE_URL) as conn:
+    with _pool_get_conn() as conn:
         with conn.cursor() as cur:
             if tf:
                 cur.execute("""
@@ -551,7 +594,7 @@ def get_signal(signal_id: int):
     if not DATABASE_URL:
         raise HTTPException(status_code=500, detail="Database not configured")
 
-    with psycopg.connect(DATABASE_URL) as conn:
+    with _pool_get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute("""
                 SELECT id, status, result_json, symbol, timeframe, setup_id
@@ -1019,7 +1062,7 @@ def list_opportunities(
         query += " LIMIT %s;"
         params_list.append(limit)
 
-    with psycopg.connect(DATABASE_URL) as conn:
+    with _pool_get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute(query, params_list)
             rows = cur.fetchall()
@@ -1131,7 +1174,7 @@ def export_opportunities_csv(
     if not DATABASE_URL:
         raise HTTPException(status_code=500, detail="Database not configured")
 
-    with psycopg.connect(DATABASE_URL) as conn:
+    with _pool_get_conn() as conn:
         with conn.cursor() as cur:
             # direction is stored inside payload_json, not as a top-level column
             payload_fields = """
@@ -1266,7 +1309,7 @@ def get_opportunity_price_window(
     if not DATABASE_URL:
         raise HTTPException(status_code=500, detail="Database not configured")
 
-    with psycopg.connect(DATABASE_URL) as conn:
+    with _pool_get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute("""
                 SELECT o.id, o.symbol, o.created_ts, o.payload_json,
@@ -1429,7 +1472,7 @@ def get_opportunity(opp_id: int):
     if not DATABASE_URL:
         raise HTTPException(status_code=500, detail="Database not configured")
 
-    with psycopg.connect(DATABASE_URL) as conn:
+    with _pool_get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute("""
                 SELECT id, signal_id, symbol, timeframe, setup_id, decision,
@@ -1532,6 +1575,10 @@ app.include_router(unicorns_router, prefix="/v1", dependencies=[Depends(require_
 from cc_api import router as cc_router
 app.include_router(cc_router, prefix="/v1", dependencies=[Depends(require_api_key)])
 
+# Mount Emergency Control API (kill switch, pause/resume — protected)
+from emergency_api import router as emergency_router
+app.include_router(emergency_router, prefix="/v1", dependencies=[Depends(require_api_key)])
+
 # Mount Analytics API (correlation analysis, etc.)
 try:
     from analytics_api import router as analytics_router
@@ -1544,7 +1591,7 @@ try:
     from equities_api import router as equities_router
     app.include_router(equities_router, prefix="/v1", dependencies=[Depends(require_api_key)])
 except ImportError:
-    pass  # psycopg_pool not available in this container
+    pass  # equities_api not available
 
 # Mount Equities Simulation API
 try:
@@ -1567,7 +1614,7 @@ d2_router = APIRouter(prefix="/d2", tags=["d2"])
 async def d2_status():
     """Current D2 paper trader state: active clusters, positions, stats."""
     t0 = time.time()
-    with psycopg.connect(DATABASE_URL) as conn:
+    with _pool_get_conn() as conn:
         with conn.cursor() as cur:
             # Active/recent cluster events
             cur.execute("""
