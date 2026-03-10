@@ -244,10 +244,18 @@ class OpportunitySimulator:
         # Check if ALL opps are pre-settled (exit_settler) — if so, skip
         # expensive OHLCV backfill+load entirely. Pre-settled opps use
         # entry/exit prices from the payload, no walk-forward needed.
-        all_pre_settled = all(
-            opp.get("payload", {}).get("exit_settler")
-            for opp in opportunities
-        )
+        def _has_exit_settler(opp: dict) -> bool:
+            raw = opp.get("payload_json")
+            if isinstance(raw, str):
+                try:
+                    return bool(json.loads(raw).get("exit_settler"))
+                except Exception:
+                    return False
+            elif isinstance(raw, dict):
+                return bool(raw.get("exit_settler"))
+            return False
+
+        all_pre_settled = all(_has_exit_settler(opp) for opp in opportunities)
 
         ohlcv_cache: dict = {}
         if not all_pre_settled:
