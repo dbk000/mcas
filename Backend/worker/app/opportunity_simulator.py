@@ -1107,11 +1107,21 @@ class OpportunitySimulator:
                     tz=timezone.utc,
                 )
 
-            signal_bar_close_ts = None
-            if signal_bar_open_ts is not None:
-                if hasattr(signal_bar_open_ts, 'replace') and signal_bar_open_ts.tzinfo is None:
-                    signal_bar_open_ts = signal_bar_open_ts.replace(tzinfo=timezone.utc)
-                signal_bar_close_ts = signal_bar_open_ts + timedelta(seconds=strategy_tf_seconds)
+            # Fallback: derive signal bar from decision_ts and timeframe.
+            # The signal bar is the bar that closed just before the opportunity
+            # was created. bar_close = opp_ts floored to timeframe boundary,
+            # bar_open = bar_close - timeframe.
+            if signal_bar_open_ts is None and opp_ts is not None:
+                epoch_s = int(opp_ts.timestamp())
+                bar_close_epoch = epoch_s - (epoch_s % strategy_tf_seconds)
+                signal_bar_close_ts = datetime.fromtimestamp(bar_close_epoch, tz=timezone.utc)
+                signal_bar_open_ts = signal_bar_close_ts - timedelta(seconds=strategy_tf_seconds)
+            else:
+                signal_bar_close_ts = None
+                if signal_bar_open_ts is not None:
+                    if hasattr(signal_bar_open_ts, 'replace') and signal_bar_open_ts.tzinfo is None:
+                        signal_bar_open_ts = signal_bar_open_ts.replace(tzinfo=timezone.utc)
+                    signal_bar_close_ts = signal_bar_open_ts + timedelta(seconds=strategy_tf_seconds)
 
             # Decision timestamp = opportunity created_ts
             decision_ts = opp_ts
