@@ -13,6 +13,7 @@ Uses batch OHLCV loading to avoid rate limits and shared exit_checker
 module to ensure exit logic consistency with BACKTEST/PAPER runs.
 """
 
+import json
 import os
 import logging
 from dataclasses import asdict, dataclass, field
@@ -255,23 +256,7 @@ class OpportunitySimulator:
                 return bool(raw.get("exit_settler"))
             return False
 
-        settler_count = sum(1 for opp in opportunities if _has_exit_settler(opp))
-        all_pre_settled = settler_count == len(opportunities)
-        logger.info(
-            "Pre-settled check: %d/%d have exit_settler, all_pre_settled=%s",
-            settler_count, len(opportunities), all_pre_settled,
-        )
-        if not all_pre_settled and settler_count > 0:
-            # Log first non-settler opp for debugging
-            for opp in opportunities:
-                if not _has_exit_settler(opp):
-                    raw = opp.get("payload_json")
-                    logger.warning(
-                        "Non-settler opp id=%s setup=%s raw_type=%s raw_preview=%s",
-                        opp.get("id"), opp.get("setup_id"),
-                        type(raw).__name__, repr(raw[:200]) if isinstance(raw, str) else repr(raw),
-                    )
-                    break
+        all_pre_settled = all(_has_exit_settler(opp) for opp in opportunities)
 
         ohlcv_cache: dict = {}
         if not all_pre_settled:
@@ -286,17 +271,8 @@ class OpportunitySimulator:
                 logger.warning("Pre-sim backfill failed (continuing with existing data): %s", e)
                 self._backfill_degraded = True
 
-            # Batch load OHLCV data — may OOM for large universes.
-            # If all opps are individually pre-settled, skip gracefully.
-            try:
-                ohlcv_cache = self._batch_load_ohlcv(symbol_tf_ranges)
-            except MemoryError:
-                logger.error(
-                    "OOM loading OHLCV for %d symbol/tf pairs — falling back to empty cache "
-                    "(pre-settled opps will still work, walk-forward opps will fail)",
-                    len(symbol_tf_ranges),
-                )
-                ohlcv_cache = {}
+            # Batch load OHLCV data
+            ohlcv_cache = self._batch_load_ohlcv(symbol_tf_ranges)
         else:
             logger.info("All %d opps are pre-settled — skipping OHLCV backfill+load", len(opportunities))
             self._backfill_degraded = False
@@ -447,7 +423,6 @@ class OpportunitySimulator:
         # Get direction from payload_json (preferred) or decision column
         payload = opp.get("payload_json")
         if isinstance(payload, str):
-            import json
             try:
                 payload = json.loads(payload)
             except Exception:
@@ -1349,8 +1324,6 @@ class OpportunitySimulator:
         Captures SimulationConfig + resolved ExitConfig so any simulation result
         can be exactly reproduced from the stored config.
         """
-        import json
-
         exit_cfg = SETUP_EXIT_CONFIGS.get(setup_id, self.config.exit_config)
         if exit_cfg is None:
             exit_cfg = ExitConfig(
@@ -1387,7 +1360,6 @@ class OpportunitySimulator:
 
     def _store_results(self, results: list[SimulationResult], run_id: str):
         """Store simulation results in the database using batch inserts."""
-        import json
 
         if not results:
             return
