@@ -475,23 +475,55 @@ class OpportunitySimulator:
             _stop_px = payload.get("stop_price", 0)
             _pnl_pct = payload.get("pnl_after_costs_pct", payload.get("pnl_pct", 0))
             _pos_usd = self.config.position_size_usd
-            _pnl_net = _pos_usd * (_pnl_pct / 100.0) if _pnl_pct else 0.0
+
+            if _pnl_pct:
+                # Pre-settled with PnL included (e.g. D2) — use directly
+                _pnl_net = _pos_usd * (_pnl_pct / 100.0)
+                _entry_with_slip = _entry_px
+                _exit_with_slip = _exit_px
+                _fees = 0.0
+            elif _entry_px and _exit_px:
+                # Pre-settled with exit price but no PnL (e.g. S9 exit_settler)
+                # Compute PnL from prices with slippage + fees
+                _entry_slip_bps = self._resolve_slippage_bps(timeframe, is_entry=True)
+                _exit_slip_bps = self._resolve_slippage_bps(timeframe, is_entry=False)
+                _fee_bps = self.config.fee_taker_bps
+                if direction == "long":
+                    _entry_with_slip = _entry_px * (1 + _entry_slip_bps / 10000)
+                    _exit_with_slip = _exit_px * (1 - _exit_slip_bps / 10000)
+                else:
+                    _entry_with_slip = _entry_px * (1 - _entry_slip_bps / 10000)
+                    _exit_with_slip = _exit_px * (1 + _exit_slip_bps / 10000)
+                _position_size = _pos_usd / _entry_with_slip if _entry_with_slip else 0
+                if direction == "long":
+                    _pnl_gross = (_exit_with_slip - _entry_with_slip) * _position_size
+                else:
+                    _pnl_gross = (_entry_with_slip - _exit_with_slip) * _position_size
+                _fees = (_entry_with_slip * _position_size + _exit_with_slip * _position_size) * (_fee_bps / 10000)
+                _pnl_net = _pnl_gross - _fees
+            else:
+                _pnl_net = 0.0
+                _entry_with_slip = _entry_px
+                _exit_with_slip = _exit_px
+                _fees = 0.0
 
             result.entry_ts = _entry_ts
             result.entry_price = _entry_px
-            result.entry_price_with_slippage = _entry_px  # costs already in pnl_after_costs_pct
+            result.entry_price_with_slippage = _entry_with_slip
             result.stop_price = _stop_px
             result.tp1_price = payload.get("tp_price") or payload.get("tp1_price")
             result.exit_ts = _exit_ts
             result.exit_price = _exit_px
-            result.exit_price_with_slippage = _exit_px
+            result.exit_price_with_slippage = _exit_with_slip
             result.exit_reason = payload.get("exit_reason", "UNKNOWN")
-            result.r_multiple = payload.get("r_multiple", 0)
             result.r_value = abs(_entry_px - _stop_px) if _entry_px and _stop_px else 0
-            result.pnl_gross = _pnl_net  # pre-settled includes costs
-            result.fees = 0.0
+            _r_value = result.r_value
+            _position_size_final = _pos_usd / _entry_with_slip if _entry_with_slip else 0
+            result.r_multiple = (_pnl_net / (_r_value * _position_size_final)) if (_r_value and _position_size_final) else payload.get("r_multiple", 0)
+            result.pnl_gross = _pnl_net + _fees
+            result.fees = _fees
             result.pnl_net = _pnl_net
-            result.position_size = _pos_usd / _entry_px if _entry_px else 0
+            result.position_size = _position_size_final
             result.data_available = True
             # Compute bars_held from timestamps
             if _entry_ts and _exit_ts and _entry_ts != _exit_ts:
@@ -1095,13 +1127,20 @@ class OpportunitySimulator:
             # Signal phase: the bar that generated this opportunity
             signal_bar_open_ts = payload.get("bar_start_ts")
             if isinstance(signal_bar_open_ts, str):
-                try:
-                    signal_bar_open_ts = datetime.fromisoformat(
-                        signal_bar_open_ts.replace("Z", "+00:00")
-                    )
-                except Exception:
-                    signal_bar_open_ts = None
-            elif isinstance(signal_bar_open_ts, (int, float)):
+                # Numeric strings (e.g. "1773010800000") must go through the
+                # numeric path, NOT fromisoformat — Python parses the first 8
+                # digits as YYYYMMDD (year 1773!) instead of failing.
+                stripped = signal_bar_open_ts.strip()
+                if stripped.replace(".", "", 1).isdigit():
+                    signal_bar_open_ts = float(stripped)
+                else:
+                    try:
+                        signal_bar_open_ts = datetime.fromisoformat(
+                            signal_bar_open_ts.replace("Z", "+00:00")
+                        )
+                    except Exception:
+                        signal_bar_open_ts = None
+            if isinstance(signal_bar_open_ts, (int, float)):
                 signal_bar_open_ts = datetime.fromtimestamp(
                     signal_bar_open_ts / 1000 if signal_bar_open_ts > 1e12 else signal_bar_open_ts,
                     tz=timezone.utc,
