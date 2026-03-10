@@ -255,7 +255,10 @@ class OpportunitySimulator:
                 return bool(raw.get("exit_settler"))
             return False
 
+        settler_results = [(opp.get("id"), opp.get("setup_id"), _has_exit_settler(opp)) for opp in opportunities[:5]]
+        logger.info("Pre-settled check sample (first 5): %s", settler_results)
         all_pre_settled = all(_has_exit_settler(opp) for opp in opportunities)
+        logger.info("all_pre_settled=%s for %d opps", all_pre_settled, len(opportunities))
 
         ohlcv_cache: dict = {}
         if not all_pre_settled:
