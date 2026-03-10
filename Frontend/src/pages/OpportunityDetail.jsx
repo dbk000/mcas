@@ -327,13 +327,13 @@ export default function OpportunityDetail() {
           )}
 
           {/* Computation Trace */}
-          {opp.trace && (
+          {(opp.trace || opp.sim_trace) && (
             <Card>
               <CardHeader>
                 <CardTitle>Computation Trace</CardTitle>
               </CardHeader>
               <CardContent>
-                <TraceViewer trace={opp.trace} />
+                <TraceViewer trace={opp.trace} simTrace={opp.sim_trace} />
               </CardContent>
             </Card>
           )}
@@ -371,6 +371,16 @@ export default function OpportunityDetail() {
               {!isLive && <DataRow label="Decision" value={opp.decision || '\u2014'} />}
               {!isLive && <DataRow label="Signal ID" value={opp.signal_id || '\u2014'} />}
               <DataRow label="Source" value={opp.source === 'redis' ? 'Redis (Live)' : 'Database'} />
+              {payload.early_exit_flagged && (
+                <DataRow label="Early Exit" value={
+                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-900/50 text-amber-300 border border-amber-700/50">
+                    {payload.early_exit_reason || 'review'}
+                    {payload.early_exit_unrealized_pct != null && (
+                      <span className="ml-1">({payload.early_exit_unrealized_pct}%)</span>
+                    )}
+                  </span>
+                } />
+              )}
             </CardContent>
           </Card>
 

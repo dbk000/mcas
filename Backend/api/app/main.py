@@ -1475,10 +1475,18 @@ def get_opportunity(opp_id: int):
     with _pool_get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute("""
-                SELECT id, signal_id, symbol, timeframe, setup_id, decision,
-                       score, reason, payload_json, status, updated_ts, trace_json
-                FROM opportunities
-                WHERE id = %s;
+                SELECT o.id, o.signal_id, o.symbol, o.timeframe, o.setup_id, o.decision,
+                       o.score, o.reason, o.payload_json, o.status, o.updated_ts, o.trace_json,
+                       sr.trace_json AS sim_trace
+                FROM opportunities o
+                LEFT JOIN LATERAL (
+                    SELECT trace_json
+                    FROM simulation_results
+                    WHERE opportunity_id = o.id
+                    ORDER BY created_at DESC
+                    LIMIT 1
+                ) sr ON TRUE
+                WHERE o.id = %s;
             """, (opp_id,))
             r_ = cur.fetchone()
 
@@ -1490,6 +1498,15 @@ def get_opportunity(opp_id: int):
     # trace_json is JSONB so psycopg returns it as dict already
     if isinstance(trace, str):
         trace = json.loads(trace)
+
+    # Simulation trace (TEXT column — always needs JSON parse)
+    sim_trace = None
+    if r_[12]:
+        try:
+            sim_trace = json.loads(r_[12]) if isinstance(r_[12], str) else r_[12]
+        except Exception:
+            sim_trace = None
+
     return envelope({
         "id": r_[0],
         "signal_id": r_[1],
@@ -1505,6 +1522,7 @@ def get_opportunity(opp_id: int):
         "candle_ts": r_[10].isoformat() if r_[10] else None,
         "updated_ts": r_[10].isoformat() if r_[10] else None,
         "trace": trace,
+        "sim_trace": sim_trace,
     }, t0)
 
 
