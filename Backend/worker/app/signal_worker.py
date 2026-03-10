@@ -1508,18 +1508,28 @@ class SignalWorker:
                 "microstructure": micro_payload,
             }
 
+            # S9 hold = 48h from candle close.
+            # hour_start_ms is the 1h bar's open time. Candle close = hour_start + 1h.
+            # action_by_ts = candle_close + 48h = hour_start + 49h.
+            payload["action_by_ts"] = (
+                datetime.fromtimestamp(hour_start_ms / 1000, tz=timezone.utc)
+                + timedelta(hours=49)
+            ).isoformat()
+
             # If tape says SKIP, still store the signal but at lower score
             final_score = signal.setup_score
             if micro_ctx and micro_ctx.entry_type == "SKIP":
                 final_score = signal.setup_score * 0.5
                 payload["skip_reason"] = micro_ctx.reason
 
-            # DXY regime gate: soft penalty/boost based on dollar strength
-            dxy_mult = get_dxy_multiplier(self.r)
-            final_score = min(final_score * dxy_mult, 1.0)
+            # S9 HONESTY: Post-gate score modifiers removed.
+            # FIFO proof (D1 walk-forward) showed ranking is mathematically
+            # impossible when the evaluator captures all signal. DXY/capacity
+            # belong as gates (hard block) or nowhere — not as score multipliers.
+            # If these carry real predictive value, promote them to evaluator
+            # gates in s9_short_reversion.py — don't apply them post-gate.
+            # See STRATEGY_TRACE_v1_1_S9.md Finding #3.
 
-            # Capacity-aware ranking: penalize low-volume symbols
-            final_score = self._capacity_adjusted_score(symbol, final_score)
             payload["setup_score"] = final_score
 
             # Congestion control: check daily budget before emitting

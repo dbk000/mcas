@@ -28,6 +28,30 @@ from ohlcv_backfill import backfill_for_simulation
 
 logger = logging.getLogger(__name__)
 
+# ---------------------------------------------------------------------------
+# Fix 6 (S9 Honesty): Tiered exit walk-forward granularity
+# ---------------------------------------------------------------------------
+# Instead of walking exits at the strategy's native timeframe (1h for S9,
+# 1d for D1), use higher-resolution bars to detect intrabar stop/TP hits.
+# The direction of PF change is genuinely unknown — §0.1: measure, don't guess.
+
+EXIT_WALK_TIMEFRAME: dict[str, str] = {
+    "1d": "5m",
+    "4h": "5m",
+    "1h": "1m",
+    "15m": "1m",
+    "5m": "1m",
+}
+
+# Duration of one bar in seconds, for converting bar counts to elapsed time
+TIMEFRAME_SECONDS: dict[str, int] = {
+    "1m": 60, "5m": 300, "15m": 900, "30m": 1800,
+    "1h": 3600, "4h": 14400, "1d": 86400,
+}
+
+# Minimum exit-resolution bars needed; fall back to native if fewer
+MIN_EXIT_BARS = 10
+
 # Keep simulation defaults centralized so worker/API callers cannot drift from
 # the research baseline by accident.
 SIM_DEFAULT_MAX_BARS_FORWARD = 200
@@ -250,6 +274,8 @@ class OpportunitySimulator:
         Compute the OHLCV date range needed for each (symbol, timeframe) pair.
 
         Groups opportunities and finds min start_ts and max end_ts for batch loading.
+        Includes BOTH native-timeframe bars (for entry selection) AND exit-resolution
+        bars (for the exit walk) — Fix 6 tiered exit granularity.
         """
         ranges: dict[str, tuple[datetime, datetime]] = {}
 
@@ -267,7 +293,6 @@ class OpportunitySimulator:
         for opp in opportunities:
             symbol = opp.get("symbol", "")
             timeframe = opp.get("timeframe", "1h")
-            key = f"{symbol}_{timeframe}"
 
             # Opportunity timestamp
             opp_ts = opp.get("created_ts")
@@ -280,18 +305,33 @@ class OpportunitySimulator:
             if opp_ts.tzinfo is None:
                 opp_ts = opp_ts.replace(tzinfo=timezone.utc)
 
-            # Calculate end ts (opp_ts + max_bars_forward bars)
+            # Calculate end ts (opp_ts + max_bars_forward bars at native resolution)
             bar_delta = tf_delta.get(timeframe, timedelta(hours=1))
             end_ts = opp_ts + (bar_delta * (self.config.max_bars_forward + 10))
 
-            if key not in ranges:
-                ranges[key] = (opp_ts, end_ts)
+            # Native-timeframe range (for entry bar selection)
+            native_key = f"{symbol}_{timeframe}"
+            if native_key not in ranges:
+                ranges[native_key] = (opp_ts, end_ts)
             else:
-                existing_start, existing_end = ranges[key]
-                ranges[key] = (
+                existing_start, existing_end = ranges[native_key]
+                ranges[native_key] = (
                     min(existing_start, opp_ts),
                     max(existing_end, end_ts),
                 )
+
+            # Exit-resolution range (for exit walk — Fix 6)
+            exit_tf = EXIT_WALK_TIMEFRAME.get(timeframe)
+            if exit_tf and exit_tf != timeframe:
+                exit_key = f"{symbol}_{exit_tf}"
+                if exit_key not in ranges:
+                    ranges[exit_key] = (opp_ts, end_ts)
+                else:
+                    existing_start, existing_end = ranges[exit_key]
+                    ranges[exit_key] = (
+                        min(existing_start, opp_ts),
+                        max(existing_end, end_ts),
+                    )
 
         return ranges
 
@@ -753,6 +793,45 @@ class OpportunitySimulator:
                 one_event_per_bar=self.config.one_event_per_bar,
             )
 
+        # --- Fix 6: Select exit-resolution bars for the exit walk ---
+        # Use higher-resolution bars to detect intrabar stop/TP hits.
+        # Entry bar selection (above) uses native-timeframe bars.
+        # Exit walk uses tiered resolution (1m for 1h, 5m for 1d, etc.)
+        exit_tf = EXIT_WALK_TIMEFRAME.get(timeframe)
+        exit_tf_used = timeframe  # Actual exit TF used (may fall back)
+        strategy_tf_seconds = TIMEFRAME_SECONDS.get(timeframe, 3600)
+
+        exit_bars = None
+        exit_start_idx = None
+
+        if exit_tf and exit_tf != timeframe:
+            exit_key = f"{symbol}_{exit_tf}"
+            candidate_bars = ohlcv_cache.get(exit_key, [])
+
+            if len(candidate_bars) >= MIN_EXIT_BARS:
+                # Find first exit-resolution bar at or after entry bar's timestamp
+                entry_bar_ts = entry_bar["bar_start_ts"]
+                if hasattr(entry_bar_ts, 'replace') and entry_bar_ts.tzinfo is None:
+                    entry_bar_ts = entry_bar_ts.replace(tzinfo=timezone.utc)
+
+                for j, ebar in enumerate(candidate_bars):
+                    ebar_ts = ebar["bar_start_ts"]
+                    if hasattr(ebar_ts, 'replace') and ebar_ts.tzinfo is None:
+                        ebar_ts = ebar_ts.replace(tzinfo=timezone.utc)
+                    if ebar_ts >= entry_bar_ts:
+                        exit_start_idx = j
+                        break
+
+                if exit_start_idx is not None:
+                    exit_bars = candidate_bars
+                    exit_tf_used = exit_tf
+
+        # Fallback: use native-timeframe bars for exit walk
+        if exit_bars is None:
+            exit_bars = bars
+            exit_start_idx = entry_bar_idx
+            exit_tf_used = timeframe
+
         # Walk forward through bars checking for exit.
         # Align with backtest/paper behavior: TP1 can be a partial close
         # (50%) with a runner to TP2 and stop moved to breakeven.
@@ -761,7 +840,7 @@ class OpportunitySimulator:
         exit_reason = None
         exit_price = None
         exit_ts = None
-        bars_held = 0
+        bars_held = 0  # In strategy-timeframe units (computed from elapsed time)
         sim_stop_price = stop_price
 
         remaining_size = position_size
@@ -772,6 +851,7 @@ class OpportunitySimulator:
         realized_gross = 0.0
         realized_exit_fees = 0.0
         fee_bps = self.config.fee_taker_bps
+        # Slippage still references STRATEGY timeframe, not exit walk timeframe
         exit_slip_bps = self._resolve_slippage_bps(timeframe, is_entry=False)
 
         # MAE/MFE tracking (using high/low, not close)
@@ -780,16 +860,32 @@ class OpportunitySimulator:
         mae_bar = 0
         mfe_bar = 0
 
-        max_bar_idx = min(
-            entry_bar_idx + self.config.max_bars_forward,
-            len(bars) - 1
-        )
+        # Compute max forward seconds from native-timeframe bar count
+        max_forward_seconds = self.config.max_bars_forward * strategy_tf_seconds
 
-        for i in range(entry_bar_idx, max_bar_idx + 1):
-            bar = bars[i]
-            is_entry_bar = (i == entry_bar_idx)
-            if not is_entry_bar:
-                bars_held += 1
+        # Entry timestamp for elapsed time computation
+        entry_ts_for_elapsed = entry_bar["bar_start_ts"]
+        if hasattr(entry_ts_for_elapsed, 'replace') and entry_ts_for_elapsed.tzinfo is None:
+            entry_ts_for_elapsed = entry_ts_for_elapsed.replace(tzinfo=timezone.utc)
+
+        last_walked_idx = exit_start_idx
+        for i in range(exit_start_idx, len(exit_bars)):
+            bar = exit_bars[i]
+            bar_ts = bar["bar_start_ts"]
+            if hasattr(bar_ts, 'replace') and bar_ts.tzinfo is None:
+                bar_ts = bar_ts.replace(tzinfo=timezone.utc)
+
+            # Fix 6c: Compute elapsed time in strategy-timeframe units
+            elapsed_seconds = (bar_ts - entry_ts_for_elapsed).total_seconds()
+            elapsed_strategy_bars = int(elapsed_seconds / strategy_tf_seconds)
+
+            # Check max forward limit (time-based, not bar-count)
+            if elapsed_seconds > max_forward_seconds:
+                break
+
+            last_walked_idx = i
+            is_entry_bar = (i == exit_start_idx and elapsed_seconds < strategy_tf_seconds)
+            bars_held = elapsed_strategy_bars
 
             # Update MAE/MFE using high/low (captures intra-bar excursions)
             if direction == "long":
@@ -815,7 +911,7 @@ class OpportunitySimulator:
                 tp1_price=tp1_price,
                 tp2_price=tp2_price,
                 r_value=actual_r_value,
-                bars_held=bars_held,
+                bars_held=elapsed_strategy_bars,
                 max_bars=time_stop_bars,
                 high_water_mark=hwm,
                 half_r_touched=half_r_touched,
@@ -862,9 +958,9 @@ class OpportunitySimulator:
                 exit_ts = leg_exit_ts
                 break
 
-        # If no exit triggered, force close at last bar's close
+        # If no exit triggered, force close at last walked bar's close
         if exit_reason is None:
-            last_bar = bars[max_bar_idx] if max_bar_idx < len(bars) else bars[-1]
+            last_bar = exit_bars[last_walked_idx] if exit_bars else bars[-1]
             exit_reason = "TIME_STOP"
             exit_price = last_bar["close"]
             exit_ts = last_bar["bar_start_ts"]
@@ -989,6 +1085,99 @@ class OpportunitySimulator:
         if result.tp_invalidated and result.trace_json:
             result.trace_json["tp_invalidated"] = True
             result.trace_json["tp_invalidation_reason"] = result.tp_invalidation_reason
+
+        # Fix 6: Log exit timeframe used for this simulation
+        if result.trace_json:
+            result.trace_json["exit_tf_used"] = exit_tf_used
+
+        # --- Kline Lineage (Glass Box causality proof) ---
+        if result.trace_json:
+            # Signal phase: the bar that generated this opportunity
+            signal_bar_open_ts = payload.get("bar_start_ts")
+            if isinstance(signal_bar_open_ts, str):
+                try:
+                    signal_bar_open_ts = datetime.fromisoformat(
+                        signal_bar_open_ts.replace("Z", "+00:00")
+                    )
+                except Exception:
+                    signal_bar_open_ts = None
+            elif isinstance(signal_bar_open_ts, (int, float)):
+                signal_bar_open_ts = datetime.fromtimestamp(
+                    signal_bar_open_ts / 1000 if signal_bar_open_ts > 1e12 else signal_bar_open_ts,
+                    tz=timezone.utc,
+                )
+
+            signal_bar_close_ts = None
+            if signal_bar_open_ts is not None:
+                if hasattr(signal_bar_open_ts, 'replace') and signal_bar_open_ts.tzinfo is None:
+                    signal_bar_open_ts = signal_bar_open_ts.replace(tzinfo=timezone.utc)
+                signal_bar_close_ts = signal_bar_open_ts + timedelta(seconds=strategy_tf_seconds)
+
+            # Decision timestamp = opportunity created_ts
+            decision_ts = opp_ts
+
+            # Entry bar timestamp
+            entry_bar_ts = result.entry_ts
+            if entry_bar_ts is not None and hasattr(entry_bar_ts, 'replace') and entry_bar_ts.tzinfo is None:
+                entry_bar_ts = entry_bar_ts.replace(tzinfo=timezone.utc)
+
+            # Exit bar timestamp
+            exit_bar_ts = result.exit_ts if result.exit_ts is not None else exit_ts
+            if exit_bar_ts is not None and hasattr(exit_bar_ts, 'replace') and exit_bar_ts.tzinfo is None:
+                exit_bar_ts = exit_bar_ts.replace(tzinfo=timezone.utc)
+
+            # Three causality checks
+            signal_causal = (
+                signal_bar_close_ts is not None
+                and decision_ts is not None
+                and signal_bar_close_ts <= decision_ts
+            )
+            # Entry causal ref is signal_bar_close, not decision_ts
+            # (S9 micro entries can fill between bar_close and decision_ts)
+            entry_causal = (
+                entry_bar_ts is not None
+                and signal_bar_close_ts is not None
+                and entry_bar_ts >= signal_bar_close_ts
+            )
+            exit_causal = (
+                exit_bar_ts is not None
+                and entry_bar_ts is not None
+                and exit_bar_ts >= entry_bar_ts
+            )
+
+            def _ts_iso(ts):
+                if ts is None:
+                    return None
+                if hasattr(ts, 'isoformat'):
+                    return ts.isoformat()
+                return str(ts)
+
+            latency_ms = None
+            if signal_bar_close_ts and decision_ts:
+                latency_ms = int((decision_ts - signal_bar_close_ts).total_seconds() * 1000)
+
+            result.trace_json["kline_lineage"] = {
+                "v": "1.0",
+                "signal": {
+                    "bar_open_ts": _ts_iso(signal_bar_open_ts),
+                    "bar_close_ts": _ts_iso(signal_bar_close_ts),
+                    "decision_ts": _ts_iso(decision_ts),
+                    "latency_ms": latency_ms,
+                    "causal": signal_causal,
+                },
+                "entry": {
+                    "bar_ts": _ts_iso(entry_bar_ts),
+                    "signal_bar_close_ts": _ts_iso(signal_bar_close_ts),
+                    "causal": entry_causal,
+                },
+                "exit": {
+                    "bar_ts": _ts_iso(exit_bar_ts),
+                    "exit_reason": result.exit_reason,
+                    "entry_bar_ts": _ts_iso(entry_bar_ts),
+                    "causal": exit_causal,
+                },
+                "causality_verified": signal_causal and entry_causal and exit_causal,
+            }
 
         return result
 

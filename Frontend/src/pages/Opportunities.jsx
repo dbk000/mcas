@@ -891,6 +891,13 @@ function OpportunityCard({
             </div>
           </div>
 
+          {/* Early exit flag (S9 position monitor) */}
+          {payload.early_exit_flagged && (
+            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-900/50 text-amber-300 border border-amber-700/50">
+              Early Exit: {payload.early_exit_reason || 'review'}
+            </span>
+          )}
+
           {/* Setup and score */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
