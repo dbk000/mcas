@@ -499,7 +499,17 @@ class OpportunitySimulator:
             else:
                 _entry_ts = opp_ts
 
-            _entry_px = payload.get("entry_price", 0)
+            # Prefer microstructure tape entry when available (D1/D2/S9 overlay)
+            _micro_ps = payload.get("microstructure") if isinstance(payload, dict) else None
+            _use_micro_ps = (
+                isinstance(_micro_ps, dict)
+                and _micro_ps.get("entry_type") not in (None, "SKIP")
+                and _micro_ps.get("suggested_entry_price") is not None
+            )
+            _entry_px = (
+                _micro_ps["suggested_entry_price"] if _use_micro_ps
+                else payload.get("entry_price", 0)
+            )
             _exit_px = payload.get("exit_price", 0)
             _stop_px = payload.get("stop_price", 0)
             _pnl_pct = payload.get("pnl_after_costs_pct", payload.get("pnl_pct", 0))
@@ -677,7 +687,7 @@ class OpportunitySimulator:
         result.r_value = r_value
 
         # Determine fill model: NEXT_OPEN (default) or PAYLOAD_ENTRY.
-        # S9 has sub-bar microstructure entry — the payload contains a precise
+        # Sub-bar microstructure entry — the payload contains a precise
         # entry price derived from 1s tape analysis at +300s after the hourly
         # close. Using next bar's open would place entry ~55min late,
         # destroying the strategy's math.
