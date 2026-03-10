@@ -256,15 +256,24 @@ class OpportunitySimulator:
                 return bool(raw.get("exit_settler"))
             return False
 
-        all_pre_settled = all(_has_exit_settler(opp) for opp in opportunities)
+        settled = [opp for opp in opportunities if _has_exit_settler(opp)]
+        unsettled = [opp for opp in opportunities if not _has_exit_settler(opp)]
+        logger.info(
+            "Pre-settled: %d/%d opps (skipping OHLCV for settled)",
+            len(settled), len(opportunities),
+        )
 
         ohlcv_cache: dict = {}
-        if not all_pre_settled:
-            # Group by (symbol, timeframe) and compute OHLCV date ranges needed
-            symbol_tf_ranges = self._compute_ohlcv_ranges(opportunities)
+        self._backfill_degraded = False
+        if unsettled:
+            # Only compute OHLCV ranges for non-settled opps
+            symbol_tf_ranges = self._compute_ohlcv_ranges(unsettled)
+            logger.info(
+                "OHLCV needed for %d unsettled opps (%d symbol/tf pairs)",
+                len(unsettled), len(symbol_tf_ranges),
+            )
 
             # Pre-sim backfill: fill any OHLCV gaps before loading
-            self._backfill_degraded = False
             try:
                 backfill_for_simulation(self.database_url, symbol_tf_ranges)
             except Exception as e:
@@ -274,8 +283,7 @@ class OpportunitySimulator:
             # Batch load OHLCV data
             ohlcv_cache = self._batch_load_ohlcv(symbol_tf_ranges)
         else:
-            logger.info("All %d opps are pre-settled — skipping OHLCV backfill+load", len(opportunities))
-            self._backfill_degraded = False
+            logger.info("All %d opps are pre-settled — skipping OHLCV entirely", len(opportunities))
 
         # Simulate each opportunity
         results = []
