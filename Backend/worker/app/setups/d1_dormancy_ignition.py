@@ -579,7 +579,7 @@ class D1Evaluator(SetupBase):
             typical_win_rate=0.35,
             typical_r_multiple=4.0,
             min_bars_required=201,
-            max_concurrent=3,
+            max_concurrent=15,
             liquidity_tiers=[
                 LiquidityTier(name="micro_cap", min_24h_volume_usd=0, max_position_pct=1.0),
                 LiquidityTier(name="small_cap", min_24h_volume_usd=500_000, max_position_pct=2.0),
