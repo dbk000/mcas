@@ -1,5 +1,0 @@
-name: mcas-dev
-services:
-  api:
-    ports: !override
-      - "8003:8000"

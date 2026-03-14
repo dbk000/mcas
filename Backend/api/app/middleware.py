@@ -9,11 +9,13 @@ Catches unhandled exceptions and logs them with full traceback.
 import time
 import uuid
 import logging
+from contextvars import ContextVar
 
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 
-from json_logging import ctx_correlation_id
+# Context var for correlation ID propagation across async boundaries
+ctx_correlation_id: ContextVar[str] = ContextVar("correlation_id", default="")
 
 logger = logging.getLogger("api.access")
 

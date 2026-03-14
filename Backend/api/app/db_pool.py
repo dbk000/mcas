@@ -1,54 +1,44 @@
 """
-Database Connection Pool
-========================
+Database Connection Pool (API Layer)
+=====================================
 
-Singleton ConnectionPool for the MCAS API service.
-Replaces per-request psycopg.connect() calls.
-
-Usage:
-    from db_pool import get_pool, get_conn, pool_stats
-
-    # Context manager (recommended)
-    with get_conn() as conn:
-        with conn.cursor() as cur:
-            cur.execute("SELECT 1")
-
-    # Or get pool directly
-    pool = get_pool()
+Thin delegate to governance.persistence for API-local pool management.
+Falls back to local singleton pool if governance layer not available.
 """
 
-import os
 import logging
 from contextlib import contextmanager
 
 from psycopg_pool import ConnectionPool
 
+from governance.bootstrap import get_config
+
 logger = logging.getLogger(__name__)
 
 _pool: ConnectionPool | None = None
-
-DB_POOL_MIN = int(os.getenv("DB_POOL_MIN", "2"))
-DB_POOL_MAX = int(os.getenv("DB_POOL_MAX", "10"))
-DB_POOL_TIMEOUT = float(os.getenv("DB_POOL_TIMEOUT", "30.0"))
 
 
 def get_pool() -> ConnectionPool:
     """Get or create the singleton connection pool."""
     global _pool
     if _pool is None:
-        database_url = os.getenv("DATABASE_URL")
+        cfg = get_config().Worker
+        database_url = cfg.DATABASE_URL
         if not database_url:
             raise RuntimeError("DATABASE_URL not set")
+        pool_min = cfg.DB_POOL_MIN
+        pool_max = cfg.DB_POOL_MAX
+        pool_timeout = cfg.DB_POOL_TIMEOUT
         _pool = ConnectionPool(
             conninfo=database_url,
-            min_size=DB_POOL_MIN,
-            max_size=DB_POOL_MAX,
-            timeout=DB_POOL_TIMEOUT,
+            min_size=pool_min,
+            max_size=pool_max,
+            timeout=pool_timeout,
             open=True,
         )
         logger.info(
             "Connection pool created",
-            extra={"min_size": DB_POOL_MIN, "max_size": DB_POOL_MAX},
+            extra={"min_size": pool_min, "max_size": pool_max},
         )
     return _pool
 
@@ -65,10 +55,11 @@ def pool_stats() -> dict:
     """Get pool statistics for health checks."""
     if _pool is None:
         return {"status": "not_initialized"}
+    cfg = get_config().Worker
     stats = _pool.get_stats()
     return {
-        "pool_min": DB_POOL_MIN,
-        "pool_max": DB_POOL_MAX,
+        "pool_min": cfg.DB_POOL_MIN,
+        "pool_max": cfg.DB_POOL_MAX,
         "pool_size": stats.get("pool_size", 0),
         "pool_available": stats.get("pool_available", 0),
         "requests_waiting": stats.get("requests_waiting", 0),

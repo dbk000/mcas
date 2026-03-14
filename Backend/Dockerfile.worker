@@ -1,0 +1,10 @@
+FROM python:3.12-slim
+WORKDIR /backend
+COPY requirements-worker.txt /backend/requirements.txt
+RUN pip install --no-cache-dir -r /backend/requirements.txt
+COPY core_logic /backend/core_logic
+COPY governance /backend/governance
+COPY indicators /backend/indicators
+COPY mcas_governance /backend/mcas_governance
+ENV PYTHONPATH=/backend
+CMD ["python", "-u", "governance/worker.py"]

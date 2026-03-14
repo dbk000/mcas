@@ -18,8 +18,8 @@ services:
 
   api:
     build:
-      context: ./api
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: Dockerfile.api
     restart: unless-stopped
     ports:
       - "8002:8000"
@@ -33,8 +33,8 @@ services:
 
   worker:
     build:
-      context: ./worker
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: Dockerfile.worker
     restart: unless-stopped
     env_file:
       - .env
@@ -75,22 +75,22 @@ services:
 
   ingestor:
     build:
-      context: ./worker
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: Dockerfile.worker
     restart: unless-stopped
     env_file:
       - .env
     environment:
       SERVICE_NAME: ingestor
-    command: ["python", "-u", "ingestor.py"]
+    command: ["python", "-u", "governance/ingestor.py"]
     mem_limit: 512m
     networks:
       - backend
 
   indicator_worker_0:
     build:
-      context: ./worker
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: Dockerfile.worker
     restart: unless-stopped
     env_file:
       - .env
@@ -98,15 +98,15 @@ services:
       SERVICE_NAME: indicator_worker
       WORKER_INDEX: "0"
       N_WORKERS: "2"
-    command: ["python", "-u", "indicator_worker.py"]
+    command: ["python", "-u", "governance/indicator_worker.py"]
     mem_limit: 1g
     networks:
       - backend
 
   indicator_worker_1:
     build:
-      context: ./worker
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: Dockerfile.worker
     restart: unless-stopped
     env_file:
       - .env
@@ -114,15 +114,15 @@ services:
       SERVICE_NAME: indicator_worker
       WORKER_INDEX: "1"
       N_WORKERS: "2"
-    command: ["python", "-u", "indicator_worker.py"]
+    command: ["python", "-u", "governance/indicator_worker.py"]
     mem_limit: 1g
     networks:
       - backend
 
   signal_worker_0:
     build:
-      context: ./worker
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: Dockerfile.worker
     restart: unless-stopped
     env_file:
       - .env
@@ -130,15 +130,15 @@ services:
       SERVICE_NAME: signal_worker
       WORKER_INDEX: "0"
       N_WORKERS: "2"
-    command: ["python", "-u", "signal_worker.py"]
+    command: ["python", "-u", "governance/signal_worker.py"]
     mem_limit: 512m
     networks:
       - backend
 
   signal_worker_1:
     build:
-      context: ./worker
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: Dockerfile.worker
     restart: unless-stopped
     env_file:
       - .env
@@ -146,36 +146,36 @@ services:
       SERVICE_NAME: signal_worker
       WORKER_INDEX: "1"
       N_WORKERS: "2"
-    command: ["python", "-u", "signal_worker.py"]
+    command: ["python", "-u", "governance/signal_worker.py"]
     mem_limit: 512m
     networks:
       - backend
 
   unicorn_pipeline:
     build:
-      context: ./worker
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: Dockerfile.worker
     restart: unless-stopped
     env_file:
       - .env
     environment:
       SERVICE_NAME: unicorn_pipeline
       UNICORN_PIPELINE_INTERVAL_S: "300"
-    command: ["python", "-u", "unicorn_pipeline.py"]
+    command: ["python", "-u", "governance/unicorn_pipeline.py"]
     mem_limit: 512m
     networks:
       - backend
 
   ohlcv_persister:
     build:
-      context: ./worker
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: Dockerfile.worker
     restart: unless-stopped
     env_file:
       - .env
     environment:
       SERVICE_NAME: ohlcv_persister
-    command: ["python", "-u", "ohlcv_persister.py"]
+    command: ["python", "-u", "governance/ohlcv_persister.py"]
     mem_limit: 256m
     networks:
       - backend
@@ -198,8 +198,8 @@ services:
 
   derivatives_collector:
     build:
-      context: ./worker
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: Dockerfile.worker
     restart: unless-stopped
     env_file:
       - .env
@@ -216,8 +216,8 @@ services:
 
   onchain_collector:
     build:
-      context: ./worker
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: Dockerfile.worker
     restart: unless-stopped
     env_file:
       - .env
@@ -268,8 +268,8 @@ services:
 
   equities_pipeline:
     build:
-      context: ./worker
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: Dockerfile.worker
     restart: unless-stopped
     env_file:
       - .env
@@ -285,14 +285,14 @@ services:
 
   equities_strategy_worker:
     build:
-      context: ./worker
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: Dockerfile.worker
     restart: unless-stopped
     env_file:
       - .env
     environment:
       SERVICE_NAME: equities_strategy_worker
-    command: ["python", "-u", "/app/equities_strategy_worker.py"]
+    command: ["python", "-u", "governance/equities_strategy_worker.py"]
     volumes:
       - ./scripts:/scripts
     mem_limit: 1g
@@ -304,8 +304,8 @@ services:
 
   equities_task_worker:
     build:
-      context: ./worker
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: Dockerfile.worker
     restart: unless-stopped
     env_file:
       - .env
@@ -320,8 +320,8 @@ services:
 
   d2_paper_trader:
     build:
-      context: ./worker
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: Dockerfile.worker
     restart: unless-stopped
     env_file:
       - .env
@@ -338,7 +338,7 @@ services:
       D2_CLUSTER_POLL_S: "30"
       D2_MAX_CONCURRENT: "3"
       D2_FNG_SOFT_GATE: "log_only"
-    command: ["python", "-u", "d2_paper_trader.py"]
+    command: ["python", "-u", "governance/d2_paper_trader.py"]
     mem_limit: 1g
     depends_on:
       - postgres
@@ -348,8 +348,8 @@ services:
 
   expired_opp_exit_settler:
     build:
-      context: ./worker
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: Dockerfile.worker
     restart: unless-stopped
     env_file:
       - .env

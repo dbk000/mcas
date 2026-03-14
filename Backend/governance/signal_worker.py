@@ -1,0 +1,1818 @@
+"""
+Signal Worker — Redis indicators -> Redis signals.
+
+Separate Docker service (invariant #2). Consumes indicators_ready stream
+events, reads indicator snapshots with mandatory m1/snap/m2 consistency
+(invariant #22), runs S1/S2 evaluators, stores signals in Redis ZSETs.
+
+BTC stale -> degrade gracefully (invariant #12).
+"""
+
+import sys
+import json
+import time
+import logging
+from dataclasses import dataclass, asdict
+from datetime import datetime, timezone, timedelta
+
+import redis
+import psycopg
+
+from governance.persistence import PersistenceClient, RedisClient, get_governed_persistence
+from mcas_governance import LineageEnforcer
+
+# db_pool: governed import — get_conn for direct Postgres access
+def _pool_get_conn():
+    """Compatibility shim: returns a context-managed Postgres connection."""
+    return PersistenceClient.get_connection()
+
+from governance.cache_contract import (
+    read_fresh_snapshot, read_indicator_snapshot,
+    check_staleness, store_signal, prune_stale_signals,
+    ind_hist_key, setup_state_key, sig_meta_key, ind_meta_key,
+    b2s, b2f, symbol_partition, get_universe, get_timeframes,
+    is_cache_ready, get_candles_as_ohlcv,
+    SETUP_STATE_TTL_S, SIGNAL_MAX_AGE_S, RECONCILE_INTERVAL_S,
+    INDICATOR_HISTORY_SIZE, TF_SECONDS,
+    # Unicorn keys
+    get_embryo_active_symbols, read_unicorn_state,
+    unicorn_state_key, UNICORN_STATE_TTL_S,
+)
+import numpy as np
+from indicators.indicators import IndicatorSnapshot
+from core_logic.s9_short_reversion import S9Evaluator, S9Signal, S9State
+from core_logic.s10_macd_scalp import S10Evaluator, S10Signal
+from core_logic.u1_unicorn_ignition import U1Evaluator, U1State, U1Phase, U1Config, load_funding_rates
+from core_logic.d1_dormancy_ignition import D1Evaluator, D1State, D1Phase, D1Config, is_d1_excluded, get_social_mentions_count, get_social_silence_count, get_exchange_netflow
+from governance.setup_base import Direction
+from core_logic.setup_base import SetupBase
+from governance.bootstrap import (
+    get_config, get_strategy, get_lineage,
+    strategy_as_api_dict, strategy_active_setup_ids,
+    strategies_for_timeframe, strategy_get_multiplier,
+)
+from governance.config_registry import (
+    WorkerTypedConfig, D1TypedConfig, U1TypedConfig, S9TypedConfig, S10TypedConfig,
+)
+
+# LiveConfig: hot-reload from Pipeline
+class _LiveConfigCompat:
+    """Compatibility shim for LiveConfig (poll-based config reload)."""
+    def __init__(self, database_url, poll_interval_s=10.0):
+        self.database_url = database_url
+        self.poll_interval_s = poll_interval_s
+        self._cached_version = 0
+        self._last_check = 0.0
+
+    def has_changed(self) -> bool:
+        now = time.time()
+        if now - self._last_check < self.poll_interval_s:
+            return False
+        self._last_check = now
+        try:
+            with _pool_get_conn() as conn:
+                with conn.cursor() as cur:
+                    cur.execute("SELECT value FROM meta.config_version WHERE key = 'version' LIMIT 1")
+                    row = cur.fetchone()
+                    if row:
+                        new_ver = int(row[0])
+                        if new_ver != self._cached_version:
+                            self._cached_version = new_ver
+                            return True
+        except Exception:
+            pass
+        return False
+
+    def get_strategy_params(self, setup_id: str, force_reload: bool = False):
+        try:
+            with _pool_get_conn() as conn:
+                with conn.cursor() as cur:
+                    cur.execute("""
+                        SELECT nv.parameters
+                        FROM meta.node n
+                        JOIN meta.node_version nv ON nv.node_id = n.node_id
+                        WHERE lower(n.name) LIKE lower(%s)
+                          AND nv.status = 'deployed'
+                          AND nv.parameters IS NOT NULL
+                        ORDER BY nv.version_number DESC LIMIT 1
+                    """, (f"%{setup_id}%",))
+                    row = cur.fetchone()
+                    if row and row[0]:
+                        return row[0] if isinstance(row[0], dict) else json.loads(row[0])
+        except Exception:
+            pass
+        return None
+
+LiveConfig = _LiveConfigCompat
+
+from core_logic.microstructure import (
+    analyze_tape, analyze_exit_tape,
+    MicrostructureContext,
+)
+from governance.microstructure_fetcher import fetch_1s_klines_batch
+from governance.trace_context import TraceContext, TRACE_ENABLED
+from governance.dxy_regime import get_dxy_multiplier, DXY_REGIME_ENABLED
+
+logger = logging.getLogger("signal_worker")
+
+# ---------------------------------------------------------------------------
+# Config — resolved lazily from frozen ConfigRegistry (no os.getenv)
+# ---------------------------------------------------------------------------
+
+# Protocol constants (not config — these don't vary between environments)
+XREAD_BLOCK_MS = 5000
+XREAD_COUNT = 50
+PRUNE_INTERVAL_S = 300  # Prune stale signals every 5 min
+
+
+def _worker_cfg() -> WorkerTypedConfig:
+    """Return the frozen Worker config from the bootstrap registry."""
+    return get_config().Worker
+
+
+def _redis_url() -> str:
+    return _worker_cfg().REDIS_URL
+
+
+def _database_url() -> str:
+    return _worker_cfg().DATABASE_URL
+
+
+def _worker_index() -> int:
+    return _worker_cfg().WORKER_INDEX
+
+
+def _n_workers() -> int:
+    return _worker_cfg().N_WORKERS
+
+
+def _log_level() -> str:
+    return _worker_cfg().LOG_LEVEL
+
+
+def _consumer_name() -> str:
+    return f"sig-{_worker_index()}"
+
+
+def _symbol_quality_filter() -> bool:
+    return _worker_cfg().SYMBOL_QUALITY_FILTER
+
+
+def _signal_top_n_daily() -> int:
+    return _worker_cfg().SIGNAL_TOP_N_DAILY
+
+
+def _capacity_threshold_usd() -> float:
+    return _worker_cfg().CAPACITY_THRESHOLD_USD
+
+
+def _safe_attr(obj, name: str, default=None):
+    """Retrieve an attribute with a fallback, replacing getattr(obj, name, default)."""
+    try:
+        return obj.__getattribute__(name)
+    except AttributeError:
+        return default
+
+
+# ---------------------------------------------------------------------------
+# Logging
+# ---------------------------------------------------------------------------
+
+def setup_logging():
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setFormatter(logging.Formatter(
+        "%(asctime)s [%(name)s] %(levelname)s %(message)s",
+        datefmt="%Y-%m-%dT%H:%M:%S",
+    ))
+    root = logging.getLogger()
+    root.handlers.clear()
+    root.addHandler(handler)
+    level = logging.getLevelName(_log_level().upper())
+    root.setLevel(level if isinstance(level, int) else logging.INFO)
+
+
+# ---------------------------------------------------------------------------
+# State serialization helpers
+# ---------------------------------------------------------------------------
+
+def _serialize_state(state) -> str:
+    """Serialize setup state to JSON."""
+    from enum import Enum
+    from dataclasses import fields
+    d = {}
+    for f in fields(state):
+        v = getattr(state, f.name)
+        if isinstance(v, Enum):
+            d[f.name] = v.value
+        else:
+            d[f.name] = v
+    return json.dumps(d)
+
+
+# ---------------------------------------------------------------------------
+# Governance: sync TypedConfigRegistry after evaluator.update_config()
+# ---------------------------------------------------------------------------
+
+def _sync_typed_config_registry(setup_id: str, changed: dict) -> None:
+    """Re-register a strategy's TypedConfig in the registry after update_config.
+
+    The evaluator.update_config() method (core_logic, pure math) updates the
+    in-process config class attrs and returns a changed dict.  This governance
+    helper rebuilds the TypedConfig dataclass from the current class attrs and
+    registers it, keeping the TypedConfigRegistry consistent.
+    """
+    if setup_id == "D1":
+        from dataclasses import fields as dc_fields
+        # D1Config uses W_BTC_ADJ_RET; D1TypedConfig uses W_BTC_AD_RET.
+        _D1_ATTR_TO_FIELD = {"W_BTC_ADJ_RET": "W_BTC_AD_RET"}
+        _D1_FIELD_TO_ATTR = {v: k for k, v in _D1_ATTR_TO_FIELD.items()}
+
+        # Build D1TypedConfig from current D1Config class attrs
+        field_names = {f.name for f in dc_fields(D1TypedConfig)}
+        kwargs = {}
+        for fname in field_names:
+            # Translate TypedConfig field name -> D1Config attr name
+            attr_name = _D1_FIELD_TO_ATTR.get(fname, fname)
+            kwargs[fname] = getattr(D1Config, attr_name)
+        new_config = D1TypedConfig(**kwargs)
+        # NOTE: Hot-reload re-registration into the frozen registry is a tech-debt
+        # bridge.  The frozen ConfigRegistry doesn't support mutation after seal.
+        # For now, update the evaluator's in-process config (already done by
+        # update_config()), and log the change.  Full fix: restart-to-reload.
+        logger.info("D1 config synced (in-process only): %s", list(kwargs.keys()))
+    # Future strategies: elif setup_id == "U1": ...
+
+
+# ---------------------------------------------------------------------------
+# SignalWorker
+# ---------------------------------------------------------------------------
+
+class SignalWorker(LineageEnforcer):
+    """Consumes indicators_ready events, evaluates setups, stores signals.
+
+    Inherits LineageEnforcer: every governed payload is verified against the
+    active process seal. Foreign or unsealed payloads kill the process.
+    """
+
+    def __init__(self):
+        # Initialize lineage enforcement
+        from governance.bootstrap import get_lineage
+        super().__init__(get_lineage())
+        self._governed_persistence = get_governed_persistence()
+        # Invariant #24: decode_responses=True mandatory
+        self.r = redis.Redis.from_url(_redis_url(), decode_responses=True)
+        self.u1_evaluator = U1Evaluator()
+        self.s9_evaluator = S9Evaluator()
+        self.last_reconcile = 0.0
+        self.last_prune = 0.0
+        self._s9_last_evaluated_hour = 0  # Unix hour for S9 dedup
+        self._s9_last_position_check = 0.0  # Position monitor timestamp
+        # Per-worker consumer group: each worker instance gets ALL messages
+        # and filters by partition locally. Fixes the shared-group bug where
+        # ACK-ing another worker's message silently drops it.
+        self.group_name = f"signal_group_{_worker_index()}"
+        # Cache of EMBRYO_ACTIVE symbols (refreshed periodically)
+        self._embryo_active_cache: set[str] = set()
+        self._embryo_active_cache_ts = 0.0
+        # Symbol quality filter (excluded symbols cache, 5-min TTL)
+        self._symbol_quality_filter_enabled = _symbol_quality_filter()
+        self._excluded_symbols_cache: set[str] = set()
+        self._excluded_symbols_cache_ts: float = 0.0
+        self.s10_evaluator = S10Evaluator()
+        self.d1_evaluator = D1Evaluator()
+        self._d1_prev_states: dict[str, D1State] = {}  # keyed by "symbol:tf"
+        # LiveConfig: poll meta.config_version for hot-reload
+        wcfg = _worker_cfg()
+        db_url = _database_url()
+        self._live_config = LiveConfig(
+            database_url=db_url,
+            poll_interval_s=wcfg.CONFIG_POLL_INTERVAL_S,
+        ) if db_url else None
+        # Diagnostic counters (reset per logging cycle)
+        self._diag = {
+            "evaluated": 0, "snapshot_fail": 0, "candle_fail": 0,
+            "symbol_quality_excluded": 0,
+            "s10_signal": 0, "d1_signal": 0,
+            "s9_signal": 0, "s9_breadth_fail": 0,
+            "congestion_dropped": 0,
+        }
+        self._last_diag_log = 0.0
+        # 24h volume cache: {symbol: volume_usd}, refreshed every 5 min
+        self._volume_cache: dict[str, float] = {}
+        self._volume_cache_ts: float = 0.0
+
+    def run(self):
+        """Main loop."""
+        logger.info(f"Signal worker {_worker_index()}/{_n_workers()} starting")
+
+        # Register strategies into the StrategyRegistry — this is the sole
+        # authority for which strategies exist and which TFs they evaluate on.
+        # Passing self binds worker_evaluate callables at registration time.
+        from governance.strategy_registry import StrategyRegistry, register_all_strategies
+        register_all_strategies(worker=self)
+        logger.info("StrategyRegistry populated: %s", StrategyRegistry.active_setup_ids())
+
+        while not is_cache_ready(self.r):
+            logger.info("Waiting for cache:ready...")
+            time.sleep(5)
+
+        logger.info("Cache ready, starting stream consumption")
+
+        # Startup config sync: Pipeline is source of truth.
+        self._sync_node_parameters()
+
+        timeframes = get_timeframes(self.r)
+        if not timeframes:
+            timeframes = ["1m", "5m", "15m", "1h", "4h", "1d"]
+
+        # Create per-worker consumer group on each stream (idempotent)
+        for tf in timeframes:
+            stream = f"stream:indicators_ready:{tf}"
+            try:
+                self.r.xgroup_create(stream, self.group_name, id="0", mkstream=True)
+                logger.info(f"Created consumer group {self.group_name} on {stream}")
+            except Exception as e:
+                if "BUSYGROUP" not in str(e):
+                    raise
+
+        streams = {f"stream:indicators_ready:{tf}": ">" for tf in timeframes}
+
+        while True:
+            try:
+                results = self.r.xreadgroup(
+                    groupname=self.group_name,
+                    consumername=_consumer_name(),
+                    streams=streams,
+                    count=XREAD_COUNT,
+                    block=XREAD_BLOCK_MS,
+                )
+
+                if results:
+                    for stream_name, messages in results:
+                        tf = b2s(stream_name).split(":")[-1]
+                        for msg_id, fields in messages:
+                            self._process_event(tf, fields, msg_id, stream_name)
+
+                now = time.time()
+                self._maybe_hot_reload_config()
+
+                if now - self.last_reconcile > RECONCILE_INTERVAL_S:
+                    self._reconcile()
+                    self.last_reconcile = now
+
+                if now - self.last_prune > PRUNE_INTERVAL_S:
+                    self._prune_all()
+                    self.last_prune = now
+
+                self._maybe_evaluate_s9()
+                self._maybe_monitor_s9_positions()
+
+                if now - self._last_diag_log > 60 and self._diag["evaluated"] > 0:
+                    logger.info("Signal diagnostics: %s", self._diag)
+                    self._diag = {k: 0 for k in self._diag}
+                    self._last_diag_log = now
+
+            except redis.exceptions.ConnectionError as e:
+                logger.error(f"Redis connection error: {e}")
+                time.sleep(5)
+            except Exception as e:
+                logger.error(f"Unexpected error: {e}", exc_info=True)
+                time.sleep(1)
+
+    def _process_event(self, tf: str, fields: dict, msg_id, stream_name):
+        """Process a single indicators_ready event."""
+        symbol = b2s(fields.get("symbol", ""))
+        bar_start_ts = b2s(fields.get("bar_start_ts", ""))
+
+        if not symbol or not bar_start_ts:
+            self.r.xack(stream_name, self.group_name, msg_id)
+            return
+
+        if symbol_partition(symbol, _n_workers()) != _worker_index():
+            self.r.xack(stream_name, self.group_name, msg_id)
+            return
+
+        try:
+            self._evaluate_symbol(symbol, tf, bar_start_ts)
+        except Exception as e:
+            logger.error(f"Failed to evaluate {symbol}:{tf}: {e}", exc_info=True)
+
+        self.r.xack(stream_name, self.group_name, msg_id)
+
+    def _evaluate_symbol(self, symbol: str, tf: str, bar_start_ts: str = None):
+        """Run registered evaluators for a symbol/tf.
+
+        Dispatch is governed by StrategyRegistry.strategies_for_timeframe(tf).
+        Each registered strategy with matching timeframe_affinity gets evaluated.
+        """
+        self._diag["evaluated"] += 1
+
+        if self._is_symbol_excluded(symbol):
+            self._diag["symbol_quality_excluded"] += 1
+            return
+
+        snapshot, snap_ts = read_fresh_snapshot(
+            self.r, symbol, tf,
+            expected_bar_start_ts=bar_start_ts,
+        )
+        if snapshot is None:
+            self._diag["snapshot_fail"] += 1
+            logger.debug(f"Stale/inconsistent snapshot for {symbol}:{tf}, skipping")
+            return
+
+        snapshot.ohlcv = get_candles_as_ohlcv(self.r, symbol, tf)
+        if not snapshot.ohlcv:
+            self._diag["candle_fail"] += 1
+            logger.debug(f"No candles in Redis for {symbol}:{tf}, skipping")
+            return
+
+        # Registry-driven dispatch: evaluate all strategies registered for this TF
+        from governance.strategy_registry import StrategyRegistry
+        for setup_id, handler in StrategyRegistry.strategies_for_timeframe(tf):
+            if handler.worker_evaluate is None:
+                raise NotImplementedError(f"No worker_evaluate bound for strategy {setup_id}")
+            handler.worker_evaluate(symbol, tf, snapshot, bar_start_ts)
+
+    def _refresh_embryo_active_cache(self):
+        """Refresh cache of EMBRYO_ACTIVE symbols (every 60s)."""
+        now = time.time()
+        if now - self._embryo_active_cache_ts > 60:
+            try:
+                self._embryo_active_cache = {
+                    sym for sym, _ in get_embryo_active_symbols(self.r)
+                }
+                self._embryo_active_cache_ts = now
+            except Exception as e:
+                logger.debug(f"Failed to refresh embryo active cache: {e}")
+
+    def _refresh_excluded_symbols_cache(self):
+        """Refresh cache of excluded symbols from Redis (every 300s)."""
+        now = time.time()
+        if now - self._excluded_symbols_cache_ts > 300:
+            try:
+                members = self.r.smembers("symbol:excluded:quality")
+                self._excluded_symbols_cache = set(members) if members else set()
+                self._excluded_symbols_cache_ts = now
+            except Exception as e:
+                logger.debug(f"Failed to refresh excluded symbols cache: {e}")
+
+    def _is_symbol_excluded(self, symbol: str) -> bool:
+        """Check if symbol is excluded by quality filter."""
+        if not self._symbol_quality_filter_enabled:
+            return False
+        self._refresh_excluded_symbols_cache()
+        return symbol in self._excluded_symbols_cache
+
+    # ------------------------------------------------------------------
+    # Signal Congestion Control
+    # ------------------------------------------------------------------
+
+    def _daily_count_key(self) -> str:
+        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        return f"signals:daily_count:{today}"
+
+    def _get_daily_signal_count(self) -> int:
+        try:
+            val = self.r.get(self._daily_count_key())
+            return int(val) if val else 0
+        except Exception:
+            return 0
+
+    def _increment_daily_signal_count(self) -> int:
+        key = self._daily_count_key()
+        try:
+            new_val = self.r.incr(key)
+            if new_val == 1:
+                self.r.expire(key, 48 * 3600)
+            return new_val
+        except Exception:
+            return 0
+
+    def _is_budget_exhausted(self) -> bool:
+        top_n = _signal_top_n_daily()
+        if top_n <= 0:
+            return False
+        return self._get_daily_signal_count() >= top_n
+
+    def _try_emit_signal(self, symbol: str, tf: str, setup_id: str,
+                         calibrated_score: float) -> bool:
+        top_n = _signal_top_n_daily()
+        if top_n <= 0:
+            return True
+
+        current = self._get_daily_signal_count()
+        if current >= top_n:
+            self._diag["congestion_dropped"] += 1
+            logger.info(
+                "CONGESTION_DROP %s %s:%s score=%.3f budget=%d/%d",
+                setup_id, symbol, tf, calibrated_score,
+                current, top_n,
+            )
+            return False
+
+        self._increment_daily_signal_count()
+        return True
+
+    # ------------------------------------------------------------------
+    # Capacity-Aware Symbol Ranking
+    # ------------------------------------------------------------------
+
+    def _refresh_volume_cache(self):
+        now = time.time()
+        if now - self._volume_cache_ts < 300:
+            return
+
+        try:
+            all_symbols = get_universe(self.r)
+            vol_map = {}
+            for symbol in all_symbols:
+                candles = get_candles_as_ohlcv(self.r, symbol, "1h")
+                if not candles or len(candles) < 24:
+                    continue
+                recent = candles[-24:]
+                vol_usd = sum(c.close * c.volume for c in recent)
+                vol_map[symbol] = vol_usd
+
+            self._volume_cache = vol_map
+            self._volume_cache_ts = now
+        except Exception as e:
+            logger.debug("Failed to refresh volume cache: %s", e)
+
+    def _capacity_adjusted_score(self, symbol: str,
+                                  calibrated_score: float) -> float:
+        threshold = _capacity_threshold_usd()
+        if threshold <= 0:
+            return calibrated_score
+
+        self._refresh_volume_cache()
+        vol_24h = self._volume_cache.get(symbol, 0.0)
+
+        if vol_24h <= 0:
+            return calibrated_score
+
+        capacity_mult = min(1.0, vol_24h / threshold)
+        return calibrated_score * capacity_mult
+
+    def _evaluate_s10(self, symbol: str, tf: str, snapshot, bar_start_ts: str):
+        """Run S10 MACD Scalp evaluator on 5m bars."""
+        try:
+            state = self.s10_evaluator.compute_state(snapshot)
+            sig = self.s10_evaluator.evaluate_trigger(snapshot, state, symbol, tf)
+            if sig is None:
+                return
+
+            self._diag["s10_signal"] += 1
+
+            calib_mult = strategy_get_multiplier("S10")
+            calibrated_score = min(sig.setup_score * calib_mult, 1.0)
+
+            dxy_mult = get_dxy_multiplier(self.r)
+            calibrated_score = min(calibrated_score * dxy_mult, 1.0)
+
+            adjusted_score = self._capacity_adjusted_score(symbol, calibrated_score)
+
+            if not self._try_emit_signal(symbol, tf, "S10", adjusted_score):
+                return
+
+            payload = {
+                "setup_id": "S10",
+                "setup_name": "MACD Scalp v1.0",
+                "symbol": symbol,
+                "timeframe": tf,
+                "direction": sig.direction.value,
+                "setup_score": adjusted_score,
+                "raw_score": sig.setup_score,
+                "entry_price": sig.entry_price,
+                "stop_price": sig.stop_price,
+                "tp1_price": sig.tp1_price,
+                "tp2_price": sig.tp2_price,
+                "r_value": sig.r_value,
+                "time_stop_bars": sig.time_stop_bars,
+                "bar_start_ts": bar_start_ts or "",
+                "as_of_ts": time.time(),
+                "why_items": sig.explain.why_items if sig.explain else [],
+                "macd_histogram": sig.macd_histogram,
+                "rvol": sig.rvol,
+                "sma_20": sig.sma_20,
+                "flat_top_level": sig.flat_top_level,
+                "trend_bias": sig.trend_bias,
+                "score_components": sig.score_components,
+            }
+
+            # --- TRACE ---
+            trace_dict = None
+            if TRACE_ENABLED:
+                trace = TraceContext(strategy="S10", symbol=symbol, timeframe=tf)
+                if snapshot.ohlcv:
+                    trace.record_candle_window(
+                        first_ts=snapshot.ohlcv[0].timestamp,
+                        last_ts=snapshot.ohlcv[-1].timestamp,
+                        bar_count=len(snapshot.ohlcv),
+                        timeframe=tf,
+                    )
+                trace.record_indicator_params({
+                    "n_atr": 14, "n_rsi": 14, "n_bb": 20,
+                    "k_bb": 2.0, "n_kc": 20, "n_volz": 20,
+                })
+                trace.record_indicators_bulk({
+                    "macd_histogram": snapshot.macd_histogram,
+                    "macd_prev_histogram": snapshot.macd_prev_histogram,
+                    "rvol": snapshot.rvol,
+                    "sma_20": snapshot.sma_20,
+                    "sma_200": snapshot.sma_200,
+                    "atr": snapshot.atr,
+                    "bb_width": snapshot.bb_width,
+                    "volume_z": snapshot.volume_z,
+                })
+                trace.record_state({
+                    "above_sma200": state.above_sma200,
+                    "above_sma20": state.above_sma20,
+                    "price_vs_sma20_atr": state.price_vs_sma20_atr,
+                    "macd_histogram": state.macd_histogram,
+                    "macd_prev_histogram": state.macd_prev_histogram,
+                    "macd_crossover_bull": state.macd_crossover_bull,
+                    "flat_top_detected": state.flat_top_detected,
+                    "flat_top_level": state.flat_top_level,
+                    "flat_top_touches": state.flat_top_touches,
+                    "breakout": state.breakout,
+                    "rvol": state.rvol,
+                    "entry_valid": state.entry_valid,
+                }, is_hydrated=False)
+                trace.record_gate("above_sma200", state.above_sma200, True, "==", state.above_sma200)
+                trace.record_gate("macd_crossover_bull", state.macd_crossover_bull, True, "==", state.macd_crossover_bull)
+                trace.record_gate("flat_top_detected", state.flat_top_detected, True, "==", state.flat_top_detected)
+                trace.record_gate("breakout", state.breakout, True, "==", state.breakout)
+                trace.record_gate("rvol", state.rvol, self.s10_evaluator.RVOL_MIN, ">=", True)
+                trace.record_gate("sma20_proximity", abs(state.price_vs_sma20_atr),
+                                  self.s10_evaluator.SMA20_PROXIMITY_ATR, "<=", True)
+                trace.record_score(
+                    sig.score_components, sig.setup_score,
+                    calib_mult, calibrated_score, promotion_threshold=0.0,
+                )
+                trace.record_config({
+                    "RVOL_MIN": self.s10_evaluator.RVOL_MIN,
+                    "FLAT_TOP_LOOKBACK": self.s10_evaluator.FLAT_TOP_LOOKBACK,
+                    "FLAT_TOP_TOLERANCE_ATR": self.s10_evaluator.FLAT_TOP_TOLERANCE_ATR,
+                    "FLAT_TOP_MIN_TOUCHES": self.s10_evaluator.FLAT_TOP_MIN_TOUCHES,
+                    "SMA20_PROXIMITY_ATR": self.s10_evaluator.SMA20_PROXIMITY_ATR,
+                    "STOP_ATR_MULT": self.s10_evaluator.STOP_ATR_MULT,
+                    "TP1_R_MULT": self.s10_evaluator.TP1_R_MULT,
+                    "TP2_R_MULT": self.s10_evaluator.TP2_R_MULT,
+                    "TIME_STOP_BARS": self.s10_evaluator.TIME_STOP_BARS,
+                })
+                setup_version = self.SETUP_VERSIONS.get("S10", "S10_v1.0")
+                trace_dict = trace.seal(setup_version)
+
+            store_signal(self.r, symbol, tf, "S10", payload,
+                         adjusted_score, bar_start_ts or "")
+            reason = "; ".join(sig.explain.why_items) if sig.explain else None
+            self._persist_signal_to_pg(symbol, tf, "S10", adjusted_score,
+                                       reason, payload, trace_json=trace_dict)
+
+            logger.info(
+                "Signal: S10 LONG %s:%s score=%.3f (adj=%.3f) rvol=%.1fx macd_hist=%.6f",
+                symbol, tf, calibrated_score, adjusted_score,
+                sig.rvol, sig.macd_histogram,
+            )
+        except Exception as e:
+            logger.debug("S10 eval error %s:%s: %s", symbol, tf, e)
+
+    def _evaluate_d1(self, symbol: str, tf: str, snapshot, bar_start_ts: str):
+        """Run D1 Dormancy-to-Ignition evaluator on 1h bars (microcap universe)."""
+        if is_d1_excluded(symbol):
+            return
+
+        try:
+            state_key = f"{symbol}:{tf}"
+            prev_state = self._d1_prev_states.get(state_key)
+
+            state = self.d1_evaluator.compute_state(
+                snapshot, prev_state=prev_state, btc_returns=None,
+            )
+            self._d1_prev_states[state_key] = state
+
+            if state.phase in (D1Phase.DORMANT_CONFIRMED, D1Phase.ACCUMULATING):
+                trigger_ts = None
+                if bar_start_ts:
+                    try:
+                        trigger_ts = datetime.fromtimestamp(
+                            int(bar_start_ts) / 1000, tz=timezone.utc
+                        )
+                    except (ValueError, TypeError):
+                        pass
+                state.social_mention_count = get_social_silence_count(
+                    symbol, conn_factory=_pool_get_conn, trigger_bar_start_ts=trigger_ts,
+                )
+                if D1Config.ONCHAIN_GATE_ENABLED:
+                    state.onchain_netflow = get_exchange_netflow(
+                        symbol, conn_factory=_pool_get_conn, as_of_ts=trigger_ts,
+                    )
+
+            sig = self.d1_evaluator.evaluate_trigger(snapshot, state, symbol, tf)
+            if sig is None:
+                return
+
+            self._diag["d1_signal"] += 1
+
+            if _database_url():
+                trigger_ts = None
+                if bar_start_ts:
+                    try:
+                        trigger_ts = datetime.fromtimestamp(
+                            int(bar_start_ts) / 1000, tz=timezone.utc
+                        )
+                    except (ValueError, TypeError):
+                        pass
+                sig.social_mentions_30d = get_social_mentions_count(
+                    symbol, conn_factory=_pool_get_conn, trigger_bar_start_ts=trigger_ts,
+                )
+
+            calib_mult = strategy_get_multiplier("D1")
+            calibrated_score = min(sig.setup_score * calib_mult, 1.0)
+
+            dxy_mult = get_dxy_multiplier(self.r)
+            calibrated_score = min(calibrated_score * dxy_mult, 1.0)
+
+            adjusted_score = self._capacity_adjusted_score(symbol, calibrated_score)
+
+            if not self._try_emit_signal(symbol, tf, "D1", adjusted_score):
+                return
+
+            social_silence_passed = (
+                state.social_mention_count < 0
+                or state.social_mention_count <= D1Config.SOCIAL_SILENCE_MAX_MENTIONS
+            )
+
+            payload = {
+                "setup_id": "D1",
+                "setup_name": "Dormancy-to-Ignition v1.2",
+                "symbol": symbol,
+                "timeframe": tf,
+                "direction": sig.direction.value,
+                "setup_score": adjusted_score,
+                "raw_score": sig.setup_score,
+                "entry_price": sig.entry_price,
+                "stop_price": sig.stop_price,
+                "tp1_price": sig.tp1_price,
+                "tp2_price": sig.tp2_price,
+                "r_value": sig.r_value,
+                "time_stop_bars": sig.time_stop_bars,
+                "bar_start_ts": bar_start_ts or "",
+                "as_of_ts": time.time(),
+                "why_items": sig.explain.why_items if sig.explain else [],
+                "dormancy_score": sig.dormancy_score,
+                "accum_divergence": sig.accum_divergence,
+                "compression_box_high": sig.compression_box_high,
+                "compression_box_low": sig.compression_box_low,
+                "volume_z_at_trigger": sig.volume_z_at_trigger,
+                "rvol_at_trigger": sig.rvol_at_trigger,
+                "bb_width_at_trigger": sig.bb_width_at_trigger,
+                "btc_beta": sig.btc_beta,
+                "social_mentions_30d": sig.social_mentions_30d,
+                "social_mentions_24h": state.social_mention_count,
+                "social_silence_passed": social_silence_passed,
+                "onchain_netflow": state.onchain_netflow,
+                "onchain_gate_enabled": D1Config.ONCHAIN_GATE_ENABLED,
+                "score_components": sig.score_components,
+                "gates": {
+                    "Gate 1 - Dormancy": f"dormancy_score >= {D1Config.DORMANCY_THRESHOLD}",
+                    "Gate 2 - Compression": f"bb_width < {D1Config.BB_WIDTH_COMPRESS}",
+                    "Gate 3 - Volume spike": (
+                        f"volume_z >= {D1Config.VOLUME_Z_SPIKE} AND "
+                        f"rvol >= {D1Config.RVOL_MIN}"
+                    ),
+                    "Gate 4 - Breakout": "close > prev_compression_box_high (previous donchian_high_20)",
+                    "Gate 5 - BB expanding": "bb_width > bb_width_prev",
+                    "Gate 6 - Social silence (soft)": (
+                        f"mentions_24h <= {D1Config.SOCIAL_SILENCE_MAX_MENTIONS} "
+                        f"(actual: {state.social_mention_count}, score weight: {D1Config.W_SOCIAL_SILENCE})"
+                    ),
+                    "Gate 7 - Exchange net flow (soft)": (
+                        f"netflow < 0 = accumulation "
+                        f"(actual: {state.onchain_netflow}, enabled: {D1Config.ONCHAIN_GATE_ENABLED}, "
+                        f"score weight: {D1Config.W_ONCHAIN_FLOW})"
+                    ),
+                },
+                "exit_config": {
+                    "trail": "none",
+                    "stop_pct": D1Config.STOP_PCT,
+                    "tp1_pct": D1Config.TP1_PCT,
+                    "tp2_pct": D1Config.TP2_PCT,
+                    "time_stop_bars_1h": D1Config.TIME_STOP_BARS_1H,
+                },
+                "scoring_weights": {
+                    "dormancy": D1Config.W_DORMANCY,
+                    "vol_z": D1Config.W_VOL_Z,
+                    "accum_div": D1Config.W_ACCUM_DIV,
+                    "bb_expansion": D1Config.W_BB_EXPANSION,
+                    "rvol": D1Config.W_RVOL,
+                    "btc_adj_ret": D1Config.W_BTC_ADJ_RET,
+                    "social_silence": D1Config.W_SOCIAL_SILENCE,
+                    "onchain_flow": D1Config.W_ONCHAIN_FLOW,
+                },
+            }
+
+            # --- TRACE ---
+            trace_dict = None
+            if TRACE_ENABLED:
+                trace = TraceContext(strategy="D1", symbol=symbol, timeframe=tf)
+                if snapshot.ohlcv:
+                    trace.record_candle_window(
+                        first_ts=snapshot.ohlcv[0].timestamp,
+                        last_ts=snapshot.ohlcv[-1].timestamp,
+                        bar_count=len(snapshot.ohlcv),
+                        timeframe=tf,
+                    )
+                trace.record_indicator_params({
+                    "n_atr": 14, "n_rsi": 14, "n_bb": 20,
+                    "k_bb": 2.0, "n_kc": 20, "n_volz": 20,
+                })
+                trace.record_indicators_bulk({
+                    "dormancy_score": snapshot.dormancy_score,
+                    "bb_width": snapshot.bb_width,
+                    "volume_z": snapshot.volume_z,
+                    "rvol": snapshot.rvol,
+                    "accum_divergence": snapshot.accum_divergence,
+                    "donchian_high_20": snapshot.donchian_high_20,
+                    "donchian_low_20": snapshot.donchian_low_20,
+                    "atr": snapshot.atr,
+                    "rsi": snapshot.rsi,
+                })
+                # _hydrated is set dynamically during state restoration, not a declared
+                # dataclass field on D1State.
+                try:
+                    is_hydrated = state._hydrated
+                except AttributeError:
+                    is_hydrated = False
+                trace.record_state(state.to_dict(), is_hydrated=is_hydrated)
+                close = snapshot.ohlcv[-1].close if snapshot.ohlcv else 0.0
+                trace.record_gate("dormancy", state.dormancy_score,
+                                  D1Config.DORMANCY_THRESHOLD, ">=", True)
+                trace.record_gate("compression", state.bb_width,
+                                  D1Config.BB_WIDTH_COMPRESS, "<", True)
+                trace.record_gate("volume_z", state.volume_z,
+                                  D1Config.VOLUME_Z_SPIKE, ">=", True)
+                trace.record_gate("rvol", state.rvol,
+                                  D1Config.RVOL_MIN, ">=", True)
+                trace.record_gate("breakout", close,
+                                  state.prev_compression_box_high, ">", True,
+                                  note="close > prev_compression_box_high")
+                trace.record_gate("bb_expanding", state.bb_width,
+                                  state.bb_width_prev, ">", True,
+                                  note="bb_width > bb_width_prev")
+                trace.record_gate("social_silence", state.social_mention_count,
+                                  D1Config.SOCIAL_SILENCE_MAX_MENTIONS, "<=",
+                                  social_silence_passed,
+                                  note=f"soft gate: mentions_24h={state.social_mention_count}, "
+                                       f"threshold={D1Config.SOCIAL_SILENCE_MAX_MENTIONS}, "
+                                       f"score_weight={D1Config.W_SOCIAL_SILENCE}")
+                onchain_passed = (
+                    state.onchain_netflow is None
+                    or state.onchain_netflow < 0
+                )
+                trace.record_gate("onchain_netflow", state.onchain_netflow,
+                                  0, "<", onchain_passed,
+                                  note=f"soft gate: netflow={state.onchain_netflow}, "
+                                       f"enabled={D1Config.ONCHAIN_GATE_ENABLED}, "
+                                       f"score_weight={D1Config.W_ONCHAIN_FLOW}")
+                trace.record_score(
+                    sig.score_components, sig.setup_score,
+                    calib_mult, calibrated_score, promotion_threshold=0.0,
+                )
+                trace.record_config({
+                    "DORMANCY_THRESHOLD": D1Config.DORMANCY_THRESHOLD,
+                    "BB_WIDTH_COMPRESS": D1Config.BB_WIDTH_COMPRESS,
+                    "VOLUME_Z_SPIKE": D1Config.VOLUME_Z_SPIKE,
+                    "RVOL_MIN": D1Config.RVOL_MIN,
+                    "STOP_PCT": D1Config.STOP_PCT,
+                    "TP1_PCT": D1Config.TP1_PCT,
+                    "TP2_PCT": D1Config.TP2_PCT,
+                    "TIME_STOP_BARS_1H": D1Config.TIME_STOP_BARS_1H,
+                    "SOCIAL_SILENCE_LOOKBACK_HOURS": D1Config.SOCIAL_SILENCE_LOOKBACK_HOURS,
+                    "SOCIAL_SILENCE_MAX_MENTIONS": D1Config.SOCIAL_SILENCE_MAX_MENTIONS,
+                    "ONCHAIN_GATE_ENABLED": D1Config.ONCHAIN_GATE_ENABLED,
+                    "ONCHAIN_NETFLOW_LOOKBACK_HOURS": D1Config.ONCHAIN_NETFLOW_LOOKBACK_HOURS,
+                    "W_ONCHAIN_FLOW": D1Config.W_ONCHAIN_FLOW,
+                })
+                setup_version = self.SETUP_VERSIONS.get("D1", "D1_v1.0")
+                trace_dict = trace.seal(setup_version)
+
+            store_signal(self.r, symbol, tf, "D1", payload,
+                         adjusted_score, bar_start_ts or "")
+            reason = "; ".join(sig.explain.why_items) if sig.explain else None
+            self._persist_signal_to_pg(symbol, tf, "D1", adjusted_score,
+                                       reason, payload, trace_json=trace_dict)
+
+            logger.info(
+                "Signal: D1 LONG %s:%s score=%.3f (adj=%.3f) dormancy=%.0f%% vol_z=%.1f rvol=%.1fx",
+                symbol, tf, calibrated_score, adjusted_score,
+                sig.dormancy_score * 100,
+                sig.volume_z_at_trigger, sig.rvol_at_trigger,
+            )
+        except Exception as e:
+            logger.debug("D1 eval error %s:%s: %s", symbol, tf, e)
+
+    def _evaluate_u1(self, symbol: str, tf: str, snapshot, bar_start_ts: str):
+        """Run U1 evaluator for EMBRYO_ACTIVE symbols only.
+
+        TF filtering is handled by StrategyRegistry.timeframe_affinity — the
+        registry only dispatches U1 on 5m. No internal TF guard needed.
+
+        Accepts the same (symbol, tf, snapshot, bar_start_ts) signature as all
+        other _evaluate_* methods — extracts candles internally.
+        """
+        candles = snapshot.ohlcv
+
+        self._refresh_embryo_active_cache()
+
+        if symbol not in self._embryo_active_cache:
+            return
+
+        state_dict = read_unicorn_state(self.r, symbol)
+        if not state_dict:
+            return
+
+        try:
+            u1_state = U1State.from_dict(state_dict)
+        except Exception as e:
+            logger.debug(f"Failed to deserialize U1 state for {symbol}: {e}")
+            return
+
+        if u1_state.phase not in (U1Phase.EMBRYO_ACTIVE, U1Phase.IGNITION_WATCH):
+            return
+
+        funding_rates = load_funding_rates(_pool_get_conn) if _database_url() else {}
+
+        u1_signal = self.u1_evaluator.evaluate_trigger(candles, u1_state, symbol, tf, funding_rates=funding_rates, conn_factory=_pool_get_conn)
+        if u1_signal:
+            trace_dict = None
+            if TRACE_ENABLED:
+                trace = TraceContext(strategy="U1", symbol=symbol, timeframe=tf)
+                if candles:
+                    trace.record_candle_window(
+                        first_ts=candles[0].timestamp,
+                        last_ts=candles[-1].timestamp,
+                        bar_count=len(candles),
+                        timeframe=tf,
+                    )
+                trace.record_indicator_params({
+                    "n_atr": 14, "n_rsi": 14, "n_bb": 20,
+                    "k_bb": 2.0, "n_kc": 20, "n_volz": 20,
+                })
+                trace.record_indicators_bulk({
+                    "rel_volume": u1_signal.rel_volume,
+                    "compression_box_high": u1_signal.compression_box_high,
+                    "compression_box_low": u1_signal.compression_box_low,
+                    "tradability_score": u1_signal.tradability_score,
+                    "participation_score": u1_signal.participation_score,
+                    "compression_score": u1_signal.compression_score,
+                    "embryo_active_score": u1_signal.embryo_active_score,
+                })
+                trace.record_state(u1_state.to_dict(), is_hydrated=False)
+                trace.record_gate("phase", u1_state.phase.value,
+                                  "EMBRYO_ACTIVE|IGNITION_WATCH", "in", True)
+                trace.record_gate("gate1_tradability", u1_state.gate1_passed,
+                                  True, "==", u1_state.gate1_passed)
+                trace.record_gate("gate2_participation", u1_state.gate2_passed,
+                                  True, "==", u1_state.gate2_passed)
+                trace.record_gate("gate3_compression", u1_state.gate3_passed,
+                                  True, "==", u1_state.gate3_passed)
+                trace.record_gate("ignition_score",
+                                  u1_state.ignition_score,
+                                  U1Config.IGNITION_SCORE_THRESHOLD, ">=", True)
+                trace.record_score(
+                    {"setup_score": u1_signal.setup_score},
+                    u1_signal.setup_score, 1.0, u1_signal.setup_score,
+                    promotion_threshold=U1Config.IGNITION_SCORE_THRESHOLD,
+                )
+                trace.record_config({
+                    "TRADABILITY_IMPROVEMENT_FACTOR": U1Config.TRADABILITY_IMPROVEMENT_FACTOR,
+                    "PARTICIPATION_GROWTH_FACTOR": U1Config.PARTICIPATION_GROWTH_FACTOR,
+                    "RANGE_PCT_THRESHOLD": U1Config.RANGE_PCT_THRESHOLD,
+                    "REL_VOL_IGNITION_MIN": U1Config.REL_VOL_IGNITION_MIN,
+                    "VOL_Z_MIN": U1Config.VOL_Z_MIN,
+                    "IGNITION_SCORE_THRESHOLD": U1Config.IGNITION_SCORE_THRESHOLD,
+                    "STOP_RANGE_MULT": U1Config.STOP_RANGE_MULT,
+                    "MIN_STOP_PCT": U1Config.MIN_STOP_PCT,
+                    "TP1_R": U1Config.TP1_R,
+                    "TP2_R": U1Config.TP2_R,
+                    "TIME_STOP_BARS_5M": U1Config.TIME_STOP_BARS_5M,
+                })
+                setup_version = self.SETUP_VERSIONS.get("U1", "U1_v1.0")
+                trace_dict = trace.seal(setup_version)
+            self._store_u1_signal(u1_signal, symbol, tf, bar_start_ts,
+                                  trace_json=trace_dict)
+
+    def _store_u1_signal(self, signal, symbol: str, tf: str, bar_start_ts: str,
+                         trace_json: dict = None):
+        """Store U1 signal in Redis."""
+        dxy_mult = get_dxy_multiplier(self.r)
+        u1_calibrated = min(signal.setup_score * dxy_mult, 1.0)
+
+        adjusted_score = self._capacity_adjusted_score(symbol, u1_calibrated)
+
+        if not self._try_emit_signal(symbol, tf, "U1", adjusted_score):
+            return
+
+        payload = {
+            "setup_id": "U1",
+            "symbol": symbol,
+            "timeframe": tf,
+            "direction": signal.direction.value,
+            "setup_score": adjusted_score,
+            "entry_price": signal.entry_price,
+            "stop_price": signal.stop_price,
+            "tp1_price": signal.tp1_price,
+            "tp2_price": signal.tp2_price,
+            "r_value": signal.r_value,
+            "time_stop_bars": signal.time_stop_bars,
+            "time_stop_policy": signal.time_stop_policy,
+            "bar_start_ts": bar_start_ts,
+            "signal_ts": signal.signal_ts.isoformat() if signal.signal_ts else None,
+            "action_by_ts": signal.action_by_ts.isoformat() if signal.action_by_ts else None,
+            "age_seconds": signal.age_seconds,
+            "as_of_ts": time.time(),
+            "rel_volume": signal.rel_volume,
+            "compression_box_high": signal.compression_box_high,
+            "compression_box_low": signal.compression_box_low,
+            "confirmations_met": signal.confirmations_met,
+            "tradability_score": signal.tradability_score,
+            "participation_score": signal.participation_score,
+            "compression_score": signal.compression_score,
+            "embryo_active_score": signal.embryo_active_score,
+            "trigger_path": _safe_attr(signal, "trigger_path", "traditional"),
+        }
+
+        if signal.explain:
+            payload["why_items"] = signal.explain.why_items
+
+        store_signal(
+            self.r, symbol, tf, "U1",
+            signal_payload=payload,
+            setup_score=adjusted_score,
+            bar_start_ts=bar_start_ts,
+        )
+
+        reason = "; ".join(signal.explain.why_items) if signal.explain else None
+        self._persist_signal_to_pg(symbol, tf, "U1", adjusted_score,
+                                   reason, payload, trace_json=trace_json)
+
+        logger.info(
+            f"Signal: U1 {signal.direction.value} {symbol}:{tf} "
+            f"score={adjusted_score:.3f} (raw={signal.setup_score:.3f}) "
+            f"rel_vol={signal.rel_volume:.1f}x "
+            f"path={_safe_attr(signal, 'trigger_path', 'traditional')}"
+        )
+
+    # Setup version mapping for live signals
+    SETUP_VERSIONS = {
+        "U1": "U1_v3.0",
+        "S9": "S9_v1.0",
+        "S10": "S10_v1.0",
+        "D1": "D1_v1.2",
+    }
+
+    def _sync_node_parameters(self):
+        """Sync parameters between code and Pipeline at startup."""
+        if _worker_index() != 0:
+            return
+        if not _database_url():
+            return
+
+        # Derive node names from StrategyRegistry (sole authority for strategy identity)
+        _catalog = strategy_as_api_dict()
+        NODE_NAMES = {
+            sid: info["label"]
+            for sid, info in _catalog.items()
+            if info.get("status") == "active" and info.get("type") == "crypto"
+        }
+
+        # Derive evaluators from runtime StrategyRegistry (sole authority)
+        from governance.strategy_registry import StrategyRegistry
+        evaluators = [
+            (setup_id, handler.evaluator)
+            for setup_id, handler in StrategyRegistry._strategies.items()
+            if handler.evaluator is not None
+        ]
+
+        for setup_id, evaluator in evaluators:
+            try:
+                node_name = NODE_NAMES.get(setup_id)
+                if not node_name:
+                    continue
+
+                any_version_exists = self._node_has_any_version(node_name)
+
+                if any_version_exists:
+                    deployed_params = None
+                    if self._live_config:
+                        deployed_params = self._live_config.get_strategy_params(
+                            setup_id, force_reload=True
+                        )
+                    if deployed_params and isinstance(evaluator, SetupBase):
+                        changed = evaluator.update_config(deployed_params)
+                        if changed:
+                            _sync_typed_config_registry(setup_id, changed)
+                            logger.info(
+                                "%s: loaded config from Pipeline (%d params changed)",
+                                setup_id, len(changed),
+                            )
+                        else:
+                            logger.info("%s: Pipeline config matches code defaults", setup_id)
+                    elif deployed_params:
+                        logger.info("%s: loaded Pipeline config (evaluator does not extend SetupBase)", setup_id)
+                    else:
+                        logger.info(
+                            "%s: Pipeline has version(s) but none deployed -- keeping code defaults",
+                            setup_id,
+                        )
+                else:
+                    self._bootstrap_node_params(setup_id, evaluator, node_name)
+
+            except Exception as e:
+                logger.warning(f"Failed to sync {setup_id} parameters: {e}")
+
+    def _node_has_any_version(self, node_name: str) -> bool:
+        try:
+            with _pool_get_conn() as conn:
+                with conn.cursor() as cur:
+                    cur.execute("""
+                        SELECT EXISTS(
+                            SELECT 1
+                            FROM meta.node n
+                            JOIN meta.node_version nv ON nv.node_id = n.node_id
+                            WHERE lower(n.name) = lower(%s)
+                              AND nv.parameters IS NOT NULL
+                              AND nv.parameters != '{}'::jsonb
+                        )
+                    """, (node_name,))
+                    return cur.fetchone()[0]
+        except Exception as e:
+            logger.warning("Failed to check node versions for %s: %s", node_name, e)
+            return False
+
+    def _bootstrap_node_params(self, setup_id: str, evaluator, node_name: str):
+        # Collect base params from SetupBase.parameters if available
+        params = {}
+        if isinstance(evaluator, SetupBase):
+            for p in evaluator.parameters:
+                params[p.name] = p.default
+
+        # Merge bootstrap metadata from the evaluator itself (no hardcoded setup IDs)
+        try:
+            meta_fn = evaluator.get_bootstrap_metadata
+        except AttributeError:
+            meta_fn = None
+        if meta_fn is not None:
+            params.update(meta_fn())
+
+        if not params:
+            logger.debug(f"No bootstrap params for {setup_id} -- skipping")
+            return
+
+        params_json = json.dumps(params)
+
+        with _pool_get_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    UPDATE meta.node_version nv
+                    SET parameters = %s::jsonb
+                    FROM meta.node n
+                    WHERE nv.node_id = n.node_id
+                      AND n.name = %s
+                      AND nv.version_number = (
+                          SELECT MAX(nv2.version_number)
+                          FROM meta.node_version nv2
+                          WHERE nv2.node_id = n.node_id
+                      )
+                """, (params_json, node_name))
+                if cur.rowcount > 0:
+                    logger.info(f"Bootstrapped {setup_id} code defaults to meta.node_version ({len(params)} keys)")
+                else:
+                    logger.debug(f"No meta.node_version found for {setup_id} -- skipping bootstrap")
+            conn.commit()
+
+    def _maybe_hot_reload_config(self):
+        if not self._live_config:
+            return
+        if not self._live_config.has_changed():
+            return
+
+        # Generic hot-reload: iterate all registered strategies that support it
+        from governance.strategy_registry import StrategyRegistry
+        for setup_id, handler in StrategyRegistry._strategies.items():
+            evaluator = handler.evaluator
+            if evaluator is None:
+                continue
+            # Only evaluators that implement update_config can be hot-reloaded
+            try:
+                update_fn = evaluator.update_config
+            except AttributeError:
+                continue
+            if not callable(update_fn):
+                continue
+            try:
+                params = self._live_config.get_strategy_params(setup_id)
+                if params:
+                    changed = evaluator.update_config(params)
+                    if changed:
+                        _sync_typed_config_registry(setup_id, changed)
+                        tfs = handler.timeframe_affinity or []
+                        self._invalidate_redis_signals(setup_id, tfs)
+                        logger.info(
+                            "CONFIG_RELOAD setup=%s changed=%s version=%d",
+                            setup_id,
+                            list(changed.keys()),
+                            self._live_config._cached_version,
+                        )
+            except Exception as e:
+                logger.error("%s hot-reload failed (keeping previous config): %s", setup_id, e)
+
+    def _invalidate_redis_signals(self, setup_id: str, timeframes: list[str]):
+        from governance.cache_contract import score_zset_key, ts_zset_key
+        for tf in timeframes:
+            sc_key = score_zset_key(setup_id, tf)
+            ts_key = ts_zset_key(setup_id, tf)
+            members = self.r.zrange(sc_key, 0, -1)
+            if members:
+                pipe = self.r.pipeline(transaction=True)
+                for sym in members:
+                    symbol = sym if isinstance(sym, str) else sym.decode()
+                    pipe.delete(f"sig:{symbol}:{tf}:{setup_id}")
+                    pipe.delete(f"sig_meta:{symbol}:{tf}:{setup_id}")
+                pipe.delete(sc_key)
+                pipe.delete(ts_key)
+                pipe.execute()
+                logger.info(
+                    "Invalidated %d Redis signals for %s:%s (config changed)",
+                    len(members), setup_id, tf,
+                )
+
+    def _persist_signal_to_pg(self, symbol: str, tf: str, setup_id: str,
+                               score: float, reason: str, payload: dict,
+                               trace_json: dict = None):
+        if not _database_url():
+            return
+        try:
+            payload_str = json.dumps(payload)
+            trace_str = json.dumps(trace_json) if trace_json else None
+            setup_version = self.SETUP_VERSIONS.get(setup_id, f"{setup_id}_v1.0")
+            with _pool_get_conn() as conn:
+                with conn.cursor() as cur:
+                    cur.execute("""
+                        UPDATE opportunities
+                        SET score = %s, reason = %s, payload_json = %s,
+                            setup_version = %s, trace_json = %s,
+                            updated_ts = NOW()
+                        WHERE symbol = %s AND timeframe = %s AND setup_id = %s
+                          AND status = 'active'
+                        RETURNING id;
+                    """, (score, reason, payload_str, setup_version, trace_str,
+                          symbol, tf, setup_id))
+                    updated = cur.fetchone()
+
+                    if not updated:
+                        cur.execute("""
+                            INSERT INTO opportunities
+                                (symbol, timeframe, setup_id, decision, score, reason,
+                                 payload_json, status, setup_version, trace_json)
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, 'active', %s, %s);
+                        """, (symbol, tf, setup_id, 'SIGNAL', score, reason,
+                              payload_str, setup_version, trace_str))
+                conn.commit()
+        except Exception as e:
+            logger.debug(f"Postgres persist failed for {setup_id}:{symbol}:{tf}: {e}")
+
+    def _expire_stale_pg_signals(self):
+        if not _database_url():
+            return
+        try:
+            with _pool_get_conn() as conn:
+                with conn.cursor() as cur:
+                    cur.execute("""
+                        UPDATE opportunities
+                        SET status = 'expired'
+                        WHERE status = 'active'
+                          AND setup_id NOT LIKE 'EQ_%%'
+                          AND updated_ts < NOW() - %s * INTERVAL '1 second';
+                    """, (int(SIGNAL_MAX_AGE_S),))
+                conn.commit()
+        except Exception as e:
+            logger.debug(f"Postgres expire stale signals failed: {e}")
+
+    def _store_signal_from_evaluator(self, signal, setup_id: str,
+                                      symbol: str, tf: str, bar_start_ts: str,
+                                      snapshot=None):
+        raw_score = signal.setup_score
+        calib_mult = strategy_get_multiplier(setup_id)
+        calibrated_score = min(raw_score * calib_mult, 1.0)
+
+        dxy_mult = get_dxy_multiplier(self.r)
+        calibrated_score = min(calibrated_score * dxy_mult, 1.0)
+
+        payload = {
+            "setup_id": setup_id,
+            "symbol": symbol,
+            "timeframe": tf,
+            "direction": signal.direction.value,
+            "setup_score": calibrated_score,
+            "raw_score": raw_score,
+            "entry_price": signal.entry_price,
+            "stop_price": signal.stop_price,
+            "tp1_price": signal.tp1_price,
+            "tp2_price": signal.tp2_price,
+            "r_value": signal.r_value,
+            "time_stop_bars": signal.time_stop_bars,
+            "bar_start_ts": bar_start_ts,
+            "as_of_ts": time.time(),
+        }
+
+        if signal.explain:
+            payload["why_items"] = signal.explain.why_items
+
+        store_signal(
+            self.r, symbol, tf, setup_id,
+            signal_payload=payload,
+            setup_score=calibrated_score,
+            bar_start_ts=bar_start_ts,
+        )
+
+        reason = "; ".join(signal.explain.why_items) if signal.explain else None
+        self._persist_signal_to_pg(symbol, tf, setup_id, calibrated_score, reason, payload)
+
+        logger.info(
+            f"Signal: {setup_id} {signal.direction.value} {symbol}:{tf} "
+            f"score={calibrated_score:.3f} (raw={raw_score:.3f} "
+            f"calib={calib_mult:.2f})"
+        )
+
+    # ------------------------------------------------------------------
+    # S9 - Cross-Sectional Short Reversion
+    # ------------------------------------------------------------------
+
+    def _maybe_evaluate_s9(self):
+        if _worker_index() != 0:
+            return
+
+        now = time.time()
+        current_hour = int(now // 3600)
+
+        if current_hour == self._s9_last_evaluated_hour:
+            return
+
+        seconds_into_hour = now - (current_hour * 3600)
+        if seconds_into_hour < 300:
+            return
+
+        self._s9_last_evaluated_hour = current_hour
+        try:
+            self._evaluate_s9_cross_sectional()
+        except Exception as e:
+            logger.error(f"S9 cross-sectional evaluation failed: {e}", exc_info=True)
+
+    def _evaluate_s9_cross_sectional(self):
+        """Cross-sectional S9: short top-decile by ret_4h when breadth > 0.3."""
+        all_symbols = get_universe(self.r)
+        if not all_symbols:
+            return
+
+        symbol_data = {}
+        for symbol in all_symbols:
+            if self._is_symbol_excluded(symbol):
+                continue
+            candles = get_candles_as_ohlcv(self.r, symbol, "1h")
+            if not candles or len(candles) < 25:
+                continue
+            close_now = candles[-1].close
+            close_4h = candles[-5].close if len(candles) >= 5 else None
+            close_24h = candles[-25].close if len(candles) >= 25 else None
+            if (close_now and close_now > 0 and close_4h and close_4h > 0
+                    and close_24h and close_24h > 0):
+                ret_4h = close_now / close_4h - 1
+                ret_24h = close_now / close_24h - 1
+                symbol_data[symbol] = (ret_4h, ret_24h, close_now)
+
+        if len(symbol_data) < 20:
+            logger.debug("S9: only %d symbols, need >= 20", len(symbol_data))
+            return
+
+        n_positive = sum(1 for _, (_, r24, _) in symbol_data.items() if r24 > 0)
+        breadth = n_positive / len(symbol_data)
+
+        if breadth <= S9Evaluator.BREADTH_THRESHOLD:
+            self._diag["s9_breadth_fail"] += 1
+            logger.info("S9: breadth=%.3f <= %.1f, no signals",
+                        breadth, S9Evaluator.BREADTH_THRESHOLD)
+            return
+
+        sorted_syms = sorted(symbol_data.items(), key=lambda x: x[1][0], reverse=True)
+        decile_n = max(1, len(sorted_syms) // 10)
+        top_decile = sorted_syms[:decile_n]
+
+        state = S9State(
+            breadth=breadth,
+            breadth_passes=True,
+            universe_size=len(symbol_data),
+            top_decile_threshold=top_decile[-1][1][0] if top_decile else 0.0,
+            top_decile_count=decile_n,
+        )
+
+        hour_start_ms = int(time.time() // 3600) * 3600 * 1000
+        top_symbols = [sym for sym, _ in top_decile]
+        micro_data = {}
+        try:
+            kline_batch = fetch_1s_klines_batch(
+                top_symbols, hour_start_ms + 1000, limit=300, max_workers=8,
+            )
+            for sym, klines in kline_batch.items():
+                close_price = symbol_data[sym][2]
+                micro_data[sym] = analyze_tape(close_price, klines)
+            logger.info("S9: fetched 1s klines for %d/%d top-decile symbols",
+                        len(kline_batch), len(top_symbols))
+        except Exception as e:
+            logger.warning("S9: 1s kline fetch failed, proceeding without: %s", e)
+
+        bar_start_ts = str(hour_start_ms)
+        count = 0
+
+        eval_hour_iso = datetime.fromtimestamp(
+            hour_start_ms / 1000, tz=timezone.utc
+        ).isoformat()
+        s9_cross_ctx = {
+            "universe_size": len(symbol_data),
+            "breadth": breadth,
+            "breadth_threshold": S9Evaluator.BREADTH_THRESHOLD,
+            "decile_threshold_ret_4h": top_decile[-1][1][0] if top_decile else 0.0,
+            "symbols_in_decile": decile_n,
+            "eval_hour": eval_hour_iso,
+        } if TRACE_ENABLED else None
+
+        for rank, (symbol, (ret_4h, ret_24h, close)) in enumerate(top_decile):
+            signal = S9Evaluator.build_signal(
+                symbol=symbol, close=close,
+                ret_4h=ret_4h, ret_24h=ret_24h,
+                breadth=breadth, rank=rank,
+                universe_size=len(symbol_data),
+                decile_size=decile_n, state=state,
+                bar_start_ts=bar_start_ts,
+            )
+
+            micro_ctx = micro_data.get(symbol)
+            micro_payload = {}
+            if micro_ctx:
+                micro_payload = {
+                    "entry_type": micro_ctx.entry_type,
+                    "suggested_entry_price": micro_ctx.suggested_entry_price,
+                    "micro_reason": micro_ctx.reason,
+                    "drift_bps": round(micro_ctx.drift_bps, 1),
+                    "max_drift_bps": round(micro_ctx.max_drift_bps, 1),
+                    "max_price_300s": micro_ctx.max_price,
+                    "current_price_300s": micro_ctx.current_price,
+                    "still_climbing": micro_ctx.still_climbing,
+                    "already_reverted": micro_ctx.already_reverted,
+                    "volume_ratio_early_late": round(micro_ctx.volume_ratio_early_late, 1),
+                    "n_klines": micro_ctx.n_klines,
+                }
+
+            effective_entry = signal.entry_price
+            if micro_ctx and micro_ctx.entry_type != "SKIP":
+                effective_entry = micro_ctx.suggested_entry_price
+
+            payload = {
+                "setup_id": "S9",
+                "setup_name": "Short Reversion v1.0",
+                "symbol": symbol,
+                "timeframe": "1h",
+                "direction": signal.direction.value,
+                "setup_score": signal.setup_score,
+                "raw_score": signal.setup_score,
+                "entry_price": effective_entry,
+                "naive_entry_price": signal.entry_price,
+                "stop_price": signal.stop_price,
+                "tp1_price": signal.tp1_price,
+                "tp2_price": signal.tp2_price,
+                "r_value": signal.r_value,
+                "time_stop_bars": signal.time_stop_bars,
+                "bar_start_ts": bar_start_ts,
+                "as_of_ts": time.time(),
+                "why_items": signal.explain.why_items if signal.explain else [],
+                "state": {
+                    "ret_4h": ret_4h,
+                    "ret_24h": ret_24h,
+                    "breadth": breadth,
+                    "rank": rank + 1,
+                    "decile_size": decile_n,
+                    "universe_size": len(symbol_data),
+                },
+                "score_components": {
+                    "rank_score": signal.rank_score,
+                    "breadth_score": signal.breadth_score,
+                    "magnitude_score": signal.magnitude_score,
+                },
+                "microstructure": micro_payload,
+            }
+
+            payload["action_by_ts"] = (
+                datetime.fromtimestamp(hour_start_ms / 1000, tz=timezone.utc)
+                + timedelta(hours=49)
+            ).isoformat()
+
+            final_score = signal.setup_score
+            if micro_ctx and micro_ctx.entry_type == "SKIP":
+                final_score = signal.setup_score * 0.5
+                payload["skip_reason"] = micro_ctx.reason
+
+            payload["setup_score"] = final_score
+
+            if not self._try_emit_signal(symbol, "1h", "S9", final_score):
+                continue
+
+            # --- TRACE ---
+            trace_dict = None
+            if TRACE_ENABLED:
+                trace = TraceContext(strategy="S9", symbol=symbol, timeframe="1h")
+                sym_candles = get_candles_as_ohlcv(self.r, symbol, "1h")
+                if sym_candles and len(sym_candles) >= 5:
+                    trace.record_candle_window(
+                        first_ts=sym_candles[-5].timestamp,
+                        last_ts=sym_candles[-1].timestamp,
+                        bar_count=5, timeframe="1h",
+                    )
+                if micro_ctx:
+                    trace.record_candle_window(
+                        first_ts=str(hour_start_ms + 1000),
+                        last_ts=str(hour_start_ms + 300000),
+                        bar_count=micro_ctx.n_klines,
+                        timeframe="1s", note="microstructure tape",
+                    )
+                trace.record_indicator_params({
+                    "ret_4h_window": S9Evaluator.RET_LOOKBACK,
+                    "ret_24h_window": 24,
+                    "breadth_threshold": S9Evaluator.BREADTH_THRESHOLD,
+                    "decile_pct": S9Evaluator.PERCENTILE / 100.0,
+                })
+                trace.record_indicators_bulk({
+                    "ret_4h": ret_4h,
+                    "ret_24h": ret_24h,
+                    "close": close,
+                    "rank": rank + 1,
+                })
+                trace.record_state({"is_hydrated": False})
+                trace.record_cross_sectional_context(s9_cross_ctx)
+                trace.record_gate("breadth", breadth,
+                                  S9Evaluator.BREADTH_THRESHOLD, ">", True)
+                trace.record_gate("top_decile", rank + 1, decile_n, "<=", True,
+                                  note="rank <= decile_size")
+                trace.record_gate("ret_4h_positive", ret_4h, 0.0, ">", True)
+                if micro_ctx:
+                    trace.record_microstructure({
+                        "n_klines": micro_ctx.n_klines,
+                        "entry_type": micro_ctx.entry_type,
+                        "suggested_entry_price": micro_ctx.suggested_entry_price,
+                        "drift_bps": round(micro_ctx.drift_bps, 1),
+                        "still_climbing": micro_ctx.still_climbing,
+                        "already_reverted": micro_ctx.already_reverted,
+                    })
+                trace.record_score(
+                    {"rank_score": signal.rank_score,
+                     "breadth_score": signal.breadth_score,
+                     "magnitude_score": signal.magnitude_score},
+                    signal.setup_score, 1.0, final_score,
+                    promotion_threshold=0.0,
+                )
+                trace.record_config({
+                    "BREADTH_THRESHOLD": S9Evaluator.BREADTH_THRESHOLD,
+                    "PERCENTILE": S9Evaluator.PERCENTILE,
+                    "RET_LOOKBACK": S9Evaluator.RET_LOOKBACK,
+                    "HOLD_BARS": S9Evaluator.HOLD_BARS,
+                    "COST_BPS": S9Evaluator.COST_BPS,
+                })
+                setup_version = self.SETUP_VERSIONS.get("S9", "S9_v1.0")
+                trace_dict = trace.seal(setup_version)
+
+            store_signal(self.r, symbol, "1h", "S9", payload,
+                         final_score, bar_start_ts)
+            reason = "; ".join(signal.explain.why_items) if signal.explain else None
+            self._persist_signal_to_pg(symbol, "1h", "S9",
+                                       final_score, reason, payload,
+                                       trace_json=trace_dict)
+            count += 1
+
+        self._diag["s9_signal"] += count
+        skipped = sum(1 for s in top_symbols
+                      if s in micro_data and micro_data[s].entry_type == "SKIP")
+        logger.info(
+            "S9: breadth=%.3f, %d/%d symbols -> %d signals "
+            "(%d with 1s context, %d SKIP)",
+            breadth, decile_n, len(symbol_data), count,
+            len(micro_data), skipped,
+        )
+
+    # ------------------------------------------------------------------
+    # S9 Position Monitor
+    # ------------------------------------------------------------------
+
+    S9_MONITOR_INTERVAL_S = 300
+
+    def _maybe_monitor_s9_positions(self):
+        if _worker_index() != 0:
+            return
+
+        now = time.time()
+        if now - self._s9_last_position_check < self.S9_MONITOR_INTERVAL_S:
+            return
+
+        self._s9_last_position_check = now
+
+        if not _database_url():
+            return
+
+        try:
+            self._check_s9_positions()
+        except Exception as e:
+            logger.error("S9 position monitor failed: %s", e, exc_info=True)
+
+    def _check_s9_positions(self):
+        """Query open S9 opportunities and check for early exit via 1s tape."""
+        import requests as _req
+
+        with _pool_get_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    SELECT id, symbol, payload_json, created_ts
+                    FROM opportunities
+                    WHERE setup_id = 'S9'
+                      AND status = 'active'
+                      AND created_ts > NOW() - INTERVAL '48 hours'
+                    ORDER BY created_ts DESC
+                """)
+                positions = cur.fetchall()
+
+        if not positions:
+            return
+
+        logger.info("S9 monitor: checking %d open positions", len(positions))
+
+        symbols_to_check = set()
+        pos_data = []
+        for row in positions:
+            pos_id, symbol, payload_json, created_ts = row
+            try:
+                payload = json.loads(payload_json) if payload_json else {}
+            except (json.JSONDecodeError, TypeError):
+                payload = {}
+            entry_price = payload.get("entry_price", 0)
+            if entry_price <= 0:
+                continue
+            symbols_to_check.add(symbol)
+            pos_data.append({
+                "id": pos_id,
+                "symbol": symbol,
+                "entry_price": entry_price,
+                "created_ts": created_ts,
+                "payload": payload,
+            })
+
+        if not pos_data:
+            return
+
+        try:
+            _ticker_base = _worker_cfg().BINANCE_TICKER_URL
+            resp = _req.get(
+                f"{_ticker_base}/price",
+                timeout=10,
+            )
+            resp.raise_for_status()
+            price_map = {
+                t["symbol"]: float(t["price"])
+                for t in resp.json()
+                if t["symbol"] in symbols_to_check
+            }
+        except Exception as e:
+            logger.debug("S9 monitor: price fetch failed: %s", e)
+            return
+
+        positions_to_tape = []
+        for pos in pos_data:
+            current = price_map.get(pos["symbol"])
+            if current is None:
+                continue
+            unrealized_pct = (pos["entry_price"] - current) / pos["entry_price"] * 100
+            pos["current_price"] = current
+            pos["unrealized_pct"] = unrealized_pct
+            if unrealized_pct >= 1.0:
+                positions_to_tape.append(pos)
+
+        if not positions_to_tape:
+            logger.debug("S9 monitor: no positions with >= 1%% unrealized profit")
+            return
+
+        now_ms = int(time.time() * 1000)
+        start_ms = now_ms - 300_000
+        tape_symbols = [p["symbol"] for p in positions_to_tape]
+        kline_batch = fetch_1s_klines_batch(
+            tape_symbols, start_ms, limit=300, max_workers=6,
+        )
+
+        exit_flagged = 0
+        for pos in positions_to_tape:
+            klines = kline_batch.get(pos["symbol"], [])
+            if not klines:
+                continue
+
+            rec = analyze_exit_tape(
+                pos["entry_price"], klines, pos["unrealized_pct"],
+            )
+
+            if rec.action == "EXIT":
+                exit_flagged += 1
+                logger.info(
+                    "S9 EARLY EXIT flagged: %s unrealized=%.1f%% -- %s",
+                    pos["symbol"], pos["unrealized_pct"], rec.reason,
+                )
+                try:
+                    payload = pos["payload"]
+                    payload["early_exit_flagged"] = True
+                    payload["early_exit_reason"] = rec.reason
+                    payload["early_exit_urgency"] = rec.urgency
+                    payload["early_exit_unrealized_pct"] = round(pos["unrealized_pct"], 2)
+                    payload["early_exit_ts"] = time.time()
+
+                    with _pool_get_conn() as conn:
+                        with conn.cursor() as cur:
+                            cur.execute("""
+                                UPDATE opportunities
+                                SET payload_json = %s, updated_ts = NOW()
+                                WHERE id = %s
+                            """, (json.dumps(payload), pos["id"]))
+                        conn.commit()
+                except Exception as e:
+                    logger.debug("S9 monitor: failed to update opp %s: %s",
+                                 pos["id"], e)
+
+        if exit_flagged > 0:
+            logger.info("S9 monitor: %d/%d positions flagged for early exit",
+                        exit_flagged, len(positions_to_tape))
+
+    def _reconcile(self):
+        from governance.strategy_registry import StrategyRegistry
+        try:
+            all_symbols = get_universe(self.r)
+            timeframes = get_timeframes(self.r)
+
+            my_symbols = [
+                s for s in all_symbols
+                if symbol_partition(s, _n_workers()) == _worker_index()
+            ]
+
+            recomputed = 0
+            for symbol in my_symbols:
+                for tf in timeframes:
+                    ind_ts = b2f(self.r.hget(ind_meta_key(symbol, tf), "bar_start_ts"))
+                    if ind_ts <= 0:
+                        continue
+
+                    reeval_needed = False
+                    for setup_id in StrategyRegistry.active_setup_ids():
+                        sig_ts = b2f(self.r.hget(
+                            sig_meta_key(symbol, tf, setup_id), "bar_start_ts"
+                        ))
+                        if ind_ts > sig_ts:
+                            reeval_needed = True
+                            break
+
+                    if reeval_needed:
+                        try:
+                            self._evaluate_symbol(symbol, tf)
+                            recomputed += 1
+                        except Exception as e:
+                            logger.debug(f"Reconcile failed for {symbol}:{tf}: {e}")
+
+            if recomputed > 0:
+                logger.info(f"Reconciliation: re-evaluated {recomputed} symbol/tf pairs")
+
+        except Exception as e:
+            logger.error(f"Reconciliation error: {e}")
+
+    def _prune_all(self):
+        from governance.strategy_registry import StrategyRegistry
+        try:
+            timeframes = get_timeframes(self.r)
+            for setup_id in StrategyRegistry.active_setup_ids():
+                for tf in timeframes:
+                    prune_stale_signals(self.r, setup_id, tf)
+            self._expire_stale_pg_signals()
+        except Exception as e:
+            logger.error(f"Prune error: {e}")
+
+
+# ---------------------------------------------------------------------------
+# Entry point
+# ---------------------------------------------------------------------------
+
+if __name__ == "__main__":
+    from governance.bootstrap import bootstrap_genesis
+    bootstrap_genesis()
+    setup_logging()
+    worker = SignalWorker()
+    worker.run()
