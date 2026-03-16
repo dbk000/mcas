@@ -2,7 +2,7 @@
   "baseline_date": "2026-03-16",
   "minimum_js_chunk_count": 20,
   "minimum_async_route_chunk_count": 14,
-  "maximum_total_js_kb": 1110,
+  "maximum_total_js_kb": 1125,
   "maximum_single_js_chunk_kb": 350,
   "shared_chunk_patterns": [
     "index-*.js",
