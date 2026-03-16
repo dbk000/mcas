@@ -75,10 +75,10 @@ export default function Landing() {
       <section className="grid gap-4 lg:grid-cols-[1.08fr_0.92fr] lg:items-start">
         <div className="space-y-3">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="rounded-full border border-amber-500/20 bg-amber-500/10 px-3 py-1 text-[11px] uppercase tracking-[0.22em] text-amber-300">
+            <span className="rounded-full border border-amber-600/40 bg-amber-600/15 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-amber-600">
               Live Strategies
             </span>
-            <span className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-[11px] uppercase tracking-[0.22em] text-emerald-300">
+            <span className="rounded-full border border-emerald-700/40 bg-emerald-700/15 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">
               Glass Box Verified
             </span>
           </div>

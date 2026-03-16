@@ -48,8 +48,8 @@ export default function MarketingLayout({ children }) {
               <Zap className="size-5 text-terminal-900" />
             </div>
             <div>
-              <div className="text-sm font-semibold tracking-[0.25em] text-terminal-200">MCAS</div>
-              <div className="text-[11px] uppercase tracking-[0.28em] text-terminal-500">Market Cognition At Scale</div>
+              <div className="text-lg font-bold tracking-[0.2em] text-terminal-100">MCAS</div>
+              <div className="text-xs uppercase tracking-[0.22em] text-terminal-300">Market Cognition At Scale</div>
             </div>
           </Link>
 
