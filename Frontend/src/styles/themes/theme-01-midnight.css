@@ -1,0 +1,21 @@
+/*
+ * Midnight — Deep blue-black with cool steel accents.
+ * Bloomberg terminal meets a moonlit trading floor.
+ */
+[data-theme="midnight"] {
+  --c-t-900: 8 10 18;
+  --c-t-800: 14 17 28;
+  --c-t-700: 20 24 38;
+  --c-t-600: 28 32 50;
+  --c-t-500: 255 255 255;
+  --c-t-400: 255 255 255;
+  --c-t-300: 255 255 255;
+  --c-t-200: 255 255 255;
+  --c-t-100: 255 255 255;
+  --c-accent: 96 165 250;
+  --c-accent-light: 147 197 253;
+  --c-accent-strong: 59 130 246;
+  --c-signal-long: 52 211 153;
+  --c-signal-short: 248 113 113;
+  --c-signal-neutral: 148 163 184;
+}

@@ -1,0 +1,21 @@
+/*
+ * Neon — True black with electric pink and cyan.
+ * Blade Runner rain, arcade glow, maximum contrast.
+ */
+[data-theme="neon"] {
+  --c-t-900: 0 0 0;
+  --c-t-800: 8 8 12;
+  --c-t-700: 14 14 20;
+  --c-t-600: 20 20 28;
+  --c-t-500: 255 255 255;
+  --c-t-400: 255 255 255;
+  --c-t-300: 255 255 255;
+  --c-t-200: 255 255 255;
+  --c-t-100: 255 255 255;
+  --c-accent: 236 72 153;
+  --c-accent-light: 249 168 212;
+  --c-accent-strong: 219 39 119;
+  --c-signal-long: 0 255 170;
+  --c-signal-short: 255 50 80;
+  --c-signal-neutral: 148 163 184;
+}

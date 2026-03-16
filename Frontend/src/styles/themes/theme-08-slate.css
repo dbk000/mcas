@@ -1,0 +1,21 @@
+/*
+ * Slate — Cool neutral gray, minimal color.
+ * Understated, institutional, zero noise.
+ */
+[data-theme="slate"] {
+  --c-t-900: 15 15 18;
+  --c-t-800: 24 24 28;
+  --c-t-700: 34 34 40;
+  --c-t-600: 44 44 52;
+  --c-t-500: 255 255 255;
+  --c-t-400: 255 255 255;
+  --c-t-300: 255 255 255;
+  --c-t-200: 255 255 255;
+  --c-t-100: 255 255 255;
+  --c-accent: 148 163 184;
+  --c-accent-light: 203 213 225;
+  --c-accent-strong: 100 116 139;
+  --c-signal-long: 74 222 128;
+  --c-signal-short: 248 113 113;
+  --c-signal-neutral: 107 114 128;
+}

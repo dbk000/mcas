@@ -23,6 +23,9 @@ export const STORAGE_KEYS = {
   // Pipeline layout (layoutConfig.js)
   PIPELINE_LAYOUT_POSITIONS: 'pipeline-layout-positions',
 
+  // Theme (ThemeSwitcher.jsx)
+  THEME: 'mcas_theme',
+
   // Checkout flow (returnTo.js) — sessionStorage
   CHECKOUT_RETURN_TO: 'mcas_checkout_return_to',
 }

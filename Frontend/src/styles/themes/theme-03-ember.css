@@ -1,0 +1,21 @@
+/*
+ * Ember — Charcoal with warm orange-red glow.
+ * Forge-hot metal, late-night intensity.
+ */
+[data-theme="ember"] {
+  --c-t-900: 14 10 8;
+  --c-t-800: 22 16 12;
+  --c-t-700: 32 24 18;
+  --c-t-600: 42 32 24;
+  --c-t-500: 255 255 255;
+  --c-t-400: 255 255 255;
+  --c-t-300: 255 255 255;
+  --c-t-200: 255 255 255;
+  --c-t-100: 255 255 255;
+  --c-accent: 249 115 22;
+  --c-accent-light: 253 186 116;
+  --c-accent-strong: 234 88 12;
+  --c-signal-long: 74 222 128;
+  --c-signal-short: 248 113 113;
+  --c-signal-neutral: 168 162 158;
+}

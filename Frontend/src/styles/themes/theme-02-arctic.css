@@ -1,0 +1,21 @@
+/*
+ * Arctic — Ice-white on near-black with cyan highlights.
+ * Crisp, clinical, high-altitude clarity.
+ */
+[data-theme="arctic"] {
+  --c-t-900: 10 12 16;
+  --c-t-800: 16 20 28;
+  --c-t-700: 24 30 42;
+  --c-t-600: 32 40 56;
+  --c-t-500: 255 255 255;
+  --c-t-400: 255 255 255;
+  --c-t-300: 255 255 255;
+  --c-t-200: 255 255 255;
+  --c-t-100: 255 255 255;
+  --c-accent: 34 211 238;
+  --c-accent-light: 103 232 249;
+  --c-accent-strong: 6 182 212;
+  --c-signal-long: 45 212 191;
+  --c-signal-short: 251 113 133;
+  --c-signal-neutral: 148 163 184;
+}

@@ -1,0 +1,21 @@
+/*
+ * Ultraviolet — Deep purple-black with violet plasma.
+ * UV light lab, spectrograph glow, synthetic edge.
+ */
+[data-theme="ultraviolet"] {
+  --c-t-900: 10 6 16;
+  --c-t-800: 18 12 28;
+  --c-t-700: 26 18 40;
+  --c-t-600: 36 26 54;
+  --c-t-500: 255 255 255;
+  --c-t-400: 255 255 255;
+  --c-t-300: 255 255 255;
+  --c-t-200: 255 255 255;
+  --c-t-100: 255 255 255;
+  --c-accent: 167 139 250;
+  --c-accent-light: 196 181 253;
+  --c-accent-strong: 139 92 246;
+  --c-signal-long: 52 211 153;
+  --c-signal-short: 251 113 133;
+  --c-signal-neutral: 148 148 184;
+}

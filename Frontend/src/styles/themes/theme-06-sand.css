@@ -1,0 +1,21 @@
+/*
+ * Sand — Warm taupe-black with gold accents.
+ * Desert night, brass instruments, aged leather.
+ */
+[data-theme="sand"] {
+  --c-t-900: 14 12 10;
+  --c-t-800: 22 20 16;
+  --c-t-700: 32 28 22;
+  --c-t-600: 44 38 30;
+  --c-t-500: 255 255 255;
+  --c-t-400: 255 255 255;
+  --c-t-300: 255 255 255;
+  --c-t-200: 255 255 255;
+  --c-t-100: 255 255 255;
+  --c-accent: 234 179 8;
+  --c-accent-light: 253 224 71;
+  --c-accent-strong: 202 138 4;
+  --c-signal-long: 74 222 128;
+  --c-signal-short: 239 68 68;
+  --c-signal-neutral: 168 162 158;
+}

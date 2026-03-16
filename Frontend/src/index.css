@@ -1,4 +1,15 @@
 @import "./styles/tokens.css";
+@import "./styles/theme-base.css";
+@import "./styles/themes/theme-01-midnight.css";
+@import "./styles/themes/theme-02-arctic.css";
+@import "./styles/themes/theme-03-ember.css";
+@import "./styles/themes/theme-04-forest.css";
+@import "./styles/themes/theme-05-ocean.css";
+@import "./styles/themes/theme-06-sand.css";
+@import "./styles/themes/theme-07-neon.css";
+@import "./styles/themes/theme-08-slate.css";
+@import "./styles/themes/theme-09-copper.css";
+@import "./styles/themes/theme-10-ultraviolet.css";
 
 @tailwind base;
 @tailwind components;

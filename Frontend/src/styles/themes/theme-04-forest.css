@@ -1,0 +1,21 @@
+/*
+ * Forest — Deep pine green with emerald highlights.
+ * Quiet confidence, old-growth canopy at dusk.
+ */
+[data-theme="forest"] {
+  --c-t-900: 6 12 10;
+  --c-t-800: 10 20 16;
+  --c-t-700: 16 28 22;
+  --c-t-600: 22 38 30;
+  --c-t-500: 255 255 255;
+  --c-t-400: 255 255 255;
+  --c-t-300: 255 255 255;
+  --c-t-200: 255 255 255;
+  --c-t-100: 255 255 255;
+  --c-accent: 52 211 153;
+  --c-accent-light: 110 231 183;
+  --c-accent-strong: 16 185 129;
+  --c-signal-long: 134 239 172;
+  --c-signal-short: 252 165 165;
+  --c-signal-neutral: 156 163 175;
+}

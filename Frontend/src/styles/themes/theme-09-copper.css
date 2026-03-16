@@ -1,0 +1,21 @@
+/*
+ * Copper — Dark bronze with rose-gold warmth.
+ * Patina metal, whiskey bar, analog warmth.
+ */
+[data-theme="copper"] {
+  --c-t-900: 16 10 8;
+  --c-t-800: 26 18 14;
+  --c-t-700: 36 26 20;
+  --c-t-600: 48 36 28;
+  --c-t-500: 255 255 255;
+  --c-t-400: 255 255 255;
+  --c-t-300: 255 255 255;
+  --c-t-200: 255 255 255;
+  --c-t-100: 255 255 255;
+  --c-accent: 217 152 98;
+  --c-accent-light: 240 190 144;
+  --c-accent-strong: 180 120 70;
+  --c-signal-long: 74 222 128;
+  --c-signal-short: 248 113 113;
+  --c-signal-neutral: 168 162 158;
+}

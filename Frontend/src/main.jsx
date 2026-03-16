@@ -31,6 +31,12 @@ window.addEventListener('unhandledrejection', (event) => {
 
 log.info('App starting', { event: 'app_start' })
 
+// Apply saved theme before first paint to prevent flash
+try {
+  const savedTheme = localStorage.getItem('mcas_theme')
+  if (savedTheme) document.documentElement.setAttribute('data-theme', savedTheme)
+} catch { /* noop */ }
+
 async function enableMocking() {
   // STRICT: Do not even attempt import in production
   if (!import.meta.env.DEV) {

@@ -6,6 +6,7 @@ import Layout from './components/Layout'
 import MarketingLayout from './components/MarketingLayout'
 import PaidRoute from './components/PaidRoute'
 import DevHUD from './components/DevHUD'
+import ThemeSwitcher from './components/ThemeSwitcher'
 
 const log = getLogger('router')
 
@@ -227,6 +228,7 @@ export default function App() {
   return (
     <ErrorBoundary>
       <DevHUD />
+      <ThemeSwitcher />
       <RouteLogger />
       <Routes>
         <Route element={<PublicLayoutRoute />}>
