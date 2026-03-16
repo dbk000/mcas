@@ -3,17 +3,26 @@ import { Palette } from 'lucide-react'
 import { STORAGE_KEYS } from '../config/storageKeys'
 
 const THEMES = [
-  { id: '', label: 'Default', tag: 'dark' },
-  { id: 'midnight', label: 'Midnight', tag: 'dark' },
-  { id: 'arctic', label: 'Arctic', tag: 'light' },
-  { id: 'ember', label: 'Ember', tag: 'light warm' },
-  { id: 'forest', label: 'Forest', tag: 'dark' },
-  { id: 'ocean', label: 'Ocean', tag: 'mid' },
-  { id: 'sand', label: 'Sand', tag: 'mid warm' },
-  { id: 'neon', label: 'Neon', tag: 'AMOLED' },
-  { id: 'slate', label: 'Slate', tag: 'light' },
-  { id: 'copper', label: 'Copper', tag: 'high-contrast' },
-  { id: 'ultraviolet', label: 'Ultraviolet', tag: 'dark' },
+  { id: '', label: 'Default', tag: 'dark', group: 'core' },
+  { id: 'midnight', label: 'Midnight', tag: 'dark', group: 'core' },
+  { id: 'arctic', label: 'Arctic', tag: 'light', group: 'core' },
+  { id: 'ember', label: 'Ember', tag: 'parchment', group: 'ember' },
+  { id: 'ember-2', label: 'Dusk Linen', tag: 'soft warm', group: 'ember' },
+  { id: 'ember-3', label: 'Tobacco', tag: 'deep warm', group: 'ember' },
+  { id: 'ember-4', label: 'Clay', tag: 'earthy', group: 'ember' },
+  { id: 'ember-5', label: 'Oat Milk', tag: 'lightest', group: 'ember' },
+  { id: 'ember-6', label: 'Walnut', tag: 'darkest', group: 'ember' },
+  { id: 'ember-7', label: 'Sandstone', tag: 'desaturated', group: 'ember' },
+  { id: 'ember-8', label: 'Chai', tag: 'golden', group: 'ember' },
+  { id: 'ember-9', label: 'Smoked Oak', tag: 'gray-warm', group: 'ember' },
+  { id: 'ember-10', label: 'Antique', tag: 'dimmest', group: 'ember' },
+  { id: 'forest', label: 'Forest', tag: 'dark', group: 'core' },
+  { id: 'ocean', label: 'Ocean', tag: 'mid', group: 'core' },
+  { id: 'sand', label: 'Sand', tag: 'mid warm', group: 'core' },
+  { id: 'neon', label: 'Neon', tag: 'AMOLED', group: 'core' },
+  { id: 'slate', label: 'Slate', tag: 'light', group: 'core' },
+  { id: 'copper', label: 'Copper', tag: 'high-contrast', group: 'core' },
+  { id: 'ultraviolet', label: 'Ultraviolet', tag: 'dark', group: 'core' },
 ]
 
 function applyTheme(themeId) {
@@ -62,22 +71,28 @@ export default function ThemeSwitcher() {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-11 w-40 overflow-hidden rounded-lg border border-terminal-700 bg-terminal-800 shadow-xl">
-          {THEMES.map((t) => (
-            <button
-              key={t.id}
-              onClick={() => handleSelect(t.id)}
-              className={[
-                'flex w-full items-center gap-2 px-3 py-2 text-left text-xs transition-colors',
-                theme === t.id
-                  ? 'bg-amber-500/20 text-amber-300'
-                  : 'text-terminal-300 hover:bg-terminal-700 hover:text-terminal-100',
-              ].join(' ')}
-            >
-              <span>{t.label}</span>
-              <span className="ml-auto text-[9px] uppercase tracking-wider opacity-50">{t.tag}</span>
-            </button>
-          ))}
+        <div className="absolute right-0 top-11 max-h-[70vh] w-44 overflow-y-auto rounded-lg border border-terminal-700 bg-terminal-800 shadow-xl">
+          {THEMES.map((t, i) => {
+            const prev = i > 0 ? THEMES[i - 1] : null
+            const showSep = prev && prev.group !== t.group
+            return (
+              <div key={t.id}>
+                {showSep && <div className="mx-2 border-t border-terminal-600" />}
+                <button
+                  onClick={() => handleSelect(t.id)}
+                  className={[
+                    'flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs transition-colors',
+                    theme === t.id
+                      ? 'bg-amber-500/20 text-amber-300'
+                      : 'text-terminal-300 hover:bg-terminal-700 hover:text-terminal-100',
+                  ].join(' ')}
+                >
+                  <span>{t.label}</span>
+                  <span className="ml-auto text-[9px] uppercase tracking-wider opacity-50">{t.tag}</span>
+                </button>
+              </div>
+            )
+          })}
         </div>
       )}
     </div>

@@ -1,21 +1,196 @@
 /*
  * Ember — Warm sepia light theme. Cream paper, ink text.
  * Reduces blue light. Late-session comfort without going full dark.
+ * NOTE: 10 variants below — cycle through to find your sweet spot,
+ * then we'll promote the winner to the sole Ember theme.
  */
-[data-theme="ember"] {
-  --c-t-900: 252 248 240;
-  --c-t-800: 245 240 228;
-  --c-t-700: 231 224 210;
-  --c-t-600: 214 206 190;
-  --c-t-500: 60 50 35;
-  --c-t-400: 90 78 60;
-  --c-t-300: 120 105 82;
-  --c-t-200: 55 44 30;
-  --c-t-100: 35 28 18;
+
+/* Variant 1: Parchment — muted cream, low luminance */
+[data-theme="ember"], [data-theme="ember-1"] {
+  --c-t-900: 235 228 215;
+  --c-t-800: 224 216 200;
+  --c-t-700: 208 198 180;
+  --c-t-600: 190 180 162;
+  --c-t-500: 55 45 32;
+  --c-t-400: 85 74 56;
+  --c-t-300: 115 102 80;
+  --c-t-200: 50 40 28;
+  --c-t-100: 32 25 15;
+  --c-accent: 172 78 8;
+  --c-accent-light: 204 110 30;
+  --c-accent-strong: 140 60 5;
+  --c-signal-long: 22 140 65;
+  --c-signal-short: 175 30 30;
+  --c-signal-neutral: 115 108 95;
+}
+
+/* Variant 2: Dusk linen — slightly darker, pink undertone */
+[data-theme="ember-2"] {
+  --c-t-900: 228 220 210;
+  --c-t-800: 216 206 194;
+  --c-t-700: 198 188 174;
+  --c-t-600: 178 168 152;
+  --c-t-500: 52 42 34;
+  --c-t-400: 82 70 58;
+  --c-t-300: 110 98 82;
+  --c-t-200: 48 38 30;
+  --c-t-100: 30 22 16;
   --c-accent: 180 83 9;
-  --c-accent-light: 217 119 6;
+  --c-accent-light: 210 115 35;
   --c-accent-strong: 146 64 14;
-  --c-signal-long: 22 163 74;
-  --c-signal-short: 185 28 28;
-  --c-signal-neutral: 120 113 100;
+  --c-signal-long: 22 150 70;
+  --c-signal-short: 180 35 35;
+  --c-signal-neutral: 118 110 100;
+}
+
+/* Variant 3: Tobacco — deeper warmth, golden mid-tones */
+[data-theme="ember-3"] {
+  --c-t-900: 222 212 198;
+  --c-t-800: 208 198 182;
+  --c-t-700: 190 178 160;
+  --c-t-600: 170 158 140;
+  --c-t-500: 48 38 26;
+  --c-t-400: 78 66 48;
+  --c-t-300: 108 94 72;
+  --c-t-200: 44 34 22;
+  --c-t-100: 28 20 12;
+  --c-accent: 185 90 12;
+  --c-accent-light: 215 125 40;
+  --c-accent-strong: 150 68 8;
+  --c-signal-long: 28 145 68;
+  --c-signal-short: 178 32 32;
+  --c-signal-neutral: 112 105 92;
+}
+
+/* Variant 4: Clay — earthy, red-brown lean */
+[data-theme="ember-4"] {
+  --c-t-900: 225 215 205;
+  --c-t-800: 212 200 188;
+  --c-t-700: 195 182 168;
+  --c-t-600: 175 162 148;
+  --c-t-500: 50 38 30;
+  --c-t-400: 80 66 54;
+  --c-t-300: 112 96 80;
+  --c-t-200: 46 34 26;
+  --c-t-100: 30 20 14;
+  --c-accent: 168 72 22;
+  --c-accent-light: 200 105 50;
+  --c-accent-strong: 138 55 12;
+  --c-signal-long: 25 148 72;
+  --c-signal-short: 172 34 34;
+  --c-signal-neutral: 115 108 98;
+}
+
+/* Variant 5: Oat milk — lightest of the soft range, barely tinted */
+[data-theme="ember-5"] {
+  --c-t-900: 240 236 228;
+  --c-t-800: 230 225 215;
+  --c-t-700: 215 208 196;
+  --c-t-600: 198 190 178;
+  --c-t-500: 58 48 36;
+  --c-t-400: 88 78 62;
+  --c-t-300: 118 106 88;
+  --c-t-200: 52 42 30;
+  --c-t-100: 34 26 18;
+  --c-accent: 175 80 10;
+  --c-accent-light: 208 112 32;
+  --c-accent-strong: 142 62 6;
+  --c-signal-long: 22 145 68;
+  --c-signal-short: 178 30 30;
+  --c-signal-neutral: 118 112 100;
+}
+
+/* Variant 6: Walnut — darkest light variant, serious warmth */
+[data-theme="ember-6"] {
+  --c-t-900: 215 204 188;
+  --c-t-800: 200 188 170;
+  --c-t-700: 182 168 148;
+  --c-t-600: 162 148 128;
+  --c-t-500: 42 32 22;
+  --c-t-400: 72 60 44;
+  --c-t-300: 102 88 68;
+  --c-t-200: 38 28 18;
+  --c-t-100: 24 16 8;
+  --c-accent: 188 92 15;
+  --c-accent-light: 218 128 42;
+  --c-accent-strong: 155 72 10;
+  --c-signal-long: 30 152 72;
+  --c-signal-short: 175 35 35;
+  --c-signal-neutral: 108 100 88;
+}
+
+/* Variant 7: Sandstone — grey-warm, desaturated, almost brutalist */
+[data-theme="ember-7"] {
+  --c-t-900: 228 224 218;
+  --c-t-800: 215 210 202;
+  --c-t-700: 198 192 182;
+  --c-t-600: 180 172 162;
+  --c-t-500: 48 44 38;
+  --c-t-400: 78 72 62;
+  --c-t-300: 108 100 88;
+  --c-t-200: 44 40 34;
+  --c-t-100: 28 24 18;
+  --c-accent: 165 95 22;
+  --c-accent-light: 198 128 52;
+  --c-accent-strong: 135 72 12;
+  --c-signal-long: 25 142 68;
+  --c-signal-short: 170 35 35;
+  --c-signal-neutral: 112 108 98;
+}
+
+/* Variant 8: Chai — golden warmth, the India palette */
+[data-theme="ember-8"] {
+  --c-t-900: 232 222 205;
+  --c-t-800: 218 208 188;
+  --c-t-700: 202 190 170;
+  --c-t-600: 182 170 150;
+  --c-t-500: 50 40 25;
+  --c-t-400: 80 68 48;
+  --c-t-300: 110 96 72;
+  --c-t-200: 46 36 22;
+  --c-t-100: 30 22 10;
+  --c-accent: 192 120 8;
+  --c-accent-light: 222 155 35;
+  --c-accent-strong: 160 95 5;
+  --c-signal-long: 28 148 70;
+  --c-signal-short: 180 32 32;
+  --c-signal-neutral: 115 108 90;
+}
+
+/* Variant 9: Smoked oak — warm gray with just a hint of brown */
+[data-theme="ember-9"] {
+  --c-t-900: 225 220 212;
+  --c-t-800: 212 206 196;
+  --c-t-700: 196 188 178;
+  --c-t-600: 178 170 158;
+  --c-t-500: 45 40 34;
+  --c-t-400: 75 68 58;
+  --c-t-300: 105 96 84;
+  --c-t-200: 42 36 30;
+  --c-t-100: 26 22 16;
+  --c-accent: 178 88 14;
+  --c-accent-light: 210 120 38;
+  --c-accent-strong: 148 68 8;
+  --c-signal-long: 25 145 68;
+  --c-signal-short: 175 32 32;
+  --c-signal-neutral: 110 104 94;
+}
+
+/* Variant 10: Antique — the dimmest, almost mid-tone, aged paper */
+[data-theme="ember-10"] {
+  --c-t-900: 210 200 185;
+  --c-t-800: 195 184 168;
+  --c-t-700: 178 166 148;
+  --c-t-600: 158 146 128;
+  --c-t-500: 40 30 20;
+  --c-t-400: 68 56 40;
+  --c-t-300: 98 84 64;
+  --c-t-200: 36 26 16;
+  --c-t-100: 22 14 6;
+  --c-accent: 182 85 12;
+  --c-accent-light: 214 118 38;
+  --c-accent-strong: 150 65 6;
+  --c-signal-long: 30 148 70;
+  --c-signal-short: 172 35 35;
+  --c-signal-neutral: 105 98 85;
 }
