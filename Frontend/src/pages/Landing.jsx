@@ -71,7 +71,7 @@ export default function Landing() {
   const previewStrategies = (winnersPack.strategies || []).slice(0, 2)
 
   return (
-    <div className="mx-auto flex max-w-[1600px] flex-col gap-4 px-4 py-2 sm:gap-16 sm:px-6 sm:py-10 lg:px-8" data-operator-surface>
+    <div className="flex w-full flex-col gap-4 py-2 sm:gap-16 sm:py-10" data-operator-surface>
       <section className="grid gap-4 lg:grid-cols-[1.08fr_0.92fr] lg:items-start">
         <div className="space-y-3">
           <div className="flex flex-wrap items-center gap-2">

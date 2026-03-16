@@ -101,7 +101,7 @@ export default function MarketingLayout({ children }) {
       </header>
 
       <main className="relative">
-        <div className="mx-auto max-w-[1600px] p-4 sm:px-6 lg:px-8 lg:py-12">
+        <div className="mx-auto w-full px-4 sm:px-8 lg:px-16 lg:py-12">
           {children}
         </div>
       </main>
