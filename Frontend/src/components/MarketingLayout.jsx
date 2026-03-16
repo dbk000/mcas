@@ -42,7 +42,7 @@ export default function MarketingLayout({ children }) {
       </div>
 
       <header className="sticky top-0 z-40 border-b border-terminal-700/80 bg-terminal-900/90 backdrop-blur">
-        <div className="flex w-full items-center justify-between px-4 py-3 sm:px-8 lg:px-6 lg:py-4">
+        <div className="flex w-full items-center justify-between px-4 py-1.5 sm:px-8 lg:px-6">
           <Link to="/" className="flex items-center gap-3">
             <div className="flex size-10 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-amber-700 shadow-lg shadow-amber-900/30">
               <Zap className="size-5 text-terminal-900" />
@@ -101,7 +101,7 @@ export default function MarketingLayout({ children }) {
       </header>
 
       <main className="relative">
-        <div className="mx-auto w-full px-4 sm:px-8 lg:px-6 py-2">
+        <div className="mx-auto w-full px-4 sm:px-8 lg:px-6">
           {children}
         </div>
       </main>
