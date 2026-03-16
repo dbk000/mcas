@@ -34,7 +34,7 @@ export default function Landing() {
         <LayoutBloomberg />
       )}
 
-      {import.meta.env.DEV && (
+      {(
         <div className="fixed bottom-4 right-4 z-[9999] rounded-lg border border-terminal-700 bg-terminal-800 p-2 shadow-xl">
           <select
             value={layoutId}
