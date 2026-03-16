@@ -49,7 +49,7 @@ export default function MarketingLayout({ children }) {
             </div>
             <div>
               <div className="text-sm font-semibold tracking-[0.25em] text-terminal-200">MCAS</div>
-              <div className="text-[11px] uppercase tracking-[0.28em] text-terminal-500">Operator Access</div>
+              <div className="text-[11px] uppercase tracking-[0.28em] text-terminal-500">Market Cognition At Scale</div>
             </div>
           </Link>
 
@@ -61,7 +61,7 @@ export default function MarketingLayout({ children }) {
 
           <div className="hidden items-center gap-3 md:flex">
             <Link to="/winners" className="btn btn-ghost btn-sm">
-              Free Examples
+              Take the tour
             </Link>
             <Link to={primaryHref} className="btn btn-primary btn-sm">
               {primaryLabel}
@@ -89,7 +89,7 @@ export default function MarketingLayout({ children }) {
               ))}
               <div className="grid grid-cols-2 gap-3 pt-2">
                 <Link to="/winners" className="btn btn-secondary btn-sm" onClick={() => setMobileMenuOpen(false)}>
-                  Free Examples
+                  Take the tour
                 </Link>
                 <Link to={primaryHref} className="btn btn-primary btn-sm" onClick={() => setMobileMenuOpen(false)}>
                   {primaryLabel}

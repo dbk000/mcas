@@ -22,11 +22,25 @@ function SourceStatusPill({ status }) {
 }
 
 function HeroMetric({ metric }) {
-  return (
-    <div className="rounded-2xl border border-terminal-800 bg-terminal-900/85 p-3">
+  const content = (
+    <>
       <p className="text-[10px] uppercase tracking-[0.18em] text-terminal-500">{metric.label}</p>
       <p className="mt-2 font-mono text-xl text-amber-300">{metric.value}</p>
       <p className="mt-1 text-[11px] text-terminal-400">{metric.subtext}</p>
+    </>
+  )
+
+  if (metric.link) {
+    return (
+      <Link to={metric.link} className="block rounded-2xl border border-terminal-800 bg-terminal-900/85 p-3 transition-colors hover:border-amber-500/30">
+        {content}
+      </Link>
+    )
+  }
+
+  return (
+    <div className="rounded-2xl border border-terminal-800 bg-terminal-900/85 p-3">
+      {content}
     </div>
   )
 }
@@ -61,9 +75,11 @@ export default function Landing() {
       <section className="grid gap-4 lg:grid-cols-[1.08fr_0.92fr] lg:items-start">
         <div className="space-y-3">
           <div className="flex flex-wrap items-center gap-2">
-            <SourceStatusPill status="placeholder" />
-            <span className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[10px] uppercase tracking-[0.2em] text-emerald-300">
-              Curated proof path
+            <span className="rounded-full border border-amber-500/20 bg-amber-500/10 px-3 py-1 text-[11px] uppercase tracking-[0.22em] text-amber-300">
+              Live Strategies
+            </span>
+            <span className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-[11px] uppercase tracking-[0.22em] text-emerald-300">
+              Glass Box Verified
             </span>
           </div>
 
@@ -82,7 +98,7 @@ export default function Landing() {
                 </div>
                 <div className="inline-flex items-center gap-1.5 rounded-full bg-terminal-800 px-2.5 py-1 text-[9px] text-terminal-300">
                   <TimerReset className="size-3 text-amber-300" />
-                  {proofPack?.honest_pf_demo?.days_excluded_infinite_profitable ?? 0} infinite day(s) excluded
+                  {proofPack?.honest_pf_demo?.days_excluded_infinite_profitable ?? 0} perfect days excluded from average
                 </div>
               </div>
             </div>
@@ -113,13 +129,13 @@ export default function Landing() {
                 placement: 'hero_secondary',
                 sourceStatus: 'placeholder',
                 ctaId: 'landing-winners',
-                ctaLabel: 'Inspect curated winners',
+                ctaLabel: 'Inspect top winners',
                 href: '/winners',
                 tier,
               })}
               className="btn btn-secondary h-10 rounded-full px-4 text-sm sm:h-12 sm:px-5 sm:text-base"
             >
-              Inspect curated winners
+              Inspect top winners
             </Link>
             <Link
               to="/pricing"
@@ -140,7 +156,7 @@ export default function Landing() {
           </div>
 
           <p className="text-[10px] leading-4 text-terminal-500 sm:text-xs">
-            Not financial advice. Public pages show curated historical examples. Live app functionality remains access-limited and depends on local Pro activation plus your API configuration.
+            Not financial advice. Public pages show selected historical examples. Live app functionality remains access-limited and depends on local Pro activation plus your API configuration.
           </p>
         </div>
 
@@ -222,7 +238,7 @@ export default function Landing() {
         <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="text-[10px] uppercase tracking-[0.22em] text-terminal-500">Preview continuity</p>
-            <h2 className="mt-1 text-xl font-semibold text-terminal-100 sm:text-2xl">Curated winners stay strategy-native and dense.</h2>
+            <h2 className="mt-1 text-xl font-semibold text-terminal-100 sm:text-2xl">Ranked winners stay strategy-native and dense.</h2>
           </div>
           <Link
             to="/winners"

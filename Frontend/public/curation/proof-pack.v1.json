@@ -10,25 +10,28 @@
       "id": "strategies_tracked",
       "label": "Strategies tracked",
       "value": "12",
-      "subtext": "crypto plus equities"
+      "subtext": "crypto plus equities",
+      "_todo": "wire to /v1/public/stats when endpoint exists"
     },
     {
-      "id": "verified_lineage_rate",
-      "label": "Verified lineage rate",
-      "value": "97.4%",
-      "subtext": "sampled replay set"
+      "id": "auditable_data_flow",
+      "label": "Data flow",
+      "value": "Auditable",
+      "subtext": "verified signal lineage",
+      "link": "/lineage"
     },
     {
       "id": "daily_pf_range",
       "label": "Avg daily PF range",
       "value": "1.2 to 2.4",
-      "subtext": "across demo strategies"
+      "subtext": "across demo strategies",
+      "_todo": "wire to /v1/public/stats when endpoint exists"
     },
     {
       "id": "decision_latency",
       "label": "Decision latency",
       "value": "< 300 ms",
-      "subtext": "UI surface target"
+      "subtext": "from data to decision"
     }
   ],
   "glass_box_walkthrough": {
