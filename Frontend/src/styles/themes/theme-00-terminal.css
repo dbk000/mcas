@@ -1,0 +1,21 @@
+/*
+ * Terminal — The original dark charcoal with amber accents.
+ * Classic MCAS look. Bloomberg meets hacker terminal.
+ */
+[data-theme="terminal"] {
+  --c-t-900: 10 10 12;
+  --c-t-800: 17 17 21;
+  --c-t-700: 24 24 29;
+  --c-t-600: 31 31 38;
+  --c-t-500: 255 255 255;
+  --c-t-400: 255 255 255;
+  --c-t-300: 255 255 255;
+  --c-t-200: 255 255 255;
+  --c-t-100: 255 255 255;
+  --c-accent: 245 158 11;
+  --c-accent-light: 252 211 77;
+  --c-accent-strong: 217 119 6;
+  --c-signal-long: 16 185 129;
+  --c-signal-short: 239 68 68;
+  --c-signal-neutral: 107 114 128;
+}

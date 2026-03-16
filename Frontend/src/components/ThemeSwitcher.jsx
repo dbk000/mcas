@@ -3,7 +3,8 @@ import { Palette } from 'lucide-react'
 import { STORAGE_KEYS } from '../config/storageKeys'
 
 const THEMES = [
-  { id: '', label: 'Default', tag: 'dark', group: 'core' },
+  { id: '', label: 'Default (Ember)', tag: 'warm light', group: 'core' },
+  { id: 'terminal', label: 'Terminal', tag: 'dark', group: 'core' },
   { id: 'midnight', label: 'Midnight', tag: 'dark', group: 'core' },
   { id: 'arctic', label: 'Arctic', tag: 'light', group: 'core' },
   { id: 'ember', label: 'Ember', tag: 'parchment', group: 'ember' },

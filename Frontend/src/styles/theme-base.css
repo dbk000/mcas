@@ -2,26 +2,29 @@
  * Base theme color variables.
  * All values are space-separated RGB triplets for Tailwind opacity support.
  * Theme overrides go in src/styles/themes/ using [data-theme="name"] selectors.
+ *
+ * Default is Ember Parchment — warm cream, dark ink text.
+ * To revert to the old dark terminal, select "Default (Dark)" in the theme switcher.
  */
 :root {
-  /* Terminal scale: dark backgrounds → light text */
-  --c-t-900: 10 10 12;
-  --c-t-800: 17 17 21;
-  --c-t-700: 24 24 29;
-  --c-t-600: 31 31 38;
-  --c-t-500: 255 255 255;
-  --c-t-400: 255 255 255;
-  --c-t-300: 255 255 255;
-  --c-t-200: 255 255 255;
-  --c-t-100: 255 255 255;
+  /* Terminal scale: warm cream backgrounds → dark ink text */
+  --c-t-900: 235 228 215;
+  --c-t-800: 224 216 200;
+  --c-t-700: 208 198 180;
+  --c-t-600: 178 168 150;
+  --c-t-500: 95 82 62;
+  --c-t-400: 75 64 46;
+  --c-t-300: 60 50 36;
+  --c-t-200: 42 34 22;
+  --c-t-100: 28 22 12;
 
-  /* Accent (amber) */
-  --c-accent: 245 158 11;
-  --c-accent-light: 252 211 77;
-  --c-accent-strong: 217 119 6;
+  /* Accent (burnt orange) */
+  --c-accent: 172 78 8;
+  --c-accent-light: 204 110 30;
+  --c-accent-strong: 140 60 5;
 
   /* Signal semantic colors */
-  --c-signal-long: 16 185 129;
-  --c-signal-short: 239 68 68;
-  --c-signal-neutral: 107 114 128;
+  --c-signal-long: 16 120 55;
+  --c-signal-short: 175 30 30;
+  --c-signal-neutral: 95 88 72;
 }

@@ -1,5 +1,6 @@
 @import "./styles/tokens.css";
 @import "./styles/theme-base.css";
+@import "./styles/themes/theme-00-terminal.css";
 @import "./styles/themes/theme-01-midnight.css";
 @import "./styles/themes/theme-02-arctic.css";
 @import "./styles/themes/theme-03-ember.css";
