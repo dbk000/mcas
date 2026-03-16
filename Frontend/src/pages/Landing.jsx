@@ -85,10 +85,10 @@ export default function Landing() {
 
           <div className="space-y-2">
             <h1 className="max-w-4xl text-xl font-semibold leading-tight text-terminal-100 sm:text-4xl lg:text-6xl">
-              Strategy intelligence that shows the flattering number, the stricter number, and the timing integrity behind both.
+              Comprehensive realtime intelligence that shows the flattering number, the stricter number, and the timing integrity behind both.
             </h1>
             <p className="max-w-3xl text-[13px] leading-5 text-terminal-300 sm:text-lg">
-              MCAS splits the public archive from the paid operator app. Free pages show ranked historical winners and authored proof strips. Pro unlocks live strategy ladders, Glass Box causality, and action-window context inside the app shell.
+              MCAS splits the public archive from the paid operator app. Free pages show ranked historical winners and verified proof strips. Pro unlocks live strategy ladders, Glass Box causality, and action-window context inside the app shell.
             </p>
             <div className="rounded-3xl border border-terminal-800 bg-terminal-900/85 p-2">
               <div className="flex flex-wrap items-center gap-2">
@@ -170,7 +170,7 @@ export default function Landing() {
             <CardHeader className="p-4 pb-2">
               <CardTitle className="flex items-center gap-2 text-sm text-terminal-100">
                 <ScanLine className="size-3.5 text-amber-300" />
-                Honest metrics strip
+                Performance snapshot
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 p-4 pt-0">
@@ -194,7 +194,7 @@ export default function Landing() {
         </div>
       </section>
 
-      <section className="grid gap-4 lg:grid-cols-[0.84fr_1.16fr]">
+      <section className="grid gap-4 lg:grid-cols-[1.16fr_0.84fr]">
         <Card className="rounded-3xl border-terminal-800 bg-terminal-900/85">
           <CardHeader className="p-4">
             <CardTitle className="flex items-center gap-2 text-sm text-terminal-100">
