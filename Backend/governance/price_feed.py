@@ -292,7 +292,7 @@ class PriceFeed:
                 "symbol_count": len(symbols),
             })
         except Exception as e:
-            resp = vars(e).get("response")
+            resp = e.response if isinstance(e, requests.exceptions.HTTPError) else None
             status = resp.status_code if resp is not None else None
             logger.error("Batch price fetch failed", extra={
                 "event": "api_error", "endpoint": "ticker/price",

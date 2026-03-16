@@ -10,12 +10,8 @@ from governance.bootstrap import get_config
 
 def get_dxy_regime_enabled() -> bool:
     """Read DXY_REGIME_ENABLED from the governed registry."""
-    try:
-        cfg = get_config().Worker
-        return cfg.DXY_REGIME_ENABLED
-    except SystemExit:
-        # Bootstrap hasn't run yet — safe default
-        return True
+    cfg = get_config().Worker
+    return cfg.DXY_REGIME_ENABLED
 
 
 # Backward-compatible module-level attribute.

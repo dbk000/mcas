@@ -4,29 +4,18 @@
  * Structured, leveled logging mirroring the backend's json_logging.py conventions.
  * Console output + ring buffer + optional server-side persistence.
  */
+import { STORAGE_KEYS } from '../config/storageKeys'
 
-// ---------------------------------------------------------------------------
-// Levels
-// ---------------------------------------------------------------------------
 const LEVELS = { DEBUG: 0, INFO: 1, WARN: 2, ERROR: 3 }
 const LEVEL_NAMES = ['DEBUG', 'INFO', 'WARN', 'ERROR']
-
-// ---------------------------------------------------------------------------
-// Version (injected at build time, fallback to unknown)
-// ---------------------------------------------------------------------------
 const VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'dev'
 
-// ---------------------------------------------------------------------------
-// Global context (spread into every log entry)
-// ---------------------------------------------------------------------------
 const _globalContext = {}
 
-export function setContext(k, v) { _globalContext[k] = v }
-export function clearContext(k) { delete _globalContext[k] }
+function setContext(key, value) {
+  _globalContext[key] = value
+}
 
-// ---------------------------------------------------------------------------
-// Correlation ID — 8-char hex, rotates every 5 min or on navigation
-// ---------------------------------------------------------------------------
 let _correlationId = null
 let _correlationCreatedAt = 0
 const CORRELATION_TTL_MS = 5 * 60 * 1000
@@ -34,7 +23,7 @@ const CORRELATION_TTL_MS = 5 * 60 * 1000
 function generateHexId(len) {
   const arr = new Uint8Array(len / 2)
   crypto.getRandomValues(arr)
-  return Array.from(arr, b => b.toString(16).padStart(2, '0')).join('')
+  return Array.from(arr, (byte) => byte.toString(16).padStart(2, '0')).join('')
 }
 
 export function rotateCorrelationId() {
@@ -51,110 +40,142 @@ export function getCorrelationId() {
   return _correlationId
 }
 
-// Initialise on load
 rotateCorrelationId()
 
-// ---------------------------------------------------------------------------
-// Ring buffer (500 entries)
-// ---------------------------------------------------------------------------
 const RING_SIZE = 500
 const _ringBuffer = []
 
 function pushToRing(entry) {
-  if (_ringBuffer.length >= RING_SIZE) _ringBuffer.shift()
+  if (_ringBuffer.length >= RING_SIZE) {
+    _ringBuffer.shift()
+  }
+
   _ringBuffer.push(entry)
 }
 
-export function getRecentLogs() { return _ringBuffer.slice() }
-export function dumpLogs() { return JSON.stringify(_ringBuffer, null, 2) }
+function getRecentLogs() {
+  return _ringBuffer.slice()
+}
 
-// ---------------------------------------------------------------------------
-// Level control
-// ---------------------------------------------------------------------------
+function dumpLogs() {
+  return JSON.stringify(_ringBuffer, null, 2)
+}
+
 function resolveLevel() {
-  // localStorage takes priority (can change at runtime, no restart)
   try {
-    const ls = localStorage.getItem('mcas_log_level')
-    if (ls && LEVELS[ls.toUpperCase()] !== undefined) return LEVELS[ls.toUpperCase()]
-  } catch { /* SSR / restricted */ }
-  // Env-var fallback (set at build time)
+    const storedLevel = localStorage.getItem(STORAGE_KEYS.LOG_LEVEL)
+    if (storedLevel && LEVELS[storedLevel.toUpperCase()] !== undefined) {
+      return LEVELS[storedLevel.toUpperCase()]
+    }
+  } catch {
+    // no-op
+  }
+
   try {
-    const env = import.meta.env?.VITE_LOG_LEVEL
-    if (env && LEVELS[env.toUpperCase()] !== undefined) return LEVELS[env.toUpperCase()]
-  } catch { /* ignore */ }
+    const envLevel = import.meta.env?.VITE_LOG_LEVEL
+    if (envLevel && LEVELS[envLevel.toUpperCase()] !== undefined) {
+      return LEVELS[envLevel.toUpperCase()]
+    }
+  } catch {
+    // no-op
+  }
+
   return LEVELS.INFO
 }
 
-export function setLogLevel(level) {
-  try { localStorage.setItem('mcas_log_level', String(level).toUpperCase()) } catch { /* noop */ }
+function setLogLevel(level) {
+  try {
+    localStorage.setItem(STORAGE_KEYS.LOG_LEVEL, String(level).toUpperCase())
+  } catch {
+    // no-op
+  }
 }
 
-// ---------------------------------------------------------------------------
-// Server-side log shipping
-// ---------------------------------------------------------------------------
+const REDACTED = '[REDACTED]'
+const SENSITIVE_KEY_PATTERN = /(api[-_]?key|authorization|password|secret|token|cookie|set-cookie)/i
+
+function sanitizeLogValue(value, key = '') {
+  if (SENSITIVE_KEY_PATTERN.test(key)) {
+    return REDACTED
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((item) => sanitizeLogValue(item, key))
+  }
+
+  if (!value || typeof value !== 'object') {
+    return value
+  }
+
+  return Object.fromEntries(
+    Object.entries(value).map(([childKey, childValue]) => [
+      childKey,
+      sanitizeLogValue(childValue, childKey),
+    ])
+  )
+}
+
+function sanitizeLogEntry(entry) {
+  return sanitizeLogValue(entry)
+}
+
 const _sessionId = generateHexId(16)
 let _pendingLogs = []
 let _shipTimer = null
 let _lastErrorShipTime = 0
+let _shipBatch = null
+let _sendBeaconBatch = null
 
-function getBaseUrl() {
-  try {
-    const raw = localStorage.getItem('mcas_api_config')
-    if (raw) {
-      const parsed = JSON.parse(raw)
-      return (parsed.baseUrl || '').replace(/\/+$/, '')
-    }
-  } catch { /* noop */ }
-  return ''
-}
-
-function shipLogs() {
-  if (_pendingLogs.length === 0) return
-  const baseUrl = getBaseUrl()
-  if (!baseUrl) return
-
-  const payload = JSON.stringify({
+function buildPayload(entries) {
+  return {
     session_id: _sessionId,
     user_agent: navigator.userAgent,
-    entries: _pendingLogs,
-  })
+    entries,
+  }
+}
+
+export function configureLogShipping({ shipBatch, sendBeaconBatch } = {}) {
+  _shipBatch = typeof shipBatch === 'function' ? shipBatch : null
+  _sendBeaconBatch = typeof sendBeaconBatch === 'function' ? sendBeaconBatch : null
+}
+
+async function shipLogs() {
+  if (_pendingLogs.length === 0 || !_shipBatch) {
+    return
+  }
+
+  const entries = _pendingLogs
   _pendingLogs = []
 
-  fetch(`${baseUrl}/v1/telemetry/frontend-logs`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: payload,
-  }).catch(() => { /* best-effort, silently drop */ })
+  try {
+    await _shipBatch(buildPayload(entries))
+  } catch {
+    // best-effort transport
+  }
 }
 
 function scheduleShipping() {
-  if (_shipTimer) return
-  _shipTimer = setInterval(shipLogs, 30_000)
+  if (_shipTimer) {
+    return
+  }
+
+  _shipTimer = setInterval(() => {
+    void shipLogs()
+  }, 30_000)
 }
 
-// Ship on page unload via beacon
 if (typeof window !== 'undefined') {
   window.addEventListener('beforeunload', () => {
-    if (_pendingLogs.length === 0) return
-    const baseUrl = getBaseUrl()
-    if (!baseUrl) return
-    const payload = JSON.stringify({
-      session_id: _sessionId,
-      user_agent: navigator.userAgent,
-      entries: _pendingLogs,
-    })
-    try { navigator.sendBeacon(`${baseUrl}/v1/telemetry/frontend-logs`, payload) } catch { /* noop */ }
-  })
-}
+    if (_pendingLogs.length === 0 || !_sendBeaconBatch) {
+      return
+    }
 
-// ---------------------------------------------------------------------------
-// Logger factory
-// ---------------------------------------------------------------------------
-const CONSOLE_MAP = {
-  DEBUG: 'info',
-  INFO: 'info',
-  WARN: 'warn',
-  ERROR: 'error',
+    try {
+      _sendBeaconBatch(buildPayload(_pendingLogs))
+    } catch {
+      // no-op
+    }
+  })
 }
 
 class Logger {
@@ -163,14 +184,14 @@ class Logger {
   }
 
   _log(levelIdx, message, extra = {}) {
-    if (levelIdx < resolveLevel()) return
+    if (levelIdx < resolveLevel()) {
+      return
+    }
 
     const levelName = LEVEL_NAMES[levelIdx]
-
-    // Ensure correlation ID is fresh
     getCorrelationId()
 
-    const entry = {
+    const entry = sanitizeLogEntry({
       timestamp: new Date().toISOString(),
       level: levelName,
       logger: this.name,
@@ -179,32 +200,30 @@ class Logger {
       version: VERSION,
       ..._globalContext,
       ...extra,
+    })
+
+    if (levelName === 'ERROR') {
+      console.error(`[${levelName}] ${this.name}: ${message}`, entry)
+    } else {
+      console.warn(`[${levelName}] ${this.name}: ${message}`, entry)
     }
 
-    // Console
-    const method = CONSOLE_MAP[levelName]
-    console[method](`[${levelName}] ${this.name}: ${message}`, entry)
-
-    // Ring buffer
     pushToRing(entry)
-
-    // Pending buffer for server shipping
     _pendingLogs.push(entry)
     scheduleShipping()
 
-    // Immediate ship on ERROR (debounced: at most once per 5s)
     if (levelIdx >= LEVELS.ERROR) {
       const now = Date.now()
       if (now - _lastErrorShipTime > 5000) {
         _lastErrorShipTime = now
-        shipLogs()
+        void shipLogs()
       }
     }
   }
 
   debug(message, extra) { this._log(LEVELS.DEBUG, message, extra) }
-  info(message, extra)  { this._log(LEVELS.INFO, message, extra) }
-  warn(message, extra)  { this._log(LEVELS.WARN, message, extra) }
+  info(message, extra) { this._log(LEVELS.INFO, message, extra) }
+  warn(message, extra) { this._log(LEVELS.WARN, message, extra) }
   error(message, extra) { this._log(LEVELS.ERROR, message, extra) }
 }
 
@@ -212,9 +231,6 @@ export function getLogger(name) {
   return new Logger(name)
 }
 
-// ---------------------------------------------------------------------------
-// Devtools helper
-// ---------------------------------------------------------------------------
 if (typeof window !== 'undefined') {
   window.__mcas = { dumpLogs, getRecentLogs, setLogLevel }
 }

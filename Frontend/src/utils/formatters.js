@@ -61,41 +61,11 @@ export function formatDateTime(isoString) {
   }
 }
 
-export function formatDate(isoString) {
-  if (!isoString) return '—'
-  try {
-    const date = typeof isoString === 'string' ? parseISO(isoString) : isoString
-    return format(date, 'MMM d, yyyy')
-  } catch {
-    return '—'
-  }
-}
-
-export function formatTime(isoString) {
-  if (!isoString) return '—'
-  try {
-    const date = typeof isoString === 'string' ? parseISO(isoString) : isoString
-    return format(date, 'HH:mm:ss')
-  } catch {
-    return '—'
-  }
-}
-
 export function formatRelativeTime(isoString) {
   if (!isoString) return '—'
   try {
     const date = typeof isoString === 'string' ? parseISO(isoString) : isoString
     return formatDistanceToNow(date, { addSuffix: true })
-  } catch {
-    return '—'
-  }
-}
-
-export function formatTimestamp(ts) {
-  if (!ts) return '—'
-  try {
-    const date = new Date(typeof ts === 'number' ? ts : ts)
-    return format(date, 'MMM d HH:mm')
   } catch {
     return '—'
   }
@@ -135,57 +105,11 @@ export function copyToClipboard(text) {
   return Promise.resolve()
 }
 
-// Status helpers
-export function getStatusColor(status) {
-  const colors = {
-    // Run status
-    PENDING: 'text-amber-400',
-    QUEUED: 'text-amber-400',
-    CLAIMED: 'text-blue-400',
-    RUNNING: 'text-blue-400',
-    SUCCESS: 'text-green-400',
-    FAILED: 'text-red-400',
-    CANCELED: 'text-terminal-400',
-    // Position status
-    OPEN: 'text-blue-400',
-    CLOSED: 'text-terminal-300',
-    // Health
-    healthy: 'text-green-400',
-    unhealthy: 'text-red-400',
-    // Auth
-    ok: 'text-green-400',
-    unauthorized: 'text-red-400',
-  }
-  return colors[status] || 'text-terminal-300'
-}
-
-export function getDirectionColor(direction) {
-  if (!direction) return 'text-terminal-300'
-  const d = direction.toLowerCase()
-  if (d === 'long') return 'text-signal-long'
-  if (d === 'short') return 'text-signal-short'
-  return 'text-terminal-300'
-}
-
-export function getDirectionBg(direction) {
-  if (!direction) return 'bg-terminal-600'
-  const d = direction.toLowerCase()
-  if (d === 'long') return 'bg-signal-long/20'
-  if (d === 'short') return 'bg-signal-short/20'
-  return 'bg-terminal-600'
-}
-
 export function getPnLColor(pnl) {
   if (pnl === null || pnl === undefined) return 'text-terminal-300'
   if (pnl > 0) return 'text-signal-long'
   if (pnl < 0) return 'text-signal-short'
   return 'text-terminal-300'
-}
-
-// Extract symbol base (e.g., "BTC" from "BTCUSDT")
-export function extractBase(symbol) {
-  if (!symbol) return ''
-  return symbol.replace('USDT', '').replace('BUSD', '').replace('BTC', '')
 }
 
 /**

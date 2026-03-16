@@ -320,6 +320,39 @@ class SetupBase(ABC, Generic[TState, TSignal]):
         """
         pass
 
+    def get_bootstrap_metadata(self) -> dict:
+        """Return bootstrap metadata for node_version sync.
+
+        Override in subclasses to provide setup-specific metadata.
+        Default: empty dict (no extra metadata beyond parameters).
+        """
+        return {}
+
+    def update_config(self, params: dict) -> dict:
+        """Hot-reload config from live parameters.
+
+        Override in subclasses that support runtime config updates.
+        Default: no-op, returns empty dict (no changes).
+
+        Args:
+            params: New parameter values from live config.
+
+        Returns:
+            Dict of changed fields: {field: {"old": ..., "new": ...}}.
+        """
+        return {}
+
+    def sync_config(self, changed: dict) -> None:
+        """Sync governance layer after update_config changes.
+
+        Override in subclasses that need TypedConfigRegistry sync.
+        Default: no-op.
+
+        Args:
+            changed: Dict of changed fields from update_config().
+        """
+        pass
+
     def get_param_dict(self) -> dict:
         """Get parameters as a dictionary for fingerprinting."""
         return {p.name: p.default for p in self.parameters}

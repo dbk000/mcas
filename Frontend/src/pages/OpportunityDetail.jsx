@@ -1,120 +1,22 @@
 import { useParams, Link } from 'react-router-dom'
-import { ArrowLeft, Copy, Check, BarChart3, Clock } from 'lucide-react'
-import { useState, useEffect } from 'react'
+import { ArrowLeft } from 'lucide-react'
+import { useState } from 'react'
 import { useOpportunity, useLiveOpportunity } from '../hooks/useData'
 import { useToast } from '../context/ToastContext'
 import {
   Card,
-  CardHeader,
-  CardTitle,
   CardContent,
-  Badge,
-  DirectionBadge,
-  StatusBadge,
   Skeleton,
-  JsonView,
-  DataRow
 } from '../components/ui'
 import {
-  formatPrice,
-  formatDollar,
-  formatDateTime,
-  formatRelativeTime,
   formatTradePlan,
   copyToClipboard,
-  isEquitiesStrategy
 } from '../utils/formatters'
-import TraceViewer from '../components/TraceViewer'
-
-function parseCompositeId(id) {
-  if (!id || !id.includes(':')) return null
-  const parts = id.split(':')
-  // Format: setup_id:symbol:tf (e.g. "S2:BTCUSDT:1m")
-  if (parts.length >= 3) {
-    return { setup_id: parts[0], symbol: parts[1], tf: parts.slice(2).join(':') }
-  }
-  return null
-}
-
-function ExpiryCountdown({ expiresAt }) {
-  const [remaining, setRemaining] = useState('')
-  const [isUrgent, setIsUrgent] = useState(false)
-
-  useEffect(() => {
-    if (!expiresAt) return
-
-    function update() {
-      const now = Date.now() / 1000
-      const diff = expiresAt - now
-      if (diff <= 0) {
-        setRemaining('Expired')
-        setIsUrgent(true)
-        return
-      }
-      const mins = Math.floor(diff / 60)
-      const secs = Math.floor(diff % 60)
-      setRemaining(`${mins}m ${secs}s`)
-      setIsUrgent(diff < 600) // < 10 minutes
-    }
-
-    update()
-    const interval = setInterval(update, 30000)
-    return () => clearInterval(interval)
-  }, [expiresAt])
-
-  if (!expiresAt) return null
-
-  return (
-    <span className={`font-mono ${isUrgent ? 'text-red-400' : 'text-terminal-300'}`}>
-      {remaining}
-    </span>
-  )
-}
-
-function ActionByCountdown({ actionByTs }) {
-  const [remaining, setRemaining] = useState('')
-  const [isUrgent, setIsUrgent] = useState(false)
-
-  useEffect(() => {
-    if (!actionByTs) return
-
-    function update() {
-      const targetMs = typeof actionByTs === 'number'
-        ? (actionByTs < 1e12 ? actionByTs * 1000 : actionByTs)
-        : new Date(actionByTs).getTime()
-      if (isNaN(targetMs)) { setRemaining(''); return }
-
-      const diffMs = targetMs - Date.now()
-      if (diffMs <= 0) {
-        setRemaining('Deadline passed')
-        setIsUrgent(true)
-        return
-      }
-      const totalMins = Math.floor(diffMs / 60000)
-      const hours = Math.floor(totalMins / 60)
-      const mins = totalMins % 60
-      const secs = Math.floor((diffMs % 60000) / 1000)
-      if (hours > 0) {
-        setRemaining(`${hours}h ${mins}m ${secs}s`)
-      } else {
-        setRemaining(`${mins}m ${secs}s`)
-      }
-      setIsUrgent(diffMs < 600000) // < 10 minutes
-    }
-
-    update()
-    const interval = setInterval(update, 30000)
-    return () => clearInterval(interval)
-  }, [actionByTs])
-
-  if (!actionByTs || !remaining) return null
-
-  return (
-    <span className={`font-mono ${isUrgent ? 'text-red-400' : 'text-terminal-300'}`}>
-      {remaining}
-    </span>
-  )
-}
+import { usePublicJson } from '../utils/publicJson'
+import OpportunityDetailHeader from './opportunity-detail/OpportunityDetailHeader'
+import OpportunityTradeDetails from './opportunity-detail/OpportunityTradeDetails'
+import OpportunitySidebar from './opportunity-detail/OpportunitySidebar'
+import { parseCompositeId } from './opportunity-detail/utils'
 
 export default function OpportunityDetail() {
   const { id } = useParams()
@@ -122,6 +24,7 @@ export default function OpportunityDetail() {
   const decodedId = decodeURIComponent(id)
   const { addToast } = useToast()
   const [copied, setCopied] = useState(false)
+  const { data: glassBoxPlaceholderPack } = usePublicJson('/curation/glass-box-cases.v1.json', {})
 
   const composite = parseCompositeId(decodedId)
   const isLive = !!composite
@@ -137,6 +40,16 @@ export default function OpportunityDetail() {
   const opp = isLive ? liveOpp : pgOpp
   const loading = isLive ? liveLoading : pgLoading
   const error = isLive ? liveError : pgError
+  const liveLineage = opp?.sim_trace?.kline_lineage || null
+  const liveWalkthrough = Array.isArray(liveLineage?.phases) ? liveLineage.phases : []
+  const placeholderWalkthrough = Array.isArray(glassBoxPlaceholderPack?.public_walkthrough?.timeline)
+    ? glassBoxPlaceholderPack.public_walkthrough.timeline
+    : []
+  const walkthroughSteps = liveWalkthrough.length > 0 ? liveWalkthrough : placeholderWalkthrough
+  const walkthroughSourceLabel = liveWalkthrough.length > 0 ? 'Live feed' : 'Authored preview set'
+  const previewCases = Array.isArray(glassBoxPlaceholderPack?.badge_cases)
+    ? glassBoxPlaceholderPack.badge_cases
+    : []
 
   const handleCopy = async () => {
     if (!opp) return
@@ -178,10 +91,10 @@ export default function OpportunityDetail() {
 
   if (error || !opp) {
     return (
-      <div className="text-center py-12">
+      <div className="py-12 text-center">
         <p className="text-terminal-400">Opportunity not found</p>
-        <Link to="/opportunities" className="btn btn-secondary mt-4">
-          <ArrowLeft className="w-4 h-4" />
+        <Link to="/app/opportunities" className="btn btn-secondary mt-4">
+          <ArrowLeft className="size-4" />
           Back to Opportunities
         </Link>
       </div>
@@ -194,273 +107,29 @@ export default function OpportunityDetail() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Link to="/opportunities" className="btn btn-ghost btn-sm">
-            <ArrowLeft className="w-4 h-4" />
-          </Link>
-          <div>
-            <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold text-terminal-100 font-mono">{opp.symbol}</h1>
-              <Badge>{opp.timeframe}</Badge>
-              <Badge variant="info">{opp.setup_id}</Badge>
-              <DirectionBadge direction={opp.direction || opp.decision} />
-            </div>
-            <p className="text-sm text-terminal-400 mt-1">
-              {isLive ? 'Live Signal' : `Opportunity #${opp.id}`}
-            </p>
-          </div>
-        </div>
+      <OpportunityDetailHeader
+        copied={copied}
+        isLive={isLive}
+        onCopy={handleCopy}
+        opportunity={opp}
+      />
 
-        <div className="flex items-center gap-3">
-          <Link
-            to={`/markets/${opp.symbol}`}
-            className="btn btn-secondary btn-sm"
-          >
-            <BarChart3 className="w-4 h-4" />
-            View Chart
-          </Link>
-          <button onClick={handleCopy} className="btn btn-primary btn-sm">
-            {copied ? (
-              <Check className="w-4 h-4" />
-            ) : (
-              <Copy className="w-4 h-4" />
-            )}
-            Copy Trade Plan
-          </button>
-        </div>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <OpportunityTradeDetails opportunity={opp} payload={payload} />
+        <OpportunitySidebar
+          actionByTs={actionByTs}
+          handleCopy={handleCopy}
+          isLive={isLive}
+          liveWalkthrough={liveWalkthrough}
+          opportunity={opp}
+          payload={payload}
+          previewCases={previewCases}
+          sinceTs={sinceTs}
+          walkthroughSourceLabel={walkthroughSourceLabel}
+          walkthroughSteps={walkthroughSteps}
+          walkthroughSubheadline={glassBoxPlaceholderPack?.public_walkthrough?.subheadline}
+        />
       </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main info */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Trade levels */}
-          <Card>
-            <CardHeader>
-              <CardTitle>{isEquitiesStrategy(opp.setup_id) ? 'Signal Details' : 'Trade Levels'}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {isEquitiesStrategy(opp.setup_id) ? (
-                <>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <LevelBox
-                      label="Entry Price"
-                      value={formatPrice(payload.entry_price)}
-                      color="text-terminal-100"
-                    />
-                    <LevelBox
-                      label="Direction"
-                      value={payload.direction || opp.direction}
-                      color={payload.direction === 'LONG' ? 'text-signal-long' : 'text-signal-short'}
-                    />
-                    <LevelBox
-                      label="Horizon"
-                      value={`${payload.horizon_days}d`}
-                      color="text-terminal-100"
-                    />
-                    <LevelBox
-                      label="Confidence"
-                      value={`${(payload.confidence * 100).toFixed(0)}%`}
-                      color="text-amber-400"
-                    />
-                  </div>
-                  <div className="mt-4 pt-4 border-t border-terminal-600 grid grid-cols-2 gap-4">
-                    <DataRow label="Expected Return" value={`+${payload.expected_return_bps} bps`} />
-                    <DataRow label="Score" value={opp.score?.toFixed(2)} />
-                    <DataRow label="Strategy Version" value={payload.strategy_version || '\u2014'} />
-                    {payload.exploratory && (
-                      <DataRow label="Status" value={<Badge variant="warning">EXPLORATORY</Badge>} />
-                    )}
-                  </div>
-                  {payload.explain && payload.explain.length > 0 && (
-                    <div className="mt-4 pt-4 border-t border-terminal-600">
-                      <p className="text-xs text-terminal-500 uppercase tracking-wider mb-2">Signal Explanation</p>
-                      <ul className="space-y-1">
-                        {payload.explain.map((item, i) => (
-                          <li key={i} className="text-sm text-terminal-300">{item}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                  {payload.features && Object.keys(payload.features).length > 0 && (
-                    <div className="mt-4 pt-4 border-t border-terminal-600">
-                      <p className="text-xs text-terminal-500 uppercase tracking-wider mb-2">Feature Snapshot</p>
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                        {Object.entries(payload.features).map(([k, v]) => (
-                          <div key={k} className="text-sm">
-                            <span className="text-terminal-500">{k}</span>
-                            <p className="font-mono text-terminal-100">{typeof v === 'number' ? v.toFixed(4) : v}</p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </>
-              ) : (
-                <>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <LevelBox label="Entry" value={formatPrice(payload.entry_price)} color="text-terminal-100" />
-                    <LevelBox label="Stop Loss" value={formatPrice(payload.stop_price)} color="text-signal-short" />
-                    <LevelBox label="Take Profit 1" value={formatPrice(payload.tp1_price)} color="text-signal-long" />
-                    <LevelBox label="Take Profit 2" value={formatPrice(payload.tp2_price)} color="text-signal-long" />
-                  </div>
-                  <div className="mt-4 pt-4 border-t border-terminal-600 grid grid-cols-2 gap-4">
-                    <DataRow label="R-Value" value={formatDollar(payload.r_value)} />
-                    <DataRow label="Score" value={opp.score?.toFixed(2)} />
-                  </div>
-                </>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Reason */}
-          {opp.reason && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Signal Reason</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-terminal-200">{opp.reason}</p>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Computation Trace */}
-          {(opp.trace || opp.sim_trace) && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Computation Trace</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <TraceViewer trace={opp.trace} simTrace={opp.sim_trace} />
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Full payload */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Full Payload</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <JsonView data={payload} expanded />
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Sidebar */}
-        <div className="space-y-6">
-          {/* Status */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Status</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <DataRow label="Status" value={
-                isLive ? <Badge variant="success">Live</Badge> : <StatusBadge status={opp.status} />
-              } />
-              {isLive && opp.expires_at && (
-                <DataRow label="Expires In" value={
-                  <div className="flex items-center gap-1">
-                    <Clock className="w-3 h-3 text-terminal-400" />
-                    <ExpiryCountdown expiresAt={opp.expires_at} />
-                  </div>
-                } />
-              )}
-              {!isLive && <DataRow label="Decision" value={opp.decision || '\u2014'} />}
-              {!isLive && <DataRow label="Signal ID" value={opp.signal_id || '\u2014'} />}
-              <DataRow label="Source" value={opp.source === 'redis' ? 'Redis (Live)' : 'Database'} />
-              {payload.early_exit_flagged && (
-                <DataRow label="Early Exit" value={
-                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-900/50 text-amber-300 border border-amber-700/50">
-                    {payload.early_exit_reason || 'review'}
-                    {payload.early_exit_unrealized_pct != null && (
-                      <span className="ml-1">({payload.early_exit_unrealized_pct}%)</span>
-                    )}
-                  </span>
-                } />
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Timing: since_ts / action_by_ts (Canon §1.5) */}
-          {(sinceTs || actionByTs) && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Timing</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {sinceTs && (
-                  <DataRow label="Signal Active Since" value={
-                    <div>
-                      <span className="text-terminal-200">{formatDateTime(sinceTs)}</span>
-                      <span className="text-terminal-500 text-xs ml-2">
-                        ({formatRelativeTime(sinceTs)})
-                      </span>
-                    </div>
-                  } />
-                )}
-                {actionByTs && (
-                  <DataRow label="Act By" value={
-                    <div className="flex items-center gap-2">
-                      <Clock className="w-3 h-3 text-terminal-400" />
-                      <div>
-                        <span className="text-terminal-200">{formatDateTime(actionByTs)}</span>
-                        <span className="text-xs ml-2">
-                          <ActionByCountdown actionByTs={actionByTs} />
-                        </span>
-                      </div>
-                    </div>
-                  } />
-                )}
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Timestamps (Canon §1.5: candle_ts + as_of_ts) */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Timestamps</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {(opp.candle_ts || opp.bar_start_ts || payload.candle_ts || payload.bar_start_ts) && (
-                <DataRow label="Candle (bar_start_ts)" value={formatDateTime(opp.candle_ts || opp.bar_start_ts || payload.candle_ts || payload.bar_start_ts)} />
-              )}
-              <DataRow label="Updated" value={formatDateTime(opp.updated_ts)} />
-            </CardContent>
-          </Card>
-
-          {/* Quick actions */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <Link
-                to={`/markets/${opp.symbol}`}
-                className="btn btn-secondary w-full"
-              >
-                <BarChart3 className="w-4 h-4" />
-                Open Chart
-              </Link>
-              <button onClick={handleCopy} className="btn btn-secondary w-full">
-                <Copy className="w-4 h-4" />
-                Copy Trade Plan
-              </button>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function LevelBox({ label, value, color }) {
-  return (
-    <div className="p-4 bg-terminal-900 rounded-lg border border-terminal-600">
-      <p className="text-xs text-terminal-500 uppercase tracking-wider mb-1">{label}</p>
-      <p className={`text-lg font-mono font-bold ${color}`}>{value}</p>
     </div>
   )
 }

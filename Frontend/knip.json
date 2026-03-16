@@ -1,0 +1,25 @@
+{
+  "project": [
+    "src/**/*.{js,jsx,ts,tsx}",
+    "tests/**/*.{js,jsx}",
+    "scripts/**/*.{js,mjs,cjs}"
+  ],
+  "ignore": [
+    "src/mocks/**",
+    "src/api/publicJsonClient.js",
+    "src/components/pipeline/MetaDataRow.jsx",
+    "src/utils/returnTo.js"
+  ],
+  "rules": {
+    "files": "error",
+    "dependencies": "error",
+    "unlisted": "error",
+    "binaries": "error",
+    "unresolved": "error",
+    "exports": "error",
+    "types": "warn",
+    "enumMembers": "warn",
+    "classMembers": "warn",
+    "duplicates": "warn"
+  }
+}

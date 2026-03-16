@@ -987,7 +987,7 @@ async def main():
     trader = D2PaperTrader()
     try:
         await trader.start()
-    except KeyboardInterrupt:
+    except KeyboardInterrupt:  # EXEMPT: graceful SIGINT shutdown — os._exit(78) is uncatchable
         logger.info("Interrupted")
     finally:
         trader.shutdown()

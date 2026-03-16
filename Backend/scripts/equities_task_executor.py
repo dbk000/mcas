@@ -12,7 +12,7 @@ import uuid
 from datetime import datetime, timezone
 from decimal import Decimal
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Callable, Final
 
 import psycopg
 from psycopg.rows import dict_row
@@ -693,31 +693,36 @@ def _handler_generic(cur: psycopg.Cursor) -> dict[str, Any]:
 
 HandlerFn = Callable[[psycopg.Cursor], dict[str, Any]]
 
+# Constant routing table: title substring -> (task_name, handler).
+# Sorted longest-first at lookup time for specificity.
+# conference_followup is handled separately (needs payload injection).
+_TITLE_TO_TASK: Final[dict[str, tuple[str, HandlerFn]]] = {
+    "source reliability": ("source_reliability", _handler_source_reliability),
+    "session alignment": ("session_alignment", _handler_session_alignment),
+    "dedupe": ("event_dedupe", _handler_event_dedupe),
+    "anti-bot": ("anti_bot", _handler_anti_bot),
+    "anti bot": ("anti_bot", _handler_anti_bot),
+    "regime": ("regime_stability", _handler_regime_stability),
+    "leakage": ("leakage_guard", _handler_leakage_guard),
+    "opportunity explanation": ("opportunity_explainability", _handler_explainability),
+    "ablation": ("model_drift", _handler_model_drift),
+    "coverage expansion": ("source_expansion", _handler_source_expansion),
+    "free-source coverage": ("source_expansion", _handler_source_expansion),
+    "backfill": ("backfill_quality", _handler_backfill_quality),
+}
+
 
 def _select_handler(title: str, payload: dict[str, Any]) -> tuple[str, Callable[[psycopg.Cursor], dict[str, Any]]]:
+    """Route task title to handler via constant mapping. Longest patterns checked first."""
     low = title.lower()
-    if title.lower().startswith("conference follow-up"):
+    # Conference follow-up needs payload injection — check first as a startswith guard.
+    if low.startswith("conference follow-up"):
         return "conference_followup", lambda cur: _handler_conf_followup(cur, payload)
-    if "source reliability" in low:
-        return "source_reliability", _handler_source_reliability
-    if "session alignment" in low:
-        return "session_alignment", _handler_session_alignment
-    if "dedupe" in low:
-        return "event_dedupe", _handler_event_dedupe
-    if "anti-bot" in low or "anti bot" in low:
-        return "anti_bot", _handler_anti_bot
-    if "regime" in low:
-        return "regime_stability", _handler_regime_stability
-    if "leakage" in low:
-        return "leakage_guard", _handler_leakage_guard
-    if "opportunity explanation" in low:
-        return "opportunity_explainability", _handler_explainability
-    if "ablation" in low:
-        return "model_drift", _handler_model_drift
-    if "coverage expansion" in low or "free-source coverage" in low:
-        return "source_expansion", _handler_source_expansion
-    if "backfill" in low:
-        return "backfill_quality", _handler_backfill_quality
+    # Check constant table, longest patterns first for specificity.
+    for pattern in sorted(_TITLE_TO_TASK, key=len, reverse=True):
+        if pattern in low:
+            task_name, handler = _TITLE_TO_TASK[pattern]
+            return task_name, handler
     return "generic", _handler_generic
 
 

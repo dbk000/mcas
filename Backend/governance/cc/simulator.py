@@ -197,15 +197,15 @@ class ShadowTradeSimulator:
             variant_id=variant_id,
             symbol=symbol,
             timeframe=tf,
-            # Signal objects are typed dataclasses (D1Signal, U1Signal, S10Signal etc.)
-            # Cross-type field access via vars() dict on known dataclass instances.
-            signal_ts=vars(signal).get('signal_ts') or datetime.now(timezone.utc),
-            signal_bar_ts=vars(signal).get('bar_start_ts') or datetime.now(timezone.utc),
-            direction=vars(signal).get('direction', Direction.LONG),
-            stop_price=vars(signal).get('stop_price', 0.0),
-            tp1_price=vars(signal).get('tp1_price'),
-            tp2_price=vars(signal).get('tp2_price'),
-            r_value=vars(signal).get('r_value', 0.0),
+            # All signal dataclasses carry signal_ts and bar_start_ts — never None
+            # (enforced by __post_init__). Direct access, no fallbacks.
+            signal_ts=signal.signal_ts,
+            signal_bar_ts=signal.bar_start_ts,
+            direction=signal.direction,
+            stop_price=signal.stop_price,
+            tp1_price=signal.tp1_price,
+            tp2_price=signal.tp2_price,
+            r_value=signal.r_value,
             bars_pending=0,
             max_pending_bars=MAX_PENDING_BARS,
         )

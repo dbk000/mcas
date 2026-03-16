@@ -623,7 +623,7 @@ def main():
             # Wait for notification or poll interval
             subscriber.wait_for_notification(QUEUE_POLL_SECONDS)
     
-    except KeyboardInterrupt:
+    except KeyboardInterrupt:  # EXEMPT: graceful SIGINT shutdown — os._exit(78) is uncatchable
         logger.info("Worker shutting down...")
     
     finally:

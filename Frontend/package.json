@@ -5,8 +5,23 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
+    "build": "vite build && node scripts/check-bundle-budget.js",
+    "preview": "vite preview",
+    "preview:e2e": "vite preview --host 127.0.0.1 --port 4173 --strictPort",
+    "test:unit": "node --test tests/pf.unit.test.js src/hooks/__tests__/useNodeVisualState.test.js",
+    "test:e2e": "npm run build && playwright test tests/full-ui.spec.js",
+    "test:e2e:smoke": "npm run test:e2e",
+    "test:e2e:density": "npm run build && playwright test tests/operator-density.spec.js",
+    "test:e2e:stress": "npm run build && playwright test tests/operator-stress.spec.js",
+    "test:e2e:visual": "npm run build && playwright test tests/visual-regressions.spec.js",
+    "test:e2e:all": "npm run build && playwright test",
+    "lint:js": "eslint --max-warnings 0 eslint.config.js playwright.config.js postcss.config.js tailwind.config.js vite.config.js scripts tests src",
+    "lint:js:full": "npm run lint:js",
+    "lint:css": "stylelint \"src/**/*.css\"",
+    "lint:knip": "knip",
+    "bundle:stats": "vite build --mode stats",
+    "mock:generate": "node scripts/generate-mocks.js",
+    "hardening:check": "npm run lint:js && npm run lint:css && npm run lint:knip && npm run test:unit && npm run build && playwright test tests/full-ui.spec.js"
   },
   "dependencies": {
     "@xyflow/react": "^12.10.1",
@@ -19,12 +34,26 @@
     "react-router-dom": "^6.20.0"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.4",
     "@playwright/test": "^1.58.2",
     "@types/react": "^18.2.37",
     "@types/react-dom": "^18.2.15",
     "@vitejs/plugin-react": "^4.2.0",
     "autoprefixer": "^10.4.16",
+    "eslint": "^9.39.4",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "eslint-plugin-react-refresh": "^0.5.2",
+    "eslint-plugin-tailwindcss": "^3.18.2",
+    "globals": "^17.4.0",
+    "knip": "^5.86.0",
+    "msw": "^2.12.11",
+    "msw-auto-mock": "^0.32.0",
     "postcss": "^8.4.31",
+    "rollup-plugin-visualizer": "^7.0.1",
+    "stylelint": "^17.4.0",
+    "stylelint-config-standard": "^40.0.0",
+    "stylelint-declaration-strict-value": "^1.11.1",
     "tailwindcss": "^3.3.5",
     "vite": "^5.0.0"
   }

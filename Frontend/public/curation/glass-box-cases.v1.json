@@ -1,0 +1,197 @@
+{
+  "version": "v1",
+  "generated_at": "2026-03-15",
+  "source": "placeholder",
+  "ui_intent": "Glass Box badge states, public walkthrough, and mocked opportunity detail payloads",
+  "badge_cases": [
+    {
+      "case_id": "verified",
+      "expected_label": "Glass Box: Verified",
+      "opportunity": {
+        "id": "U1:NVDA:15m",
+        "symbol": "NVDA",
+        "timeframe": "15m",
+        "setup_id": "U1",
+        "direction": "LONG",
+        "score": 92.4,
+        "reason": "Impulse continuation with leadership confirmation",
+        "payload": {
+          "entry_price": 937.4,
+          "stop_price": 926.8,
+          "tp1_price": 949.2,
+          "tp2_price": 958.7,
+          "r_value": 2.0
+        },
+        "sim_trace": {
+          "kline_lineage": {
+            "causality_verified": true,
+            "decision_ts": "2026-03-05T14:30:00Z",
+            "bar_start_ts": "2026-03-05T14:15:00Z",
+            "phases": [
+              {
+                "phase": "snapshot_ingest",
+                "state": "verified",
+                "ts": "2026-03-05T14:16:00Z",
+                "detail": "Snapshot entered the decision path before the model finalized the trade."
+              },
+              {
+                "phase": "feature_compile",
+                "state": "verified",
+                "ts": "2026-03-05T14:24:00Z",
+                "detail": "Feature bundle was computed from bars that were fully closed at evaluation time."
+              },
+              {
+                "phase": "signal_emit",
+                "state": "verified",
+                "ts": "2026-03-05T14:30:00Z",
+                "detail": "Decision timestamp cleared the bar boundary without future leakage."
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "case_id": "violation",
+      "expected_label": "Glass Box: Violation",
+      "opportunity": {
+        "id": "S9:SOLUSDT:30m",
+        "symbol": "SOLUSDT",
+        "timeframe": "30m",
+        "setup_id": "S9",
+        "direction": "SHORT",
+        "score": 82.8,
+        "reason": "Breakout failure with timing inconsistency",
+        "payload": {
+          "entry_price": 161.2,
+          "stop_price": 164.1,
+          "tp1_price": 157.8,
+          "tp2_price": 154.9,
+          "r_value": 1.8
+        },
+        "sim_trace": {
+          "kline_lineage": {
+            "causality_verified": false,
+            "decision_ts": "2026-03-05T16:30:00Z",
+            "bar_start_ts": "2026-03-05T16:30:00Z",
+            "phases": [
+              {
+                "phase": "snapshot_ingest",
+                "state": "verified",
+                "ts": "2026-03-05T16:16:00Z",
+                "detail": "Market snapshot ingestion completed on time."
+              },
+              {
+                "phase": "feature_compile",
+                "state": "warning",
+                "ts": "2026-03-05T16:27:00Z",
+                "detail": "Feature timestamps were close to the decision boundary and required review."
+              },
+              {
+                "phase": "signal_emit",
+                "state": "error",
+                "ts": "2026-03-05T16:30:00Z",
+                "detail": "Decision time landed on the same bar boundary that should have remained out of scope."
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "case_id": "unknown",
+      "expected_label": "Glass Box: Unknown",
+      "opportunity": {
+        "id": "S10:BTCUSDT:15m",
+        "symbol": "BTCUSDT",
+        "timeframe": "15m",
+        "setup_id": "S10",
+        "direction": "SHORT",
+        "score": 79.3,
+        "reason": "Momentum hook pending lineage resolution",
+        "payload": {
+          "entry_price": 70320.0,
+          "stop_price": 70780.0,
+          "tp1_price": 69760.0,
+          "tp2_price": 69440.0,
+          "r_value": 1.5
+        },
+        "sim_trace": {
+          "kline_lineage": {
+            "causality_verified": null,
+            "decision_ts": "2026-03-05T12:45:00Z",
+            "bar_start_ts": "2026-03-05T12:30:00Z",
+            "phases": [
+              {
+                "phase": "snapshot_ingest",
+                "state": "verified",
+                "ts": "2026-03-05T12:31:00Z",
+                "detail": "Primary snapshot arrived cleanly ahead of the decision window."
+              },
+              {
+                "phase": "feature_compile",
+                "state": "neutral",
+                "ts": "2026-03-05T12:39:00Z",
+                "detail": "Lineage metadata is incomplete, so the feature bundle cannot be fully audited yet."
+              },
+              {
+                "phase": "signal_emit",
+                "state": "warning",
+                "ts": "2026-03-05T12:45:00Z",
+                "detail": "Signal exists, but causal verification is pending final lineage reconciliation."
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "case_id": "na",
+      "expected_label": "Glass Box: N/A",
+      "opportunity": {
+        "id": "S10:ETHUSDT:15m",
+        "symbol": "ETHUSDT",
+        "timeframe": "15m",
+        "setup_id": "S10",
+        "direction": "LONG",
+        "score": 76.0,
+        "reason": "Reset-and-go candidate without attached lineage payload",
+        "payload": {
+          "entry_price": 3851.2,
+          "stop_price": 3829.1,
+          "tp1_price": 3889.7,
+          "tp2_price": 3918.4,
+          "r_value": 1.7
+        },
+        "sim_trace": {}
+      }
+    }
+  ],
+  "public_walkthrough": {
+    "headline": "What Glass Box actually means",
+    "subheadline": "A compact replay of what the model saw, when it saw it, and whether the timing held up.",
+    "timeline": [
+      {
+        "phase": "snapshot_ingest",
+        "state": "verified",
+        "label": "Snapshot ingested before decision",
+        "ts": "2026-03-05T14:16:00Z",
+        "detail": "The signal only has standing if the market snapshot was already present when the decision path started."
+      },
+      {
+        "phase": "feature_compile",
+        "state": "verified",
+        "label": "Feature bundle built without future bars",
+        "ts": "2026-03-05T14:24:00Z",
+        "detail": "Indicator values and derived features were compiled from bars that had already closed."
+      },
+      {
+        "phase": "signal_emit",
+        "state": "verified",
+        "label": "Signal emitted within clean timing envelope",
+        "ts": "2026-03-05T14:30:00Z",
+        "detail": "The published decision stayed inside a clean timing envelope instead of leaking future information."
+      }
+    ]
+  }
+}

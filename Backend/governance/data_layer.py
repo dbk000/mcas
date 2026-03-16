@@ -278,7 +278,7 @@ class OHLCVRepository:
             })
             return []
         except Exception as e:
-            resp = vars(e).get("response")
+            resp = e.response if isinstance(e, requests.exceptions.HTTPError) else None
             status = resp.status_code if resp is not None else None
             logger.error("Binance API error (data layer)", extra={
                 "event": "api_error", "endpoint": "klines",

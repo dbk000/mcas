@@ -1,168 +1,310 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useApi } from '../context/ApiContext'
 import { useToast } from '../context/ToastContext'
+import { normalizeRequestError } from '../api/errors'
+import { buildEndpointWithParams } from '../api/requestClient'
 import { getLogger } from '../utils/logger'
+import { getPollingInterval } from '../config/governed'
 
 const log = getLogger('data')
 
-// Generic data fetching hook
+function extractMeta(result) {
+  return result?.__meta ?? null
+}
+
 export function useFetch(endpoint, params = {}, options = {}) {
   const { get, isConnected } = useApi()
   const { addToast } = useToast()
-  const [data, setData] = useState(null)
-  const [loading, setLoading] = useState(true) // Start true until first fetch completes
-  const [error, setError] = useState(null)
-  const [meta, setMeta] = useState(null) // Canon §1.5: envelope meta (as_of_ts etc.)
   const { skip = false, showError = true } = options
+  const [data, setData] = useState(null)
+  const [loading, setLoading] = useState(Boolean(endpoint) && !skip)
+  const [error, setError] = useState(null)
+  const [errorState, setErrorState] = useState(null)
+  const [meta, setMeta] = useState(null)
   const hasFetchedRef = useRef(false)
+  const abortRef = useRef(null)
+  const paramsRef = useRef(params)
+  const requestKey = useMemo(
+    () => (endpoint ? buildEndpointWithParams(endpoint, params) : ''),
+    [endpoint, params]
+  )
 
-  const paramsString = JSON.stringify(params)
+  useEffect(() => {
+    paramsRef.current = params
+  }, [params, requestKey])
+
+  const cancel = useCallback(() => {
+    abortRef.current?.abort()
+    abortRef.current = null
+  }, [])
 
   const fetchData = useCallback(async () => {
-    if (!isConnected || skip || !endpoint) {
-      // If skipped, not loading
-      if (skip) setLoading(false)
-      return
+    if (!endpoint || skip || !isConnected) {
+      if (!endpoint || skip) {
+        setLoading(false)
+      }
+      return null
     }
+
+    cancel()
+
+    const controller = new AbortController()
+    abortRef.current = controller
 
     if (!hasFetchedRef.current) {
       setLoading(true)
     }
+
     setError(null)
+    setErrorState(null)
 
     try {
-      const result = await get(endpoint, params)
-      setData(result)
-      if (result?.__meta) setMeta(result.__meta)
-      hasFetchedRef.current = true
-    } catch (err) {
-      log.warn('Fetch error', { event: 'fetch_error', endpoint, error_message: err.message })
-      setError(err.message)
-      if (showError) {
-        addToast(`Failed to fetch: ${err.message}`, 'error')
-      }
-    } finally {
-      setLoading(false)
-    }
-  }, [endpoint, paramsString, isConnected, skip, get, addToast, showError])
+      const result = await get(endpoint, paramsRef.current, {
+        signal: controller.signal,
+      })
 
-  // Reset on params change
+      if (abortRef.current !== controller || controller.signal.aborted) {
+        return null
+      }
+
+      setData(result)
+      setMeta(extractMeta(result))
+      hasFetchedRef.current = true
+
+      return result
+    } catch (error) {
+      const normalized = normalizeRequestError(error)
+
+      if (normalized.isAbort || abortRef.current !== controller) {
+        return null
+      }
+
+      log.warn('Fetch error', {
+        event: 'fetch_error',
+        endpoint,
+        error_message: normalized.message,
+      })
+
+      setError(normalized.message)
+      setErrorState(normalized)
+
+      if (showError) {
+        addToast(`Failed to fetch: ${normalized.message}`, 'error')
+      }
+
+      return null
+    } finally {
+      if (abortRef.current === controller) {
+        abortRef.current = null
+        setLoading(false)
+      }
+    }
+  }, [addToast, cancel, endpoint, get, isConnected, showError, skip])
+
   useEffect(() => {
     hasFetchedRef.current = false
-    setLoading(true)
-  }, [paramsString])
+    setLoading(Boolean(endpoint) && !skip)
+    setError(null)
+    setErrorState(null)
+    setMeta(null)
+    cancel()
+  }, [cancel, endpoint, requestKey, skip])
 
   useEffect(() => {
-    fetchData()
-  }, [fetchData])
+    void fetchData()
+  }, [fetchData, requestKey])
 
-  return { data, loading, error, meta, refetch: fetchData }
+  useEffect(() => cancel, [cancel])
+
+  return {
+    data,
+    loading,
+    error,
+    errorState,
+    meta,
+    refetch: fetchData,
+    cancel,
+  }
 }
 
-// Polling hook - loading only true for first fetch, refreshing for subsequent polls
 export function usePolling(endpoint, params = {}, intervalMs = 15000, options = {}) {
   const { get, isConnected } = useApi()
-  const [data, setData] = useState(null)
-  const [loading, setLoading] = useState(true) // True initially until first data
-  const [refreshing, setRefreshing] = useState(false) // For poll updates
-  const [error, setError] = useState(null)
-  const [lastUpdated, setLastUpdated] = useState(null)
-  const [meta, setMeta] = useState(null) // Canon §1.5: envelope meta (as_of_ts etc.)
   const { skip = false, enabled = true } = options
+  const [data, setData] = useState(null)
+  const [loading, setLoading] = useState(Boolean(endpoint) && !skip && enabled)
+  const [refreshing, setRefreshing] = useState(false)
+  const [error, setError] = useState(null)
+  const [errorState, setErrorState] = useState(null)
+  const [lastUpdated, setLastUpdated] = useState(null)
+  const [meta, setMeta] = useState(null)
   const intervalRef = useRef(null)
+  const abortRef = useRef(null)
   const hasFetchedRef = useRef(false)
-  const paramsString = JSON.stringify(params)
+  const paramsRef = useRef(params)
+  const requestKey = useMemo(
+    () => (endpoint ? buildEndpointWithParams(endpoint, params) : ''),
+    [endpoint, params]
+  )
+  const pollingEnabled = Boolean(endpoint) && enabled && !skip && isConnected
 
-  const fetchData = useCallback(async (isManualRefresh = false) => {
-    if (!isConnected || skip || !endpoint || !enabled) return
+  useEffect(() => {
+    paramsRef.current = params
+  }, [params, requestKey])
 
-    // Only show loading spinner on first fetch
+  const cancel = useCallback(() => {
+    abortRef.current?.abort()
+    abortRef.current = null
+  }, [])
+
+  const clearPolling = useCallback(() => {
+    if (intervalRef.current) {
+      window.clearInterval(intervalRef.current)
+      intervalRef.current = null
+    }
+  }, [])
+
+  const fetchData = useCallback(async ({ manual = false } = {}) => {
+    if (!endpoint || skip || !enabled || !isConnected) {
+      if (!endpoint || skip || !enabled) {
+        setLoading(false)
+        setRefreshing(false)
+      }
+      return null
+    }
+
+    cancel()
+
+    const controller = new AbortController()
+    abortRef.current = controller
+
     if (!hasFetchedRef.current) {
       setLoading(true)
-    } else if (isManualRefresh) {
+    } else if (manual) {
       setRefreshing(true)
     }
-    
+
     try {
-      const result = await get(endpoint, params)
+      const result = await get(endpoint, paramsRef.current, {
+        signal: controller.signal,
+      })
+
+      if (abortRef.current !== controller || controller.signal.aborted) {
+        return null
+      }
+
       setData(result)
-      if (result?.__meta) setMeta(result.__meta)
+      setMeta(extractMeta(result))
       setLastUpdated(new Date())
       setError(null)
+      setErrorState(null)
       hasFetchedRef.current = true
-    } catch (err) {
-      log.debug('Poll cycle error', { event: 'poll_error', endpoint, error_message: err.message })
-      setError(err.message)
-    } finally {
-      setLoading(false)
-      setRefreshing(false)
-    }
-  }, [endpoint, paramsString, isConnected, skip, enabled, get])
 
-  // Reset hasFetched when params change
+      return result
+    } catch (error) {
+      const normalized = normalizeRequestError(error)
+
+      if (normalized.isAbort || abortRef.current !== controller) {
+        return null
+      }
+
+      log.debug('Poll cycle error', {
+        event: 'poll_error',
+        endpoint,
+        error_message: normalized.message,
+      })
+
+      setError(normalized.message)
+      setErrorState(normalized)
+
+      return null
+    } finally {
+      if (abortRef.current === controller) {
+        abortRef.current = null
+        setLoading(false)
+        setRefreshing(false)
+      }
+    }
+  }, [cancel, enabled, endpoint, get, isConnected, skip])
+
   useEffect(() => {
     hasFetchedRef.current = false
-    setLoading(true)
-  }, [paramsString])
+    setLoading(Boolean(endpoint) && !skip && enabled)
+    setRefreshing(false)
+    setError(null)
+    setErrorState(null)
+    setMeta(null)
+    clearPolling()
+    cancel()
+  }, [cancel, clearPolling, enabled, endpoint, requestKey, skip])
 
-  // Initial fetch
   useEffect(() => {
-    fetchData()
-  }, [fetchData])
+    clearPolling()
 
-  // Polling
-  useEffect(() => {
-    if (!enabled || !isConnected || skip) {
-      if (intervalRef.current) {
-        log.debug('Polling stopped', { event: 'poll_stop', endpoint })
-        clearInterval(intervalRef.current)
+    if (!pollingEnabled) {
+      if (!endpoint || skip || !enabled) {
+        setLoading(false)
       }
-      return
+      return undefined
     }
 
-    log.debug('Polling started', { event: 'poll_start', endpoint, interval_ms: intervalMs })
-    intervalRef.current = setInterval(() => fetchData(false), intervalMs)
+    log.debug('Polling started', {
+      event: 'poll_start',
+      endpoint,
+      interval_ms: intervalMs,
+    })
+
+    void fetchData()
+    intervalRef.current = window.setInterval(() => {
+      void fetchData()
+    }, intervalMs)
 
     return () => {
-      if (intervalRef.current) {
-        log.debug('Polling stopped', { event: 'poll_stop', endpoint })
-        clearInterval(intervalRef.current)
-      }
+      log.debug('Polling stopped', { event: 'poll_stop', endpoint })
+      clearPolling()
+      cancel()
     }
-  }, [enabled, isConnected, skip, intervalMs, fetchData])
+  }, [cancel, clearPolling, enabled, endpoint, fetchData, intervalMs, pollingEnabled, requestKey, skip])
 
-  // Manual refetch triggers refreshing indicator
-  const refetch = useCallback(() => fetchData(true), [fetchData])
+  useEffect(() => () => {
+    clearPolling()
+    cancel()
+  }, [cancel, clearPolling])
 
-  return { data, loading, refreshing, error, lastUpdated, meta, refetch }
+  const refetch = useCallback(() => fetchData({ manual: true }), [fetchData])
+
+  return {
+    data,
+    loading,
+    refreshing,
+    error,
+    errorState,
+    lastUpdated,
+    meta,
+    refetch,
+    cancel,
+  }
 }
 
-// Markets hook
 export function useMarkets() {
   return useFetch('/v1/markets')
 }
 
-// Timeframes hook
 export function useTimeframes() {
   return useFetch('/v1/timeframes')
 }
 
-// Strategies hook — single source of truth for all strategy dropdowns
 export function useStrategies() {
   return useFetch('/v1/strategies')
 }
 
-// Opportunities hook with polling
 export function useOpportunities(params = {}, enabled = true) {
-  return usePolling('/v1/opportunities', params, 15000, { enabled })
+  return usePolling('/v1/opportunities', params, getPollingInterval('opportunities_ms'), { enabled })
 }
 
-// Single opportunity hook
 export function useOpportunity(id) {
   return useFetch(`/v1/opportunities/${id}`, {}, { skip: !id })
 }
 
-// Opportunity 5m chart window hook
 export function useOpportunityPriceWindow(oppId, params = {}, enabled = true) {
   return useFetch(
     `/v1/opportunities/${oppId}/price-window`,
@@ -171,7 +313,6 @@ export function useOpportunityPriceWindow(oppId, params = {}, enabled = true) {
   )
 }
 
-// Live opportunity hook (Redis-sourced, composite key)
 export function useLiveOpportunity(setup_id, symbol, tf) {
   return useFetch(
     `/v1/opportunities/live/${setup_id}/${symbol}/${tf}`,
@@ -180,107 +321,83 @@ export function useLiveOpportunity(setup_id, symbol, tf) {
   )
 }
 
-// Top signals hook with polling
 export function useTopSignals(params = {}, enabled = true) {
-  return usePolling('/v1/signals/top', params, 30000, { enabled })
+  return usePolling('/v1/signals/top', params, getPollingInterval('signals_top_ms'), { enabled })
 }
 
-// Runs hook
 export function useRuns(params = {}) {
   return useFetch('/v1/runs', params)
 }
 
-// Latest run hook
 export function useLatestRun(runType = 'SCAN') {
   return useFetch('/v1/runs/latest', { run_type: runType }, { showError: false })
 }
 
-// Single run hook
 export function useRun(id) {
   return useFetch(`/v1/runs/${id}`, {}, { skip: !id })
 }
 
-// Run trades hook
 export function useRunTrades(runId, params = {}) {
   return useFetch(`/v1/runs/${runId}/trades`, params, { skip: !runId })
 }
 
-// Run events hook
 export function useRunEvents(runId, params = {}) {
   return useFetch(`/v1/runs/${runId}/events`, params, { skip: !runId })
 }
 
-// Queue status hook
 export function useQueueStatus() {
-  return usePolling('/v1/control/queue', {}, 15000)
+  return usePolling('/v1/control/runs/queue', {}, getPollingInterval('queue_status_ms'))
 }
 
-// Paper status hook with polling
 export function usePaperStatus(enabled = true) {
-  return usePolling('/v1/control/paper/status', {}, 5000, { enabled })
+  return usePolling('/v1/control/paper/status', {}, getPollingInterval('paper_status_ms'), { enabled })
 }
 
-// Trading account hook with polling
 export function useTradingAccount(enabled = true) {
-  return usePolling('/v1/trading/account', {}, 5000, { enabled })
+  return usePolling('/v1/trading/account', {}, getPollingInterval('trading_account_ms'), { enabled })
 }
 
-// Positions hook with polling
 export function usePositions(params = {}, enabled = true) {
-  return usePolling('/v1/trading/positions', params, 5000, { enabled })
+  return usePolling('/v1/trading/positions', params, getPollingInterval('positions_ms'), { enabled })
 }
 
-// Position detail hook
-export function usePosition(id) {
-  return useFetch(`/v1/trading/positions/${id}`, {}, { skip: !id })
-}
-
-// Trades hook
 export function useTrades(params = {}) {
   return useFetch('/v1/trading/trades', params)
 }
 
-// Performance hook
 export function usePerformance() {
   return useFetch('/v1/trading/performance')
 }
 
-// OHLCV hook
-export function useOHLCV(symbol, tf, limit = 100) {
-  return useFetch('/v1/ohlcv', { symbol, tf, limit }, { skip: !symbol || !tf })
-}
-
-// Live OHLCV hook (collector-backed)
-export function useLiveOHLCV(symbol, tf, limit = 100, intervalMs = 5000, enabled = true) {
+export function useLiveOHLCV(symbol, tf, limit = 100, intervalMs = getPollingInterval('ohlcv_ms'), enabled = true) {
   return usePolling('/v1/ohlcv', { symbol, tf, limit }, intervalMs, {
-    enabled: enabled && !!symbol && !!tf,
+    enabled: enabled && Boolean(symbol) && Boolean(tf),
     skip: !enabled || !symbol || !tf,
   })
 }
 
-// Live snapshot hook with fast polling
 export function useSnapshot(symbol, enabled = true) {
-  return usePolling('/v1/snapshot/minute', { symbol, timeframe: '1m' }, 5000, { 
-    enabled: enabled && !!symbol,
-    skip: !symbol 
+  return usePolling('/v1/snapshot/minute', { symbol, timeframe: '1m' }, getPollingInterval('snapshot_ms'), {
+    enabled: enabled && Boolean(symbol),
+    skip: !symbol,
   })
 }
 
-// Squeeze state hook
 export function useSqueezeState(symbol, tf) {
   return useFetch('/v1/squeeze/state', { symbol, tf }, { skip: !symbol || !tf, showError: false })
 }
 
-// BTC squeeze status hook
 export function useBtcSqueezeStatus(tf) {
   return useFetch('/v1/btc/squeeze-status', { tf }, { skip: !tf, showError: false })
 }
 
-// Data availability hook (P5-27)
 export function useDataAvailability(symbols, timeframes, options = {}) {
   const params = {}
+
   if (symbols?.length) params.symbols = symbols.join(',')
   if (timeframes?.length) params.timeframes = timeframes.join(',')
+
   const skip = !symbols?.length || !timeframes?.length || options.skip
+
   return useFetch('/v1/control/data/availability', params, { skip, showError: false })
 }

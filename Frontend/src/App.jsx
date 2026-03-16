@@ -1,28 +1,61 @@
-import React from 'react'
-import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
-import { useEffect } from 'react'
+import React, { Suspense, lazy, useEffect } from 'react'
+import { Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useApi } from './context/ApiContext'
 import { getLogger, rotateCorrelationId } from './utils/logger'
 import Layout from './components/Layout'
-
-// Pages
-import Dashboard from './pages/Dashboard'
-import Opportunities from './pages/Opportunities'
-import OpportunitySurvey from './pages/OpportunitySurvey'
-import OpportunityDetail from './pages/OpportunityDetail'
-import Markets from './pages/Markets'
-import MarketDetail from './pages/MarketDetail'
-import Runs from './pages/Runs'
-import RunDetail from './pages/RunDetail'
-import RunCompare from './pages/RunCompare'
-import ControlPlane from './pages/ControlPlane'
-import PaperTrading from './pages/PaperTrading'
-import SimulationResults from './pages/SimulationResults'
-import CorrelationAnalysis from './pages/CorrelationAnalysis'
-import Settings from './pages/Settings'
-import Pipeline from './pages/Pipeline'
+import MarketingLayout from './components/MarketingLayout'
+import PaidRoute from './components/PaidRoute'
+import DevHUD from './components/DevHUD'
 
 const log = getLogger('router')
+
+function lazyPage(routeId, loadPage) {
+  return lazy(async () => {
+    const start = performance.now()
+
+    try {
+      const pageModule = await loadPage()
+      log.info('Route module loaded', {
+        event: 'route_module_loaded',
+        route_id: routeId,
+        duration_ms: Math.round(performance.now() - start),
+      })
+      return pageModule
+    } catch (error) {
+      log.error('Route module load failed', {
+        event: 'route_module_load_failed',
+        route_id: routeId,
+        duration_ms: Math.round(performance.now() - start),
+        error_message: error?.message || String(error),
+      })
+      throw error
+    }
+  })
+}
+
+const Landing = lazyPage('marketing:landing', () => import('./pages/Landing'))
+const Winners = lazyPage('marketing:winners', () => import('./pages/Winners'))
+const Pricing = lazyPage('marketing:pricing', () => import('./pages/Pricing'))
+const Upgrade = lazyPage('marketing:upgrade', () => import('./pages/Upgrade'))
+const CheckoutSuccess = lazyPage('marketing:checkout-success', () => import('./pages/CheckoutSuccess'))
+const CheckoutCancel = lazyPage('marketing:checkout-cancel', () => import('./pages/CheckoutCancel'))
+const Settings = lazyPage('marketing:settings', () => import('./pages/Settings'))
+
+const Dashboard = lazyPage('app:dashboard', () => import('./pages/Dashboard'))
+const StrategyDashboard = lazyPage('app:strategies', () => import('./pages/StrategyDashboard'))
+const Opportunities = lazyPage('app:opportunities', () => import('./pages/Opportunities'))
+const OpportunitySurvey = lazyPage('app:opportunity-survey', () => import('./pages/OpportunitySurvey'))
+const OpportunityDetail = lazyPage('app:opportunity-detail', () => import('./pages/OpportunityDetail'))
+const Markets = lazyPage('app:markets', () => import('./pages/Markets'))
+const MarketDetail = lazyPage('app:market-detail', () => import('./pages/MarketDetail'))
+const Runs = lazyPage('app:runs', () => import('./pages/Runs'))
+const RunCompare = lazyPage('app:run-compare', () => import('./pages/RunCompare'))
+const RunDetail = lazyPage('app:run-detail', () => import('./pages/RunDetail'))
+const SimulationResults = lazyPage('app:simulation-results', () => import('./pages/SimulationResults'))
+const ControlPlane = lazyPage('app:control', () => import('./pages/ControlPlane'))
+const PaperTrading = lazyPage('app:paper', () => import('./pages/PaperTrading'))
+const CorrelationAnalysis = lazyPage('app:analytics-correlations', () => import('./pages/CorrelationAnalysis'))
+const Pipeline = lazyPage('app:pipeline', () => import('./pages/Pipeline'))
 
 function RouteLogger() {
   const { pathname } = useLocation()
@@ -36,15 +69,91 @@ function RouteLogger() {
 }
 
 function ProtectedRoute({ children }) {
-  const { isConnected, config } = useApi()
+  const { config, session, sessionReady } = useApi()
 
-  // If no config at all (both baseUrl and apiKey required), redirect to settings
-  if (!config.baseUrl || !config.apiKey) {
+  const settingsParams = new URLSearchParams({
+    from: 'protected-route',
+    returnTo: `${window.location.pathname}${window.location.search}`,
+  })
+
+  if (!config.baseUrl) {
     log.info('Auth redirect', { event: 'auth_redirect', from: window.location.pathname })
-    return <Navigate to="/settings" replace />
+    return <Navigate to={`/settings?${settingsParams.toString()}`} replace />
+  }
+
+  if (!sessionReady) {
+    return (
+      <div className="m-6 flex min-h-[42vh] flex-col items-center justify-center gap-3 rounded-lg border border-terminal-700/80 bg-terminal-900/60 px-6 py-10 text-center">
+        <div className="size-8 animate-spin rounded-full border-2 border-terminal-600 border-t-amber-400" />
+        <div className="space-y-1">
+          <p className="font-mono text-sm font-semibold uppercase tracking-[0.18em] text-terminal-100">
+            Restoring session
+          </p>
+          <p className="text-sm text-terminal-400">
+            Checking the backend bootstrap before the app shell loads.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!session.hasSession || session.auth !== 'ok') {
+    log.info('Session redirect', {
+      event: 'session_redirect',
+      from: window.location.pathname,
+      auth: session.auth,
+    })
+    return <Navigate to={`/settings?${settingsParams.toString()}`} replace />
   }
 
   return children
+}
+
+function PublicLayoutRoute() {
+  return (
+    <MarketingLayout>
+      <Outlet />
+    </MarketingLayout>
+  )
+}
+
+function RouteFamilyFallback({ title, detail, appShell = false }) {
+  return (
+    <div
+      className={[
+        'flex flex-col items-center justify-center gap-3 rounded-lg border border-terminal-700/80 bg-terminal-900/60 px-6 py-10 text-center',
+        appShell ? 'm-6 min-h-[42vh]' : 'mx-auto min-h-[36vh] max-w-3xl',
+      ].join(' ')}
+    >
+      <div className="size-8 animate-spin rounded-full border-2 border-terminal-600 border-t-amber-400" />
+      <div className="space-y-1">
+        <p className="font-mono text-sm font-semibold uppercase tracking-[0.18em] text-terminal-100">
+          {title}
+        </p>
+        <p className="text-sm text-terminal-400">{detail}</p>
+      </div>
+    </div>
+  )
+}
+
+function RouteFamilyBoundary({ title, detail, appShell = false }) {
+  return (
+    <Suspense fallback={<RouteFamilyFallback title={title} detail={detail} appShell={appShell} />}>
+      <Outlet />
+    </Suspense>
+  )
+}
+
+function AppShell() {
+  return (
+    <PaidRoute>
+      <ProtectedRoute>
+        <Layout>
+          <Outlet />
+        </Layout>
+      </ProtectedRoute>
+    </PaidRoute>
+  )
 }
 
 class ErrorBoundary extends React.Component {
@@ -69,16 +178,18 @@ class ErrorBoundary extends React.Component {
   render() {
     if (this.state.hasError) {
       return (
-        <div style={{
-          minHeight: '100vh',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: '#0d1117',
-          color: '#e6edf3',
-          fontFamily: 'monospace',
-          padding: '2rem',
-        }}>
+        <div
+          style={{
+            minHeight: '100vh',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: '#0d1117',
+            color: '#e6edf3',
+            fontFamily: 'monospace',
+            padding: '2rem',
+          }}
+        >
           <div style={{ maxWidth: '480px', textAlign: 'center' }}>
             <h1 style={{ color: '#f59e0b', fontSize: '1.5rem', marginBottom: '1rem' }}>
               Something went wrong
@@ -115,99 +226,98 @@ class ErrorBoundary extends React.Component {
 export default function App() {
   return (
     <ErrorBoundary>
+      <DevHUD />
       <RouteLogger />
-      <Layout>
-        <Routes>
-          <Route path="/settings" element={<Settings />} />
+      <Routes>
+        <Route element={<PublicLayoutRoute />}>
+          <Route
+            element={(
+              <RouteFamilyBoundary
+                title="Loading public route"
+                detail="Fetching the marketing surface for this destination."
+              />
+            )}
+          >
+            <Route path="/" element={<Landing />} />
+            <Route path="/winners" element={<Winners />} />
+            <Route path="/pricing" element={<Pricing />} />
+            <Route path="/upgrade" element={<Upgrade />} />
+            <Route path="/checkout/success" element={<CheckoutSuccess />} />
+            <Route path="/checkout/cancel" element={<CheckoutCancel />} />
+            <Route path="/settings" element={<Settings />} />
+          </Route>
+        </Route>
 
-          <Route path="/" element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          } />
+        <Route path="/app" element={<AppShell />}>
+          <Route
+            element={(
+              <RouteFamilyBoundary
+                appShell
+                title="Loading dashboard"
+                detail="Preparing the operator summary surfaces."
+              />
+            )}
+          >
+            <Route index element={<Dashboard />} />
+            <Route path="strategies" element={<StrategyDashboard />} />
+          </Route>
+          <Route
+            element={(
+              <RouteFamilyBoundary
+                appShell
+                title="Loading opportunities"
+                detail="Fetching the opportunity analysis surface."
+              />
+            )}
+          >
+            <Route path="opportunities" element={<Opportunities />} />
+            <Route path="opportunities/survey" element={<OpportunitySurvey />} />
+            <Route path="opportunities/:id" element={<OpportunityDetail />} />
+          </Route>
+          <Route
+            element={(
+              <RouteFamilyBoundary
+                appShell
+                title="Loading markets"
+                detail="Preparing market detail tools and charting assets."
+              />
+            )}
+          >
+            <Route path="markets" element={<Markets />} />
+            <Route path="markets/:symbol" element={<MarketDetail />} />
+          </Route>
+          <Route
+            element={(
+              <RouteFamilyBoundary
+                appShell
+                title="Loading runs"
+                detail="Fetching run history and simulation comparisons."
+              />
+            )}
+          >
+            <Route path="runs" element={<Runs />} />
+            <Route path="runs/compare" element={<RunCompare />} />
+            <Route path="runs/:id" element={<RunDetail />} />
+            <Route path="runs/:id/simulation" element={<SimulationResults />} />
+          </Route>
+          <Route
+            element={(
+              <RouteFamilyBoundary
+                appShell
+                title="Loading operator surface"
+                detail="Fetching advanced analysis and control tools."
+              />
+            )}
+          >
+            <Route path="control" element={<ControlPlane />} />
+            <Route path="paper" element={<PaperTrading />} />
+            <Route path="analytics/correlations" element={<CorrelationAnalysis />} />
+            <Route path="pipeline" element={<Pipeline />} />
+          </Route>
+        </Route>
 
-          <Route path="/opportunities" element={
-            <ProtectedRoute>
-              <Opportunities />
-            </ProtectedRoute>
-          } />
-
-          <Route path="/opportunities/survey" element={
-            <ProtectedRoute>
-              <OpportunitySurvey />
-            </ProtectedRoute>
-          } />
-
-          <Route path="/opportunities/:id" element={
-            <ProtectedRoute>
-              <OpportunityDetail />
-            </ProtectedRoute>
-          } />
-
-          <Route path="/markets" element={
-            <ProtectedRoute>
-              <Markets />
-            </ProtectedRoute>
-          } />
-
-          <Route path="/markets/:symbol" element={
-            <ProtectedRoute>
-              <MarketDetail />
-            </ProtectedRoute>
-          } />
-
-          <Route path="/runs" element={
-            <ProtectedRoute>
-              <Runs />
-            </ProtectedRoute>
-          } />
-
-          <Route path="/runs/compare" element={
-            <ProtectedRoute>
-              <RunCompare />
-            </ProtectedRoute>
-          } />
-
-          <Route path="/runs/:id" element={
-            <ProtectedRoute>
-              <RunDetail />
-            </ProtectedRoute>
-          } />
-
-          <Route path="/runs/:id/simulation" element={
-            <ProtectedRoute>
-              <SimulationResults />
-            </ProtectedRoute>
-          } />
-
-          <Route path="/control" element={
-            <ProtectedRoute>
-              <ControlPlane />
-            </ProtectedRoute>
-          } />
-
-          <Route path="/paper" element={
-            <ProtectedRoute>
-              <PaperTrading />
-            </ProtectedRoute>
-          } />
-
-          <Route path="/analytics/correlations" element={
-            <ProtectedRoute>
-              <CorrelationAnalysis />
-            </ProtectedRoute>
-          } />
-
-          <Route path="/pipeline" element={
-            <ProtectedRoute>
-              <Pipeline />
-            </ProtectedRoute>
-          } />
-
-          {/* Catch all - redirect to dashboard */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </Layout>
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
     </ErrorBoundary>
   )
 }

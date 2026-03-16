@@ -17,7 +17,7 @@ import json
 import logging
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone, timedelta
-from typing import Final, Optional
+from typing import Optional
 import uuid
 
 from core_logic.exit_checker import check_exit_simple, ExitConfig
@@ -58,39 +58,10 @@ SIM_DEFAULT_D1_CAUSAL_MIN_ENTRY_PRICE = 0.0
 SIM_DEFAULT_D1_CAUSAL_MIN_STOP_PCT = 0.0
 SIM_DEFAULT_D1_CAUSAL_MIN_SCORE = 0.0
 
-# Per-setup exit configs — configuration constants (doctrine: a variable that
-# isn't governed via a registry isn't a variable, it's a constant).
-# These are validated exit parameters per strategy, not runtime-variable dispatch.
-# NOTE: strategies not listed here use default ExitConfig.
-# When adding a new strategy, add its exit config here or it falls back to defaults.
-SETUP_EXIT_CONFIGS: Final[dict[str, ExitConfig]] = {
-    # D1 Config D (production winner): no fail-fast, no trailing stop.
-    # Validated via 5/5 walk-forward folds, daily PF 2.70.
-    "D1": ExitConfig(
-        fail_fast_bars=0, fail_fast_threshold=0.0,
-        trail_breakeven_r=0, trail_activation_r=999.0, trail_distance_r=0.5,
-    ),
-    # S9 Short Reversion v1.0: pure 48h time-stop exit, 10% protective stop.
-    # Cross-sectional mean-reversion — no fail-fast, no trailing.
-    # Validated: 4/5 WF folds, holdout PF 2.56, DSR p=0.961.
-    "S9": ExitConfig(
-        fail_fast_bars=0, fail_fast_threshold=0.0,
-        trail_breakeven_r=0, trail_activation_r=999.0, trail_distance_r=0.5,
-    ),
-    # S10 MACD Scalp v1.0: 5m scalper, 1.2 ATR stop, TP at 1.5R/2R, 12-bar TS.
-    # Quick in-and-out — keep fail-fast (2 bars, 0.3%), no trailing.
-    "S10": ExitConfig(
-        fail_fast_bars=2, fail_fast_threshold=0.003,
-        trail_breakeven_r=0, trail_activation_r=999.0, trail_distance_r=0.5,
-    ),
-    # U1 Unicorn Ignition v4.0: microcap breakout, volatility envelope stop.
-    # Rare-event model — wider exits outperform tighter ones (§5 2026-02-19).
-    # No fail-fast (kills winners), no trailing (caps MFE on true positives).
-    "U1": ExitConfig(
-        fail_fast_bars=0, fail_fast_threshold=0.0,
-        trail_breakeven_r=0, trail_activation_r=999.0, trail_distance_r=0.5,
-    ),
-}
+
+# Per-setup exit configs are registered in stop_policy_registry at bootstrap
+# and injected into SimulationConfig.setup_exit_configs by the governance layer.
+# No hardcoded exit configs in core_logic — the registry is the sole authority.
 
 
 @dataclass
@@ -123,6 +94,9 @@ class SimulationConfig:
     exit_config: Optional[ExitConfig] = None
     intrabar_policy: str = "STOP_FIRST"
     one_event_per_bar: bool = True
+    # Per-setup exit configs — injected from stop_policy_registry at construction.
+    # Empty by default; governance layer must populate from the registry.
+    setup_exit_configs: dict = field(default_factory=dict)
     # Causal D1 entry gate (uses only information available at entry time).
     d1_causal_gate_enabled: bool = SIM_DEFAULT_D1_CAUSAL_GATE_ENABLED
     d1_causal_min_entry_price: float = SIM_DEFAULT_D1_CAUSAL_MIN_ENTRY_PRICE
@@ -852,7 +826,7 @@ class OpportunitySimulator:
         time_stop_bars = payload.get("time_stop_bars", self.config.time_stop_bars)
 
         # Per-setup exit config (e.g. D1 uses no fail-fast/trailing)
-        exit_cfg = SETUP_EXIT_CONFIGS.get(setup_id, self.config.exit_config)
+        exit_cfg = self.config.setup_exit_configs.get(setup_id, self.config.exit_config)
         if exit_cfg is None:
             exit_cfg = ExitConfig(
                 intrabar_policy=self.config.intrabar_policy,
@@ -1337,7 +1311,7 @@ class OpportunitySimulator:
         Captures SimulationConfig + resolved ExitConfig so any simulation result
         can be exactly reproduced from the stored config.
         """
-        exit_cfg = SETUP_EXIT_CONFIGS.get(setup_id, self.config.exit_config)
+        exit_cfg = self.config.setup_exit_configs.get(setup_id, self.config.exit_config)
         if exit_cfg is None:
             exit_cfg = ExitConfig(
                 intrabar_policy=self.config.intrabar_policy,

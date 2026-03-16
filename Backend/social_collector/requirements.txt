@@ -1,9 +1,0 @@
-psycopg[binary]
-redis
-requests
-numpy
-praw
-telethon
-feedparser
-anthropic
-discord.py-self

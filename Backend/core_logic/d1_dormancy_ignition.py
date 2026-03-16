@@ -156,7 +156,7 @@ def _sync_d1config_class_attrs(changed: dict, alias_map: dict) -> None:
         # (only differs for W_BTC_AD_RET -> W_BTC_ADJ_RET today)
         class_attr = alias_map.get(config_field, config_field)
         # Sole mutation point for D1Config class attrs — intentional shim.
-        type.__setattr__(D1Config, class_attr, vals["new"])
+        type.__setattr__(D1Config, class_attr, vals["new"])  # EXEMPT: migration shim — sole D1Config mutation point for hot-reload
 
 
 # =============================================================================
@@ -538,11 +538,22 @@ class D1Signal:
     # Social silence (soft feature -- not a gate)
     social_mentions_30d: int = 0
 
+    # Timing (Canon compliance — every signal carries its bar timestamp.
+    # Never None. A signal without a timestamp is a bug in the evaluator.)
+    signal_ts: Optional[datetime] = None
+    bar_start_ts: Optional[datetime] = None
+
     # Explainability
     explain: Optional[ExplainPayload] = None
 
     # State snapshot
     state: Optional[D1State] = None
+
+    def __post_init__(self):
+        if self.signal_ts is None:
+            raise ValueError("D1Signal.signal_ts must be set at construction — evaluator bug")
+        if self.bar_start_ts is None:
+            raise ValueError("D1Signal.bar_start_ts must be set at construction — evaluator bug")
 
 
 # =============================================================================
@@ -716,10 +727,14 @@ class D1Evaluator(SetupBase):
 
         changed = {}
 
+        def _read_config(attr_name: str):
+            """Read a D1Config class attribute by known name. Direct access, no introspection."""
+            return D1Config.__dict__[attr_name]  # EXEMPT: D1Config is a plain class, not a dataclass — direct class-dict read is the only non-getattr path
+
         # ── Merge flat params ────────────────────────────────────────────
         for param_key, config_field in _FLAT_MAP.items():
             if param_key in params:
-                old = vars(D1Config).get(config_field, None)
+                old = _read_config(config_field)
                 new = params[param_key]
                 if old != new:
                     changed[config_field] = {"old": old, "new": new}
@@ -729,7 +744,7 @@ class D1Evaluator(SetupBase):
         if isinstance(exit_cfg, dict):
             for param_key, config_field in _EXIT_MAP.items():
                 if param_key in exit_cfg:
-                    old = vars(D1Config).get(config_field, None)
+                    old = _read_config(config_field)
                     new = exit_cfg[param_key]
                     if old != new:
                         changed[config_field] = {"old": old, "new": new}
@@ -739,7 +754,7 @@ class D1Evaluator(SetupBase):
         if isinstance(weights_cfg, dict):
             for param_key, config_field in _WEIGHT_MAP.items():
                 if param_key in weights_cfg:
-                    old = vars(D1Config).get(config_field, None)
+                    old = _read_config(config_field)
                     new = weights_cfg[param_key]
                     if old != new:
                         changed[config_field] = {"old": old, "new": new}
@@ -994,6 +1009,12 @@ class D1Evaluator(SetupBase):
         state.phase = D1Phase.TRIGGERED
         state.score_components = score_components
 
+        # Derive bar timestamp from the snapshot's last candle (Binance ms → UTC).
+        # No fallback — if snapshot.ohlcv is empty, the evaluator is broken.
+        _bar_ts = datetime.fromtimestamp(
+            snapshot.ohlcv[-1].timestamp / 1000, tz=timezone.utc
+        )
+
         return D1Signal(
             symbol=symbol,
             timeframe=timeframe,
@@ -1014,6 +1035,8 @@ class D1Evaluator(SetupBase):
             bb_width_at_trigger=state.bb_width,
             btc_beta=state.btc_beta,
             score_components=score_components,
+            signal_ts=_bar_ts,
+            bar_start_ts=_bar_ts,
             explain=explain,
             state=state,
         )

@@ -121,31 +121,3 @@ export function flattenTree(tree, expandedDepth = 2, expandedIds = new Set()) {
 
   return result
 }
-
-/**
- * Find the critical path through the tree (longest root-to-leaf path).
- * Returns a Set of event_ids on the critical path.
- */
-export function findCriticalPath(tree) {
-  let longestPath = []
-
-  function dfs(node, path) {
-    path.push(node.event.event_id)
-    if (node.children.length === 0) {
-      if (path.length > longestPath.length) {
-        longestPath = [...path]
-      }
-    } else {
-      for (const child of node.children) {
-        dfs(child, path)
-      }
-    }
-    path.pop()
-  }
-
-  for (const root of tree.roots) {
-    dfs(root, [])
-  }
-
-  return new Set(longestPath)
-}

@@ -26,7 +26,7 @@ Parameters are LOCKED -- do not modify without full re-validation.
 import logging
 from dataclasses import dataclass, field
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, timezone
 
 from core_logic.setup_base import (
     SetupBase, SetupMetadata, SetupParameter, IndicatorRequirement,
@@ -75,15 +75,26 @@ class S9Signal:
     # State snapshot
     state: S9State
 
+    # Identity
+    setup_id: str = "S9"
+
     # Explainability (3-8 why items)
     explain: ExplainPayload = None
 
     # Time-stop: 48 bars (48h on 1h timeframe)
     time_stop_bars: int = 48
 
-    # Timing metadata
+    # Timing metadata (signal_ts/bar_start_ts: never None — evaluator must set)
+    signal_ts: Optional[datetime] = None
+    bar_start_ts: Optional[datetime] = None
     since_ts: Optional[datetime] = None
     action_by_ts: Optional[datetime] = None
+
+    def __post_init__(self):
+        if self.signal_ts is None:
+            raise ValueError("S9Signal.signal_ts must be set at construction — evaluator bug")
+        if self.bar_start_ts is None:
+            raise ValueError("S9Signal.bar_start_ts must be set at construction — evaluator bug")
 
 
 class S9Evaluator(SetupBase):
@@ -217,6 +228,10 @@ class S9Evaluator(SetupBase):
              f"(portfolio diversification across top decile)"),
         ])
 
+        # Derive bar timestamp from bar_start_ts param (Binance ms string → UTC).
+        # No fallback — if bar_start_ts is missing, the caller is broken.
+        _bar_ts = datetime.fromtimestamp(int(bar_start_ts) / 1000, tz=timezone.utc)
+
         return S9Signal(
             symbol=symbol,
             timeframe="1h",
@@ -239,4 +254,6 @@ class S9Evaluator(SetupBase):
             state=state,
             explain=explain,
             time_stop_bars=48,
+            signal_ts=_bar_ts,
+            bar_start_ts=_bar_ts,
         )

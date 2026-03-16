@@ -188,18 +188,8 @@ def compute_tone_score(title: str, source: str, anti_bot_score: float = 0.0) -> 
         from equities_strategies.tone_scorer import score_title_tone  # type: ignore[import-untyped]
         return score_title_tone(title, source=source, anti_bot_score=anti_bot_score)
     except ImportError:
-        # Fallback: try relative import path
-        try:
-            # In Docker, tone_scorer is at /app/equities_strategies/tone_scorer.py
-            import importlib
-            import sys
-            import os
-            if "/app" not in sys.path:
-                sys.path.insert(0, "/app")
-            from equities_strategies.tone_scorer import score_title_tone
-            return score_title_tone(title, source=source, anti_bot_score=anti_bot_score)
-        except ImportError:
-            return 0.0
+        # PYTHONPATH=/backend is set by Dockerfile.worker — no sys.path manipulation needed
+        return 0.0
 
 
 def compute_simple_sentiment(text: str) -> float:
@@ -212,8 +202,8 @@ def compute_simple_sentiment(text: str) -> float:
             import sys
             import os
             predictor_dir = os.path.join(os.path.dirname(__file__))
-            if predictor_dir not in sys.path:
-                sys.path.insert(0, predictor_dir)
+            if predictor_dir not in sys.path:  # EXEMPT: script-local import resolution
+                sys.path.insert(0, predictor_dir)  # EXEMPT: script-local import resolution
             from text_utils import simple_sentiment_score
             return simple_sentiment_score(text)
         except ImportError:

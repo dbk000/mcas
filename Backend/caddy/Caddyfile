@@ -44,6 +44,21 @@ api.mcasui.com {
 
 # Keep local HTTP access for Docker internal use
 :80 {
+  # Chaos Failure Injection (Workstream 2)
+  @chaos_500 {
+    header X-Chaos-Status 500
+  }
+  handle @chaos_500 {
+    respond "Chaos Error 500" 500
+  }
+
+  @chaos_403 {
+    header X-Chaos-Status 403
+  }
+  handle @chaos_403 {
+    respond "Chaos Forbidden 403" 403
+  }
+
   handle /health {
     reverse_proxy api:8000
   }

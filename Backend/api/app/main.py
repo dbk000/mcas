@@ -30,6 +30,7 @@ from fastapi import (
     Header,
     HTTPException,
     APIRouter,
+    Request,
 )
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
@@ -52,9 +53,15 @@ for _uv_name in ("uvicorn", "uvicorn.error", "uvicorn.access"):
     _uv_logger.handlers.clear()
     _uv_logger.propagate = True
 
+from governance.cache_contract import SIGNAL_MAX_AGE_S
 from governance.stop_policy_registry import (
     validate_stop_registry,
     build_stop_policy_template,
+)
+from api.app.routers.session import (
+    SESSION_COOKIE_NAME,
+    has_valid_session,
+    router as session_router,
 )
 
 # -------------------------
@@ -94,8 +101,6 @@ DATABASE_URL = _worker_cfg.DATABASE_URL
 API_KEY = _worker_cfg.API_KEY
 DEFAULT_TIMEFRAMES = _worker_cfg.DEFAULT_TIMEFRAMES.split(",")
 SIGNAL_TOP_N_DAILY = _worker_cfg.SIGNAL_TOP_N_DAILY
-SIGNAL_MAX_AGE_S = 3600
-
 # Strategy registry: derived from frozen StrategyRegistry (sole authority).
 # No hardcoded strategy dict here — Central Control Room, Rule 1.
 STRATEGY_REGISTRY = strategy_as_api_dict()
@@ -187,11 +192,20 @@ class SignalRequest(BaseModel):
 # -------------------------
 # Auth (API key)
 # -------------------------
-def require_api_key(x_api_key: str = Header(default="", alias="X-API-Key")):
+def require_api_key(
+    request: Request,
+    x_api_key: str = Header(default="", alias="X-API-Key"),
+):
     if not API_KEY:
         raise HTTPException(status_code=500, detail="API key not configured")
-    if not hmac.compare_digest(x_api_key, API_KEY):
-        raise HTTPException(status_code=401, detail="Unauthorized")
+    if hmac.compare_digest(x_api_key, API_KEY):
+        return
+
+    session_token = request.cookies.get(SESSION_COOKIE_NAME)
+    if has_valid_session(session_token):
+        return
+
+    raise HTTPException(status_code=401, detail="Unauthorized")
 
 
 # Protected v1 router for inline endpoints
@@ -1476,6 +1490,8 @@ async def d2_status():
 # Mount the protected inline router
 # =============================================
 app.include_router(router)
+
+app.include_router(session_router, prefix="/v1")
 
 # =============================================
 # Mount domain routers

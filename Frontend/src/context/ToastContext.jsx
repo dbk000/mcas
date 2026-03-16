@@ -50,10 +50,10 @@ function Toast({ toast, onClose }) {
   const { message, type } = toast
 
   const icons = {
-    success: <CheckCircle className="w-5 h-5 text-green-400" />,
-    error: <AlertCircle className="w-5 h-5 text-red-400" />,
-    warning: <AlertTriangle className="w-5 h-5 text-amber-400" />,
-    info: <Info className="w-5 h-5 text-blue-400" />,
+    success: <CheckCircle className="size-5 text-green-400" />,
+    error: <AlertCircle className="size-5 text-red-400" />,
+    warning: <AlertTriangle className="size-5 text-amber-400" />,
+    info: <Info className="size-5 text-blue-400" />,
   }
 
   const bgColors = {
@@ -66,8 +66,8 @@ function Toast({ toast, onClose }) {
   return (
     <div 
       className={`
-        flex items-center gap-3 px-4 py-3 rounded-lg border backdrop-blur-sm
-        animate-slide-up min-w-[300px] max-w-md
+        flex min-w-[300px] max-w-md animate-slide-up items-center gap-3 rounded-lg border
+        px-4 py-3 backdrop-blur-sm
         ${bgColors[type] || bgColors.info}
       `}
     >
@@ -75,9 +75,9 @@ function Toast({ toast, onClose }) {
       <span className="flex-1 text-sm text-terminal-100">{message}</span>
       <button 
         onClick={onClose}
-        className="text-terminal-400 hover:text-terminal-100 transition-colors"
+        className="text-terminal-400 transition-colors hover:text-terminal-100"
       >
-        <X className="w-4 h-4" />
+        <X className="size-4" />
       </button>
     </div>
   )

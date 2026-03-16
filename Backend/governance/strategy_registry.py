@@ -15,6 +15,9 @@ class StrategyHandler:
     timeframe_affinity: Optional[List[str]] = None  # TFs this strategy evaluates on (None = all)
     dispatch_mode: str = "per_symbol"  # "per_symbol" or "cross_sectional"
     worker_evaluate: Optional[Callable] = None  # Bound at worker init — callable ref, not string dispatch
+    version: str = "v1.0"  # Strategy version for signal/trace versioning
+    label: str = ""  # Human-readable display name (from frozen StrategyRegistry)
+    supports_config_sync: bool = False  # Whether this strategy participates in hot-reload config sync
 
 
 class RuntimeDispatchTable:
@@ -97,6 +100,8 @@ def register_all_strategies(worker=None):
         score_multiplier=worker_config.U1_SCORE_MULT,
         timeframe_affinity=["5m"],
         worker_evaluate=worker._evaluate_u1 if worker else None,
+        version="U1_v3.0",
+        label="Unicorn Ignition v3.0",
     ))
 
     # D1 Strategy — evaluates on 1h
@@ -108,6 +113,9 @@ def register_all_strategies(worker=None):
         score_multiplier=worker_config.D1_SCORE_MULT,
         timeframe_affinity=["1h"],
         worker_evaluate=worker._evaluate_d1 if worker else None,
+        version="D1_v1.2",
+        label="Dormancy-to-Ignition v1.2",
+        supports_config_sync=True,
     ))
 
     # S10 Strategy — evaluates on 5m
@@ -119,6 +127,8 @@ def register_all_strategies(worker=None):
         score_multiplier=worker_config.S10_SCORE_MULT,
         timeframe_affinity=["5m"],
         worker_evaluate=worker._evaluate_s10 if worker else None,
+        version="S10_v1.0",
+        label="MACD Scalp v1.0",
     ))
 
     # S9 Strategy — cross-sectional (runs on timer, not per-symbol dispatch)
@@ -129,4 +139,6 @@ def register_all_strategies(worker=None):
         evaluate_trigger=lambda snap, state, sym, tf, **kwargs: None,
         score_multiplier=worker_config.S9_SCORE_MULT,
         dispatch_mode="cross_sectional",
+        version="S9_v1.0",
+        label="Short Reversion v1.0",
     ))

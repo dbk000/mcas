@@ -12,7 +12,7 @@
  * Remove duplicate events (same event_id appearing multiple times).
  * Keeps the first occurrence.
  */
-export function deduplicateEvents(events) {
+function deduplicateEvents(events) {
   const seen = new Set()
   return events.filter(evt => {
     if (seen.has(evt.event_id)) return false
@@ -25,7 +25,7 @@ export function deduplicateEvents(events) {
  * Sort events chronologically by created_at (ascending).
  * Falls back to event_id string comparison for same-timestamp events.
  */
-export function sortByTimestamp(events) {
+function sortByTimestamp(events) {
   return [...events].sort((a, b) => {
     const ta = a.created_at ? new Date(a.created_at).getTime() : 0
     const tb = b.created_at ? new Date(b.created_at).getTime() : 0
@@ -38,7 +38,7 @@ export function sortByTimestamp(events) {
  * Normalize actor names to consistent display format.
  * E.g., 'claude_code_session_xyz' -> 'claude_code'
  */
-export function normalizeActors(events) {
+function normalizeActors(events) {
   return events.map(evt => {
     if (!evt.actor) return evt
     let actor = evt.actor
@@ -63,7 +63,7 @@ export function normalizeActors(events) {
  *
  * Adds `_onCriticalPath: boolean` to each event.
  */
-export function markCriticalPath(events) {
+function markCriticalPath(events) {
   if (events.length === 0) return events
 
   // Build child map: parentId -> [childEvents]
@@ -133,7 +133,7 @@ export function markCriticalPath(events) {
  * Adds `_gapMs: number | null` (milliseconds since previous event).
  * Adds `_gapWarning: boolean` if gap > 24 hours.
  */
-export function computeTimeGaps(events) {
+function computeTimeGaps(events) {
   return events.map((evt, i) => {
     if (i === 0 || !evt.created_at || !events[i - 1].created_at) {
       return { ...evt, _gapMs: null, _gapWarning: false }
@@ -152,7 +152,7 @@ export function computeTimeGaps(events) {
 /**
  * Compose multiple adjusters into a single pipeline function.
  */
-export function compose(...adjusters) {
+function compose(...adjusters) {
   return (events) => adjusters.reduce((result, fn) => fn(result), events)
 }
 

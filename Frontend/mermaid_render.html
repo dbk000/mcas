@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Sitemap Render</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        body { background-color: #0a0a0c; margin: 0; padding: 40px; display: flex; justify-content: center; }
+        #render-target { background-color: #0a0a0c; }
+    </style>
+</head>
+<body>
+    <div id="render-target" class="mermaid">
+graph TD
+    %% Public Funnel
+    subgraph Public_Funnel [Public Funnel - MarketingLayout]
+        L[Landing /] --> W[Winners /winners]
+        L --> P[Pricing /pricing]
+        L --> S[Settings /settings]
+        P --> U[Upgrade /upgrade]
+        U --> CS[Checkout Success]
+        U --> CC[Checkout Cancel]
+    end
+
+    %% The Gate
+    Public_Funnel -- "Paid Access" --> Gate{Paid Gate}
+    
+    %% Protected App Shell
+    subgraph Operator_App [Operator App - Layout]
+        Gate --> Dash[Dashboard /app]
+        Dash --> Strat[Strategies /app/strategies]
+        
+        subgraph Opportunity_Core [Opportunity Analysis]
+            Opp[Opportunities /app/opportunities]
+            Opp --> Det[Detail /app/opportunities/:id]
+            Opp --> Surv[Survey /app/opportunities/survey]
+        end
+        
+        subgraph Market_Intel [Market Intelligence]
+            Mkt[Markets /app/markets]
+            Mkt --> MDet[Symbol Detail /app/markets/:symbol]
+            Pipe[Pipeline /app/pipeline]
+        end
+        
+        subgraph Backtesting_Control [Simulation & Control]
+            Runs[Runs /app/runs]
+            Runs --> RDet[Run Detail /app/runs/:id]
+            Runs --> RComp[Compare /app/runs/compare]
+            RDet --> Sim[Sim Results /app/runs/:id/simulation]
+            Ctrl[Control Plane /app/control]
+            Paper[Paper Trading /app/paper]
+        end
+
+        subgraph Advanced_Analytics [Advanced]
+            Corr[Correlations /app/analytics/correlations]
+        end
+    end
+
+    %% Logic Connections
+    Dash -.-> Opp
+    Dash -.-> Runs
+    Strat -.-> Det
+    Dash -.-> Pipe
+
+    %% Styling
+    classDef default fill:#111115,stroke:#3f3f4a,color:#ffffff
+    classDef cluster fill:#0d0d12,stroke:#f59e0b,color:#ffffff,stroke-dasharray: 5 5
+    linkStyle default stroke:#5c5c6d,stroke-width:1px
+    </div>
+    <script>
+        mermaid.initialize({ 
+            startOnLoad: true, 
+            theme: 'dark',
+            themeVariables: {
+                primaryColor: '#f59e0b',
+                primaryTextColor: '#fff',
+                primaryBorderColor: '#f59e0b',
+                lineColor: '#5c5c6d',
+                secondaryColor: '#1f1f26',
+                tertiaryColor: '#111115'
+            }
+        });
+    </script>
+</body>
+</html>

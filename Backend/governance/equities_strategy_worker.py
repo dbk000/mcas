@@ -473,7 +473,7 @@ def main():
             if "strategy_counts" in result:
                 watchdog.update(result["strategy_counts"])
 
-        except KeyboardInterrupt:
+        except KeyboardInterrupt:  # EXEMPT: graceful SIGINT shutdown — os._exit(78) is uncatchable
             logger.info("Shutting down...")
             break
         except Exception as e:

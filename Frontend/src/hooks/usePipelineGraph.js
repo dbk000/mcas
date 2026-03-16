@@ -148,6 +148,62 @@ function graphReducer(state, action) {
   }
 }
 
+function traverseBreadthFirst(startId, adjacencyMap, maxDepth = null) {
+  const visited = new Set()
+  const queue = [[startId, 0]]
+
+  for (let index = 0; index < queue.length; index += 1) {
+    const [current, depth] = queue[index]
+    if (visited.has(current)) continue
+
+    visited.add(current)
+    if (maxDepth != null && depth >= maxDepth) continue
+
+    const neighbors = adjacencyMap[current]
+    if (!neighbors) continue
+
+    for (const neighbor of neighbors) {
+      if (!visited.has(neighbor)) {
+        queue.push([neighbor, depth + 1])
+      }
+    }
+  }
+
+  return visited
+}
+
+function findPathBreadthFirst(startId, endId, adjacencyMap) {
+  const parents = new Map([[startId, null]])
+  const queue = [startId]
+
+  for (let index = 0; index < queue.length; index += 1) {
+    const current = queue[index]
+    if (current === endId) {
+      const path = []
+      let cursor = endId
+
+      while (cursor !== null) {
+        path.unshift(cursor)
+        cursor = parents.get(cursor)
+      }
+
+      return new Set(path)
+    }
+
+    const neighbors = adjacencyMap[current]
+    if (!neighbors) continue
+
+    for (const neighbor of neighbors) {
+      if (!parents.has(neighbor)) {
+        parents.set(neighbor, current)
+        queue.push(neighbor)
+      }
+    }
+  }
+
+  return null
+}
+
 // --- Hook ---
 
 export default function usePipelineGraph(topologyData) {
@@ -155,17 +211,30 @@ export default function usePipelineGraph(topologyData) {
   const pressureWaveTimer = useRef(null)
 
   // Build adjacency maps from topology edges
-  const { upstreamMap, downstreamMap, nodeMap } = useMemo(() => {
-    if (!topologyData) return { upstreamMap: {}, downstreamMap: {}, nodeMap: {} }
+  const { upstreamMap, downstreamMap, nodeMap, subsystemNodeIdsMap } = useMemo(() => {
+    if (!topologyData) {
+      return {
+        upstreamMap: {},
+        downstreamMap: {},
+        nodeMap: {},
+        subsystemNodeIdsMap: new Map(),
+      }
+    }
 
     const up = {}   // nodeId -> Set<nodeId>
     const down = {} // nodeId -> Set<nodeId>
     const nm = {}
+    const subsystemNodes = new Map()
 
     for (const n of (topologyData.nodes || [])) {
       up[n.id] = new Set()
       down[n.id] = new Set()
       nm[n.id] = n
+
+      if (!subsystemNodes.has(n.subsystem)) {
+        subsystemNodes.set(n.subsystem, new Set())
+      }
+      subsystemNodes.get(n.subsystem).add(n.id)
     }
 
     for (const e of (topologyData.edges || [])) {
@@ -173,26 +242,17 @@ export default function usePipelineGraph(topologyData) {
       if (up[e.target]) up[e.target].add(e.source)
     }
 
-    return { upstreamMap: up, downstreamMap: down, nodeMap: nm }
+    return {
+      upstreamMap: up,
+      downstreamMap: down,
+      nodeMap: nm,
+      subsystemNodeIdsMap: subsystemNodes,
+    }
   }, [topologyData])
 
   // BFS traversal helper (supports optional depth limit for Wave 4.1)
   const bfs = useCallback((startId, adjacencyMap, maxDepth = null) => {
-    const visited = new Set()
-    const queue = [[startId, 0]]
-    while (queue.length > 0) {
-      const [current, depth] = queue.shift()
-      if (visited.has(current)) continue
-      visited.add(current)
-      if (maxDepth != null && depth >= maxDepth) continue
-      const neighbors = adjacencyMap[current]
-      if (neighbors) {
-        for (const n of neighbors) {
-          if (!visited.has(n)) queue.push([n, depth + 1])
-        }
-      }
-    }
-    return visited
+    return traverseBreadthFirst(startId, adjacencyMap, maxDepth)
   }, [])
 
   const getUpstream = useCallback((nodeId, depth = null) => {
@@ -229,10 +289,7 @@ export default function usePipelineGraph(topologyData) {
       return new Set([state.focusTarget, ...up, ...down])
     }
     if (state.focusMode === 'subsystem' && state.focusTarget) {
-      const subsystemNodes = new Set()
-      for (const [id, node] of Object.entries(nodeMap)) {
-        if (node.subsystem === state.focusTarget) subsystemNodes.add(id)
-      }
+      const subsystemNodes = new Set(subsystemNodeIdsMap.get(state.focusTarget) || [])
       // Also include immediate upstream/downstream of subsystem nodes
       for (const nid of [...subsystemNodes]) {
         const up = getUpstream(nid, 1)
@@ -250,7 +307,7 @@ export default function usePipelineGraph(topologyData) {
     const all = new Set([state.selectedNodeId, ...up, ...down])
     return all
   }, [state.selectedNodeId, getUpstream, getDownstream, state.manualHighlight,
-      state.lineageDepth, state.focusMode, state.focusTarget, nodeMap])
+      state.lineageDepth, state.focusMode, state.focusTarget, subsystemNodeIdsMap])
 
   // Compute highlighted edge IDs
   const highlightedEdgeIds = useMemo(() => {
@@ -336,18 +393,20 @@ export default function usePipelineGraph(topologyData) {
     const distances = new Map()
     const queue = [[state.pressureWaveOrigin, 0]]
     const visited = new Set()
-    while (queue.length > 0) {
-      const [current, dist] = queue.shift()
+
+    for (let index = 0; index < queue.length; index += 1) {
+      const [current, dist] = queue[index]
       if (visited.has(current)) continue
       visited.add(current)
       distances.set(current, dist)
       const neighbors = downstreamMap[current]
       if (neighbors) {
-        for (const n of neighbors) {
-          if (!visited.has(n)) queue.push([n, dist + 1])
+        for (const neighbor of neighbors) {
+          if (!visited.has(neighbor)) queue.push([neighbor, dist + 1])
         }
       }
     }
+
     return distances
   }, [state.pressureWaveOrigin, downstreamMap])
 
@@ -377,41 +436,11 @@ export default function usePipelineGraph(topologyData) {
     // Try downstream first (from -> to), then upstream (to -> from)
     let pathNodeIds = null
 
-    // BFS path finder: returns array of nodeIds from start to end, or null
-    function bfsPath(startId, endId, adjacencyMap) {
-      const visited = new Map() // nodeId -> parentId
-      const queue = [startId]
-      visited.set(startId, null)
-      while (queue.length > 0) {
-        const current = queue.shift()
-        if (current === endId) {
-          // Reconstruct path
-          const path = []
-          let c = endId
-          while (c !== null) {
-            path.unshift(c)
-            c = visited.get(c)
-          }
-          return new Set(path)
-        }
-        const neighbors = adjacencyMap[current]
-        if (neighbors) {
-          for (const n of neighbors) {
-            if (!visited.has(n)) {
-              visited.set(n, current)
-              queue.push(n)
-            }
-          }
-        }
-      }
-      return null
-    }
-
     // Try downstream path
-    pathNodeIds = bfsPath(state.sliceFrom, nodeId, downstreamMap)
+    pathNodeIds = findPathBreadthFirst(state.sliceFrom, nodeId, downstreamMap)
     if (!pathNodeIds) {
       // Try upstream path (reversed direction)
-      pathNodeIds = bfsPath(state.sliceFrom, nodeId, upstreamMap)
+      pathNodeIds = findPathBreadthFirst(state.sliceFrom, nodeId, upstreamMap)
     }
     if (!pathNodeIds) {
       // Try bidirectional: combine downstream from both, find intersection

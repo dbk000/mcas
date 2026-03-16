@@ -1,6 +1,6 @@
-import { useState, useEffect, useMemo } from 'react'
+import { startTransition, useDeferredValue, useEffect, useMemo, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { ArrowLeft, RefreshCw, Clock, Activity, Target, TrendingUp, TrendingDown } from 'lucide-react'
+import { ArrowLeft, Clock, Activity, Target, TrendingUp } from 'lucide-react'
 import { useTimeframes, useLiveOHLCV, useSnapshot, useSqueezeState, useBtcSqueezeStatus } from '../hooks/useData'
 import { 
   Card, 
@@ -16,32 +16,18 @@ import {
 import { 
   formatPrice, 
   formatNumber, 
-  formatDateTime,
   formatRelativeTime
 } from '../utils/formatters'
 import OpportunityCurveChart from '../components/opportunities/OpportunityCurveChart'
 import { MARKET_LIVE_COLLECTOR_CHART_PROPS } from '../components/opportunities/chartPresets'
+import { getTfSeconds } from '../config/governed'
 
-const TF_TO_MS = {
-  '1m': 60_000,
-  '3m': 180_000,
-  '5m': 300_000,
-  '15m': 900_000,
-  '30m': 1_800_000,
-  '1h': 3_600_000,
-  '2h': 7_200_000,
-  '4h': 14_400_000,
-  '6h': 21_600_000,
-  '8h': 28_800_000,
-  '12h': 43_200_000,
-  '1d': 86_400_000,
-  '3d': 259_200_000,
-  '1w': 604_800_000,
-}
+const EMPTY_MARKERS = Object.freeze({})
 
 function timeframeToMs(tf) {
   const key = String(tf || '').toLowerCase()
-  if (TF_TO_MS[key]) return TF_TO_MS[key]
+  const tfSeconds = getTfSeconds()
+  if (tfSeconds[key]) return tfSeconds[key] * 1000
 
   const parsed = key.match(/^(\d+)([mhdw])$/)
   if (!parsed) return 300_000
@@ -77,31 +63,43 @@ export default function MarketDetail() {
   const [candleLimit, setCandleLimit] = useState(100)
 
   const timeframes = tfData?.timeframes || ['1m', '5m', '15m', '1h', '4h', '1d']
+  const handleTimeframeChange = (event) => {
+    const nextTimeframe = event.target.value
+    startTransition(() => {
+      setSelectedTf(nextTimeframe)
+    })
+  }
+  const handleLimitChange = (event) => {
+    const nextLimit = Number.parseInt(event.target.value, 10)
+    startTransition(() => {
+      setCandleLimit(nextLimit)
+    })
+  }
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Link to="/markets" className="btn btn-ghost btn-sm">
-            <ArrowLeft className="w-4 h-4" />
+          <Link to="/app/markets" className="btn btn-ghost btn-sm">
+            <ArrowLeft className="size-4" />
           </Link>
           <div>
-            <h1 className="text-2xl font-bold text-terminal-100 font-mono">{symbol}</h1>
-            <p className="text-sm text-terminal-400 mt-1">Market Analysis</p>
+            <h1 className="font-mono text-2xl font-bold text-terminal-100">{symbol}</h1>
+            <p className="mt-1 text-sm text-terminal-400">Market Analysis</p>
           </div>
         </div>
 
         <div className="flex items-center gap-3">
           <Select
             value={selectedTf}
-            onChange={(e) => setSelectedTf(e.target.value)}
+            onChange={handleTimeframeChange}
             options={timeframes.map(tf => ({ value: tf, label: tf.toUpperCase() }))}
             className="w-24"
           />
           <Select
             value={candleLimit}
-            onChange={(e) => setCandleLimit(parseInt(e.target.value))}
+            onChange={handleLimitChange}
             options={[
               { value: 100, label: '100' },
               { value: 200, label: '200' },
@@ -112,9 +110,9 @@ export default function MarketDetail() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Chart - 2 columns */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="space-y-6 lg:col-span-2">
           <CandlestickChart symbol={symbol} timeframe={selectedTf} limit={candleLimit} />
         </div>
 
@@ -148,13 +146,15 @@ function CandlestickChart({ symbol, timeframe, limit }) {
     () => (data?.candles || []).map(toCurveCandle).filter(Boolean),
     [data?.candles]
   )
+  const deferredCandles = useDeferredValue(candles)
   const gapMs = useMemo(() => timeframeToMs(timeframe), [timeframe])
+  const chartRenderingLag = deferredCandles !== candles
 
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="flex items-center gap-2">
-          <Activity className="w-4 h-4 text-amber-400" />
+          <Activity className="size-4 text-amber-400" />
           Collector Chart
         </CardTitle>
         <RefreshControl onRefresh={refetch} loading={loading || refreshing} />
@@ -163,14 +163,14 @@ function CandlestickChart({ symbol, timeframe, limit }) {
         {loading && !data ? (
           <Skeleton className="h-[400px]" />
         ) : error ? (
-          <div className="h-[400px] flex items-center justify-center text-terminal-400">
+          <div className="flex h-[400px] items-center justify-center text-terminal-400">
             Failed to load chart data
           </div>
         ) : (
           <div className="space-y-3">
             <OpportunityCurveChart
-              candles={candles}
-              markers={{}}
+              candles={deferredCandles}
+              markers={EMPTY_MARKERS}
               {...MARKET_LIVE_COLLECTOR_CHART_PROPS}
               expectedGapMs={gapMs}
               gapLabel={`${timeframe} collector data`}
@@ -179,7 +179,11 @@ function CandlestickChart({ symbol, timeframe, limit }) {
               <span>
                 Source: {data?.source || 'db_ohlcv'} • Collector lag: {data?.collector_lag_s ?? 'n/a'}s
               </span>
-              <span>{lastUpdated ? `Polled ${formatRelativeTime(lastUpdated)}` : 'Waiting for first poll'}</span>
+              <span>
+                {chartRenderingLag
+                  ? 'Rendering latest bars...'
+                  : (lastUpdated ? `Polled ${formatRelativeTime(lastUpdated)}` : 'Waiting for first poll')}
+              </span>
             </div>
           </div>
         )}
@@ -212,7 +216,7 @@ function LiveSnapshot({ symbol }) {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="flex items-center gap-2">
-          <Clock className="w-4 h-4 text-amber-400" />
+          <Clock className="size-4 text-amber-400" />
           Live Snapshot
         </CardTitle>
         {stale && (
@@ -228,11 +232,11 @@ function LiveSnapshot({ symbol }) {
           </div>
         ) : snapshot ? (
           <div className="space-y-4">
-            <div className="text-center p-4 bg-terminal-900 rounded-lg">
-              <p className="text-3xl font-bold font-mono text-terminal-100">
+            <div className="rounded-lg bg-terminal-900 p-4 text-center">
+              <p className="font-mono text-3xl font-bold text-terminal-100">
                 {formatPrice(snapshot.close)}
               </p>
-              <p className="text-xs text-terminal-500 mt-1">
+              <p className="mt-1 text-xs text-terminal-500">
                 Last price
               </p>
             </div>
@@ -245,13 +249,13 @@ function LiveSnapshot({ symbol }) {
             </div>
 
             {lastUpdated && (
-              <p className="text-xs text-terminal-500 pt-2 border-t border-terminal-600">
+              <p className="border-t border-terminal-600 pt-2 text-xs text-terminal-500">
                 Updated {formatRelativeTime(lastUpdated)}
               </p>
             )}
           </div>
         ) : (
-          <p className="text-terminal-400 text-center py-4">No data</p>
+          <p className="py-4 text-center text-terminal-400">No data</p>
         )}
       </CardContent>
     </Card>
@@ -265,7 +269,7 @@ function SqueezeStatePanel({ symbol, timeframe }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Target className="w-4 h-4 text-amber-400" />
+          <Target className="size-4 text-amber-400" />
           Squeeze State (S1)
         </CardTitle>
       </CardHeader>
@@ -277,7 +281,7 @@ function SqueezeStatePanel({ symbol, timeframe }) {
             <Skeleton />
           </div>
         ) : error || !data ? (
-          <p className="text-terminal-400 text-sm">Not computed yet</p>
+          <p className="text-sm text-terminal-400">Not computed yet</p>
         ) : (
           <div className="space-y-3 text-sm">
             <div className="flex items-center justify-between">
@@ -329,7 +333,7 @@ function BtcCorrelationPanel({ timeframe }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <TrendingUp className="w-4 h-4 text-amber-400" />
+          <TrendingUp className="size-4 text-amber-400" />
           BTC Correlation
         </CardTitle>
       </CardHeader>
@@ -340,7 +344,7 @@ function BtcCorrelationPanel({ timeframe }) {
             <Skeleton />
           </div>
         ) : error || !data ? (
-          <p className="text-terminal-400 text-sm">Not computed yet</p>
+          <p className="text-sm text-terminal-400">Not computed yet</p>
         ) : (
           <div className="space-y-3 text-sm">
             {data.status && (

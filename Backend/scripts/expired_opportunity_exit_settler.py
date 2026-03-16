@@ -25,17 +25,20 @@ import psycopg
 
 LOG = logging.getLogger("expired_opp_exit_settler")
 logging.basicConfig(
+    # GOVERNANCE_DEBT: migrate to TypedConfigRegistry
     level=os.getenv("LOG_LEVEL", "INFO"),
     format="%(asctime)s %(levelname)s %(name)s %(message)s",
 )
 
 LOCK_KEY = 2026030411
 DEFAULT_LIMIT = 5000
+# GOVERNANCE_DEBT: migrate to TypedConfigRegistry
 DEFAULT_INTERVAL_S = int(os.getenv("SETTLER_INTERVAL_S", "3600"))
 FIVE_MINUTE = "5m"
 HORIZON_RE = re.compile(r"^\s*(\d+)\s*([mhdw])\s*$", re.IGNORECASE)
 
 
+# GOVERNANCE_DEBT: migrate to TypedConfigRegistry
 def env_truthy(name: str, default: bool = False) -> bool:
     raw = os.getenv(name)
     if raw is None:
@@ -43,6 +46,7 @@ def env_truthy(name: str, default: bool = False) -> bool:
     return str(raw).strip().lower() in {"1", "true", "yes", "on"}
 
 
+# GOVERNANCE_DEBT: migrate to TypedConfigRegistry
 DEFAULT_SYNC_SIM_RESULTS = env_truthy("SETTLER_SYNC_SIM_RESULTS", False)
 
 
@@ -169,7 +173,7 @@ def fetch_5m_candles(
             WHERE symbol = %s
               AND timeframe = %s
               AND bar_start_ts >= %s
-              AND bar_start_ts <= %s
+              AND bar_start_ts < %s
             ORDER BY bar_start_ts ASC,
                      as_of_ts DESC,
                      CASE source
@@ -414,6 +418,7 @@ def run_loop(
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Settle expired opportunities with exit_ts/exit_price.")
+    # GOVERNANCE_DEBT: migrate to TypedConfigRegistry
     parser.add_argument("--database-url", default=os.getenv("DATABASE_URL", ""), help="Postgres DSN (defaults to DATABASE_URL env)")
     parser.add_argument("--limit", type=int, default=DEFAULT_LIMIT, help="Max opportunities per cycle")
     parser.add_argument("--interval-seconds", type=int, default=DEFAULT_INTERVAL_S, help="Loop interval in seconds")

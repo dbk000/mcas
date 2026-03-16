@@ -1,0 +1,20 @@
+#!/bin/bash
+# MCAS Governance CI Gates — pre-commit hook
+# Scans the ENTIRE Backend directory. A change in one file can introduce
+# a laundering import from another — staged-only scanning is insufficient.
+BACKEND_DIR="$(git rev-parse --show-toplevel)/Backend"
+
+# Only run if any Python files were staged
+git diff --cached --name-only --diff-filter=ACM | grep -q '\.py$' || exit 0
+
+cd "$BACKEND_DIR" || exit 1
+python3 -m governance.kernel.ci_gates "$BACKEND_DIR"
+EXIT_CODE=$?
+
+if [ $EXIT_CODE -ne 0 ]; then
+    echo ""
+    echo "Pre-commit: CI doctrine gates FAILED. Fix violations before committing."
+    exit 1
+fi
+
+exit 0

@@ -382,50 +382,37 @@ class SignalEngine:
         """Convert setup-specific signal to unified RankedSignal."""
         now_ts = int(time.time())
 
-        if isinstance(signal, S9Signal):
-            setup_id = "S9"
-            payload = {
-                "setup_id": "S9",
-                "setup_name": self._get_setup_name("S9"),
-                "state": {
-                    "ret_4h": signal.ret_4h,
-                    "ret_24h": signal.ret_24h,
-                    "breadth": signal.breadth,
-                    "rank": signal.rank,
-                    "universe_size": signal.universe_size,
-                    "decile_size": signal.decile_size,
-                },
-                "score_components": {
-                    "rank_score": signal.rank_score,
-                    "breadth_score": signal.breadth_score,
-                    "magnitude_score": signal.magnitude_score,
-                },
-                "why_items": signal.explain.why_items if signal.explain else [],
-                "time_stop_bars": signal.time_stop_bars,
+        setup_id = signal.setup_id
+        payload = {
+            "setup_id": setup_id,
+            "setup_name": self._get_setup_name(setup_id),
+            "why_items": signal.explain.why_items if signal.explain else [],
+            "time_stop_bars": signal.time_stop_bars,
+        }
+
+        if setup_id == "S9":
+            payload["state"] = {
+                "ret_4h": signal.ret_4h,
+                "ret_24h": signal.ret_24h,
+                "breadth": signal.breadth,
+                "rank": signal.rank,
+                "universe_size": signal.universe_size,
+                "decile_size": signal.decile_size,
             }
-        elif isinstance(signal, S10Signal):
-            setup_id = "S10"
-            payload = {
-                "setup_id": "S10",
-                "setup_name": self._get_setup_name("S10"),
-                "state": {
-                    "macd_histogram": signal.macd_histogram,
-                    "rvol": signal.rvol,
-                    "sma_20": signal.sma_20,
-                    "flat_top_level": signal.flat_top_level,
-                    "trend_bias": signal.trend_bias,
-                },
-                "score_components": signal.score_components,
-                "why_items": signal.explain.why_items if signal.explain else [],
-                "time_stop_bars": signal.time_stop_bars,
+            payload["score_components"] = {
+                "rank_score": signal.rank_score,
+                "breadth_score": signal.breadth_score,
+                "magnitude_score": signal.magnitude_score,
             }
-        else:
-            setup_id = "UNKNOWN"
-            payload = {
-                "setup_id": setup_id,
-                "why_items": [],
-                "time_stop_bars": 4,
+        elif setup_id == "S10":
+            payload["state"] = {
+                "macd_histogram": signal.macd_histogram,
+                "rvol": signal.rvol,
+                "sma_20": signal.sma_20,
+                "flat_top_level": signal.flat_top_level,
+                "trend_bias": signal.trend_bias,
             }
+            payload["score_components"] = signal.score_components
 
         return RankedSignal(
             symbol=signal.symbol,

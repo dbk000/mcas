@@ -21,7 +21,6 @@ import json
 import time
 import zlib
 import logging
-from dataclasses import asdict
 from typing import Optional
 
 logger = logging.getLogger(__name__)
@@ -292,10 +291,11 @@ INDICATOR_ID_TO_FIELD = {
 
 def snapshot_to_indicator_dict(snapshot) -> dict:
     """Convert IndicatorSnapshot to {indicator_id: value} dict for per-key storage."""
+    from dataclasses import asdict
+    snap_dict = asdict(snapshot)
     result = {}
-    snap_vars = vars(snapshot)
     for ind_id, field_name in INDICATOR_ID_TO_FIELD.items():
-        val = snap_vars.get(field_name)
+        val = snap_dict.get(field_name)
         if val is not None:
             result[ind_id] = val
     return result
@@ -303,10 +303,11 @@ def snapshot_to_indicator_dict(snapshot) -> dict:
 
 def snapshot_to_flat_dict(snapshot) -> dict:
     """Convert IndicatorSnapshot to flat {field: str(value)} dict for HSET."""
+    from dataclasses import asdict
+    snap_dict = asdict(snapshot)
     result = {}
-    snap_vars = vars(snapshot)
     for field_name in SNAPSHOT_FIELDS:
-        val = snap_vars.get(field_name)
+        val = snap_dict.get(field_name)
         if val is not None:
             result[field_name] = str(val)
     return result

@@ -100,7 +100,7 @@ const DEFAULT_FACETS = {
 
 function PipelineNode({ data, selected }) {
   const {
-    label, nodeType, subsystem, subsystemColor, statusColor,
+    label, nodeType, subsystem, subsystemColor,
     versionCount, aggPf, currentVersion, description, owner,
     sourceFile, ports, visualState, pressureWaveDelay,
     lodTier = 1,
@@ -141,11 +141,11 @@ function PipelineNode({ data, selected }) {
   return (
     <div
       className={`
-        relative bg-terminal-800 border-[3px] rounded-xl px-6 py-4 w-[460px]
-        transition-all duration-200 cursor-pointer flex flex-col overflow-hidden
+        relative flex w-[460px] cursor-pointer flex-col overflow-hidden rounded-xl
+        border-[3px] bg-terminal-800 px-6 py-4 transition-all duration-200
         ${lodTier >= 3 ? 'h-[80px]' : lodTier >= 2 ? 'h-[120px]' : 'h-[300px]'}
         ${stateStyle.extraClasses}
-        ${!visualState && selected ? 'shadow-lg shadow-amber-500/20 scale-105' : ''}
+        ${!visualState && selected ? 'scale-105 shadow-lg shadow-amber-500/20' : ''}
         ${!visualState && !selected ? 'hover:shadow-md hover:shadow-white/5' : ''}
       `}
       style={{
@@ -156,14 +156,14 @@ function PipelineNode({ data, selected }) {
     >
       {/* Top accent bar — always visible at all LOD tiers */}
       <div
-        className="absolute top-0 left-0 right-0 h-3 rounded-t-lg"
+        className="absolute inset-x-0 top-0 h-3 rounded-t-lg"
         style={{ backgroundColor: subsystemColor }}
       />
 
       {/* Staleness badge — top-right corner (Wave 3.1) */}
       {PIPELINE_FEATURES.threeStateStaleness && currentVersion?.staleness_state && currentVersion.staleness_state !== 'clean' && (
         <div
-          className={`absolute top-4 right-3 z-10 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${STALENESS_ICONS[currentVersion.staleness_state]?.bg || ''} ${STALENESS_ICONS[currentVersion.staleness_state]?.color || ''}`}
+          className={`absolute right-3 top-4 z-10 flex size-6 items-center justify-center rounded-full text-xs font-bold ${STALENESS_ICONS[currentVersion.staleness_state]?.bg || ''} ${STALENESS_ICONS[currentVersion.staleness_state]?.color || ''}`}
           title={STALENESS_ICONS[currentVersion.staleness_state]?.label || currentVersion.staleness_state}
         >
           {STALENESS_ICONS[currentVersion.staleness_state]?.icon || '?'}
@@ -174,33 +174,33 @@ function PipelineNode({ data, selected }) {
       <Handle
         type="target"
         position={Position.Left}
-        className="!w-5 !h-5 !bg-terminal-500 !border-2 !border-terminal-700"
+        className="!h-5 !w-5 !border-2 !border-terminal-700 !bg-terminal-500"
       />
 
       {/* Row 1: Icon + Name + Status badge + Alert — visible at tier 1 & 2 */}
-      <div className={`flex items-center justify-between mt-1.5 ${lodHideName}`}>
-        <div className="flex items-center gap-3 min-w-0">
-          <span className="text-3xl flex-shrink-0">{icon}</span>
+      <div className={`mt-1.5 flex items-center justify-between ${lodHideName}`}>
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="shrink-0 text-3xl">{icon}</span>
           <div className="min-w-0">
-            <div className="pipeline-text-lg font-bold text-white truncate leading-tight">{label}</div>
-            <div className={`pipeline-text-xs text-terminal-500 mt-0.5 ${lodHideDetail}`}>{typeLabel}</div>
+            <div className="pipeline-text-lg truncate font-bold leading-tight text-white">{label}</div>
+            <div className={`pipeline-text-xs mt-0.5 text-terminal-500 ${lodHideDetail}`}>{typeLabel}</div>
           </div>
         </div>
-        <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+        <div className="ml-2 flex shrink-0 items-center gap-2">
           {vs === 'alert' && (
             <span className="text-red-400" title="Stale metrics or failed validation">
-              <AlertTriangle className="w-5 h-5" />
+              <AlertTriangle className="size-5" />
             </span>
           )}
           {PIPELINE_FEATURES.threeStateStaleness && currentVersion?.health_status && currentVersion.health_status !== 'unknown' && (
             <span
-              className="w-3 h-3 rounded-full flex-shrink-0"
+              className="size-3 shrink-0 rounded-full"
               style={{ backgroundColor: HEALTH_DOTS[currentVersion.health_status] || HEALTH_DOTS.unknown }}
               title={`Health: ${currentVersion.health_status}`}
             />
           )}
           {statusLabel && (
-            <span className={`pipeline-text-sm font-semibold px-3 py-1 rounded-full ${statusBg}`}>
+            <span className={`pipeline-text-sm rounded-full px-3 py-1 font-semibold ${statusBg}`}>
               {statusLabel}
             </span>
           )}
@@ -209,16 +209,16 @@ function PipelineNode({ data, selected }) {
 
       {/* Tier 3 compact: just icon + truncated label inline */}
       {lodTier >= 3 && (
-        <div className="flex items-center gap-2 mt-2">
-          <span className="text-2xl flex-shrink-0">{icon}</span>
-          <span className="text-base font-bold text-white truncate">{label}</span>
+        <div className="mt-2 flex items-center gap-2">
+          <span className="shrink-0 text-2xl">{icon}</span>
+          <span className="truncate text-base font-bold text-white">{label}</span>
         </div>
       )}
 
       {/* Row 2: Subsystem + version + connections — tier 1 & 2 */}
-      <div className={`flex items-center gap-2 mt-2.5 ${lodHideDetail}`}>
+      <div className={`mt-2.5 flex items-center gap-2 ${lodHideDetail}`}>
         <span
-          className="pipeline-text-sm px-2.5 py-0.5 rounded-full font-semibold capitalize"
+          className="pipeline-text-sm rounded-full px-2.5 py-0.5 font-semibold capitalize"
           style={{
             backgroundColor: subsystemColor + '20',
             color: subsystemColor,
@@ -227,12 +227,12 @@ function PipelineNode({ data, selected }) {
           {subsystem}
         </span>
         {versionCount > 0 && (
-          <span className="pipeline-text-sm px-2.5 py-0.5 rounded-full bg-terminal-700 text-terminal-300 font-mono">
+          <span className="pipeline-text-sm rounded-full bg-terminal-700 px-2.5 py-0.5 font-mono text-terminal-300">
             v{currentVersion?.version_number || '?'}
           </span>
         )}
         {f.connections && (inputCount > 0 || outputCount > 0) && (
-          <span className="pipeline-text-xs text-terminal-500 ml-auto">
+          <span className="pipeline-text-xs ml-auto text-terminal-500">
             {inputCount > 0 && `${inputCount} in`}{inputCount > 0 && outputCount > 0 && ' / '}{outputCount > 0 && `${outputCount} out`}
           </span>
         )}
@@ -241,7 +241,7 @@ function PipelineNode({ data, selected }) {
       {/* Row 3: Description — tier 1 only, respects facets.description */}
       <div className={lodHideDetail}>
         {f.description && description && (
-          <p className="pipeline-text-sm text-terminal-400 mt-2.5 line-clamp-3 leading-snug">
+          <p className="pipeline-text-sm mt-2.5 line-clamp-3 leading-snug text-terminal-400">
             {description}
           </p>
         )}
@@ -253,10 +253,10 @@ function PipelineNode({ data, selected }) {
       {/* Row 4: Metrics bar — tier 1 only, respects facet toggles */}
       <div className={lodHideDetail}>
         {((f.pf && aggPf != null) || (f.winRate && currentVersion?.win_rate != null) || (f.trades && currentVersion?.trade_count != null)) && (
-          <div className="flex items-center gap-4 mt-2 py-2 px-3 -mx-1 bg-terminal-900/60 rounded-lg">
+          <div className="-mx-1 mt-2 flex items-center gap-4 rounded-lg bg-terminal-900/60 px-3 py-2">
             {f.pf && aggPf != null && (
               <div className="pipeline-text-base font-mono font-bold">
-                <span className="text-terminal-500 pipeline-text-sm">PF </span>
+                <span className="pipeline-text-sm text-terminal-500">PF </span>
                 <span className={aggPf >= 1.0 ? 'text-green-400' : 'text-red-400'}>
                   {aggPf.toFixed(2)}
                 </span>
@@ -264,7 +264,7 @@ function PipelineNode({ data, selected }) {
             )}
             {f.winRate && currentVersion?.win_rate != null && (
               <div className="pipeline-text-base font-mono font-bold">
-                <span className="text-terminal-500 pipeline-text-sm">Win </span>
+                <span className="pipeline-text-sm text-terminal-500">Win </span>
                 <span className="text-terminal-200">
                   {(currentVersion.win_rate * 100).toFixed(0)}%
                 </span>
@@ -272,7 +272,7 @@ function PipelineNode({ data, selected }) {
             )}
             {f.trades && currentVersion?.trade_count != null && (
               <div className="pipeline-text-base font-mono font-bold">
-                <span className="text-terminal-500 pipeline-text-sm">Trades </span>
+                <span className="pipeline-text-sm text-terminal-500">Trades </span>
                 <span className="text-terminal-200">
                   {currentVersion.trade_count}
                 </span>
@@ -283,14 +283,14 @@ function PipelineNode({ data, selected }) {
       </div>
 
       {/* Row 5: Footer — tier 1 only, respects facets.owner */}
-      <div className={`flex items-center justify-between mt-2 ${lodHideDetail}`}>
+      <div className={`mt-2 flex items-center justify-between ${lodHideDetail}`}>
         {shortFile && (
-          <span className="pipeline-text-xs text-terminal-600 font-mono truncate max-w-[60%]" title={sourceFile}>
+          <span className="pipeline-text-xs max-w-[60%] truncate font-mono text-terminal-600" title={sourceFile}>
             {shortFile}
           </span>
         )}
         {f.owner && owner && (
-          <span className="pipeline-text-xs text-terminal-500 font-mono ml-auto">
+          <span className="pipeline-text-xs ml-auto font-mono text-terminal-500">
             {owner}
           </span>
         )}
@@ -301,7 +301,7 @@ function PipelineNode({ data, selected }) {
       <Handle
         type="source"
         position={Position.Right}
-        className="!w-5 !h-5 !bg-terminal-500 !border-2 !border-terminal-700"
+        className="!h-5 !w-5 !border-2 !border-terminal-700 !bg-terminal-500"
       />
     </div>
   )

@@ -18,7 +18,7 @@ import re
 import json
 import time
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Optional, Any
 
 import psycopg
@@ -28,6 +28,7 @@ from pydantic import BaseModel, Field, model_validator
 
 from api.app.db_pool import get_conn as _pool_get_conn
 from governance.bootstrap import get_config, strategy_active_setup_ids
+from governance.cache_contract import TF_SECONDS, STALENESS_MULTIPLIER
 
 _worker_cfg = get_config().Worker
 r = redis.Redis.from_url(_worker_cfg.REDIS_URL, decode_responses=True)
@@ -515,4 +516,116 @@ def get_paper_status():
             "win_rate": row[8] / max(1, row[7]) if row[7] else 0,
         },
         "open_positions": open_pos,
+    }, t0)
+
+
+@router.get("/data/availability")
+def get_data_availability():
+    """Data availability and freshness across the monitored universe.
+
+    Returns per-timeframe OHLCV stats, stale symbol detection, and
+    governance parameters (staleness_multiplier, tf_seconds) so the
+    frontend can compute staleness thresholds from the same source.
+    """
+    t0 = time.time()
+    cfg = get_config().Worker
+    default_tfs = [tf.strip() for tf in cfg.DEFAULT_TIMEFRAMES.split(",")]
+
+    # Universe counts from Redis
+    try:
+        known_count = r.scard("universe:known") or 0
+        monitored_count = r.scard("universe:monitored") or 0
+    except Exception:
+        known_count = 0
+        monitored_count = 0
+
+    # Per-timeframe OHLCV stats from Postgres
+    timeframe_stats = []
+    stale_symbols = []
+    now_utc = datetime.now(timezone.utc)
+
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            for tf in default_tfs:
+                cur.execute("""
+                    SELECT
+                        COUNT(DISTINCT symbol)          AS symbol_count,
+                        COUNT(*)                        AS total_rows,
+                        MAX(bar_start_ts)               AS latest_bar,
+                        MIN(bar_start_ts)               AS earliest_bar,
+                        MAX(ingested_at)                AS freshest_ingestion
+                    FROM ohlcv
+                    WHERE timeframe = %s;
+                """, (tf,))
+                row = cur.fetchone()
+                if not row or row[0] == 0:
+                    timeframe_stats.append({
+                        "timeframe": tf,
+                        "symbol_count": 0,
+                        "total_rows": 0,
+                        "latest_bar": None,
+                        "earliest_bar": None,
+                        "freshest_ingestion": None,
+                        "lag_seconds": None,
+                    })
+                    continue
+
+                freshest = row[4]
+                lag_s = None
+                if freshest:
+                    if freshest.tzinfo is None:
+                        freshest = freshest.replace(tzinfo=timezone.utc)
+                    lag_s = max(0, int((now_utc - freshest).total_seconds()))
+
+                timeframe_stats.append({
+                    "timeframe": tf,
+                    "symbol_count": row[0],
+                    "total_rows": row[1],
+                    "latest_bar": row[2].isoformat() if row[2] else None,
+                    "earliest_bar": row[3].isoformat() if row[3] else None,
+                    "freshest_ingestion": freshest.isoformat() if freshest else None,
+                    "lag_seconds": lag_s,
+                })
+
+            # Stale symbol detection: per-timeframe thresholds.
+            # Each TF has its own staleness cutoff = TF_SECONDS[tf] * STALENESS_MULTIPLIER.
+            # A 1d symbol is stale after 216000s, a 1h symbol after 9000s.
+            stale_seen = set()
+            for tf in default_tfs:
+                tf_threshold_s = TF_SECONDS.get(tf, 3600) * STALENESS_MULTIPLIER
+                tf_cutoff = now_utc - timedelta(seconds=tf_threshold_s)
+
+                cur.execute("""
+                    SELECT symbol, MAX(bar_start_ts) AS latest
+                    FROM ohlcv
+                    WHERE timeframe = %s
+                    GROUP BY symbol
+                    HAVING MAX(bar_start_ts) < %s
+                    ORDER BY MAX(bar_start_ts) ASC
+                    LIMIT 50;
+                """, (tf, tf_cutoff))
+                for row in cur.fetchall():
+                    stale_seen.add(str(row[0]))
+
+            stale_symbols = sorted(stale_seen)
+
+    with_ohlcv = timeframe_stats[0]["symbol_count"] if timeframe_stats else 0
+    healthy = len(stale_symbols) == 0 and all(
+        ts["symbol_count"] > 0 for ts in timeframe_stats
+    )
+
+    return envelope({
+        "universe": {
+            "known": known_count,
+            "monitored": monitored_count,
+            "with_ohlcv": with_ohlcv,
+        },
+        "timeframes": timeframe_stats,
+        "stale_symbols": stale_symbols,
+        "stale_count": len(stale_symbols),
+        "healthy": healthy,
+        "governance": {
+            "staleness_multiplier": STALENESS_MULTIPLIER,
+            "tf_seconds": {tf: TF_SECONDS.get(tf, 60) for tf in default_tfs},
+        },
     }, t0)

@@ -5,6 +5,7 @@ import VersionsTab from './VersionsTab'
 import BiographyTab from './BiographyTab'
 import ParamsTab from './ParamsTab'
 import ContextTab from './ContextTab'
+import { buildNodeContextMarkdown, getCurrentNodeVersion } from './nodeDetailUtils'
 
 const STATUS_COLORS = {
   deployed: 'bg-green-500/20 text-green-400 border-green-500/30',
@@ -98,9 +99,9 @@ export default function NodeDetailPanel({ node, onClose, graph }) {
     if (active?.parameters && Object.keys(active.parameters).length > 0) {
       setEditParams({ ...active.parameters })
     }
-  }, [versions])
+  }, [editParams, versions])
 
-  const cv = node.current_version || node.currentVersion
+  const cv = getCurrentNodeVersion(node)
 
   // Diff two versions
   const handleDiff = async () => {
@@ -146,117 +147,33 @@ export default function NodeDetailPanel({ node, onClose, graph }) {
 
   // Copy context to clipboard
   const handleCopyContext = () => {
-    const lines = [
-      `## Node Context: ${node.name || node.label}`,
-      '',
-      `**Type:** ${node.type || node.nodeType}`,
-      `**Subsystem:** ${node.subsystem}`,
-      node.description ? `**Description:** ${node.description}` : null,
-      node.source_file ? `**Source:** ${node.source_file}` : null,
-      node.owner ? `**Owner:** ${node.owner}` : null,
-      '',
-    ].filter(Boolean)
-
-    if (cv) {
-      lines.push(`### Current Version: v${cv.version_number} (${cv.status})`)
-      if (cv.agg_pf != null) lines.push(`- PF: ${cv.agg_pf.toFixed(2)}`)
-      if (cv.win_rate != null) lines.push(`- Win Rate: ${(cv.win_rate * 100).toFixed(1)}%`)
-      if (cv.trade_count != null) lines.push(`- Trades: ${cv.trade_count}`)
-      if (cv.net_pnl != null) lines.push(`- PnL: $${cv.net_pnl.toFixed(0)}`)
-      lines.push('')
-    }
-
-    // Data provenance for active version
-    const activeVersion = versions.find(v => v.status === 'deployed') || versions[0]
-    if (activeVersion) {
-      lines.push('### Data Provenance')
-      const ctx = activeVersion.metrics_context || {}
-      if (activeVersion.metrics_run_id) {
-        lines.push(`- **Simulation Run ID:** \`${activeVersion.metrics_run_id}\``)
-        lines.push(`- **Results Query:** \`SELECT * FROM simulation_results WHERE run_id = '${activeVersion.metrics_run_id}'\``)
-      } else {
-        lines.push('- **Simulation Run ID:** not recorded')
-      }
-      const rd = activeVersion.run_detail
-      if (rd) {
-        lines.push(`- **Run Type:** ${rd.run_type}`)
-        if (rd.run_completed_at) lines.push(`- **Completed:** ${rd.run_completed_at}`)
-      }
-      // Date range
-      const start = ctx?.date_range?.start_ts || ctx?.date_range?.start || ctx?.start_date
-      const end = ctx?.date_range?.end_ts || ctx?.date_range?.end || ctx?.end_date
-      if (start || end) {
-        const fmt = (d) => {
-          if (!d) return '?'
-          const dt = new Date(typeof d === 'number' ? d * 1000 : d)
-          return isNaN(dt) ? String(d) : dt.toISOString().slice(0, 10)
-        }
-        lines.push(`- **Date Range:** ${fmt(start)} to ${fmt(end)}`)
-      } else {
-        lines.push('- **Date Range:** not recorded')
-      }
-      // Symbols
-      const syms = ctx?.symbols_tested || ctx?.symbols
-      if (Array.isArray(syms)) {
-        lines.push(`- **Symbols:** ${syms.length} (${syms.slice(0, 10).join(', ')}${syms.length > 10 ? '...' : ''})`)
-      } else if (typeof syms === 'number') {
-        lines.push(`- **Symbols:** ${syms}`)
-      } else {
-        lines.push('- **Symbols:** not recorded')
-      }
-      if (ctx?.timeframe) lines.push(`- **Timeframe:** ${ctx.timeframe}`)
-      if (ctx?.slippage_model || ctx?.slippage) lines.push(`- **Slippage:** ${ctx.slippage_model || ctx.slippage}`)
-      if (activeVersion.source_hash) lines.push(`- **Source Hash:** \`${activeVersion.source_hash}\``)
-      if (ctx?.reproduce_cmd) lines.push(`- **Reproduce:** \`${ctx.reproduce_cmd}\``)
-      lines.push('')
-    }
-
-    const ports = node.ports || {}
-    if (ports.inputs?.length || ports.outputs?.length) {
-      lines.push('### Ports')
-      if (ports.inputs?.length) {
-        lines.push(`**Inputs:** ${ports.inputs.map(p => `${p.name} (${p.data_type})`).join(', ')}`)
-      }
-      if (ports.outputs?.length) {
-        lines.push(`**Outputs:** ${ports.outputs.map(p => `${p.name} (${p.data_type})`).join(', ')}`)
-      }
-      lines.push('')
-    }
-
-    if (versions.length > 0) {
-      lines.push('### Recent Versions')
-      versions.slice(0, 5).forEach(v => {
-        lines.push(`- v${v.version_number} (${v.status}): ${v.change_reason || 'no reason'} — PF ${v.agg_pf?.toFixed(2) || '?'}`)
-      })
-    }
-
-    navigator.clipboard.writeText(lines.join('\n')).then(() => {
+    navigator.clipboard.writeText(buildNodeContextMarkdown(node, versions)).then(() => {
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     })
   }
 
   return (
-    <div className="fixed right-0 top-0 h-full w-[400px] bg-terminal-800 border-l border-terminal-600 shadow-xl z-50 flex flex-col overflow-hidden">
+    <div className="fixed right-0 top-0 z-50 flex h-full w-[400px] flex-col overflow-hidden border-l border-terminal-600 bg-terminal-800 shadow-xl">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-terminal-600 bg-terminal-800/95 backdrop-blur">
+      <div className="flex items-center justify-between border-b border-terminal-600 bg-terminal-800/95 px-4 py-3 backdrop-blur">
         <div className="min-w-0">
-          <h2 className="text-sm font-semibold text-terminal-100 truncate">{node.name || node.label}</h2>
-          <p className="text-xs text-terminal-400 capitalize">{node.subsystem} / {node.type || node.nodeType}</p>
+          <h2 className="truncate text-sm font-semibold text-terminal-100">{node.name || node.label}</h2>
+          <p className="text-xs capitalize text-terminal-400">{node.subsystem} / {node.type || node.nodeType}</p>
         </div>
         <div className="flex items-center gap-1.5">
           <button
             onClick={handleCopyContext}
-            className="p-1 text-terminal-400 hover:text-terminal-100 transition-colors"
+            className="p-1 text-terminal-400 transition-colors hover:text-terminal-100"
             title="Copy context to clipboard"
           >
-            {copied ? <Check className="w-4 h-4 text-green-400" /> : <Clipboard className="w-4 h-4" />}
+            {copied ? <Check className="size-4 text-green-400" /> : <Clipboard className="size-4" />}
           </button>
           <button
             onClick={onClose}
-            className="p-1 text-terminal-400 hover:text-terminal-100 transition-colors"
+            className="p-1 text-terminal-400 transition-colors hover:text-terminal-100"
           >
-            <X className="w-4 h-4" />
+            <X className="size-4" />
           </button>
         </div>
       </div>
@@ -267,10 +184,10 @@ export default function NodeDetailPanel({ node, onClose, graph }) {
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`px-3 py-2 text-[10px] font-medium capitalize transition-colors border-b-2 ${
+            className={`border-b-2 px-3 py-2 text-[10px] font-medium capitalize transition-colors ${
               activeTab === tab
-                ? 'text-amber-400 border-amber-400'
-                : 'text-terminal-500 border-transparent hover:text-terminal-300'
+                ? 'border-amber-400 text-amber-400'
+                : 'border-transparent text-terminal-500 hover:text-terminal-300'
             }`}
           >
             {tab}
@@ -281,12 +198,12 @@ export default function NodeDetailPanel({ node, onClose, graph }) {
       {/* Body */}
       <div className="flex-1 overflow-y-auto">
         {/* Node info (always visible) */}
-        <div className="px-4 py-3 space-y-2 border-b border-terminal-700">
+        <div className="space-y-2 border-b border-terminal-700 px-4 py-3">
           {node.description && (
             <p className="text-xs text-terminal-300">{node.description}</p>
           )}
           {node.source_file && (
-            <p className="text-xs text-terminal-500 font-mono truncate" title={node.source_file}>
+            <p className="truncate font-mono text-xs text-terminal-500" title={node.source_file}>
               {node.source_file}
             </p>
           )}
@@ -297,12 +214,12 @@ export default function NodeDetailPanel({ node, onClose, graph }) {
 
         {/* Current version */}
         {cv && (
-          <div className="px-4 py-3 border-b border-terminal-700">
-            <div className="text-xs font-medium text-terminal-300 mb-2">Active Version</div>
-            <div className="bg-terminal-900 rounded-lg p-3 space-y-1.5">
+          <div className="border-b border-terminal-700 px-4 py-3">
+            <div className="mb-2 text-xs font-medium text-terminal-300">Active Version</div>
+            <div className="space-y-1.5 rounded-lg bg-terminal-900 p-3">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-mono text-terminal-100">v{cv.version_number}</span>
-                <span className={`text-[10px] px-1.5 py-0.5 rounded border ${STATUS_COLORS[cv.status] || STATUS_COLORS.tested}`}>
+                <span className="font-mono text-xs text-terminal-100">v{cv.version_number}</span>
+                <span className={`rounded border px-1.5 py-0.5 text-[10px] ${STATUS_COLORS[cv.status] || STATUS_COLORS.tested}`}>
                   {cv.status}
                 </span>
               </div>
@@ -310,7 +227,7 @@ export default function NodeDetailPanel({ node, onClose, graph }) {
                 {cv.agg_pf != null && (
                   <div>
                     <span className="text-terminal-500">PF </span>
-                    <span className={cv.agg_pf >= 1.0 ? 'text-green-400 font-mono' : 'text-red-400 font-mono'}>
+                    <span className={cv.agg_pf >= 1.0 ? 'font-mono text-green-400' : 'font-mono text-red-400'}>
                       {cv.agg_pf.toFixed(2)}
                     </span>
                   </div>
@@ -318,19 +235,19 @@ export default function NodeDetailPanel({ node, onClose, graph }) {
                 {cv.win_rate != null && (
                   <div>
                     <span className="text-terminal-500">Win </span>
-                    <span className="text-terminal-200 font-mono">{(cv.win_rate * 100).toFixed(1)}%</span>
+                    <span className="font-mono text-terminal-200">{(cv.win_rate * 100).toFixed(1)}%</span>
                   </div>
                 )}
                 {cv.trade_count != null && (
                   <div>
                     <span className="text-terminal-500">Trades </span>
-                    <span className="text-terminal-200 font-mono">{cv.trade_count}</span>
+                    <span className="font-mono text-terminal-200">{cv.trade_count}</span>
                   </div>
                 )}
                 {cv.net_pnl != null && (
                   <div>
                     <span className="text-terminal-500">PnL </span>
-                    <span className={cv.net_pnl >= 0 ? 'text-green-400 font-mono' : 'text-red-400 font-mono'}>
+                    <span className={cv.net_pnl >= 0 ? 'font-mono text-green-400' : 'font-mono text-red-400'}>
                       ${cv.net_pnl.toFixed(0)}
                     </span>
                   </div>

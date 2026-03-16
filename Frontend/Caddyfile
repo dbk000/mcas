@@ -1,40 +1,61 @@
-# Caddyfile for MCAS UI
-# Deploy this alongside your built dist/ folder
+# Caddyfile for MCAS UI (Workstream 2: Fortress)
 
-# Option 1: Standalone UI on its own domain
-# Replace your.ui.domain with your actual domain
-your.ui.domain {
+# Local Development / Chaos Harness
+:8080 {
     root * /srv/mcas-ui
-    
-    # SPA routing: try file, then directory, then fallback to index.html
     try_files {path} {path}/ /index.html
-    
     file_server
+
+    # Infrastructure Chaos: Status Injection (X-Chaos-Status: 500|403)
+    @chaos_500 {
+        header X-Chaos-Status 500
+    }
+    handle @chaos_500 {
+        respond "Infrastructure Chaos: 500 Internal Server Error" 500
+    }
+
+    @chaos_403 {
+        header X-Chaos-Status 403
+    }
+    handle @chaos_403 {
+        respond "Infrastructure Chaos: 403 Forbidden" 403
+    }
+
+    # Infrastructure Chaos: Parameterized Latency Simulation
+    # Uses connection timeout to a non-routable IP to simulate infra-layer delay.
     
-    # Optional: proxy API requests to backend
-    # handle /v1/* {
-    #     reverse_proxy api:8000
-    # }
-    # handle /health {
-    #     reverse_proxy api:8000
-    # }
+    @latency_short {
+        header X-Chaos-Latency 500
+    }
+    handle @latency_short {
+        reverse_proxy 10.255.255.1:80 {
+            dial_timeout 500ms
+        }
+    }
+
+    @latency_med {
+        header X-Chaos-Latency 2000
+    }
+    handle @latency_med {
+        reverse_proxy 10.255.255.1:80 {
+            dial_timeout 2s
+        }
+    }
+
+    @latency_long {
+        header X-Chaos-Latency 5000
+    }
+    handle @latency_long {
+        reverse_proxy 10.255.255.1:80 {
+            dial_timeout 5s
+        }
+    }
 }
 
-# Option 2: UI served from /ui path on same domain as API
-# Uncomment this section if serving UI alongside API
-# your.api.domain {
-#     # API routes
-#     handle /v1/* {
-#         reverse_proxy api:8000
-#     }
-#     handle /health {
-#         reverse_proxy api:8000
-#     }
-#     
-#     # UI routes (everything else)
-#     handle /* {
-#         root * /srv/mcas-ui
-#         try_files {path} {path}/ /index.html
-#         file_server
-#     }
+# Production Template
+# your.ui.domain {
+#     root * /srv/mcas-ui
+#     try_files {path} {path}/ /index.html
+#     file_server
+#     # Production does NOT have chaos handlers
 # }

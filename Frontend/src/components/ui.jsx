@@ -1,16 +1,12 @@
-import { forwardRef } from 'react'
-import { ChevronDown, ChevronUp, Copy, Check, ExternalLink, X, RefreshCw } from 'lucide-react'
-import { useState } from 'react'
-import { getLogger } from '../utils/logger'
-
-const _uiLog = getLogger('ui')
+import { forwardRef, useEffect, useId, useRef, useState } from 'react'
+import { ChevronDown, ChevronUp, X, RefreshCw } from 'lucide-react'
 
 // Card component
 export function Card({ children, className = '', hover = false, ...props }) {
   return (
     <div 
       className={`
-        bg-terminal-800 border border-terminal-600 rounded-lg
+        rounded-lg border border-terminal-600 bg-terminal-800
         ${hover ? 'card-hover cursor-pointer' : ''}
         ${className}
       `}
@@ -23,7 +19,7 @@ export function Card({ children, className = '', hover = false, ...props }) {
 
 export function CardHeader({ children, className = '' }) {
   return (
-    <div className={`px-4 py-3 border-b border-terminal-600 ${className}`}>
+    <div className={`border-b border-terminal-600 px-4 py-3 ${className}`}>
       {children}
     </div>
   )
@@ -135,13 +131,13 @@ export function EmptyState({ icon: Icon, title, description, action }) {
   return (
     <div className="flex flex-col items-center justify-center py-12 text-center">
       {Icon && (
-        <div className="w-12 h-12 rounded-full bg-terminal-700 flex items-center justify-center mb-4">
-          <Icon className="w-6 h-6 text-terminal-400" />
+        <div className="mb-4 flex size-12 items-center justify-center rounded-full bg-terminal-700">
+          <Icon className="size-6 text-terminal-400" />
         </div>
       )}
-      <h3 className="text-lg font-medium text-terminal-100 mb-1">{title}</h3>
+      <h3 className="mb-1 text-lg font-medium text-terminal-100">{title}</h3>
       {description && (
-        <p className="text-sm text-terminal-400 mb-4 max-w-sm">{description}</p>
+        <p className="mb-4 max-w-sm text-sm text-terminal-400">{description}</p>
       )}
       {action}
     </div>
@@ -180,36 +176,6 @@ export function Spinner({ size = 'md', className = '' }) {
   )
 }
 
-// Copy button
-export function CopyButton({ text, onCopy }) {
-  const [copied, setCopied] = useState(false)
-
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(text)
-      setCopied(true)
-      onCopy?.()
-      setTimeout(() => setCopied(false), 2000)
-    } catch (err) {
-      _uiLog.warn('Clipboard copy failed', { event: 'clipboard_error', error_message: err.message })
-    }
-  }
-
-  return (
-    <button
-      onClick={handleCopy}
-      className="btn btn-ghost btn-xs"
-      title="Copy to clipboard"
-    >
-      {copied ? (
-        <Check className="w-4 h-4 text-green-400" />
-      ) : (
-        <Copy className="w-4 h-4" />
-      )}
-    </button>
-  )
-}
-
 // Expandable JSON
 export function JsonView({ data, expanded = false }) {
   const [isExpanded, setIsExpanded] = useState(expanded)
@@ -222,14 +188,14 @@ export function JsonView({ data, expanded = false }) {
     <div className="relative">
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="flex items-center gap-1 text-xs text-terminal-400 hover:text-terminal-200 mb-2"
+        className="mb-2 flex items-center gap-1 text-xs text-terminal-400 hover:text-terminal-200"
       >
-        {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+        {isExpanded ? <ChevronUp className="size-3" /> : <ChevronDown className="size-3" />}
         {isExpanded ? 'Collapse' : 'Expand'} JSON
       </button>
       
       {isExpanded && (
-        <pre className="bg-terminal-900 border border-terminal-600 rounded p-3 text-xs font-mono text-terminal-200 overflow-x-auto">
+        <pre className="overflow-x-auto rounded border border-terminal-600 bg-terminal-900 p-3 font-mono text-xs text-terminal-200">
           {jsonString}
         </pre>
       )}
@@ -240,38 +206,147 @@ export function JsonView({ data, expanded = false }) {
 // Data row component
 export function DataRow({ label, value, className = '' }) {
   return (
-    <div className={`flex justify-between items-center py-2 ${className}`}>
+    <div className={`flex items-center justify-between py-2 ${className}`}>
       <span className="text-sm text-terminal-400">{label}</span>
-      <span className="text-sm text-terminal-100 font-mono">{value}</span>
+      <span className="font-mono text-sm text-terminal-100">{value}</span>
     </div>
+  )
+}
+
+const FOCUSABLE_SELECTOR = [
+  'a[href]',
+  'button:not([disabled])',
+  'input:not([disabled])',
+  'select:not([disabled])',
+  'textarea:not([disabled])',
+  '[tabindex]:not([tabindex="-1"])',
+].join(', ')
+
+function getFocusableElements(container) {
+  if (!container) {
+    return []
+  }
+
+  return [...container.querySelectorAll(FOCUSABLE_SELECTOR)].filter(
+    (element) => element instanceof HTMLElement && !element.hasAttribute('disabled')
   )
 }
 
 // Modal
 export function Modal({ isOpen, onClose, title, children, size = 'md' }) {
-  if (!isOpen) return null
-
   const sizes = {
     sm: 'max-w-md',
     md: 'max-w-lg',
     lg: 'max-w-2xl',
     xl: 'max-w-4xl',
   }
+  const titleId = useId()
+  const dialogRef = useRef(null)
+  const previousFocusRef = useRef(null)
+
+  useEffect(() => {
+    if (!isOpen) {
+      return undefined
+    }
+
+    previousFocusRef.current = document.activeElement instanceof HTMLElement
+      ? document.activeElement
+      : null
+
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+
+    const frameId = window.requestAnimationFrame(() => {
+      const focusableElements = getFocusableElements(dialogRef.current)
+      const firstElement = focusableElements[0] || dialogRef.current
+      firstElement?.focus()
+    })
+
+    return () => {
+      window.cancelAnimationFrame(frameId)
+      document.body.style.overflow = previousOverflow
+      previousFocusRef.current?.focus?.()
+    }
+  }, [isOpen])
+
+  useEffect(() => {
+    if (!isOpen) {
+      return undefined
+    }
+
+    const handleWindowKeyDown = (event) => {
+      if (event.key !== 'Escape') {
+        return
+      }
+
+      event.preventDefault()
+      onClose?.()
+    }
+
+    window.addEventListener('keydown', handleWindowKeyDown)
+    return () => {
+      window.removeEventListener('keydown', handleWindowKeyDown)
+    }
+  }, [isOpen, onClose])
+
+  if (!isOpen) return null
+
+  const handleKeyDown = (event) => {
+    if (event.key === 'Escape') {
+      event.preventDefault()
+      onClose?.()
+      return
+    }
+
+    if (event.key !== 'Tab') {
+      return
+    }
+
+    const focusableElements = getFocusableElements(dialogRef.current)
+
+    if (focusableElements.length === 0) {
+      event.preventDefault()
+      dialogRef.current?.focus()
+      return
+    }
+
+    const firstElement = focusableElements[0]
+    const lastElement = focusableElements[focusableElements.length - 1]
+    const activeElement = document.activeElement
+
+    if (event.shiftKey && activeElement === firstElement) {
+      event.preventDefault()
+      lastElement.focus()
+    } else if (!event.shiftKey && activeElement === lastElement) {
+      event.preventDefault()
+      firstElement.focus()
+    }
+  }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="presentation">
       <div 
+        aria-hidden="true"
         className="absolute inset-0 bg-black/60 backdrop-blur-sm"
         onClick={onClose}
       />
-      <div className={`relative bg-terminal-800 border border-terminal-600 rounded-lg shadow-xl ${sizes[size]} w-full animate-fade-in`}>
-        <div className="flex items-center justify-between px-4 py-3 border-b border-terminal-600">
-          <h2 className="text-lg font-semibold text-terminal-100">{title}</h2>
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
+        onKeyDown={handleKeyDown}
+        className={`relative w-full rounded-lg border border-terminal-600 bg-terminal-800 shadow-xl ${sizes[size]} animate-fade-in`}
+      >
+        <div className="flex items-center justify-between border-b border-terminal-600 px-4 py-3">
+          <h2 id={titleId} className="text-lg font-semibold text-terminal-100">{title}</h2>
           <button
             onClick={onClose}
-            className="text-terminal-400 hover:text-terminal-100 transition-colors"
+            aria-label="Close dialog"
+            className="text-terminal-400 transition-colors hover:text-terminal-100"
           >
-            <X className="w-5 h-5" />
+            <X className="size-5" />
           </button>
         </div>
         <div className="p-4">
@@ -283,16 +358,79 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }) {
 }
 
 // Tabs
-export function Tabs({ tabs, activeTab, onChange }) {
+export function Tabs({ tabs, activeTab, onChange, idBase: providedIdBase }) {
+  const generatedId = useId().replace(/:/g, '')
+  const idBase = providedIdBase || `tabs-${generatedId}`
+  const tabRefs = useRef([])
+
+  const moveFocus = (nextIndex) => {
+    const nextTab = tabs[nextIndex]
+    if (!nextTab) {
+      return
+    }
+
+    onChange(nextTab.value)
+    tabRefs.current[nextIndex]?.focus()
+  }
+
+  const handleKeyDown = (event, index) => {
+    if (!tabs.length) {
+      return
+    }
+
+    if (event.key === 'ArrowRight') {
+      event.preventDefault()
+      moveFocus((index + 1) % tabs.length)
+      return
+    }
+
+    if (event.key === 'ArrowLeft') {
+      event.preventDefault()
+      moveFocus((index - 1 + tabs.length) % tabs.length)
+      return
+    }
+
+    if (event.key === 'Home') {
+      event.preventDefault()
+      moveFocus(0)
+      return
+    }
+
+    if (event.key === 'End') {
+      event.preventDefault()
+      moveFocus(tabs.length - 1)
+      return
+    }
+
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault()
+      onChange(tabs[index].value)
+    }
+  }
+
   return (
-    <div className="flex gap-1 border-b border-terminal-600 mb-4">
-      {tabs.map((tab) => (
+    <div className="mb-4 flex gap-1 border-b border-terminal-600" role="tablist" aria-orientation="horizontal">
+      {tabs.map((tab, index) => {
+        const tabId = `${idBase}-tab-${tab.value}`
+        const panelId = `${idBase}-panel-${tab.value}`
+        const isActive = activeTab === tab.value
+
+        return (
         <button
           key={tab.value}
+          id={tabId}
+          ref={(element) => {
+            tabRefs.current[index] = element
+          }}
+          role="tab"
+          aria-selected={isActive}
+          aria-controls={panelId}
+          tabIndex={isActive ? 0 : -1}
           onClick={() => onChange(tab.value)}
+          onKeyDown={(event) => handleKeyDown(event, index)}
           className={`
-            px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors
-            ${activeTab === tab.value
+            -mb-px border-b-2 px-4 py-2 text-sm font-medium transition-colors
+            ${isActive
               ? 'border-amber-500 text-amber-400'
               : 'border-transparent text-terminal-400 hover:text-terminal-200'
             }
@@ -300,14 +438,15 @@ export function Tabs({ tabs, activeTab, onChange }) {
         >
           {tab.label}
           {tab.count !== undefined && (
-            <span className={`ml-2 text-xs px-1.5 py-0.5 rounded-full ${
-              activeTab === tab.value ? 'bg-amber-600/20' : 'bg-terminal-600'
+            <span className={`ml-2 rounded-full px-1.5 py-0.5 text-xs ${
+              isActive ? 'bg-amber-600/20' : 'bg-terminal-600'
             }`}>
               {tab.count}
             </span>
           )}
         </button>
-      ))}
+        )
+      })}
     </div>
   )
 }
@@ -315,7 +454,7 @@ export function Tabs({ tabs, activeTab, onChange }) {
 // Toggle switch
 export function Toggle({ enabled, onChange, label }) {
   return (
-    <label className="flex items-center cursor-pointer">
+    <label className="flex cursor-pointer items-center">
       <div className="relative">
         <input
           type="checkbox"
@@ -332,65 +471,12 @@ export function Toggle({ enabled, onChange, label }) {
   )
 }
 
-// MultiSelect — Excel-style checkbox dropdown for picking multiple values
-export function MultiSelect({ options, value = [], onChange, className = '', placeholder = 'All' }) {
-  const [open, setOpen] = useState(false)
-
-  const toggle = (val) => {
-    const next = value.includes(val) ? value.filter(v => v !== val) : [...value, val]
-    onChange(next)
-  }
-
-  const label = value.length === 0
-    ? placeholder
-    : value.length <= 2
-      ? value.join(', ')
-      : `${value.length} selected`
-
-  return (
-    <div className={`relative ${className}`}>
-      <button
-        type="button"
-        onClick={() => setOpen(!open)}
-        className="w-full bg-terminal-800 border border-terminal-500 rounded px-3 py-2 text-terminal-100 text-left flex items-center justify-between focus:border-amber-500 focus:ring-1 focus:ring-amber-500/20 focus:outline-none"
-      >
-        <span className="truncate">{label}</span>
-        {open
-          ? <ChevronUp className="w-4 h-4 text-terminal-400 flex-shrink-0" />
-          : <ChevronDown className="w-4 h-4 text-terminal-400 flex-shrink-0" />
-        }
-      </button>
-      {open && (
-        <>
-          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute z-50 mt-1 w-full bg-terminal-800 border border-terminal-500 rounded shadow-lg max-h-48 overflow-y-auto">
-            {options.map((opt) => (
-              <label
-                key={opt.value}
-                className="flex items-center gap-2 px-3 py-1.5 hover:bg-terminal-700 cursor-pointer text-sm text-terminal-100"
-              >
-                <input
-                  type="checkbox"
-                  checked={value.includes(opt.value)}
-                  onChange={() => toggle(opt.value)}
-                  className="accent-amber-500"
-                />
-                {opt.label}
-              </label>
-            ))}
-          </div>
-        </>
-      )}
-    </div>
-  )
-}
-
 // Select
 export const Select = forwardRef(({ options, className = '', ...props }, ref) => {
   return (
     <select
       ref={ref}
-      className={`bg-terminal-800 border border-terminal-500 rounded px-3 py-2 text-terminal-100 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/20 focus:outline-none ${className}`}
+      className={`rounded border border-terminal-500 bg-terminal-800 px-3 py-2 text-terminal-100 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500/20 ${className}`}
       {...props}
     >
       {options.map((option) => (
@@ -401,35 +487,52 @@ export const Select = forwardRef(({ options, className = '', ...props }, ref) =>
     </select>
   )
 })
+Select.displayName = 'Select'
 
 // Input
 export const Input = forwardRef(({ className = '', ...props }, ref) => {
   return (
     <input
       ref={ref}
-      className={`bg-terminal-800 border border-terminal-500 rounded px-3 py-2 text-terminal-100 placeholder-terminal-400 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/20 focus:outline-none ${className}`}
+      className={`rounded border border-terminal-500 bg-terminal-800 px-3 py-2 text-terminal-100 placeholder:text-terminal-400 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500/20 ${className}`}
       {...props}
     />
   )
 })
+Input.displayName = 'Input'
 
 // Stat card
-export function StatCard({ label, value, change, trend, icon: Icon }) {
+export function StatCard({
+  label,
+  value,
+  change,
+  trend,
+  subValue,
+  valueColor,
+  icon: Icon,
+}) {
+  const secondaryText = subValue ?? change
+  const valueTone = valueColor || (
+    trend === 'up' ? 'text-signal-long' :
+    trend === 'down' ? 'text-signal-short' :
+    'text-terminal-100'
+  )
+
   return (
     <Card>
       <CardContent className="flex items-center justify-between">
         <div>
-          <p className="text-sm text-terminal-400 mb-1">{label}</p>
-          <p className="text-2xl font-bold text-terminal-100 font-mono">{value}</p>
-          {change && (
-            <p className={`text-xs mt-1 ${trend === 'up' ? 'text-signal-long' : trend === 'down' ? 'text-signal-short' : 'text-terminal-400'}`}>
-              {change}
+          <p className="mb-1 text-sm text-terminal-400">{label}</p>
+          <p className={`font-mono text-2xl font-bold ${valueTone}`}>{value}</p>
+          {secondaryText && (
+            <p className={`mt-1 text-xs ${subValue ? 'text-terminal-400' : valueTone}`}>
+              {secondaryText}
             </p>
           )}
         </div>
         {Icon && (
-          <div className="w-10 h-10 rounded-lg bg-terminal-700 flex items-center justify-center">
-            <Icon className="w-5 h-5 text-terminal-400" />
+          <div className="flex size-10 items-center justify-center rounded-lg bg-terminal-700">
+            <Icon className="size-5 text-terminal-400" />
           </div>
         )}
       </CardContent>
@@ -456,7 +559,7 @@ export function RefreshControl({ lastUpdated, onRefresh, loading, serverAsOf }) 
         disabled={loading}
         className="btn btn-ghost btn-xs"
       >
-        <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+        <RefreshCw className={`size-4 ${loading ? 'animate-spin' : ''}`} />
       </button>
     </div>
   )

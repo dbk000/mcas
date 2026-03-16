@@ -19,7 +19,7 @@ import os
 import sys
 import logging
 
-from mcas_governance import (
+from governance.kernel import (
     ConfigRegistry, StrategyRegistry, TaskRegistry, StopPolicyRegistry,
     RuntimeGraphSeal, Lineage, LineageEnforcer,
     install_import_guard,
@@ -300,6 +300,8 @@ def _populate_tasks(reg: TaskRegistry) -> None:
 
 def _populate_stop_policies(reg: StopPolicyRegistry) -> None:
     """Register canonical stop-policy defaults."""
+    from core_logic.exit_checker import ExitConfig
+
     # Derive setup IDs from the strategy catalog (which is already populated
     # but not yet frozen at this point — we use the hardcoded catalog directly).
     _SETUP_IDS = sorted([
@@ -318,6 +320,27 @@ def _populate_stop_policies(reg: StopPolicyRegistry) -> None:
 
     reg._register("schema_version", "v1")
     reg._register("known_setup_ids", _SETUP_IDS)
+
+    # Per-setup exit configs — canonical exit parameters per strategy.
+    # The simulator reads these via SimulationConfig.setup_exit_configs.
+    reg._register("setup_exit_configs", {
+        "D1": ExitConfig(
+            fail_fast_bars=0, fail_fast_threshold=0.0,
+            trail_breakeven_r=0, trail_activation_r=999.0, trail_distance_r=0.5,
+        ),
+        "S9": ExitConfig(
+            fail_fast_bars=0, fail_fast_threshold=0.0,
+            trail_breakeven_r=0, trail_activation_r=999.0, trail_distance_r=0.5,
+        ),
+        "S10": ExitConfig(
+            fail_fast_bars=2, fail_fast_threshold=0.003,
+            trail_breakeven_r=0, trail_activation_r=999.0, trail_distance_r=0.5,
+        ),
+        "U1": ExitConfig(
+            fail_fast_bars=0, fail_fast_threshold=0.0,
+            trail_breakeven_r=0, trail_activation_r=999.0, trail_distance_r=0.5,
+        ),
+    })
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

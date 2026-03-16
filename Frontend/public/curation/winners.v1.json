@@ -1,0 +1,219 @@
+{
+  "version": "v1",
+  "generated_at": "2026-03-15",
+  "as_of_ts": "2026-03-15T14:32:00Z",
+  "source": "placeholder",
+  "source_status": "placeholder",
+  "ui_intent": "Dense ranked winners gallery that feels curated, credible, and strategy-native",
+  "strategies": [
+    {
+      "rank": 1,
+      "setup_id": "S9",
+      "label": "S9 Dormancy Breakout",
+      "style": "volatility expansion",
+      "description": "Low-energy compression resolves into directional expansion after inactivity, participation reset, and catalyst alignment.",
+      "market_fit": [
+        "crypto",
+        "equities"
+      ],
+      "items": [
+        {
+          "rank": 1,
+          "id": "S9_001",
+          "symbol": "BTCUSDT",
+          "timeframe": "1h",
+          "direction": "LONG",
+          "date": "2026-02-12",
+          "outcome_pct": 18.4,
+          "holding_bars": 9,
+          "regime": "range to expansion",
+          "quality_score": 93,
+          "why_it_mattered": "Dormancy resolved into a broad risk-on move and the setup caught the first clean expansion leg.",
+          "notes": [
+            "Dormancy resolved",
+            "Volume spike confirmed",
+            "Follow-through arrived inside first session"
+          ],
+          "cta_tease": "Unlock live signal timing, risk framing, and Glass Box causality in Pro"
+        },
+        {
+          "rank": 2,
+          "id": "S9_002",
+          "symbol": "ETHUSDT",
+          "timeframe": "4h",
+          "direction": "LONG",
+          "date": "2026-01-27",
+          "outcome_pct": 11.2,
+          "holding_bars": 6,
+          "regime": "rotation breakout",
+          "quality_score": 88,
+          "why_it_mattered": "A quiet base broke in sync with sector rotation and the move stayed orderly enough to hold.",
+          "notes": [
+            "Compression shelf held for three sessions",
+            "Breadth improved across majors",
+            "Minimal adverse excursion"
+          ],
+          "cta_tease": "See the live setup state, urgency window, and causality trace in Pro"
+        },
+        {
+          "rank": 3,
+          "id": "S9_003",
+          "symbol": "SOLUSDT",
+          "timeframe": "30m",
+          "direction": "SHORT",
+          "date": "2026-02-03",
+          "outcome_pct": 9.6,
+          "holding_bars": 7,
+          "regime": "failed rotation",
+          "quality_score": 84,
+          "why_it_mattered": "The breakout failed fast, participation collapsed, and the unwind had enough urgency to reward a short fade.",
+          "notes": [
+            "Breakout failure",
+            "Momentum reversal confirmed",
+            "Correlation tape flipped risk-off"
+          ],
+          "cta_tease": "Unlock intraday timing and Glass Box verification in Pro"
+        }
+      ]
+    },
+    {
+      "rank": 2,
+      "setup_id": "U1",
+      "label": "U1 Unicorn Ignition",
+      "style": "high-conviction impulse continuation",
+      "description": "Catalyst-backed impulse setup that prioritizes clean structure, tight decision timing, and strong follow-through probability.",
+      "market_fit": [
+        "equities"
+      ],
+      "items": [
+        {
+          "rank": 1,
+          "id": "U1_001",
+          "symbol": "NVDA",
+          "timeframe": "15m",
+          "direction": "LONG",
+          "date": "2026-03-05",
+          "outcome_pct": 7.8,
+          "holding_bars": 11,
+          "regime": "earnings drift continuation",
+          "quality_score": 96,
+          "why_it_mattered": "The catalyst was already understood by the market, but the second-wave participation was still underpriced.",
+          "notes": [
+            "Event follow-through",
+            "Tape leadership clear",
+            "Decision timing stayed clean"
+          ],
+          "cta_tease": "See why the model trusted the continuation in Pro"
+        },
+        {
+          "rank": 2,
+          "id": "U1_002",
+          "symbol": "META",
+          "timeframe": "30m",
+          "direction": "LONG",
+          "date": "2026-02-20",
+          "outcome_pct": 6.1,
+          "holding_bars": 8,
+          "regime": "sector momentum rotation",
+          "quality_score": 89,
+          "why_it_mattered": "Momentum leadership rotated, but the structure avoided late-chase risk and still offered asymmetric continuation.",
+          "notes": [
+            "Relative strength leader",
+            "Liquidity remained stable",
+            "Impulse did not mean-revert immediately"
+          ],
+          "cta_tease": "Unlock the live timing tape and verification ladder in Pro"
+        },
+        {
+          "rank": 3,
+          "id": "U1_003",
+          "symbol": "AMD",
+          "timeframe": "15m",
+          "direction": "SHORT",
+          "date": "2026-01-18",
+          "outcome_pct": 4.4,
+          "holding_bars": 5,
+          "regime": "failed impulse",
+          "quality_score": 81,
+          "why_it_mattered": "The initial move looked strong, then breadth and leadership diverged and the failed impulse unwound quickly.",
+          "notes": [
+            "Momentum divergence",
+            "Leadership cracked",
+            "Reversal accelerated into close"
+          ],
+          "cta_tease": "See the live failure criteria and causality checks in Pro"
+        }
+      ]
+    },
+    {
+      "rank": 3,
+      "setup_id": "S10",
+      "label": "S10 MACD Scalp",
+      "style": "short-horizon momentum reversal",
+      "description": "Fast-turn setup that exploits momentum inflections when trend exhaustion, microstructure, and timing line up.",
+      "market_fit": [
+        "crypto",
+        "equities"
+      ],
+      "items": [
+        {
+          "rank": 1,
+          "id": "S10_001",
+          "symbol": "BTCUSDT",
+          "timeframe": "15m",
+          "direction": "SHORT",
+          "date": "2026-03-02",
+          "outcome_pct": 3.9,
+          "holding_bars": 4,
+          "regime": "late-session exhaustion",
+          "quality_score": 85,
+          "why_it_mattered": "Trend persistence faded, momentum rolled over, and the short only needed a compact unwind to pay.",
+          "notes": [
+            "Momentum hook confirmed",
+            "Mean-reversion window clear",
+            "Trade resolved fast"
+          ],
+          "cta_tease": "Unlock exact timing and ladder context in Pro"
+        },
+        {
+          "rank": 2,
+          "id": "S10_002",
+          "symbol": "TSLA",
+          "timeframe": "5m",
+          "direction": "LONG",
+          "date": "2026-02-14",
+          "outcome_pct": 2.7,
+          "holding_bars": 6,
+          "regime": "intraday snapback",
+          "quality_score": 79,
+          "why_it_mattered": "It was not a giant move, but the snapback was clean and the timing discipline mattered more than magnitude.",
+          "notes": [
+            "Fast exhaustion signal",
+            "Liquidity held up",
+            "Exit came before chop returned"
+          ],
+          "cta_tease": "See the intraday trigger timing and trace in Pro"
+        },
+        {
+          "rank": 3,
+          "id": "S10_003",
+          "symbol": "ETHUSDT",
+          "timeframe": "15m",
+          "direction": "LONG",
+          "date": "2026-01-31",
+          "outcome_pct": 4.1,
+          "holding_bars": 5,
+          "regime": "momentum reset",
+          "quality_score": 83,
+          "why_it_mattered": "A shallow reset reloaded momentum without destroying trend structure, which gave the scalp room to extend.",
+          "notes": [
+            "Reset without breakdown",
+            "Breadth stabilized",
+            "Timing window remained narrow"
+          ],
+          "cta_tease": "Unlock the live reset signal and causality state in Pro"
+        }
+      ]
+    }
+  ]
+}

@@ -19,7 +19,7 @@ import redis
 import psycopg
 
 from governance.persistence import PersistenceClient, RedisClient, get_governed_persistence
-from mcas_governance import LineageEnforcer
+from governance.kernel import LineageEnforcer
 
 # db_pool: governed import — get_conn for direct Postgres access
 def _pool_get_conn():
@@ -52,7 +52,7 @@ from governance.bootstrap import (
     strategies_for_timeframe, strategy_get_multiplier,
 )
 from governance.config_registry import (
-    WorkerTypedConfig, D1TypedConfig, U1TypedConfig, S9TypedConfig, S10TypedConfig,
+    WorkerTypedConfig,
 )
 
 # LiveConfig: hot-reload from Pipeline
@@ -166,14 +166,6 @@ def _capacity_threshold_usd() -> float:
     return _worker_cfg().CAPACITY_THRESHOLD_USD
 
 
-def _safe_attr(obj, name: str, default=None):
-    """Retrieve an attribute with a fallback, replacing getattr(obj, name, default)."""
-    try:
-        return obj.__getattribute__(name)
-    except AttributeError:
-        return default
-
-
 # ---------------------------------------------------------------------------
 # Logging
 # ---------------------------------------------------------------------------
@@ -207,40 +199,6 @@ def _serialize_state(state) -> str:
         else:
             d[f.name] = v
     return json.dumps(d)
-
-
-# ---------------------------------------------------------------------------
-# Governance: sync TypedConfigRegistry after evaluator.update_config()
-# ---------------------------------------------------------------------------
-
-def _sync_typed_config_registry(setup_id: str, changed: dict) -> None:
-    """Re-register a strategy's TypedConfig in the registry after update_config.
-
-    The evaluator.update_config() method (core_logic, pure math) updates the
-    in-process config class attrs and returns a changed dict.  This governance
-    helper rebuilds the TypedConfig dataclass from the current class attrs and
-    registers it, keeping the TypedConfigRegistry consistent.
-    """
-    if setup_id == "D1":
-        from dataclasses import fields as dc_fields
-        # D1Config uses W_BTC_ADJ_RET; D1TypedConfig uses W_BTC_AD_RET.
-        _D1_ATTR_TO_FIELD = {"W_BTC_ADJ_RET": "W_BTC_AD_RET"}
-        _D1_FIELD_TO_ATTR = {v: k for k, v in _D1_ATTR_TO_FIELD.items()}
-
-        # Build D1TypedConfig from current D1Config class attrs
-        field_names = {f.name for f in dc_fields(D1TypedConfig)}
-        kwargs = {}
-        for fname in field_names:
-            # Translate TypedConfig field name -> D1Config attr name
-            attr_name = _D1_FIELD_TO_ATTR.get(fname, fname)
-            kwargs[fname] = getattr(D1Config, attr_name)
-        new_config = D1TypedConfig(**kwargs)
-        # NOTE: Hot-reload re-registration into the frozen registry is a tech-debt
-        # bridge.  The frozen ConfigRegistry doesn't support mutation after seal.
-        # For now, update the evaluator's in-process config (already done by
-        # update_config()), and log the change.  Full fix: restart-to-reload.
-        logger.info("D1 config synced (in-process only): %s", list(kwargs.keys()))
-    # Future strategies: elif setup_id == "U1": ...
 
 
 # ---------------------------------------------------------------------------
@@ -576,7 +534,7 @@ class SignalWorker(LineageEnforcer):
 
             payload = {
                 "setup_id": "S10",
-                "setup_name": "MACD Scalp v1.0",
+                "setup_name": self._get_setup_label("S10"),
                 "symbol": symbol,
                 "timeframe": tf,
                 "direction": sig.direction.value,
@@ -660,7 +618,7 @@ class SignalWorker(LineageEnforcer):
                     "TP2_R_MULT": self.s10_evaluator.TP2_R_MULT,
                     "TIME_STOP_BARS": self.s10_evaluator.TIME_STOP_BARS,
                 })
-                setup_version = self.SETUP_VERSIONS.get("S10", "S10_v1.0")
+                setup_version = self._get_setup_version("S10")
                 trace_dict = trace.seal(setup_version)
 
             store_signal(self.r, symbol, tf, "S10", payload,
@@ -745,7 +703,7 @@ class SignalWorker(LineageEnforcer):
 
             payload = {
                 "setup_id": "D1",
-                "setup_name": "Dormancy-to-Ignition v1.2",
+                "setup_name": self._get_setup_label("D1"),
                 "symbol": symbol,
                 "timeframe": tf,
                 "direction": sig.direction.value,
@@ -838,12 +796,7 @@ class SignalWorker(LineageEnforcer):
                     "atr": snapshot.atr,
                     "rsi": snapshot.rsi,
                 })
-                # _hydrated is set dynamically during state restoration, not a declared
-                # dataclass field on D1State.
-                try:
-                    is_hydrated = state._hydrated
-                except AttributeError:
-                    is_hydrated = False
+                is_hydrated = False
                 trace.record_state(state.to_dict(), is_hydrated=is_hydrated)
                 close = snapshot.ohlcv[-1].close if snapshot.ohlcv else 0.0
                 trace.record_gate("dormancy", state.dormancy_score,
@@ -894,7 +847,7 @@ class SignalWorker(LineageEnforcer):
                     "ONCHAIN_NETFLOW_LOOKBACK_HOURS": D1Config.ONCHAIN_NETFLOW_LOOKBACK_HOURS,
                     "W_ONCHAIN_FLOW": D1Config.W_ONCHAIN_FLOW,
                 })
-                setup_version = self.SETUP_VERSIONS.get("D1", "D1_v1.0")
+                setup_version = self._get_setup_version("D1")
                 trace_dict = trace.seal(setup_version)
 
             store_signal(self.r, symbol, tf, "D1", payload,
@@ -998,7 +951,7 @@ class SignalWorker(LineageEnforcer):
                     "TP2_R": U1Config.TP2_R,
                     "TIME_STOP_BARS_5M": U1Config.TIME_STOP_BARS_5M,
                 })
-                setup_version = self.SETUP_VERSIONS.get("U1", "U1_v1.0")
+                setup_version = self._get_setup_version("U1")
                 trace_dict = trace.seal(setup_version)
             self._store_u1_signal(u1_signal, symbol, tf, bar_start_ts,
                                   trace_json=trace_dict)
@@ -1040,7 +993,7 @@ class SignalWorker(LineageEnforcer):
             "participation_score": signal.participation_score,
             "compression_score": signal.compression_score,
             "embryo_active_score": signal.embryo_active_score,
-            "trigger_path": _safe_attr(signal, "trigger_path", "traditional"),
+            "trigger_path": signal.trigger_path,
         }
 
         if signal.explain:
@@ -1061,16 +1014,22 @@ class SignalWorker(LineageEnforcer):
             f"Signal: U1 {signal.direction.value} {symbol}:{tf} "
             f"score={adjusted_score:.3f} (raw={signal.setup_score:.3f}) "
             f"rel_vol={signal.rel_volume:.1f}x "
-            f"path={_safe_attr(signal, 'trigger_path', 'traditional')}"
+            f"path={signal.trigger_path}"
         )
 
-    # Setup version mapping for live signals
-    SETUP_VERSIONS = {
-        "U1": "U1_v3.0",
-        "S9": "S9_v1.0",
-        "S10": "S10_v1.0",
-        "D1": "D1_v1.2",
-    }
+    def _get_setup_version(self, setup_id: str) -> str:
+        """Get setup version from StrategyRegistry handler."""
+        handler = StrategyRegistry.get_handler(setup_id)
+        if handler:
+            return handler.version
+        return f"{setup_id}_v1.0"
+
+    def _get_setup_label(self, setup_id: str) -> str:
+        """Get human-readable setup name from StrategyRegistry handler."""
+        handler = StrategyRegistry.get_handler(setup_id)
+        if handler and handler.label:
+            return handler.label
+        return f"{setup_id} (unknown)"
 
     def _sync_node_parameters(self):
         """Sync parameters between code and Pipeline at startup."""
@@ -1109,10 +1068,10 @@ class SignalWorker(LineageEnforcer):
                         deployed_params = self._live_config.get_strategy_params(
                             setup_id, force_reload=True
                         )
-                    if deployed_params and isinstance(evaluator, SetupBase):
+                    if deployed_params and handler.supports_config_sync:
                         changed = evaluator.update_config(deployed_params)
                         if changed:
-                            _sync_typed_config_registry(setup_id, changed)
+                            evaluator.sync_config(changed)
                             logger.info(
                                 "%s: loaded config from Pipeline (%d params changed)",
                                 setup_id, len(changed),
@@ -1120,7 +1079,7 @@ class SignalWorker(LineageEnforcer):
                         else:
                             logger.info("%s: Pipeline config matches code defaults", setup_id)
                     elif deployed_params:
-                        logger.info("%s: loaded Pipeline config (evaluator does not extend SetupBase)", setup_id)
+                        logger.info("%s: loaded Pipeline config (no config sync support)", setup_id)
                     else:
                         logger.info(
                             "%s: Pipeline has version(s) but none deployed -- keeping code defaults",
@@ -1158,13 +1117,11 @@ class SignalWorker(LineageEnforcer):
             for p in evaluator.parameters:
                 params[p.name] = p.default
 
-        # Merge bootstrap metadata from the evaluator itself (no hardcoded setup IDs)
-        try:
-            meta_fn = evaluator.get_bootstrap_metadata
-        except AttributeError:
-            meta_fn = None
-        if meta_fn is not None:
-            params.update(meta_fn())
+        # Merge bootstrap metadata from the evaluator (concrete method on SetupBase)
+        if isinstance(evaluator, SetupBase):
+            meta = evaluator.get_bootstrap_metadata()
+            if meta:
+                params.update(meta)
 
         if not params:
             logger.debug(f"No bootstrap params for {setup_id} -- skipping")
@@ -1198,25 +1155,20 @@ class SignalWorker(LineageEnforcer):
         if not self._live_config.has_changed():
             return
 
-        # Generic hot-reload: iterate all registered strategies that support it
+        # Generic hot-reload: iterate strategies that declare config sync support
         from governance.strategy_registry import StrategyRegistry
         for setup_id, handler in StrategyRegistry._strategies.items():
+            if not handler.supports_config_sync:
+                continue
             evaluator = handler.evaluator
             if evaluator is None:
-                continue
-            # Only evaluators that implement update_config can be hot-reloaded
-            try:
-                update_fn = evaluator.update_config
-            except AttributeError:
-                continue
-            if not callable(update_fn):
                 continue
             try:
                 params = self._live_config.get_strategy_params(setup_id)
                 if params:
                     changed = evaluator.update_config(params)
                     if changed:
-                        _sync_typed_config_registry(setup_id, changed)
+                        evaluator.sync_config(changed)
                         tfs = handler.timeframe_affinity or []
                         self._invalidate_redis_signals(setup_id, tfs)
                         logger.info(
@@ -1256,7 +1208,7 @@ class SignalWorker(LineageEnforcer):
         try:
             payload_str = json.dumps(payload)
             trace_str = json.dumps(trace_json) if trace_json else None
-            setup_version = self.SETUP_VERSIONS.get(setup_id, f"{setup_id}_v1.0")
+            setup_version = self._get_setup_version(setup_id)
             with _pool_get_conn() as conn:
                 with conn.cursor() as cur:
                     cur.execute("""
@@ -1480,7 +1432,7 @@ class SignalWorker(LineageEnforcer):
 
             payload = {
                 "setup_id": "S9",
-                "setup_name": "Short Reversion v1.0",
+                "setup_name": self._get_setup_label("S9"),
                 "symbol": symbol,
                 "timeframe": "1h",
                 "direction": signal.direction.value,
@@ -1587,7 +1539,7 @@ class SignalWorker(LineageEnforcer):
                     "HOLD_BARS": S9Evaluator.HOLD_BARS,
                     "COST_BPS": S9Evaluator.COST_BPS,
                 })
-                setup_version = self.SETUP_VERSIONS.get("S9", "S9_v1.0")
+                setup_version = self._get_setup_version("S9")
                 trace_dict = trace.seal(setup_version)
 
             store_signal(self.r, symbol, "1h", "S9", payload,

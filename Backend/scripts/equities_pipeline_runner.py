@@ -81,6 +81,7 @@ _WINDOW_RULES = {
 }
 
 
+# GOVERNANCE_DEBT: migrate to TypedConfigRegistry
 def _env_int(name: str, default: int) -> int:
     value = os.getenv(name)
     if not value:
@@ -91,6 +92,7 @@ def _env_int(name: str, default: int) -> int:
         return default
 
 
+# GOVERNANCE_DEBT: migrate to TypedConfigRegistry
 def _env_float(name: str, default: float) -> float:
     value = os.getenv(name)
     if not value:
@@ -332,6 +334,7 @@ def run_cycle(
 
 
 def parse_args() -> argparse.Namespace:
+    # GOVERNANCE_DEBT: migrate to TypedConfigRegistry
     symbols_env = (os.getenv("EQUITIES_SYMBOLS") or "").strip()
     symbols_default = symbols_env or ",".join(get_default_symbols())
 
@@ -340,6 +343,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--actor", default="S1_MAIN")
     parser.add_argument("--symbols", default=symbols_default)
     parser.add_argument("--lookback-days", type=int, default=_env_int("EQUITIES_OHLCV_LOOKBACK_DAYS", 180))
+    # GOVERNANCE_DEBT: migrate to TypedConfigRegistry
     parser.add_argument("--model-version", default=os.getenv("EQUITIES_MODEL_VERSION", "v1_freeopen"))
     parser.add_argument("--min-confidence", type=float, default=_env_float("EQUITIES_MIN_CONFIDENCE", 0.10))
     parser.add_argument("--loop", action="store_true")

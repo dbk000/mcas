@@ -1,0 +1,65 @@
+import { STORAGE_KEYS } from '../../config/storageKeys'
+
+export const LAYOUT_STORAGE_KEY = STORAGE_KEYS.PIPELINE_LAYOUT_POSITIONS
+
+export const SUBSYSTEM_COLORS = {
+  ingestion: '#3b82f6',
+  feature: '#8b5cf6',
+  signal: '#f59e0b',
+  filtering: '#ef4444',
+  strategy: '#10b981',
+  parameter: '#6366f1',
+  backtest: '#ec4899',
+  metrics: '#14b8a6',
+  risk: '#f97316',
+  execution: '#22c55e',
+  meta: '#64748b',
+}
+
+export const DEFAULT_FACETS = {
+  pf: true,
+  winRate: true,
+  trades: true,
+  status: true,
+  owner: true,
+  description: true,
+  connections: true,
+}
+
+export const DEFAULT_GRID_POSITIONS = {
+  'dbb7452f-ab52-44e6-bb30-d29cca9e9005': { x: 630, y: 0 },
+  '0e70a279-0a31-40c8-87d2-ce985b2ab8a0': { x: 840, y: 0 },
+  '0124ed33-738a-4f57-940b-9775354c2290': { x: 1050, y: 0 },
+  'fbc404e0-9684-4f53-9a25-2e2a03b60196': { x: 525, y: 190 },
+  '34f65bb1-20b0-4c61-bd93-5ba8dab536be': { x: 735, y: 190 },
+  '678c8948-31bf-48ca-a727-2359e98ae9b2': { x: 945, y: 190 },
+  'a9d78bc2-6d69-4d10-b426-37c903a36333': { x: 1155, y: 190 },
+  'cb6f034c-c741-4bb4-ac44-f5c616a30750': { x: 735, y: 380 },
+  '9fb9b539-0f4d-4c2a-ae3e-44c98c838159': { x: 945, y: 380 },
+  'a76af2f3-a171-44eb-8d84-b4d8b996e741': { x: 420, y: 570 },
+  '316c09aa-f812-49ff-a105-8003b43c70f5': { x: 630, y: 570 },
+  '97c34b89-180d-4bde-893b-5a917add5167': { x: 840, y: 570 },
+  '13a0fc5e-18cf-49d7-bfa5-ff713799b326': { x: 1050, y: 570 },
+  'ffda1c91-508e-40a9-9560-991699a786d5': { x: 1260, y: 570 },
+  '305ff981-8265-4d56-b6bc-30af2a39c74e': { x: 315, y: 760 },
+  '3c321c3a-52ff-4fd8-8495-f2f397c46438': { x: 525, y: 760 },
+  '0ef932ab-433d-4fb7-9c69-8a4703cf7316': { x: 735, y: 760 },
+  'bbbd1c6e-bd64-4260-a490-cbe09887fa1d': { x: 945, y: 760 },
+  '07217426-6b8b-4835-9075-db46e6e2e271': { x: 1155, y: 760 },
+  '5879264b-b331-4802-bafa-8a792ad0971a': { x: 1365, y: 760 },
+  '5b61711c-5282-4a08-ac2a-4c2a396de9cf': { x: 315, y: 950 },
+  '396037d1-13c8-4f17-8bf9-e9f95546f419': { x: 525, y: 950 },
+  'db16d8c1-259c-4ad1-9197-a39edf32c9b0': { x: 735, y: 950 },
+  '8a3e4d49-b88e-465c-80a1-37a1af845b1e': { x: 945, y: 950 },
+  '43e39128-8327-43c7-b3c1-8362762b6d56': { x: 1155, y: 950 },
+  'd83ee551-d609-4aa2-8c1d-096cab0c736a': { x: 1365, y: 950 },
+  '014f6fc8-a3ab-4ed9-9260-5d96ca134392': { x: 0, y: 1140 },
+  'a7067064-31b8-4630-a48b-26b593ced2aa': { x: 210, y: 1140 },
+  '31bc7c10-3532-4689-9709-f98d6859e7a4': { x: 420, y: 1140 },
+  '964e8b23-15b2-4f3a-b4ad-31be53e0f2a1': { x: 630, y: 1140 },
+  '1cf501e2-cdcd-4d23-b825-821debb52c77': { x: 840, y: 1140 },
+  'b7e630b4-644b-4ec5-b3c1-8522495649ca': { x: 1050, y: 1140 },
+  '2657bdf4-ec03-4a32-9dc2-62ce718267f4': { x: 1260, y: 1140 },
+  '5f0ca30f-6c1f-4a4c-bdd4-a8a68f559ce0': { x: 1470, y: 1140 },
+  '9c78d2f9-45e8-4e94-b308-2d548cfb0ae4': { x: 1680, y: 1140 },
+}

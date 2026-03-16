@@ -1,4 +1,4 @@
-export const EVENT_COLORS = Object.freeze({
+const EVENT_COLORS = Object.freeze({
   entry: '#f59e0b',
   stop: '#ef4444',
   tp1: '#22c55e',

@@ -33,20 +33,20 @@ export default class PipelineErrorBoundary extends Component {
       const { name, className } = this.props
       return (
         <div className={`flex flex-col items-center justify-center gap-3 p-6 ${className || ''}`}>
-          <AlertTriangle className="w-8 h-8 text-red-400/60" />
+          <AlertTriangle className="size-8 text-red-400/60" />
           <div className="text-center">
-            <p className="text-sm text-terminal-300 font-medium">
+            <p className="text-sm font-medium text-terminal-300">
               {name || 'This panel'} encountered an error
             </p>
-            <p className="text-xs text-terminal-500 mt-1 max-w-[280px]">
+            <p className="mt-1 max-w-[280px] text-xs text-terminal-500">
               {this.state.error?.message || 'An unexpected error occurred'}
             </p>
           </div>
           <button
             onClick={this.handleRetry}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-amber-400 bg-amber-600/10 border border-amber-600/20 rounded hover:bg-amber-600/20 transition-colors"
+            className="flex items-center gap-1.5 rounded border border-amber-600/20 bg-amber-600/10 px-3 py-1.5 text-xs text-amber-400 transition-colors hover:bg-amber-600/20"
           >
-            <RotateCcw className="w-3.5 h-3.5" />
+            <RotateCcw className="size-3.5" />
             Retry
           </button>
         </div>

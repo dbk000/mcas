@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { ChevronDown, ChevronRight, Search, X, Focus, Layers } from 'lucide-react'
+import { ChevronDown, ChevronRight, Search, X, Focus } from 'lucide-react'
 import { PIPELINE_FEATURES } from '../../config/pipelineFeatures'
 
 /**
@@ -63,32 +63,32 @@ export default function PipelineSidebar({ topologyData, graph, onClose }) {
   const sortedSubsystems = Object.keys(filteredGroups).sort()
 
   return (
-    <div className="fixed left-0 top-[3.5rem] h-[calc(100vh-3.5rem)] w-[260px] bg-terminal-800 border-r border-terminal-600 z-40 flex flex-col">
+    <div className="fixed left-0 top-14 z-40 flex h-[calc(100vh-3.5rem)] w-[260px] flex-col border-r border-terminal-600 bg-terminal-800">
       {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2 border-b border-terminal-700">
+      <div className="flex items-center justify-between border-b border-terminal-700 px-3 py-2">
         <span className="text-xs font-medium text-terminal-300">Node Tree</span>
         <button onClick={onClose} className="text-terminal-500 hover:text-terminal-300">
-          <X className="w-3.5 h-3.5" />
+          <X className="size-3.5" />
         </button>
       </div>
 
       {/* Search */}
-      <div className="px-3 py-2 border-b border-terminal-700">
+      <div className="border-b border-terminal-700 px-3 py-2">
         <div className="relative">
-          <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-terminal-500" />
+          <Search className="absolute left-2 top-1/2 size-3 -translate-y-1/2 text-terminal-500" />
           <input
             type="text"
             value={searchText}
             onChange={e => setSearchText(e.target.value)}
             placeholder="Filter nodes..."
-            className="w-full pl-7 pr-2 py-1.5 text-[11px] bg-terminal-900 border border-terminal-700 rounded text-terminal-200 placeholder-terminal-600 focus:outline-none focus:border-amber-500/50"
+            className="w-full rounded border border-terminal-700 bg-terminal-900 py-1.5 pl-7 pr-2 text-[11px] text-terminal-200 placeholder:text-terminal-600 focus:border-amber-500/50 focus:outline-none"
           />
           {searchText && (
             <button
               onClick={() => setSearchText('')}
               className="absolute right-1.5 top-1/2 -translate-y-1/2 text-terminal-500 hover:text-terminal-300"
             >
-              <X className="w-3 h-3" />
+              <X className="size-3" />
             </button>
           )}
         </div>
@@ -105,17 +105,17 @@ export default function PipelineSidebar({ topologyData, graph, onClose }) {
             <div key={sub}>
               <button
                 onClick={() => toggleGroup(sub)}
-                className="w-full flex items-center gap-2 px-3 py-1.5 text-left hover:bg-terminal-700/30 transition-colors"
+                className="flex w-full items-center gap-2 px-3 py-1.5 text-left transition-colors hover:bg-terminal-700/30"
               >
                 {isExpanded
-                  ? <ChevronDown className="w-3 h-3 text-terminal-500 flex-shrink-0" />
-                  : <ChevronRight className="w-3 h-3 text-terminal-500 flex-shrink-0" />
+                  ? <ChevronDown className="size-3 shrink-0 text-terminal-500" />
+                  : <ChevronRight className="size-3 shrink-0 text-terminal-500" />
                 }
                 <span
-                  className="w-2 h-2 rounded-full flex-shrink-0"
+                  className="size-2 shrink-0 rounded-full"
                   style={{ backgroundColor: color }}
                 />
-                <span className="text-[11px] text-terminal-300 font-medium capitalize flex-1">{sub}</span>
+                <span className="flex-1 text-[11px] font-medium capitalize text-terminal-300">{sub}</span>
                 <span className="text-[10px] text-terminal-500">{nodes.length}</span>
               </button>
               {isExpanded && (
@@ -132,12 +132,12 @@ export default function PipelineSidebar({ topologyData, graph, onClose }) {
                             graph.setFocusMode('node', n.id)
                           }
                         }}
-                        className={`w-full text-left pl-10 pr-3 py-1 hover:bg-terminal-700/30 transition-colors ${
-                          isSelected ? 'bg-amber-500/10 border-l-2 border-amber-400' : ''
+                        className={`w-full py-1 pl-10 pr-3 text-left transition-colors hover:bg-terminal-700/30 ${
+                          isSelected ? 'border-l-2 border-amber-400 bg-amber-500/10' : ''
                         }`}
                       >
-                        <div className="text-[11px] text-terminal-200 truncate">{n.name}</div>
-                        <div className="flex items-center gap-1.5 mt-0.5">
+                        <div className="truncate text-[11px] text-terminal-200">{n.name}</div>
+                        <div className="mt-0.5 flex items-center gap-1.5">
                           <span className="text-[9px] text-terminal-500">{n.type}</span>
                           {cv?.status && (
                             <span className={`text-[9px] ${
@@ -146,7 +146,7 @@ export default function PipelineSidebar({ topologyData, graph, onClose }) {
                             }`}>{cv.status}</span>
                           )}
                           {cv?.agg_pf != null && (
-                            <span className={`text-[9px] font-mono ${cv.agg_pf >= 1 ? 'text-green-400' : 'text-red-400'}`}>
+                            <span className={`font-mono text-[9px] ${cv.agg_pf >= 1 ? 'text-green-400' : 'text-red-400'}`}>
                               PF {cv.agg_pf.toFixed(2)}
                             </span>
                           )}
@@ -164,14 +164,14 @@ export default function PipelineSidebar({ topologyData, graph, onClose }) {
       {/* Focus mode controls */}
       {PIPELINE_FEATURES.focusMode && (
         <div className="border-t border-terminal-700 px-3 py-2">
-          <div className="text-[10px] text-terminal-500 mb-1.5">Focus</div>
+          <div className="mb-1.5 text-[10px] text-terminal-500">Focus</div>
           <div className="flex gap-1">
             {graph.focusMode !== 'off' ? (
               <button
                 onClick={() => graph.clearFocusMode()}
-                className="flex-1 flex items-center justify-center gap-1 text-[10px] px-2 py-1 bg-amber-500/20 text-amber-400 rounded hover:bg-amber-500/30"
+                className="flex flex-1 items-center justify-center gap-1 rounded bg-amber-500/20 px-2 py-1 text-[10px] text-amber-400 hover:bg-amber-500/30"
               >
-                <X className="w-3 h-3" />
+                <X className="size-3" />
                 Clear Focus
               </button>
             ) : (
@@ -179,9 +179,9 @@ export default function PipelineSidebar({ topologyData, graph, onClose }) {
                 {graph.selectedNodeId && (
                   <button
                     onClick={() => graph.setFocusMode('node', graph.selectedNodeId)}
-                    className="flex-1 flex items-center justify-center gap-1 text-[10px] px-2 py-1 bg-terminal-700 text-terminal-300 rounded hover:bg-terminal-600"
+                    className="flex flex-1 items-center justify-center gap-1 rounded bg-terminal-700 px-2 py-1 text-[10px] text-terminal-300 hover:bg-terminal-600"
                   >
-                    <Focus className="w-3 h-3" />
+                    <Focus className="size-3" />
                     Focus Node
                   </button>
                 )}

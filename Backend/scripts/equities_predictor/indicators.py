@@ -522,7 +522,7 @@ def _bind_params(fn: IndicatorFn, **defaults: Any) -> IndicatorFn:
         merged.update(params)
         return fn(bars, idx, merged)
 
-    _wrapped.__name__ = fn.__name__
+    _wrapped.__name__ = fn.__name__  # EXEMPT: standard decorator name propagation
     return _wrapped
 
 

@@ -19,6 +19,7 @@ Direction: LONG only (trend-following scalps)
 
 import numpy as np
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from typing import Optional
 
 from core_logic.setup_base import (
@@ -73,6 +74,9 @@ class S10Signal:
     explain: ExplainPayload
     time_stop_bars: int = 12    # 1 hour on 5m
 
+    # Identity
+    setup_id: str = "S10"
+
     # Context for payload
     macd_histogram: float = 0.0
     rvol: float = 0.0
@@ -81,9 +85,17 @@ class S10Signal:
     trend_bias: str = ""
     score_components: dict = None
 
+    # Timing (Canon compliance — every signal carries its bar timestamp)
+    signal_ts: Optional[datetime] = None
+    bar_start_ts: Optional[datetime] = None
+
     def __post_init__(self):
         if self.score_components is None:
             self.score_components = {}
+        if self.signal_ts is None:
+            raise ValueError("S10Signal.signal_ts must be set at construction — evaluator bug")
+        if self.bar_start_ts is None:
+            raise ValueError("S10Signal.bar_start_ts must be set at construction — evaluator bug")
 
 
 # --- Evaluator ---------------------------------------------------------------
@@ -297,6 +309,12 @@ class S10Evaluator(SetupBase[S10State, S10Signal]):
         if errors:
             return None
 
+        # Derive bar timestamp from the snapshot's last candle (Binance ms → UTC).
+        # No fallback — if snapshot.ohlcv is empty, the evaluator is broken.
+        _bar_ts = datetime.fromtimestamp(
+            snapshot.ohlcv[-1].timestamp / 1000, tz=timezone.utc
+        )
+
         return S10Signal(
             symbol=symbol,
             timeframe=timeframe,
@@ -315,4 +333,6 @@ class S10Evaluator(SetupBase[S10State, S10Signal]):
             flat_top_level=state.flat_top_level,
             trend_bias="bullish" if state.above_sma200 else "neutral",
             score_components=score_components,
+            signal_ts=_bar_ts,
+            bar_start_ts=_bar_ts,
         )

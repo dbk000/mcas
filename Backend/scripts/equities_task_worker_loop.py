@@ -18,6 +18,7 @@ from psycopg.rows import dict_row
 from equities_task_executor import _select_handler
 
 QUEUE_EMPTY_SLEEP_SECONDS = 15
+# GOVERNANCE_DEBT: migrate to TypedConfigRegistry
 CLAIMABLE_PROGRAMS = [
     p.strip()
     for p in os.getenv("EQUITIES_TASK_PROGRAMS", "equities_forward_predictor").split(",")
@@ -176,10 +177,12 @@ def _mark_blocked(
 
 
 def main() -> int:
+    # GOVERNANCE_DEBT: migrate to TypedConfigRegistry
     database_url = os.getenv("DATABASE_URL")
     if not database_url:
         raise RuntimeError("DATABASE_URL is required")
 
+    # GOVERNANCE_DEBT: migrate to TypedConfigRegistry
     actor = os.getenv("TASK_WORKER_ACTOR") or os.getenv("SERVICE_NAME") or "equities_task_worker"
 
     signal.signal(signal.SIGINT, _on_signal)

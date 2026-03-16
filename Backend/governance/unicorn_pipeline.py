@@ -334,8 +334,6 @@ class UnicornPipeline:
     """Runs the Unicorn pipeline on schedule. Self-contained: fetches candles,
     evaluates gates + triggers, emits signals."""
 
-    SETUP_VERSIONS = {"U1": "U1_v4.0"}
-
     def __init__(self):
         self.r = redis.Redis.from_url(_worker_cfg().REDIS_URL, decode_responses=True)
         self.evaluator = U1Evaluator()
@@ -617,7 +615,9 @@ class UnicornPipeline:
         try:
             from governance.persistence import get_conn as _pool_get_conn
             payload_json = json.dumps(payload)
-            setup_version = self.SETUP_VERSIONS.get(setup_id, f"{setup_id}_v1.0")
+            from governance.strategy_registry import StrategyRegistry
+            handler = StrategyRegistry.get_handler(setup_id)
+            setup_version = handler.version if handler else f"{setup_id}_v1.0"
             with _pool_get_conn() as conn:
                 with conn.cursor() as cur:
                     # Try to update existing active record in place

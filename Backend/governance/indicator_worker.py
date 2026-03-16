@@ -165,8 +165,7 @@ class IndicatorWorker:
         """Get thread-local FeatureFactory instance."""
         try:
             self._thread_local.ff
-        except AttributeError:
-
+        except AttributeError:  # EXEMPT: thread-local lazy init — first access on each thread
             self._thread_local.ff = FeatureFactory()
         return self._thread_local.ff
 

@@ -44,9 +44,9 @@ export default function MetaDataRow({ label, value, kind = 'text', positive, cla
   }
 
   return (
-    <div className={`flex items-baseline justify-between text-[11px] py-0.5 ${className}`}>
-      <span className="text-terminal-500 mr-2">{label}</span>
-      <span className={`${colorClass} ${kind === 'code' || kind === 'json' ? 'text-[10px]' : ''} truncate text-right max-w-[60%]`} title={formatted}>
+    <div className={`flex items-baseline justify-between py-0.5 text-[11px] ${className}`}>
+      <span className="mr-2 text-terminal-500">{label}</span>
+      <span className={`${colorClass} ${kind === 'code' || kind === 'json' ? 'text-[10px]' : ''} max-w-[60%] truncate text-right`} title={formatted}>
         {formatted}
       </span>
     </div>

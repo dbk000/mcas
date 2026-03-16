@@ -28,8 +28,8 @@ import hashlib
 import psycopg
 
 from governance.persistence import get_conn as _pool_get_conn, get_governed_persistence
-from mcas_governance import LineageEnforcer
-from governance.bootstrap import get_config, strategy_as_api_dict
+from governance.kernel import LineageEnforcer
+from governance.bootstrap import get_config, get_stop_policy, strategy_as_api_dict
 
 from governance.runs.models import (
     Run, RunType, RunStatus,
@@ -1687,6 +1687,9 @@ class RunExecutor(LineageEnforcer):
             ))
 
         # Build simulator config
+        # Inject per-setup exit configs from the sole authority (stop_policy_registry)
+        setup_exit_configs = get_stop_policy().setup_exit_configs
+
         sim_config = SimulationConfig(
             position_size_usd=position_size_usd,
             slippage_entry_bps=slippage_bps,
@@ -1702,6 +1705,7 @@ class RunExecutor(LineageEnforcer):
             d1_causal_min_score=d1_causal_min_score,
             intrabar_policy=intrabar_policy,
             one_event_per_bar=one_event_per_bar,
+            setup_exit_configs=setup_exit_configs,
         )
         if d1_causal_gate_enabled and setup_ids and set(setup_ids) == _d1_ids:
             min_entry_price_label = (

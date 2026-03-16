@@ -50,11 +50,6 @@ if os.path.exists(env_path):
                 key, val = line.split('=', 1)
                 os.environ.setdefault(key.strip(), val.strip())
 
-worker_app_dir = os.path.join(os.path.dirname(__file__), '..', 'worker', 'app')
-if os.path.isdir('/app'):
-    worker_app_dir = '/app'
-sys.path.insert(0, os.path.abspath(worker_app_dir))
-
 import requests as req_lib
 import psycopg
 import numpy as np
@@ -79,7 +74,9 @@ DB_BATCH_SIZE = 5_000           # rows per DB insert batch
 MAX_RETRIES = 5                 # per-request retry limit
 
 # Collection intervals (overridable via env)
+# GOVERNANCE_DEBT: migrate to TypedConfigRegistry
 COLLECTION_INTERVAL_S = int(os.environ.get("COLLECTION_INTERVAL_S", "3600"))
+# GOVERNANCE_DEBT: migrate to TypedConfigRegistry
 FUNDING_INTERVAL_S = int(os.environ.get("FUNDING_INTERVAL_S", "14400"))
 
 # Backfill depth
@@ -311,7 +308,7 @@ _thread_local = threading.local()
 
 
 def _get_session():
-    if not hasattr(_thread_local, 'session'):
+    if not hasattr(_thread_local, 'session'):  # EXEMPT: thread-local session init
         s = req_lib.Session()
         adapter = req_lib.adapters.HTTPAdapter(
             pool_connections=10, pool_maxsize=10,
@@ -1178,6 +1175,7 @@ def main():
                         help="Limit to first N symbols (0 = all, for testing)")
     args = parser.parse_args()
 
+    # GOVERNANCE_DEBT: migrate to TypedConfigRegistry
     db_url = os.environ.get("DATABASE_URL")
     if not db_url:
         logger.error("DATABASE_URL not set")
@@ -1300,7 +1298,7 @@ def main():
                 logger.info("  Sleeping %.0fs until next cycle...", sleep_time)
                 time.sleep(sleep_time)
 
-    except KeyboardInterrupt:
+    except KeyboardInterrupt:  # EXEMPT: graceful SIGINT shutdown
         logger.info("\nShutting down...")
     finally:
         write_queue.put(None)

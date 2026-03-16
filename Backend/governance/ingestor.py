@@ -608,7 +608,7 @@ class Ingestor:
             while True:
                 time.sleep(60)
                 self._log_health()
-        except KeyboardInterrupt:
+        except KeyboardInterrupt:  # EXEMPT: graceful SIGINT shutdown — os._exit(78) is uncatchable
             logger.info("Shutting down")
             with self._shards_lock:
                 for shard in self.shards:

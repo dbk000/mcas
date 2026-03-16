@@ -1,54 +1,54 @@
-/**
- * Pipeline Feature Flags
- *
- * Toggle individual features per wave without reverting entire deployments.
- * All flags default to false — enable as features are implemented and verified.
- *
- * Usage in components:
- *   import { PIPELINE_FEATURES } from '../config/pipelineFeatures'
- *   if (PIPELINE_FEATURES.criticalPath) { ... }
- */
+import { getFeatureFlag } from './governed'
 
+/**
+ * Pipeline Feature Flags — thin re-export from governance kernel.
+ *
+ * Flags resolve from backend bootstrap config via governed.js.
+ * The FEATURE_KEY_MAP in governed.js translates these camelCase names
+ * to backend snake_case keys. Defaults apply if backend hasn't delivered config.
+ *
+ * Usage unchanged: PIPELINE_FEATURES.criticalPath (boolean)
+ */
 export const PIPELINE_FEATURES = {
   // Wave 1: Graph Readability
-  lodTiers: false,              // 1.2: Multi-scale rendering (3 LOD tiers)
-  keyboardShortcuts: false,     // 1.3: Keyboard shortcuts + TV remote nav
-  tvTextScaling: false,         // 1.4: TV text scaling system
-  webWorkerLayout: false,       // 1.5: Web Worker for dagre layout
-  collapsibleGroups: false,     // 1.6: Collapsible subsystem groups
-  panelAwareFitView: false,     // 1.7: Chart size accounts for open panels
-  complexityCheck: false,       // 1.8: Graph preflight complexity check
-  edgeCulling: false,           // 1.9: Edge viewport culling
-  urlState: false,              // 1.1: URL-driven state / deep linking
+  get lodTiers() { return getFeatureFlag('lodTiers') },
+  get keyboardShortcuts() { return getFeatureFlag('keyboardShortcuts') },
+  get tvTextScaling() { return getFeatureFlag('tvTextScaling') },
+  get webWorkerLayout() { return getFeatureFlag('webWorkerLayout') },
+  get collapsibleGroups() { return getFeatureFlag('collapsibleGroups') },
+  get panelAwareFitView() { return getFeatureFlag('panelAwareFitView') },
+  get complexityCheck() { return getFeatureFlag('complexityCheck') },
+  get edgeCulling() { return getFeatureFlag('edgeCulling') },
+  get urlState() { return getFeatureFlag('urlState') },
 
   // Wave 2: Timeline & Biography
-  eventTreeView: true,          // 2.1: Flat-to-tree builder with orphan handling
-  progressiveDisclosure: true,  // 2.2: Depth-limited progressive disclosure
-  criticalPath: true,           // 2.3: Critical path computation
-  eventAdjusters: true,         // 2.4: Event adjuster pipeline
-  timeGapViz: true,             // 2.5: Time gap visualization
-  tableTreeToggle: true,        // 2.6: Table/tree view toggle
-  temporalSlider: true,         // 2.7: Temporal lineage slider
-  beforeAfterState: true,       // 2.8: Before/after state on events
-  configurableFacets: true,     // 2.12: Configurable node facets
-  pipelineSlicing: true,        // 2.13: Pipeline slicing
-  recentActivity: true,         // 2.14: Recent Activity summary
+  get eventTreeView() { return getFeatureFlag('eventTreeView') },
+  get progressiveDisclosure() { return getFeatureFlag('progressiveDisclosure') },
+  get criticalPath() { return getFeatureFlag('criticalPath') },
+  get eventAdjusters() { return getFeatureFlag('eventAdjusters') },
+  get timeGapViz() { return getFeatureFlag('timeGapViz') },
+  get tableTreeToggle() { return getFeatureFlag('tableTreeToggle') },
+  get temporalSlider() { return getFeatureFlag('temporalSlider') },
+  get beforeAfterState() { return getFeatureFlag('beforeAfterState') },
+  get configurableFacets() { return getFeatureFlag('configurableFacets') },
+  get pipelineSlicing() { return getFeatureFlag('pipelineSlicing') },
+  get recentActivity() { return getFeatureFlag('recentActivity') },
 
   // Wave 3: Dependency Hardening
-  threeStateStaleness: true,    // 3.1: Three-state staleness
-  outputHash: true,             // 3.2: Output hash on node_version
-  driftDetection: true,         // 3.4: Drift detection
-  diffVisualization: true,      // 3.5: Diff visualization
-  tieredConfirmation: true,     // 3.6: Tiered confirmation gates
+  get threeStateStaleness() { return getFeatureFlag('threeStateStaleness') },
+  get outputHash() { return getFeatureFlag('outputHash') },
+  get driftDetection() { return getFeatureFlag('driftDetection') },
+  get diffVisualization() { return getFeatureFlag('diffVisualization') },
+  get tieredConfirmation() { return getFeatureFlag('tieredConfirmation') },
 
   // Wave 4: Advanced Interaction
-  lineageDepthSlider: true,     // 4.1: Lineage depth slider
-  searchFilter: true,           // 4.2: Search/filter over graph nodes
-  focusMode: true,              // 4.3: Focus mode with breadcrumb
-  splitPanelSidebar: true,      // 4.4: Split panel sidebar
-  compositionDraftUI: true,     // 4.9: Composition draft lifecycle
+  get lineageDepthSlider() { return getFeatureFlag('lineageDepthSlider') },
+  get searchFilter() { return getFeatureFlag('searchFilter') },
+  get focusMode() { return getFeatureFlag('focusMode') },
+  get splitPanelSidebar() { return getFeatureFlag('splitPanelSidebar') },
+  get compositionDraftUI() { return getFeatureFlag('compositionDraftUI') },
 
   // Wave 5: Interoperability
-  openLineageAdapter: true,     // 5.1: OpenLineage event adapter
-  provenanceSearch: true,       // 5.2: Provenance search API
+  get openLineageAdapter() { return getFeatureFlag('openLineageAdapter') },
+  get provenanceSearch() { return getFeatureFlag('provenanceSearch') },
 }

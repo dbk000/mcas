@@ -6,7 +6,6 @@ export default function BiographyTab({
   selectedVersionForBio,
   setSelectedVersionForBio,
   graph,
-  nodeId,
   get,
 }) {
   // Wave 2.6: Table/tree view toggle
@@ -16,19 +15,16 @@ export default function BiographyTab({
   // Filters events shown in biography — does NOT affect canvas rendering
   const [temporalFilter, setTemporalFilter] = useState(null)
 
-  // Get date range for temporal slider from selected version's events
-  const selectedVersion = versions.find(v => v.version_id === selectedVersionForBio)
-
   return (
     <div className="px-4 py-3">
-      <div className="flex items-center justify-between mb-3">
+      <div className="mb-3 flex items-center justify-between">
         <div className="text-xs font-medium text-terminal-300">Version Biography</div>
         <div className="flex items-center gap-2">
           {/* View mode toggle (2.6) */}
-          <div className="flex bg-terminal-900 rounded border border-terminal-700 overflow-hidden">
+          <div className="flex overflow-hidden rounded border border-terminal-700 bg-terminal-900">
             <button
               onClick={() => setViewMode('list')}
-              className={`text-[9px] px-1.5 py-0.5 transition-colors ${
+              className={`px-1.5 py-0.5 text-[9px] transition-colors ${
                 viewMode === 'list' ? 'bg-terminal-700 text-terminal-200' : 'text-terminal-500 hover:text-terminal-300'
               }`}
             >
@@ -36,7 +32,7 @@ export default function BiographyTab({
             </button>
             <button
               onClick={() => setViewMode('tree')}
-              className={`text-[9px] px-1.5 py-0.5 transition-colors ${
+              className={`px-1.5 py-0.5 text-[9px] transition-colors ${
                 viewMode === 'tree' ? 'bg-terminal-700 text-terminal-200' : 'text-terminal-500 hover:text-terminal-300'
               }`}
             >
@@ -49,7 +45,7 @@ export default function BiographyTab({
               setSelectedVersionForBio(e.target.value)
               setTemporalFilter(null) // Reset slider on version change
             }}
-            className="text-[10px] bg-terminal-900 border border-terminal-700 rounded px-1.5 py-1 text-terminal-300 max-w-[180px]"
+            className="max-w-[180px] rounded border border-terminal-700 bg-terminal-900 px-1.5 py-1 text-[10px] text-terminal-300"
           >
             {versions.map(v => (
               <option key={v.version_id} value={v.version_id}>
@@ -64,12 +60,12 @@ export default function BiographyTab({
       {selectedVersionForBio && (
         <div className="mb-2">
           <div className="flex items-center gap-2">
-            <label className="text-[9px] text-terminal-500 shrink-0">Time scrub:</label>
+            <label className="shrink-0 text-[9px] text-terminal-500">Time scrub:</label>
             <input
               type="datetime-local"
               value={temporalFilter || ''}
               onChange={e => setTemporalFilter(e.target.value || null)}
-              className="flex-1 text-[9px] bg-terminal-900 border border-terminal-700 rounded px-1 py-0.5 text-terminal-400"
+              className="flex-1 rounded border border-terminal-700 bg-terminal-900 px-1 py-0.5 text-[9px] text-terminal-400"
             />
             {temporalFilter && (
               <button

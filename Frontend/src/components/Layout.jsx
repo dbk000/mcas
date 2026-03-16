@@ -1,203 +1,77 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import {
-  LayoutDashboard,
-  Target,
   BarChart3,
+  ChevronLeft,
+  ChevronRight,
+  GitBranch,
+  LayoutDashboard,
+  Layers3,
+  Menu,
+  Network,
   Play,
+  Settings,
+  Target,
   Terminal,
   Wallet,
-  Settings,
   Wifi,
   WifiOff,
-  RefreshCw,
+  X,
   Zap,
-  GitBranch,
-  Network,
-  ChevronLeft,
-  ChevronRight
 } from 'lucide-react'
 import { useApi } from '../context/ApiContext'
 import { useToast } from '../context/ToastContext'
-import { useStrategies } from '../hooks/useData'
-import { formatRelativeTime } from '../utils/formatters'
 import { getLogger } from '../utils/logger'
 
 const log = getLogger('layout')
 
 const navigation = [
-  { name: 'Dashboard', href: '/', icon: LayoutDashboard },
-  { name: 'Opportunities', href: '/opportunities', icon: Target },
-  { name: 'Markets', href: '/markets', icon: BarChart3 },
-  { name: 'Runs', href: '/runs', icon: Play },
-  { name: 'Control Plane', href: '/control', icon: Terminal },
-  { name: 'Paper Trading', href: '/paper', icon: Wallet },
-  { name: 'Correlations', href: '/analytics/correlations', icon: GitBranch },
-  { name: 'Pipeline', href: '/pipeline', icon: Network },
+  { name: 'Dashboard', href: '/app', icon: LayoutDashboard },
+  { name: 'Strategies', href: '/app/strategies', icon: Layers3 },
+  { name: 'Opportunities', href: '/app/opportunities', icon: Target },
+  { name: 'Markets', href: '/app/markets', icon: BarChart3 },
+  { name: 'Runs', href: '/app/runs', icon: Play },
+  { name: 'Control Plane', href: '/app/control', icon: Terminal },
+  { name: 'Paper Trading', href: '/app/paper', icon: Wallet },
+  { name: 'Correlations', href: '/app/analytics/correlations', icon: GitBranch },
+  { name: 'Pipeline', href: '/app/pipeline', icon: Network },
 ]
 
-export default function Layout({ children }) {
-  const { config, connectionStatus, isConnected } = useApi()
-  const { addToast } = useToast()
-  const location = useLocation()
-  const navigate = useNavigate()
-  const isPipeline = location.pathname === '/pipeline'
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(
-    () => localStorage.getItem('sidebar_collapsed') === 'true'
-  )
-  const toggleSidebar = () => {
-    setSidebarCollapsed(prev => {
-      localStorage.setItem('sidebar_collapsed', String(!prev))
-      return !prev
-    })
+function isNavItemActive(pathname, href) {
+  if (href === '/app') {
+    return pathname === '/app'
   }
 
-  // Fix #2: Redirect to settings when auth becomes unauthorized
-  useEffect(() => {
-    if (connectionStatus.auth === 'unauthorized' && location.pathname !== '/settings') {
-      log.warn('Unauthorized redirect', { event: 'unauthorized_redirect', from: location.pathname })
-      addToast('Unauthorized: please check your API key', 'error')
-      navigate('/settings', { replace: true })
-    }
-  }, [connectionStatus.auth, location.pathname, navigate, addToast])
-
-  return (
-    <div className="min-h-screen bg-terminal-900 flex">
-      {/* Sidebar */}
-      <aside className={`${sidebarCollapsed ? 'w-16' : 'w-64'} bg-terminal-800 border-r border-terminal-600 flex flex-col transition-all duration-300 overflow-hidden`}>
-        {/* Logo / Toggle */}
-        <div className={`h-16 flex items-center border-b border-terminal-600 ${sidebarCollapsed ? 'justify-center' : 'px-6'}`}>
-          {sidebarCollapsed ? (
-            <button
-              onClick={toggleSidebar}
-              className="w-10 h-10 rounded bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center hover:from-amber-400 hover:to-amber-600 transition-colors"
-              title="Expand sidebar"
-            >
-              <ChevronRight className="w-5 h-5 text-white" />
-            </button>
-          ) : (
-            <div className="flex items-center justify-between w-full">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center">
-                  <Zap className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <h1 className="font-bold text-terminal-100 tracking-tight">MCAS</h1>
-                  <p className="text-[10px] text-terminal-400 uppercase tracking-widest">Market Cognition</p>
-                </div>
-              </div>
-              <button
-                onClick={toggleSidebar}
-                className="p-1.5 rounded hover:bg-terminal-700 text-terminal-400 hover:text-terminal-200 transition-colors"
-                title="Collapse sidebar"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Navigation */}
-        <nav className="flex-1 py-4 px-3 space-y-1">
-          {navigation.map((item) => {
-            const isActive = location.pathname === item.href ||
-              (item.href !== '/' && location.pathname.startsWith(item.href))
-
-            return (
-              <NavLink
-                key={item.name}
-                to={item.href}
-                title={sidebarCollapsed ? item.name : undefined}
-                className={`
-                  flex items-center ${sidebarCollapsed ? 'justify-center' : 'gap-3'} px-3 py-2.5 rounded-lg text-sm font-medium
-                  transition-all duration-200
-                  ${isActive
-                    ? `bg-amber-600/20 text-amber-400${sidebarCollapsed ? '' : ' border-l-2 border-amber-500 ml-0.5'}`
-                    : 'text-terminal-300 hover:text-terminal-100 hover:bg-terminal-700'
-                  }
-                `}
-              >
-                <item.icon className="w-5 h-5 shrink-0" />
-                {!sidebarCollapsed && <span className="whitespace-nowrap">{item.name}</span>}
-              </NavLink>
-            )
-          })}
-        </nav>
-
-        {/* Settings link */}
-        <div className="px-3 pb-4">
-          <NavLink
-            to="/settings"
-            title={sidebarCollapsed ? 'Settings' : undefined}
-            className={`
-              flex items-center ${sidebarCollapsed ? 'justify-center' : 'gap-3'} px-3 py-2.5 rounded-lg text-sm font-medium
-              transition-all duration-200
-              ${location.pathname === '/settings'
-                ? 'bg-amber-600/20 text-amber-400'
-                : 'text-terminal-300 hover:text-terminal-100 hover:bg-terminal-700'
-              }
-            `}
-          >
-            <Settings className="w-5 h-5 shrink-0" />
-            {!sidebarCollapsed && <span className="whitespace-nowrap">Settings</span>}
-          </NavLink>
-        </div>
-
-        {/* Connection status */}
-        <div className={`border-t border-terminal-600 ${sidebarCollapsed ? 'p-2' : 'p-4'}`}>
-          <ConnectionIndicator collapsed={sidebarCollapsed} />
-        </div>
-      </aside>
-
-      {/* Main content */}
-      <main className="flex-1 flex flex-col min-h-screen">
-        {/* Top header */}
-        <Header />
-        
-        {/* Content — no padding on Pipeline for full-bleed canvas */}
-        <div className={`flex-1 overflow-auto ${isPipeline ? '' : 'p-6'}`}>
-          {children}
-        </div>
-      </main>
-    </div>
-  )
+  return pathname === href || pathname.startsWith(`${href}/`)
 }
 
 function ConnectionIndicator({ collapsed }) {
-  const { config, connectionStatus, isConnected, testConnection } = useApi()
-  const [retesting, setRetesting] = useState(false)
+  const { config, connectionStatus, isConnected } = useApi()
 
   const statusColor = isConnected
     ? 'bg-green-500'
-    : connectionStatus.health === 'unhealthy'
+    : connectionStatus.auth === 'unauthorized' || connectionStatus.health === 'unhealthy' || connectionStatus.health === 'error'
       ? 'bg-red-500'
-      : connectionStatus.health === 'error'
-        ? 'bg-red-500'
-        : 'bg-amber-500'
+      : 'bg-amber-500'
 
   const statusText = isConnected
     ? 'Connected'
-    : connectionStatus.health === 'unhealthy'
-      ? 'Unhealthy'
-      : connectionStatus.health === 'error'
-        ? 'Error'
-        : connectionStatus.auth === 'unauthorized'
-          ? 'Unauthorized'
+    : connectionStatus.auth === 'unauthorized'
+      ? 'Unauthorized'
+      : connectionStatus.auth === 'missing'
+        ? 'Session required'
+      : connectionStatus.health === 'unhealthy'
+        ? 'Unhealthy'
+        : connectionStatus.health === 'error'
+          ? 'Error'
           : connectionStatus.checking
-            ? 'Connecting...'
+            ? 'Checking...'
             : 'Disconnected'
-
-  const handleRetest = async () => {
-    log.info('Connection retest', { event: 'connection_retest' })
-    setRetesting(true)
-    await testConnection()
-    setRetesting(false)
-  }
 
   if (collapsed) {
     return (
       <div className="flex justify-center" title={statusText}>
-        <div className={`w-3 h-3 rounded-full ${statusColor} ${isConnected ? 'animate-pulse-slow' : ''}`} />
+        <div className={`size-3 rounded-full ${statusColor}`} />
       </div>
     )
   }
@@ -206,147 +80,248 @@ function ConnectionIndicator({ collapsed }) {
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className={`w-2 h-2 rounded-full ${statusColor} ${isConnected ? 'animate-pulse-slow' : ''}`} />
+          <div className={`size-2.5 rounded-full ${statusColor}`} />
           <span className="text-sm text-terminal-200">{statusText}</span>
         </div>
         {isConnected ? (
-          <Wifi className="w-4 h-4 text-green-400" />
+          <Wifi className="size-4 text-green-400" />
         ) : (
-          <WifiOff className="w-4 h-4 text-terminal-400" />
+          <WifiOff className="size-4 text-terminal-400" />
         )}
       </div>
-
       {config.baseUrl && (
-        <p className="text-xs text-terminal-400 truncate" title={config.baseUrl}>
-          {config.baseUrl.replace('https://', '').replace('http://', '')}
-        </p>
-      )}
-
-      {connectionStatus.lastChecked && (
-        <p className="text-xs text-terminal-500">
-          Last check: {formatRelativeTime(connectionStatus.lastChecked)}
-        </p>
-      )}
-
-      {/* Re-test connection button */}
-      {config.baseUrl && config.apiKey && !connectionStatus.checking && (
-        <button
-          onClick={handleRetest}
-          disabled={retesting}
-          className="w-full flex items-center justify-center gap-2 px-2 py-1.5 text-xs bg-terminal-700 hover:bg-terminal-600 text-terminal-300 rounded transition-colors disabled:opacity-50"
-        >
-          <RefreshCw className={`w-3 h-3 ${retesting ? 'animate-spin' : ''}`} />
-          Re-test
-        </button>
+        <div className="truncate text-xs text-terminal-400" title={config.baseUrl}>
+          {config.baseUrl}
+        </div>
       )}
     </div>
   )
 }
 
-const PIPELINE_SUBSYSTEMS = [
-  { name: 'ingestion', color: '#3b82f6' },
-  { name: 'feature', color: '#8b5cf6' },
-  { name: 'signal', color: '#f59e0b' },
-  { name: 'filtering', color: '#ef4444' },
-  { name: 'strategy', color: '#10b981' },
-  { name: 'parameter', color: '#6366f1' },
-  { name: 'backtest', color: '#ec4899' },
-  { name: 'metrics', color: '#14b8a6' },
-  { name: 'risk', color: '#f97316' },
-  { name: 'execution', color: '#22c55e' },
-]
-
-function Header() {
-  const { connectionStatus, isConnected } = useApi()
+function Header({ onOpenNavigation, isMobile }) {
   const location = useLocation()
-  const isPipeline = location.pathname === '/pipeline'
 
   return (
-    <header className="h-14 bg-terminal-800/50 border-b border-terminal-600 flex items-center justify-between px-6">
-      <div className="flex items-center gap-4">
-        {/* Latency indicators */}
-        {isConnected && (
-          <div className="flex items-center gap-4 text-xs font-mono">
-            {connectionStatus.redisMs !== null && (
-              <span className="text-terminal-400">
-                Redis: <span className="text-terminal-200">{connectionStatus.redisMs}ms</span>
-              </span>
-            )}
-            {connectionStatus.pgMs !== null && (
-              <span className="text-terminal-400">
-                PG: <span className="text-terminal-200">{connectionStatus.pgMs}ms</span>
-              </span>
-            )}
+    <header className="sticky top-0 z-20 border-b border-terminal-600 bg-terminal-900/90 backdrop-blur">
+      <div className="flex items-center justify-between gap-4 px-4 py-3 md:px-6">
+        <div className="flex items-center gap-3">
+          {isMobile && (
+            <button
+              type="button"
+              onClick={onOpenNavigation}
+              className="inline-flex size-10 items-center justify-center rounded-lg border border-terminal-600 bg-terminal-800 text-terminal-100 md:hidden"
+              aria-label="Open navigation"
+            >
+              <Menu className="size-5" />
+            </button>
+          )}
+          <div>
+            <div className="text-xs uppercase tracking-[0.22em] text-terminal-500">App Shell</div>
+            <div className="text-sm font-medium text-terminal-100">{location.pathname.replace('/app', '') || '/app'}</div>
           </div>
-        )}
-      </div>
-
-      {/* Pipeline subsystem legend — shown when on Pipeline page */}
-      {isPipeline && (
-        <div className="flex flex-wrap gap-x-2.5 gap-y-0.5 text-[10px]">
-          {PIPELINE_SUBSYSTEMS.map(s => (
-            <div key={s.name} className="flex items-center gap-1">
-              <div className="w-1.5 h-1.5 rounded-sm flex-shrink-0" style={{ backgroundColor: s.color }} />
-              <span className="text-terminal-500 capitalize">{s.name}</span>
-            </div>
-          ))}
         </div>
-      )}
 
-      <div className="flex items-center gap-3">
-        {/* Quick run scan button */}
-        <QuickScanButton />
+        <div className="hidden text-xs text-terminal-500 sm:block">
+          `/settings` stays public. `/app/*` stays inside the operator shell.
+        </div>
       </div>
     </header>
   )
 }
 
-function QuickScanButton() {
-  const { post, isConnected } = useApi()
+export default function Layout({ children }) {
+  const { connectionStatus, sessionReady } = useApi()
   const { addToast } = useToast()
+  const location = useLocation()
   const navigate = useNavigate()
-  const [loading, setLoading] = useState(false)
-  const { data: strategyData } = useStrategies()
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(
+    () => localStorage.getItem('sidebar_collapsed') === 'true'
+  )
+  const [mobileOpen, setMobileOpen] = useState(false)
+  const [isDesktop, setIsDesktop] = useState(() => (
+    typeof window !== 'undefined'
+      ? window.matchMedia('(min-width: 768px)').matches
+      : false
+  ))
 
-  const handleScan = async () => {
-    if (!isConnected || loading) return
+  const isPipeline = location.pathname === '/app/pipeline'
+  const collapsed = isDesktop && sidebarCollapsed
 
-    setLoading(true)
-    try {
-      // Use active strategies from registry (exclude legacy)
-      const activeIds = (strategyData?.strategies || [])
-        .filter(s => s.status === 'active')
-        .map(s => s.id)
-      const result = await post('/v1/control/runs/scan', {
-        setup_ids: activeIds.length > 0 ? activeIds : ['S9', 'U1', 'S10'],
-        top_n: 10,
-        priority: 5,
-      })
-      log.info('Quick scan queued', { event: 'quick_scan_queued', run_id: result.run_id })
-      addToast(`Scan queued: ${result.fingerprint?.slice(0, 8) || 'started'}`, 'success')
-      if (result.run_id) {
-        navigate(`/runs/${result.run_id}`)
-      }
-    } catch (err) {
-      log.error('Quick scan failed', { event: 'quick_scan_error', error_message: err.message })
-      addToast(`Failed to queue scan: ${err.message}`, 'error')
-    } finally {
-      setLoading(false)
+  useEffect(() => {
+    if (!sessionReady || location.pathname === '/settings') {
+      return
     }
+
+    if (connectionStatus.auth === 'unauthorized' || connectionStatus.auth === 'missing') {
+      log.warn('Session redirect', {
+        event: 'session_redirect',
+        from: location.pathname,
+        auth: connectionStatus.auth,
+      })
+      addToast(
+        connectionStatus.auth === 'unauthorized'
+          ? 'Backend session expired. Reconnect in Settings.'
+          : 'Backend session required. Reconnect in Settings.',
+        'error'
+      )
+      navigate('/settings', { replace: true })
+    }
+  }, [addToast, connectionStatus.auth, location.pathname, navigate, sessionReady])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined
+
+    const mediaQuery = window.matchMedia('(min-width: 768px)')
+    const handleChange = (event) => {
+      setIsDesktop(event.matches)
+      if (event.matches) {
+        setMobileOpen(false)
+      }
+    }
+
+    mediaQuery.addEventListener('change', handleChange)
+    return () => mediaQuery.removeEventListener('change', handleChange)
+  }, [])
+
+  useEffect(() => {
+    if (!(mobileOpen && !isDesktop)) return undefined
+
+    const previousOverflow = document.body.style.overflow
+    const handleEscape = (event) => {
+      if (event.key === 'Escape') {
+        setMobileOpen(false)
+      }
+    }
+
+    document.body.style.overflow = 'hidden'
+    window.addEventListener('keydown', handleEscape)
+
+    return () => {
+      document.body.style.overflow = previousOverflow
+      window.removeEventListener('keydown', handleEscape)
+    }
+  }, [mobileOpen, isDesktop])
+
+  const toggleSidebar = () => {
+    setSidebarCollapsed((previous) => {
+      localStorage.setItem('sidebar_collapsed', String(!previous))
+      return !previous
+    })
   }
 
   return (
-    <button
-      onClick={handleScan}
-      disabled={!isConnected || loading}
-      className="btn btn-primary btn-sm"
-    >
-      {loading ? (
-        <RefreshCw className="w-4 h-4 animate-spin" />
-      ) : (
-        <Zap className="w-4 h-4" />
+    <div className="min-h-screen bg-terminal-900 text-terminal-100 md:flex">
+      {mobileOpen && !isDesktop && (
+        <button
+          type="button"
+          className="bg-terminal-950/70 fixed inset-0 z-30 backdrop-blur-sm md:hidden"
+          onClick={() => setMobileOpen(false)}
+          aria-label="Close navigation backdrop"
+        />
       )}
-      Run Scan
-    </button>
+
+      <aside
+        className={[
+          'fixed inset-y-0 left-0 z-40 flex max-w-[85vw] flex-col border-r border-terminal-600 bg-terminal-800 shadow-2xl shadow-black/40 transition-transform duration-300 md:static md:max-w-none md:translate-x-0 md:shadow-none',
+          mobileOpen ? 'translate-x-0' : '-translate-x-full',
+          collapsed ? 'md:w-16' : 'md:w-64',
+          'w-72',
+        ].join(' ')}
+      >
+        <div className={`flex h-16 items-center border-b border-terminal-600 ${collapsed ? 'justify-center px-2' : 'justify-between px-4 md:px-6'}`}>
+          <div className="flex items-center gap-3 overflow-hidden">
+            <div className="flex size-8 shrink-0 items-center justify-center rounded bg-gradient-to-br from-amber-500 to-amber-700">
+              <Zap className="size-5 text-white" />
+            </div>
+            {!collapsed && (
+              <div className="min-w-0">
+                <h1 className="font-bold tracking-tight text-terminal-100">MCAS</h1>
+                <p className="text-[10px] uppercase tracking-widest text-terminal-400">Market Cognition</p>
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2">
+            {!isDesktop && (
+              <button
+                type="button"
+                onClick={() => setMobileOpen(false)}
+                className="rounded p-1.5 text-terminal-400 transition-colors hover:bg-terminal-700 hover:text-terminal-100 md:hidden"
+                aria-label="Close navigation"
+              >
+                <X className="size-4" />
+              </button>
+            )}
+            {isDesktop && (
+              <button
+                type="button"
+                onClick={toggleSidebar}
+                className={collapsed
+                  ? 'flex size-10 items-center justify-center rounded bg-gradient-to-br from-amber-500 to-amber-700'
+                  : 'rounded p-1.5 text-terminal-400 transition-colors hover:bg-terminal-700 hover:text-terminal-100'
+                }
+                aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              >
+                {collapsed ? <ChevronRight className="size-5 text-white" /> : <ChevronLeft className="size-4" />}
+              </button>
+            )}
+          </div>
+        </div>
+
+        <nav className="flex-1 space-y-1 px-3 py-4">
+          {navigation.map((item) => {
+            const isActive = isNavItemActive(location.pathname, item.href)
+
+            return (
+              <NavLink
+                key={item.href}
+                to={item.href}
+                onClick={() => !isDesktop && setMobileOpen(false)}
+                className={[
+                  'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
+                  collapsed ? 'md:justify-center md:px-2.5 md:gap-0' : '',
+                  isActive
+                    ? 'bg-amber-600/20 text-amber-400'
+                    : 'text-terminal-300 hover:bg-terminal-700 hover:text-terminal-100',
+                ].join(' ')}
+                title={collapsed ? item.name : undefined}
+              >
+                <item.icon className="size-5 shrink-0" />
+                {!collapsed && <span className="whitespace-nowrap">{item.name}</span>}
+              </NavLink>
+            )
+          })}
+        </nav>
+
+        <div className="px-3 pb-4">
+          <NavLink
+            to="/settings"
+            onClick={() => !isDesktop && setMobileOpen(false)}
+            className={[
+              'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
+              collapsed ? 'md:justify-center md:px-2.5 md:gap-0' : '',
+              location.pathname === '/settings'
+                ? 'bg-amber-600/20 text-amber-400'
+                : 'text-terminal-300 hover:bg-terminal-700 hover:text-terminal-100',
+            ].join(' ')}
+            title={collapsed ? 'Settings' : undefined}
+          >
+            <Settings className="size-5 shrink-0" />
+            {!collapsed && <span className="whitespace-nowrap">Settings</span>}
+          </NavLink>
+        </div>
+
+        <div className={`border-t border-terminal-600 ${collapsed ? 'p-2' : 'p-4'}`}>
+          <ConnectionIndicator collapsed={collapsed} />
+        </div>
+      </aside>
+
+      <main className="flex min-h-screen flex-1 flex-col">
+        <Header onOpenNavigation={() => setMobileOpen(true)} isMobile={!isDesktop} />
+        <div className={`flex-1 overflow-auto ${isPipeline ? '' : 'p-4 md:p-6'}`}>
+          {children}
+        </div>
+      </main>
+    </div>
   )
 }

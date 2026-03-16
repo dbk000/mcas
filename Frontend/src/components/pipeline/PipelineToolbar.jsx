@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
 // Panel removed — toolbar now positioned absolutely in Pipeline canvas container
-import { Beaker, Layers, BookOpen, X, ArrowRight, Play, ShieldCheck, ShieldAlert, ShieldX, PlusCircle } from 'lucide-react'
+import { Beaker, Layers, BookOpen, X, ArrowRight, ShieldCheck, ShieldAlert, ShieldX, PlusCircle } from 'lucide-react'
 import { useApi } from '../../context/ApiContext'
 import { PIPELINE_FEATURES } from '../../config/pipelineFeatures'
+import { FeedbackOnset } from '../FeedbackOnset'
 
 // Significance badge component
 function SignificanceBadge({ level, small = false }) {
@@ -15,7 +16,7 @@ function SignificanceBadge({ level, small = false }) {
   const size = small ? 'text-[9px] px-1 py-0.5' : 'text-[10px] px-1.5 py-0.5'
   return (
     <span className={`inline-flex items-center gap-0.5 ${size} rounded border ${c.bg} ${c.text} ${c.border}`}>
-      <c.Icon className={small ? 'w-2.5 h-2.5' : 'w-3 h-3'} />
+      <c.Icon className={small ? 'size-2.5' : 'size-3'} />
       {c.label}
     </span>
   )
@@ -44,12 +45,11 @@ function ValidationGateChecklist({ gates }) {
   )
 }
 
-export default function PipelineToolbar({ topologyData, graph, onExperimentOverlay, onCompositionOverlay }) {
+export default function PipelineToolbar({ topologyData: _topologyData, graph, onExperimentOverlay, onCompositionOverlay }) {
   const { get, post } = useApi()
   const [mode, setMode] = useState(null) // 'experiment' | 'composition' | 'compare' | 'learning'
   const [experiments, setExperiments] = useState([])
   const [compositions, setCompositions] = useState([])
-  const [corrections, setCorrections] = useState([])
   const [selectedExperiment, setSelectedExperiment] = useState(null)
   const [selectedComp, setSelectedComp] = useState(null)
   const [compSignificance, setCompSignificance] = useState(null)
@@ -135,50 +135,50 @@ export default function PipelineToolbar({ topologyData, graph, onExperimentOverl
   }
 
   return (
-    <div className="absolute top-1 left-1/2 -translate-x-1/2 z-[5]">
+    <div className="absolute left-1/2 top-1 z-[5] -translate-x-1/2">
       <div className="flex items-center gap-1.5">
         {/* Mode buttons */}
         {!mode && (
-          <div className="bg-terminal-800/90 backdrop-blur border border-terminal-600 rounded-lg flex items-center gap-1 p-1">
+          <div className="flex items-center gap-1 rounded-lg border border-terminal-600 bg-terminal-800/90 p-1 backdrop-blur">
             <button
               onClick={() => setMode('experiment')}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-terminal-300 hover:text-terminal-100 hover:bg-terminal-700 rounded transition-colors"
+              className="flex items-center gap-1.5 rounded px-2.5 py-1.5 text-xs text-terminal-300 transition-colors hover:bg-terminal-700 hover:text-terminal-100"
               title="View experiment footprints"
             >
-              <Beaker className="w-3.5 h-3.5" />
+              <Beaker className="size-3.5" />
               Experiments
             </button>
             <button
               onClick={() => setMode('composition')}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-terminal-300 hover:text-terminal-100 hover:bg-terminal-700 rounded transition-colors"
+              className="flex items-center gap-1.5 rounded px-2.5 py-1.5 text-xs text-terminal-300 transition-colors hover:bg-terminal-700 hover:text-terminal-100"
               title="View composition assemblies"
             >
-              <Layers className="w-3.5 h-3.5" />
+              <Layers className="size-3.5" />
               Compositions
             </button>
             <button
               onClick={() => setMode('compare')}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-terminal-300 hover:text-terminal-100 hover:bg-terminal-700 rounded transition-colors"
+              className="flex items-center gap-1.5 rounded px-2.5 py-1.5 text-xs text-terminal-300 transition-colors hover:bg-terminal-700 hover:text-terminal-100"
               title="Compare two compositions"
             >
-              <ArrowRight className="w-3.5 h-3.5" />
+              <ArrowRight className="size-3.5" />
               Compare
             </button>
             <button
               onClick={() => setMode('learning')}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-terminal-300 hover:text-terminal-100 hover:bg-terminal-700 rounded transition-colors"
+              className="flex items-center gap-1.5 rounded px-2.5 py-1.5 text-xs text-terminal-300 transition-colors hover:bg-terminal-700 hover:text-terminal-100"
               title="View correction markers"
             >
-              <BookOpen className="w-3.5 h-3.5" />
+              <BookOpen className="size-3.5" />
               Corrections
             </button>
             {PIPELINE_FEATURES.compositionDraftUI && (
               <button
                 onClick={() => setMode('draft')}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-terminal-300 hover:text-terminal-100 hover:bg-terminal-700 rounded transition-colors"
+                className="flex items-center gap-1.5 rounded px-2.5 py-1.5 text-xs text-terminal-300 transition-colors hover:bg-terminal-700 hover:text-terminal-100"
                 title="Create new composition from selected versions"
               >
-                <PlusCircle className="w-3.5 h-3.5" />
+                <PlusCircle className="size-3.5" />
                 New Comp
               </button>
             )}
@@ -187,21 +187,21 @@ export default function PipelineToolbar({ topologyData, graph, onExperimentOverl
 
         {/* Experiment mode */}
         {mode === 'experiment' && (
-          <div className="bg-terminal-800/90 backdrop-blur border border-terminal-600 rounded-lg p-2 max-w-md">
-            <div className="flex items-center justify-between mb-2">
+          <div className="max-w-md rounded-lg border border-terminal-600 bg-terminal-800/90 p-2 backdrop-blur">
+            <div className="mb-2 flex items-center justify-between">
               <span className="text-xs font-medium text-amber-400">Experiment Footprint</span>
               <button onClick={clearMode} className="text-terminal-500 hover:text-terminal-100">
-                <X className="w-3.5 h-3.5" />
+                <X className="size-3.5" />
               </button>
             </div>
             {selectedExperiment ? (
               <div className="space-y-1.5">
-                <div className="text-xs text-terminal-100 font-medium">{selectedExperiment.name}</div>
+                <div className="text-xs font-medium text-terminal-100">{selectedExperiment.name}</div>
                 {selectedExperiment.hypothesis && (
                   <div className="text-[10px] text-terminal-400">H: {selectedExperiment.hypothesis}</div>
                 )}
                 <div className="flex items-center gap-2">
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded ${
+                  <span className={`rounded px-1.5 py-0.5 text-[10px] ${
                     selectedExperiment.status === 'completed' ? 'bg-green-500/20 text-green-400' :
                     selectedExperiment.status === 'running' ? 'bg-amber-500/20 text-amber-400' :
                     'bg-terminal-600 text-terminal-400'
@@ -218,17 +218,17 @@ export default function PipelineToolbar({ topologyData, graph, onExperimentOverl
                 </button>
               </div>
             ) : (
-              <div className="max-h-48 overflow-y-auto space-y-1">
+              <div className="max-h-48 space-y-1 overflow-y-auto">
                 {experiments.length === 0 ? (
-                  <div className="text-[10px] text-terminal-500 py-2 text-center">No experiments found</div>
+                  <div className="py-2 text-center text-[10px] text-terminal-500">No experiments found</div>
                 ) : experiments.map(exp => (
                   <button
                     key={exp.experiment_id}
                     onClick={() => handleSelectExperiment(exp)}
-                    className="w-full text-left px-2 py-1.5 rounded hover:bg-terminal-700/50 transition-colors"
+                    className="w-full rounded px-2 py-1.5 text-left transition-colors hover:bg-terminal-700/50"
                   >
-                    <div className="text-xs text-terminal-200 truncate">{exp.name}</div>
-                    <div className="flex items-center gap-2 mt-0.5">
+                    <div className="truncate text-xs text-terminal-200">{exp.name}</div>
+                    <div className="mt-0.5 flex items-center gap-2">
                       <span className={`text-[10px] ${
                         exp.status === 'completed' ? 'text-green-400' :
                         exp.status === 'running' ? 'text-amber-400' : 'text-terminal-500'
@@ -246,18 +246,18 @@ export default function PipelineToolbar({ topologyData, graph, onExperimentOverl
 
         {/* Composition mode */}
         {mode === 'composition' && (
-          <div className="bg-terminal-800/90 backdrop-blur border border-terminal-600 rounded-lg p-2 max-w-md">
-            <div className="flex items-center justify-between mb-2">
+          <div className="max-w-md rounded-lg border border-terminal-600 bg-terminal-800/90 p-2 backdrop-blur">
+            <div className="mb-2 flex items-center justify-between">
               <span className="text-xs font-medium text-amber-400">Composition View</span>
               <button onClick={clearMode} className="text-terminal-500 hover:text-terminal-100">
-                <X className="w-3.5 h-3.5" />
+                <X className="size-3.5" />
               </button>
             </div>
             {selectedComp ? (
               <div className="space-y-1.5">
-                <div className="text-xs text-terminal-100 font-medium">{selectedComp.name}</div>
-                <div className="flex items-center gap-2 text-[10px] flex-wrap">
-                  <span className={`px-1.5 py-0.5 rounded ${
+                <div className="text-xs font-medium text-terminal-100">{selectedComp.name}</div>
+                <div className="flex flex-wrap items-center gap-2 text-[10px]">
+                  <span className={`rounded px-1.5 py-0.5 ${
                     selectedComp.status === 'deployed' ? 'bg-green-500/20 text-green-400' :
                     selectedComp.status === 'validated' ? 'bg-blue-500/20 text-blue-400' :
                     'bg-terminal-600 text-terminal-400'
@@ -273,7 +273,7 @@ export default function PipelineToolbar({ topologyData, graph, onExperimentOverl
                 </div>
                 {/* Statistical context summary */}
                 {compSignificance?.statistical_context?.n_compositions_tested && (
-                  <div className="text-[10px] text-terminal-500 space-y-0.5">
+                  <div className="space-y-0.5 text-[10px] text-terminal-500">
                     <div>Tested: {compSignificance.statistical_context.n_compositions_tested} compositions</div>
                     {compSignificance.statistical_context.deflated_sharpe_ratio != null && (
                       <div>DSR: {compSignificance.statistical_context.deflated_sharpe_ratio.toFixed(3)}</div>
@@ -286,21 +286,25 @@ export default function PipelineToolbar({ topologyData, graph, onExperimentOverl
                 {/* Validation gate checklist */}
                 {compSignificance && (
                   <div className="border-t border-terminal-700 pt-1.5">
-                    <div className="text-[10px] text-terminal-500 mb-1">Validation Gates</div>
+                    <div className="mb-1 text-[10px] text-terminal-500">Validation Gates</div>
                     <ValidationGateChecklist gates={compSignificance.gates_passing} />
                   </div>
                 )}
                 <div className="flex items-center gap-2">
                   {compSignificance?.all_gates_pass ? (
-                    <button
+                    <FeedbackOnset 
                       onClick={() => handleDeploy(selectedComp.composition_id)}
-                      className="text-[10px] px-2 py-1 bg-green-600/20 text-green-400 rounded hover:bg-green-600/30"
+                      latencyLabel="Deploy"
                     >
-                      Deploy
-                    </button>
+                      <button
+                        className="rounded bg-green-600/20 px-2 py-1 text-[10px] text-green-400 hover:bg-green-600/30"
+                      >
+                        Deploy
+                      </button>
+                    </FeedbackOnset>
                   ) : (
                     <span
-                      className="text-[10px] px-2 py-1 bg-terminal-700 text-terminal-500 rounded cursor-not-allowed"
+                      className="cursor-not-allowed rounded bg-terminal-700 px-2 py-1 text-[10px] text-terminal-500"
                       title={compSignificance?.failing_gates?.length
                         ? `Failing: ${compSignificance.failing_gates.join(', ')}`
                         : 'Gates not evaluated'}
@@ -317,20 +321,20 @@ export default function PipelineToolbar({ topologyData, graph, onExperimentOverl
                 </div>
               </div>
             ) : (
-              <div className="max-h-48 overflow-y-auto space-y-1">
+              <div className="max-h-48 space-y-1 overflow-y-auto">
                 {compositions.length === 0 ? (
-                  <div className="text-[10px] text-terminal-500 py-2 text-center">No compositions found</div>
+                  <div className="py-2 text-center text-[10px] text-terminal-500">No compositions found</div>
                 ) : compositions.map(c => (
                   <button
                     key={c.composition_id}
                     onClick={() => handleSelectComposition(c)}
-                    className="w-full text-left px-2 py-1.5 rounded hover:bg-terminal-700/50 transition-colors"
+                    className="w-full rounded px-2 py-1.5 text-left transition-colors hover:bg-terminal-700/50"
                   >
-                    <div className="text-xs text-terminal-200 truncate">{c.name}</div>
-                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                    <div className="truncate text-xs text-terminal-200">{c.name}</div>
+                    <div className="mt-0.5 flex flex-wrap items-center gap-2">
                       <span className="text-[10px] text-terminal-500">{c.status}</span>
                       {c.agg_pf != null && (
-                        <span className={`text-[10px] font-mono ${c.agg_pf >= 1 ? 'text-green-400' : 'text-red-400'}`}>
+                        <span className={`font-mono text-[10px] ${c.agg_pf >= 1 ? 'text-green-400' : 'text-red-400'}`}>
                           PF {c.agg_pf.toFixed(2)}
                         </span>
                       )}
@@ -347,45 +351,49 @@ export default function PipelineToolbar({ topologyData, graph, onExperimentOverl
 
         {/* Compare mode */}
         {mode === 'compare' && (
-          <div className="bg-terminal-800/90 backdrop-blur border border-terminal-600 rounded-lg p-2 max-w-lg">
-            <div className="flex items-center justify-between mb-2">
+          <div className="max-w-lg rounded-lg border border-terminal-600 bg-terminal-800/90 p-2 backdrop-blur">
+            <div className="mb-2 flex items-center justify-between">
               <span className="text-xs font-medium text-amber-400">Compare Compositions</span>
               <button onClick={clearMode} className="text-terminal-500 hover:text-terminal-100">
-                <X className="w-3.5 h-3.5" />
+                <X className="size-3.5" />
               </button>
             </div>
-            <div className="flex items-center gap-2 mb-2">
+            <div className="mb-2 flex items-center gap-2">
               <select
                 value={compareA || ''}
                 onChange={e => setCompareA(e.target.value || null)}
-                className="flex-1 text-[10px] bg-terminal-900 border border-terminal-600 rounded px-1.5 py-1 text-terminal-200"
+                className="flex-1 rounded border border-terminal-600 bg-terminal-900 px-1.5 py-1 text-[10px] text-terminal-200"
               >
                 <option value="">Composition A</option>
                 {compositions.map(c => (
                   <option key={c.composition_id} value={c.composition_id}>{c.name}</option>
                 ))}
               </select>
-              <span className="text-terminal-500 text-[10px]">vs</span>
+              <span className="text-[10px] text-terminal-500">vs</span>
               <select
                 value={compareB || ''}
                 onChange={e => setCompareB(e.target.value || null)}
-                className="flex-1 text-[10px] bg-terminal-900 border border-terminal-600 rounded px-1.5 py-1 text-terminal-200"
+                className="flex-1 rounded border border-terminal-600 bg-terminal-900 px-1.5 py-1 text-[10px] text-terminal-200"
               >
                 <option value="">Composition B</option>
                 {compositions.map(c => (
                   <option key={c.composition_id} value={c.composition_id}>{c.name}</option>
                 ))}
               </select>
-              <button
+              <FeedbackOnset 
                 onClick={handleCompare}
-                disabled={!compareA || !compareB || compareA === compareB}
-                className="text-[10px] px-2 py-1 bg-amber-600/20 text-amber-400 rounded hover:bg-amber-600/30 disabled:opacity-30"
+                latencyLabel="Diff"
               >
-                Diff
-              </button>
+                <button
+                  disabled={!compareA || !compareB || compareA === compareB}
+                  className="rounded bg-amber-600/20 px-2 py-1 text-[10px] text-amber-400 hover:bg-amber-600/30 disabled:opacity-30"
+                >
+                  Diff
+                </button>
+              </FeedbackOnset>
             </div>
             {compareData && (
-              <div className="space-y-1.5 max-h-48 overflow-y-auto">
+              <div className="max-h-48 space-y-1.5 overflow-y-auto">
                 <div className="text-[10px] text-terminal-400">
                   {compareData.diff_count} node{compareData.diff_count !== 1 ? 's' : ''} differ
                 </div>
@@ -393,12 +401,12 @@ export default function PipelineToolbar({ topologyData, graph, onExperimentOverl
                   <div>
                     <div className="text-terminal-500">A: {compareData.composition_a?.name}</div>
                     {compareData.composition_a?.agg_pf != null && (
-                      <div className={compareData.composition_a.agg_pf >= 1 ? 'text-green-400 font-mono' : 'text-red-400 font-mono'}>
+                      <div className={compareData.composition_a.agg_pf >= 1 ? 'font-mono text-green-400' : 'font-mono text-red-400'}>
                         PF {compareData.composition_a.agg_pf.toFixed(2)}
                       </div>
                     )}
                     {compareData.composition_a?.statistical_context?.deflated_sharpe_ratio != null && (
-                      <div className="text-terminal-500 font-mono">
+                      <div className="font-mono text-terminal-500">
                         DSR {compareData.composition_a.statistical_context.deflated_sharpe_ratio.toFixed(3)}
                       </div>
                     )}
@@ -406,12 +414,12 @@ export default function PipelineToolbar({ topologyData, graph, onExperimentOverl
                   <div>
                     <div className="text-terminal-500">B: {compareData.composition_b?.name}</div>
                     {compareData.composition_b?.agg_pf != null && (
-                      <div className={compareData.composition_b.agg_pf >= 1 ? 'text-green-400 font-mono' : 'text-red-400 font-mono'}>
+                      <div className={compareData.composition_b.agg_pf >= 1 ? 'font-mono text-green-400' : 'font-mono text-red-400'}>
                         PF {compareData.composition_b.agg_pf.toFixed(2)}
                       </div>
                     )}
                     {compareData.composition_b?.statistical_context?.deflated_sharpe_ratio != null && (
-                      <div className="text-terminal-500 font-mono">
+                      <div className="font-mono text-terminal-500">
                         DSR {compareData.composition_b.statistical_context.deflated_sharpe_ratio.toFixed(3)}
                       </div>
                     )}
@@ -424,14 +432,14 @@ export default function PipelineToolbar({ topologyData, graph, onExperimentOverl
 
         {/* Learning overlay mode */}
         {mode === 'learning' && (
-          <div className="bg-terminal-800/90 backdrop-blur border border-terminal-600 rounded-lg p-2 max-w-md">
-            <div className="flex items-center justify-between mb-2">
+          <div className="max-w-md rounded-lg border border-terminal-600 bg-terminal-800/90 p-2 backdrop-blur">
+            <div className="mb-2 flex items-center justify-between">
               <span className="text-xs font-medium text-amber-400">Corrections Log</span>
               <button onClick={clearMode} className="text-terminal-500 hover:text-terminal-100">
-                <X className="w-3.5 h-3.5" />
+                <X className="size-3.5" />
               </button>
             </div>
-            <div className="text-[10px] text-terminal-400 py-2 text-center">
+            <div className="py-2 text-center text-[10px] text-terminal-400">
               Correction markers overlay in development. See CLAUDE.md Section 5 for current corrections log.
             </div>
           </div>
@@ -441,7 +449,6 @@ export default function PipelineToolbar({ topologyData, graph, onExperimentOverl
         {mode === 'draft' && (
           <CompositionDraftPanel
             graph={graph}
-            topologyData={topologyData}
             onClose={clearMode}
           />
         )}
@@ -451,7 +458,7 @@ export default function PipelineToolbar({ topologyData, graph, onExperimentOverl
 }
 
 // Wave 4.9: Composition draft lifecycle panel
-function CompositionDraftPanel({ graph, topologyData, onClose }) {
+function CompositionDraftPanel({ graph, onClose }) {
   const { post } = useApi()
   const [draftName, setDraftName] = useState('')
   const [saving, setSaving] = useState(false)
@@ -481,8 +488,8 @@ function CompositionDraftPanel({ graph, topologyData, onClose }) {
   }
 
   return (
-    <div className="bg-terminal-800/90 backdrop-blur border border-terminal-600 rounded-lg p-2 max-w-md">
-      <div className="flex items-center justify-between mb-2">
+    <div className="max-w-md rounded-lg border border-terminal-600 bg-terminal-800/90 p-2 backdrop-blur">
+      <div className="mb-2 flex items-center justify-between">
         <span className="text-xs font-medium text-amber-400">
           New Composition Draft
           {draftEntries.length > 0 && (
@@ -490,7 +497,7 @@ function CompositionDraftPanel({ graph, topologyData, onClose }) {
           )}
         </span>
         <button onClick={onClose} className="text-terminal-500 hover:text-terminal-100">
-          <X className="w-3.5 h-3.5" />
+          <X className="size-3.5" />
         </button>
       </div>
 
@@ -499,9 +506,7 @@ function CompositionDraftPanel({ graph, topologyData, onClose }) {
           {result.error ? (
             <div className="text-[10px] text-red-400">{result.error}</div>
           ) : result.action === 'duplicate' ? (
-            <div className="text-[10px] text-amber-400">
-              Duplicate: matches existing composition "{result.existing_name}"
-            </div>
+            <div className="text-[10px] text-amber-400">{`Duplicate: matches existing composition "${result.existing_name}"`}</div>
           ) : (
             <div className="text-[10px] text-green-400">
               Created composition with {result.node_count} nodes
@@ -522,15 +527,15 @@ function CompositionDraftPanel({ graph, topologyData, onClose }) {
           </div>
 
           {draftEntries.length > 0 && (
-            <div className="max-h-32 overflow-y-auto space-y-0.5">
-              {draftEntries.map(([nodeId, versionId]) => {
+            <div className="max-h-32 space-y-0.5 overflow-y-auto">
+              {draftEntries.map(([nodeId]) => {
                 const node = nodeMap[nodeId]
                 return (
-                  <div key={nodeId} className="flex items-center justify-between text-[10px] px-1.5 py-0.5 bg-terminal-900 rounded">
-                    <span className="text-terminal-200 truncate">{node?.name || nodeId.slice(0, 8)}</span>
+                  <div key={nodeId} className="flex items-center justify-between rounded bg-terminal-900 px-1.5 py-0.5 text-[10px]">
+                    <span className="truncate text-terminal-200">{node?.name || nodeId.slice(0, 8)}</span>
                     <button
                       onClick={() => graph.setVersionForNode(nodeId, null)}
-                      className="text-terminal-500 hover:text-red-400 ml-1"
+                      className="ml-1 text-terminal-500 hover:text-red-400"
                     >
                       ✕
                     </button>
@@ -545,14 +550,14 @@ function CompositionDraftPanel({ graph, topologyData, onClose }) {
             value={draftName}
             onChange={e => setDraftName(e.target.value)}
             placeholder="Composition name..."
-            className="w-full text-[10px] bg-terminal-900 border border-terminal-600 rounded px-2 py-1 text-terminal-200 placeholder-terminal-600 focus:outline-none focus:border-amber-500/50"
+            className="w-full rounded border border-terminal-600 bg-terminal-900 px-2 py-1 text-[10px] text-terminal-200 placeholder:text-terminal-600 focus:border-amber-500/50 focus:outline-none"
           />
 
           <div className="flex items-center gap-2">
             <button
               onClick={handleSave}
               disabled={saving || !draftName.trim() || draftEntries.length === 0}
-              className="text-[10px] px-2 py-1 bg-green-600/20 text-green-400 rounded hover:bg-green-600/30 disabled:opacity-30"
+              className="rounded bg-green-600/20 px-2 py-1 text-[10px] text-green-400 hover:bg-green-600/30 disabled:opacity-30"
             >
               {saving ? 'Saving...' : 'Save Draft'}
             </button>

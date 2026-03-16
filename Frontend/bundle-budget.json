@@ -1,0 +1,78 @@
+{
+  "baseline_date": "2026-03-16",
+  "minimum_js_chunk_count": 20,
+  "minimum_async_route_chunk_count": 14,
+  "maximum_total_js_kb": 1110,
+  "maximum_single_js_chunk_kb": 350,
+  "shared_chunk_patterns": [
+    "index-*.js",
+    "framework-*.js",
+    "chart-vendor-*.js",
+    "route-pipeline-*.js",
+    "surface-opportunities-*.js",
+    "icon-vendor-*.js",
+    "layoutWorker-*.js",
+    "formatters-*.js",
+    "ui-*.js",
+    "pageMeta-*.js",
+    "publicJson-*.js",
+    "pf-*.js",
+    "integrity-*.js"
+  ],
+  "tracked_chunks": [
+    {
+      "pattern": "index-*.js",
+      "max_kb": 40,
+      "required": true,
+      "rationale": "Startup shell should stay route-driven and avoid regressing into a monolithic entry bundle."
+    },
+    {
+      "pattern": "framework-*.js",
+      "max_kb": 350,
+      "required": true,
+      "rationale": "Core React and router runtime is the largest shared chunk and should not drift upward without intent."
+    },
+    {
+      "pattern": "chart-vendor-*.js",
+      "max_kb": 165,
+      "required": true,
+      "rationale": "Charting stays off the startup path and should remain bounded as the heavy data-viz vendor island."
+    },
+    {
+      "pattern": "route-pipeline-*.js",
+      "max_kb": 145,
+      "required": true,
+      "rationale": "Pipeline-specific graph UI should remain isolated to its lazy route family. Budget raised from 135 to 145 to accommodate governance kernel (getter-based feature flags replacing static booleans)."
+    },
+    {
+      "pattern": "surface-opportunities-*.js",
+      "max_kb": 25,
+      "required": true,
+      "rationale": "Opportunity chart surface code is shared across analysis routes and should stay compact."
+    },
+    {
+      "pattern": "layoutWorker-*.js",
+      "max_kb": 95,
+      "required": true,
+      "rationale": "Workerized dagre layout is intentionally separate; keep its payload bounded."
+    },
+    {
+      "pattern": "icon-vendor-*.js",
+      "max_kb": 30,
+      "required": true,
+      "rationale": "Icon payload should remain a small shared helper, not a hidden growth bucket."
+    },
+    {
+      "pattern": "formatters-*.js",
+      "max_kb": 35,
+      "required": true,
+      "rationale": "Common formatting utilities are shared across many routes and should stay modest."
+    },
+    {
+      "pattern": "ui-*.js",
+      "max_kb": 12,
+      "required": true,
+      "rationale": "Shared UI primitives should remain lightweight."
+    }
+  ]
+}

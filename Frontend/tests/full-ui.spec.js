@@ -1,530 +1,389 @@
 // @ts-check
-import { test, expect } from '@playwright/test';
+import { test, expect } from '@playwright/test'
+import {
+  configureAppAccess,
+  mockHealthAndAuth,
+  seedStorage,
+} from './support/runtime.js'
 
-const API_BASE = 'http://localhost:8002';
-const API_KEY = '0cf312bc5db6c7c6f265629e24069b4d735933acbd62514d814538b580b49c2d';
-
-// Inject API config into localStorage before each test
-async function setupAuth(page) {
-  await page.goto('/');
-  await page.evaluate(({ baseUrl, apiKey }) => {
-    localStorage.setItem('mcas_api_config', JSON.stringify({ baseUrl, apiKey }));
-  }, { baseUrl: API_BASE, apiKey: API_KEY });
+async function expectNoHorizontalScroll(page) {
+  const hasHorizontalScroll = await page.evaluate(
+    () => document.documentElement.scrollWidth > window.innerWidth
+  )
+  expect(hasHorizontalScroll).toBeFalsy()
 }
 
-// Try to find the real API key from .env or settings
-async function getApiKey() {
-  // We'll try the connection and see if it works
-  return API_KEY;
+async function expectPrimaryCtaAboveFold(page, locator) {
+  await expect(locator).toBeVisible()
+  const box = await locator.boundingBox()
+  expect(box).not.toBeNull()
+  expect(box.y + box.height).toBeLessThanOrEqual(page.viewportSize().height)
 }
 
-// ============================================================
-// PHASE 1: Settings page (no auth required)
-// ============================================================
+async function expectStablePosition(page, locator, maxShiftPx = 8) {
+  const before = await locator.evaluate((element) => element.getBoundingClientRect().top)
+  await page.waitForTimeout(600)
+  const after = await locator.evaluate((element) => element.getBoundingClientRect().top)
+  expect(Math.abs(after - before)).toBeLessThan(maxShiftPx)
+}
 
-test.describe('Settings Page', () => {
-  test('loads without crash', async ({ page }) => {
-    await page.goto('/settings');
-    await expect(page).toHaveTitle(/MCAS/i);
-    // Should have URL and API key inputs
-    const inputs = page.locator('input');
-    await expect(inputs.first()).toBeVisible({ timeout: 5000 });
-  });
+test.describe('Public Funnel', () => {
+  test('landing page keeps the primary CTA above the fold on mobile with stable metadata', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    await seedStorage(page)
+    await page.goto('/')
 
-  test('shows API URL input field', async ({ page }) => {
-    await page.goto('/settings');
-    // Look for input with placeholder or label mentioning URL/API
-    const urlInput = page.locator('input').first();
-    await expect(urlInput).toBeVisible();
-  });
+    const primaryCta = page.getByRole('link', { name: /Unlock Pro/i })
+    await expect(page).toHaveTitle(/MCAS/i)
+    await expect(page.locator('meta[name="description"]')).toHaveAttribute('content', /Glass Box|proof|honest/i)
+    await expectNoHorizontalScroll(page)
+    await expectPrimaryCtaAboveFold(page, primaryCta)
+    await expectStablePosition(page, primaryCta)
+  })
 
-  test('shows API key input field', async ({ page }) => {
-    await page.goto('/settings');
-    const inputs = page.locator('input');
-    const count = await inputs.count();
-    expect(count).toBeGreaterThanOrEqual(2);
-  });
+  test('winners page renders curated content and route-specific metadata', async ({ page }) => {
+    await page.setViewportSize({ width: 393, height: 852 })
+    await seedStorage(page)
+    await page.goto('/winners')
 
-  test('test connection button exists and is clickable', async ({ page }) => {
-    await page.goto('/settings');
-    const btn = page.locator('button', { hasText: /test|connect|save/i });
-    await expect(btn.first()).toBeVisible();
-  });
-});
+    await expect(page).toHaveTitle(/Winners/i)
+    await expect(page.getByRole('heading', { name: /Historical winners|Curated/i }).first()).toBeVisible()
+    await expect(page.locator('meta[name="description"]')).toHaveAttribute('content', /curated|historical/i)
+    await expectNoHorizontalScroll(page)
+  })
 
-// ============================================================
-// PHASE 2: Auth redirect (protected routes without config)
-// ============================================================
+  test('pricing page keeps the upgrade CTA above the fold on mobile', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await seedStorage(page)
+    await page.goto('/pricing')
 
-test.describe('Auth Protection', () => {
-  test('redirects to settings when no config', async ({ page }) => {
-    // Clear any stored config
-    await page.goto('/settings');
-    await page.evaluate(() => localStorage.clear());
-    await page.goto('/');
-    // Should redirect to /settings
-    await page.waitForURL(/settings/, { timeout: 5000 });
-  });
+    const primaryCta = page.getByRole('link', { name: /Upgrade to Pro|Upgrade/i }).first()
+    await expect(page).toHaveTitle(/Pricing/i)
+    await expect(page.locator('meta[name="description"]')).toHaveAttribute('content', /Glass Box|metrics|operator/i)
+    await expectNoHorizontalScroll(page)
+    await expectPrimaryCtaAboveFold(page, primaryCta)
+    await expectStablePosition(page, primaryCta)
+  })
 
-  test('redirects /opportunities to settings when no config', async ({ page }) => {
-    await page.goto('/settings');
-    await page.evaluate(() => localStorage.clear());
-    await page.goto('/opportunities');
-    await page.waitForURL(/settings/, { timeout: 5000 });
-  });
-});
+  test('checkout success sets local paid state', async ({ page }) => {
+    await seedStorage(page)
+    await page.goto('/checkout/success')
 
-// ============================================================
-// PHASE 3: With auth — navigate every route
-// ============================================================
+    await expect(page.getByRole('heading', { name: /browser is now marked as Pro|local activation complete/i })).toBeVisible()
+    const tier = await page.evaluate(() => localStorage.getItem('mcas_local_access_tier'))
+    const activatedAt = await page.evaluate(
+      () => localStorage.getItem('mcas_local_access_activated_at'),
+    )
+    expect(tier).toBe('paid')
+    expect(activatedAt).toBeTruthy()
+  })
 
-test.describe('Authenticated Routes', () => {
+  test('checkout cancel returns the user to proof surfaces', async ({ page }) => {
+    await seedStorage(page)
+    await page.goto('/checkout/cancel')
+
+    await expect(page.getByRole('heading', { name: /checkout flow stopped|Checkout Canceled/i })).toBeVisible()
+    await expect(page.getByRole('link', { name: /Return to Pricing/i })).toBeVisible()
+  })
+})
+
+test.describe('Paid Gate', () => {
+  test('unpaid app access shows the paywall on mobile without horizontal scroll', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    await seedStorage(page, { tier: 'free' })
+    await page.goto('/app')
+
+    const primaryCta = page.getByRole('link', { name: /Upgrade To Pro|Unlock Operator Access/i }).first()
+    await expect(page.getByText(/Paid Operator Surface|paid gate/i).first()).toBeVisible()
+    await expectNoHorizontalScroll(page)
+    await expectPrimaryCtaAboveFold(page, primaryCta)
+    await expectStablePosition(page, primaryCta)
+  })
+
+  test('paid but unconfigured users route to settings', async ({ page }) => {
+    await seedStorage(page, { tier: 'paid' })
+    await page.goto('/app')
+
+    await page.waitForURL(/\/settings/)
+    await expect(page.getByRole('heading', { name: /Settings/i })).toBeVisible()
+  })
+})
+
+test.describe('App Routes', () => {
   test.beforeEach(async ({ page }) => {
-    await setupAuth(page);
-  });
-
-  test('Dashboard loads', async ({ page }) => {
-    await page.goto('/');
-    // Wait for page content to load (not just skeleton)
-    await page.waitForTimeout(2000);
-
-    // Check for console errors
-    const errors = [];
-    page.on('console', msg => {
-      if (msg.type() === 'error') errors.push(msg.text());
-    });
-
-    // Should have some content rendered
-    const body = await page.locator('body').textContent();
-    expect(body.length).toBeGreaterThan(50);
-
-    // Take screenshot for visual inspection
-    await page.screenshot({ path: 'test-results/dashboard.png', fullPage: true });
-  });
-
-  test('Dashboard shows system status', async ({ page }) => {
-    await page.goto('/');
-    await page.waitForTimeout(3000);
-    // Look for status indicators or cards
-    const cards = page.locator('[class*="card"], [class*="Card"]');
-    const cardCount = await cards.count();
-    // Dashboard should have multiple cards/sections
-    await page.screenshot({ path: 'test-results/dashboard-cards.png', fullPage: true });
-  });
-
-  test('Opportunities page loads', async ({ page }) => {
-    await page.goto('/opportunities');
-    await page.waitForTimeout(3000);
-    await page.screenshot({ path: 'test-results/opportunities.png', fullPage: true });
-
-    // Should not show error state
-    const body = await page.locator('body').textContent();
-    expect(body).not.toContain('Something went wrong');
-  });
-
-  test('Opportunities filters work', async ({ page }) => {
-    await page.goto('/opportunities');
-    await page.waitForTimeout(2000);
-
-    // Look for filter controls (selects, inputs)
-    const selects = page.locator('select');
-    const selectCount = await selects.count();
-
-    if (selectCount > 0) {
-      // Try changing a filter
-      const firstSelect = selects.first();
-      await firstSelect.click();
-      await page.screenshot({ path: 'test-results/opportunities-filter.png', fullPage: true });
-    }
-  });
-
-  test('Markets page loads', async ({ page }) => {
-    await page.goto('/markets');
-    await page.waitForTimeout(3000);
-    await page.screenshot({ path: 'test-results/markets.png', fullPage: true });
-
-    const body = await page.locator('body').textContent();
-    expect(body).not.toContain('Something went wrong');
-  });
-
-  test('Markets search works', async ({ page }) => {
-    await page.goto('/markets');
-    await page.waitForTimeout(2000);
-
-    // Find search input
-    const searchInput = page.locator('input[type="text"], input[placeholder*="search" i], input[placeholder*="Search" i]');
-    if (await searchInput.count() > 0) {
-      await searchInput.first().fill('BTC');
-      await page.waitForTimeout(1000);
-      await page.screenshot({ path: 'test-results/markets-search.png', fullPage: true });
-    }
-  });
-
-  test('Market detail page loads for BTCUSDT', async ({ page }) => {
-    await page.goto('/markets/BTCUSDT');
-    await page.waitForTimeout(3000);
-    await page.screenshot({ path: 'test-results/market-detail-btc.png', fullPage: true });
-
-    const body = await page.locator('body').textContent();
-    expect(body).not.toContain('Something went wrong');
-  });
-
-  test('Market detail chart renders', async ({ page }) => {
-    await page.goto('/markets/BTCUSDT');
-    await page.waitForTimeout(4000);
-
-    // lightweight-charts renders into a canvas
-    const canvas = page.locator('canvas');
-    const canvasCount = await canvas.count();
-    await page.screenshot({ path: 'test-results/market-chart.png', fullPage: true });
-    // Chart should have rendered at least one canvas
-    expect(canvasCount).toBeGreaterThanOrEqual(0); // Don't fail if no data, just capture
-  });
-
-  test('Market detail timeframe selector works', async ({ page }) => {
-    await page.goto('/markets/BTCUSDT');
-    await page.waitForTimeout(3000);
-
-    // Look for timeframe buttons (1m, 5m, 15m, 1h, 4h, 1d)
-    const tfButtons = page.locator('button', { hasText: /^(1m|5m|15m|1h|4h|1d)$/ });
-    const count = await tfButtons.count();
-    if (count > 0) {
-      // Click each timeframe and verify no crash
-      for (let i = 0; i < Math.min(count, 3); i++) {
-        await tfButtons.nth(i).click();
-        await page.waitForTimeout(1500);
-      }
-      await page.screenshot({ path: 'test-results/market-timeframes.png', fullPage: true });
-    }
-  });
-
-  test('Runs page loads', async ({ page }) => {
-    await page.goto('/runs');
-    await page.waitForTimeout(2000);
-    await page.screenshot({ path: 'test-results/runs.png', fullPage: true });
-
-    const body = await page.locator('body').textContent();
-    expect(body).not.toContain('Something went wrong');
-  });
-
-  test('Control Plane loads', async ({ page }) => {
-    await page.goto('/control');
-    await page.waitForTimeout(2000);
-    await page.screenshot({ path: 'test-results/control-plane.png', fullPage: true });
-
-    const body = await page.locator('body').textContent();
-    expect(body).not.toContain('Something went wrong');
-  });
-
-  test('Control Plane scan form exists', async ({ page }) => {
-    await page.goto('/control');
-    await page.waitForTimeout(2000);
-
-    // Look for form elements
-    const buttons = page.locator('button');
-    const btnCount = await buttons.count();
-    expect(btnCount).toBeGreaterThan(0);
-  });
-
-  test('Paper Trading page loads', async ({ page }) => {
-    await page.goto('/paper');
-    await page.waitForTimeout(3000);
-    await page.screenshot({ path: 'test-results/paper-trading.png', fullPage: true });
-
-    const body = await page.locator('body').textContent();
-    expect(body).not.toContain('Something went wrong');
-  });
-
-  test('Correlations page loads', async ({ page }) => {
-    await page.goto('/analytics/correlations');
-    await page.waitForTimeout(2000);
-    await page.screenshot({ path: 'test-results/correlations.png', fullPage: true });
-
-    const body = await page.locator('body').textContent();
-    expect(body).not.toContain('Something went wrong');
-  });
-});
-
-// ============================================================
-// PHASE 4: Navigation & sidebar
-// ============================================================
-
-test.describe('Navigation', () => {
-  test.beforeEach(async ({ page }) => {
-    await setupAuth(page);
-  });
-
-  test('sidebar renders all nav links', async ({ page }) => {
-    await page.goto('/');
-    await page.waitForTimeout(1000);
-
-    // Check for nav links
-    const navLinks = page.locator('nav a, aside a, [class*="sidebar"] a, [class*="Sidebar"] a');
-    const count = await navLinks.count();
-
-    // Fallback: check for any links in the layout
-    const allLinks = page.locator('a[href]');
-    const allCount = await allLinks.count();
-
-    await page.screenshot({ path: 'test-results/navigation.png', fullPage: true });
-    expect(allCount).toBeGreaterThan(3); // At minimum dashboard, opportunities, markets
-  });
-
-  test('clicking nav links navigates correctly', async ({ page }) => {
-    await page.goto('/');
-    await page.waitForTimeout(1000);
-
-    // Find and click opportunities link
-    const oppLink = page.locator('a[href="/opportunities"]');
-    if (await oppLink.count() > 0) {
-      await oppLink.first().click();
-      await page.waitForURL(/opportunities/);
-      expect(page.url()).toContain('/opportunities');
-    }
-
-    // Find and click markets link
-    const marketsLink = page.locator('a[href="/markets"]');
-    if (await marketsLink.count() > 0) {
-      await marketsLink.first().click();
-      await page.waitForURL(/markets/);
-      expect(page.url()).toContain('/markets');
-    }
-  });
-});
-
-// ============================================================
-// PHASE 5: API integration (network requests)
-// ============================================================
-
-test.describe('API Integration', () => {
-  test.beforeEach(async ({ page }) => {
-    await setupAuth(page);
-  });
-
-  test('Dashboard API calls succeed', async ({ page }) => {
-    const failedRequests = [];
-    page.on('response', response => {
-      if (response.url().includes(API_BASE) && response.status() >= 400 && response.status() !== 401) {
-        failedRequests.push({
-          url: response.url(),
-          status: response.status(),
-        });
-      }
-    });
-
-    await page.goto('/');
-    await page.waitForTimeout(4000);
-
-    // Log any failures for debugging
-    if (failedRequests.length > 0) {
-      console.log('Failed API requests on Dashboard:', JSON.stringify(failedRequests, null, 2));
-    }
-  });
-
-  test('Opportunities API calls succeed', async ({ page }) => {
-    const failedRequests = [];
-    page.on('response', response => {
-      if (response.url().includes(API_BASE) && response.status() >= 400 && response.status() !== 401) {
-        failedRequests.push({
-          url: response.url(),
-          status: response.status(),
-        });
-      }
-    });
-
-    await page.goto('/opportunities');
-    await page.waitForTimeout(4000);
-
-    if (failedRequests.length > 0) {
-      console.log('Failed API requests on Opportunities:', JSON.stringify(failedRequests, null, 2));
-    }
-  });
-
-  test('Markets API calls succeed', async ({ page }) => {
-    const failedRequests = [];
-    page.on('response', response => {
-      if (response.url().includes(API_BASE) && response.status() >= 400 && response.status() !== 401) {
-        failedRequests.push({
-          url: response.url(),
-          status: response.status(),
-        });
-      }
-    });
-
-    await page.goto('/markets');
-    await page.waitForTimeout(4000);
-
-    if (failedRequests.length > 0) {
-      console.log('Failed API requests on Markets:', JSON.stringify(failedRequests, null, 2));
-    }
-  });
-});
-
-// ============================================================
-// PHASE 6: Console errors on every route
-// ============================================================
-
-test.describe('Console Error Sweep', () => {
-  test.beforeEach(async ({ page }) => {
-    await setupAuth(page);
-  });
-
-  const routes = [
-    ['Dashboard', '/'],
-    ['Opportunities', '/opportunities'],
-    ['Markets', '/markets'],
-    ['MarketDetail', '/markets/BTCUSDT'],
-    ['Runs', '/runs'],
-    ['ControlPlane', '/control'],
-    ['PaperTrading', '/paper'],
-    ['Correlations', '/analytics/correlations'],
-  ];
-
-  for (const [name, route] of routes) {
-    test(`no JS errors on ${name} (${route})`, async ({ page }) => {
-      const jsErrors = [];
-      page.on('pageerror', error => {
-        jsErrors.push({
-          message: error.message,
-          stack: error.stack,
-        });
-      });
-
-      const consoleErrors = [];
-      page.on('console', msg => {
-        if (msg.type() === 'error') {
-          consoleErrors.push(msg.text());
-        }
-      });
-
-      await page.goto(route);
-      await page.waitForTimeout(3000);
-
-      // Report but don't fail on console.error (API auth issues expected)
-      if (consoleErrors.length > 0) {
-        console.log(`Console errors on ${name}:`, consoleErrors);
-      }
-
-      // JS exceptions ARE failures
-      if (jsErrors.length > 0) {
-        console.log(`JS errors on ${name}:`, JSON.stringify(jsErrors, null, 2));
-      }
-      expect(jsErrors).toHaveLength(0);
-    });
-  }
-});
-
-// ============================================================
-// PHASE 7: Component rendering (no blank pages)
-// ============================================================
-
-test.describe('Content Rendering', () => {
-  test.beforeEach(async ({ page }) => {
-    await setupAuth(page);
-  });
-
-  const routes = [
-    ['Dashboard', '/'],
-    ['Opportunities', '/opportunities'],
-    ['Markets', '/markets'],
-    ['Runs', '/runs'],
-    ['ControlPlane', '/control'],
-    ['PaperTrading', '/paper'],
-    ['Correlations', '/analytics/correlations'],
-    ['Settings', '/settings'],
-  ];
-
-  for (const [name, route] of routes) {
-    test(`${name} renders content (not blank)`, async ({ page }) => {
-      await page.goto(route);
-      await page.waitForTimeout(3000);
-
-      // Page should have meaningful content
-      const bodyText = await page.locator('body').textContent();
-      expect(bodyText.trim().length).toBeGreaterThan(20);
-
-      // Check there's no uncaught error boundary
-      const hasErrorBoundary = bodyText.includes('Something went wrong') ||
-                               bodyText.includes('error boundary') ||
-                               bodyText.includes('Unexpected error');
-      if (hasErrorBoundary) {
-        await page.screenshot({ path: `test-results/error-${name}.png`, fullPage: true });
-      }
-      expect(hasErrorBoundary).toBe(false);
-    });
-  }
-});
-
-// ============================================================
-// PHASE 8: Responsive layout (mobile viewport)
-// ============================================================
-
-test.describe('Mobile Viewport', () => {
-  test.use({ viewport: { width: 375, height: 812 } });
-
-  test.beforeEach(async ({ page }) => {
-    await setupAuth(page);
-  });
-
-  test('Dashboard renders on mobile', async ({ page }) => {
-    await page.goto('/');
-    await page.waitForTimeout(2000);
-    await page.screenshot({ path: 'test-results/mobile-dashboard.png', fullPage: true });
-
-    const body = await page.locator('body').textContent();
-    expect(body.trim().length).toBeGreaterThan(20);
-  });
-
-  test('Markets renders on mobile', async ({ page }) => {
-    await page.goto('/markets');
-    await page.waitForTimeout(2000);
-    await page.screenshot({ path: 'test-results/mobile-markets.png', fullPage: true });
-  });
-
-  test('Opportunities renders on mobile', async ({ page }) => {
-    await page.goto('/opportunities');
-    await page.waitForTimeout(2000);
-    await page.screenshot({ path: 'test-results/mobile-opportunities.png', fullPage: true });
-  });
-});
-
-// ============================================================
-// PHASE 9: Edge cases
-// ============================================================
-
-test.describe('Edge Cases', () => {
-  test.beforeEach(async ({ page }) => {
-    await setupAuth(page);
-  });
-
-  test('non-existent route shows 404 or redirects', async ({ page }) => {
-    await page.goto('/this-route-does-not-exist');
-    await page.waitForTimeout(2000);
-    // Should either show 404 or redirect to dashboard
-    const url = page.url();
-    const body = await page.locator('body').textContent();
-    // Not blank
-    expect(body.trim().length).toBeGreaterThan(0);
-  });
-
-  test('non-existent market shows graceful error', async ({ page }) => {
-    await page.goto('/markets/FAKECOIN999');
-    await page.waitForTimeout(3000);
-    await page.screenshot({ path: 'test-results/fake-market.png', fullPage: true });
-    // Should not crash
-    const body = await page.locator('body').textContent();
-    expect(body.trim().length).toBeGreaterThan(0);
-  });
-
-  test('non-existent opportunity shows graceful error', async ({ page }) => {
-    await page.goto('/opportunities/00000000-0000-0000-0000-000000000000');
-    await page.waitForTimeout(3000);
-    await page.screenshot({ path: 'test-results/fake-opportunity.png', fullPage: true });
-  });
-
-  test('non-existent run shows graceful error', async ({ page }) => {
-    await page.goto('/runs/99999999');
-    await page.waitForTimeout(3000);
-    await page.screenshot({ path: 'test-results/fake-run.png', fullPage: true });
-  });
-});
+    await mockHealthAndAuth(page)
+  })
+
+  test('strategy dashboard is usable on mobile with stubbed live data', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+
+    await page.route('**/v1/strategies*', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          data: {
+            strategies: [
+              { id: 'U1', label: 'U1 Unicorn Ignition' },
+              { id: 'S9', label: 'S9 Dormancy Breakout' },
+            ],
+          }
+        }),
+      })
+    })
+
+    await page.route('**/v1/opportunities*', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          data: {
+            opportunities: [
+              {
+                id: 'U1:NVDA:15m',
+                setup_id: 'U1',
+                symbol: 'NVDA',
+                tf: '15m',
+                direction: 'LONG',
+                score: 91.2,
+                created_ts: '2026-03-15T14:30:00Z',
+                sim_trace: { kline_lineage: { causality_verified: true } },
+                reason: 'Leadership continuation',
+              },
+              {
+                id: 'S9:BTCUSDT:1h',
+                setup_id: 'S9',
+                symbol: 'BTCUSDT',
+                tf: '1h',
+                direction: 'LONG',
+                score: 86.5,
+                created_ts: '2026-03-15T14:10:00Z',
+                sim_trace: { kline_lineage: { causality_verified: true } },
+                reason: 'Breakout expansion',
+              },
+            ],
+          }
+        }),
+      })
+    })
+
+    await configureAppAccess(page, { returnTo: '/app/strategies' })
+
+    await expect(page.getByRole('heading', { name: /Ranked strategy visibility|Strategy-ranked operator view/i })).toBeVisible()
+    await expect(page.getByRole('link', { name: /Open Strategy/i }).first()).toBeVisible()
+    await expectNoHorizontalScroll(page)
+  })
+
+  test('mocked opportunity detail shows the Glass Box badge', async ({ page }) => {
+    await page.route('**/v1/opportunities/test-opp', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          data: {
+            id: 'test-opp',
+            symbol: 'NVDA',
+            timeframe: '15m',
+            setup_id: 'U1',
+            direction: 'LONG',
+            score: 92.1,
+            created_ts: '2026-03-15T14:30:00Z',
+            reason: 'Mocked opportunity',
+            sim_trace: {
+              kline_lineage: {
+                causality_verified: true,
+                decision_ts: '2026-03-15T14:30:00Z',
+                bar_start_ts: '2026-03-15T14:15:00Z',
+                phases: [
+                  { phase: 'ingest', state: 'verified', ts: '2026-03-15T14:29:55Z', detail: 'Input arrived before decision.' },
+                ],
+              },
+            },
+            payload: {
+              entry_price: 100,
+              stop_price: 95,
+              tp1_price: 108,
+              tp2_price: 112,
+            },
+          }
+        }),
+      })
+    })
+
+    await configureAppAccess(page, { returnTo: '/app/opportunities/test-opp' })
+
+    await expect(page.getByText(/Glass Box/i).first()).toBeVisible()
+    await expect(page.getByText(/Verified/i).first()).toBeVisible()
+  })
+
+  test('mocked simulation results show Avg Daily PF', async ({ page }) => {
+    await page.route('**/v1/runs/123/simulation-results*', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          data: {
+            run_status: 'SUCCESS',
+            total_count: 3,
+            summary: {
+              win_rate: 0.66,
+              total_r: 2.1,
+              avg_r: 0.7,
+              total_pnl_net: 120,
+              profit_factor: 1.8,
+              simulated_count: 3,
+            },
+            results: [
+              { id: 'sim-1', symbol: 'BTCUSDT', timeframe: '1h', setup_id: 'S9', direction: 'LONG', pnl_net: 90, exit_ts: '2026-03-10T15:00:00Z' },
+              { id: 'sim-2', symbol: 'ETHUSDT', timeframe: '1h', setup_id: 'S9', direction: 'LONG', pnl_net: -30, exit_ts: '2026-03-10T18:00:00Z' },
+              { id: 'sim-3', symbol: 'SOLUSDT', timeframe: '1h', setup_id: 'S10', direction: 'SHORT', pnl_net: 60, exit_ts: '2026-03-11T16:00:00Z' },
+            ],
+          }
+        }),
+      })
+    })
+
+    await configureAppAccess(page, { returnTo: '/app/runs/123/simulation' })
+
+    await expect(page.getByText(/Avg Daily PF/i).first()).toBeVisible()
+  })
+
+  test('control plane tabs support arrow-key navigation', async ({ page }) => {
+    await page.route('**/v1/strategies*', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          data: {
+            strategies: [
+              { id: 'U1', label: 'U1 Unicorn Ignition' },
+              { id: 'S9', label: 'S9 Dormancy Breakout' },
+            ],
+          },
+        }),
+      })
+    })
+
+    await page.route('**/v1/control/queue*', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          data: {
+            queue: [],
+          },
+        }),
+      })
+    })
+
+    await page.route('**/v1/markets*', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          data: {
+            markets: [
+              { symbol: 'BTCUSDT', status: 'active' },
+              { symbol: 'ETHUSDT', status: 'active' },
+            ],
+          },
+        }),
+      })
+    })
+
+    await page.route('**/v1/control/paper/status*', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          data: {
+            active: false,
+          },
+        }),
+      })
+    })
+
+    await configureAppAccess(page, { returnTo: '/app/control' })
+
+    const scanTab = page.getByRole('tab', { name: /^Scan$/i })
+    const backtestTab = page.getByRole('tab', { name: /^Backtest$/i })
+
+    await expect(scanTab).toHaveAttribute('aria-selected', 'true')
+    await scanTab.focus()
+    await page.keyboard.press('ArrowRight')
+
+    await expect(backtestTab).toHaveAttribute('aria-selected', 'true')
+    await expect(page.getByRole('tabpanel')).toContainText(/Run Backtest/i)
+  })
+
+  test('simulation modal supports keyboard dismissal and multiselect interaction', async ({ page }) => {
+    await page.route('**/v1/strategies*', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          data: {
+            strategies: [
+              { id: 'U1', label: 'U1 Unicorn Ignition' },
+            ],
+          },
+        }),
+      })
+    })
+
+    await page.route('**/v1/opportunities*', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          data: {
+            opportunities: [
+              {
+                id: 'expired-1',
+                symbol: 'NVDA',
+                timeframe: '15m',
+                setup_id: 'U1',
+                direction: 'LONG',
+                score: 91.2,
+                payload: {
+                  entry_price: 100,
+                  stop_price: 96,
+                  tp1_price: 106,
+                  tp2_price: 110,
+                },
+              },
+            ],
+          },
+        }),
+      })
+    })
+
+    await configureAppAccess(page, { returnTo: '/app/opportunities' })
+
+    await page.locator('select').first().selectOption('expired')
+
+    const openModal = page.getByRole('button', { name: /Simulate Expired/i })
+    await expect(openModal).toBeVisible()
+    await openModal.focus()
+    await openModal.click()
+
+    const dialog = page.getByRole('dialog', { name: /Simulate Expired Opportunities/i })
+    await expect(dialog).toBeVisible()
+
+    const setupButton = page.getByRole('button', { name: /Filter setups/i })
+    await setupButton.focus()
+    await page.keyboard.press('ArrowDown')
+
+    const listbox = page.getByRole('listbox')
+    await expect(listbox).toBeVisible()
+    await page.keyboard.press('Space')
+    await page.keyboard.press('Escape')
+
+    await expect(listbox).toHaveCount(0)
+    await expect(setupButton).toContainText(/U1|1 selected/i)
+
+    await page.keyboard.press('Escape')
+    await expect(dialog).toBeHidden()
+    await expect(openModal).toBeFocused()
+  })
+})

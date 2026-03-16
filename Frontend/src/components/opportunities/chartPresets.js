@@ -1,4 +1,4 @@
-export const SURVEY_PRESENTATION_PRICE_SPACING_TABLE = Object.freeze([
+const SURVEY_PRESENTATION_PRICE_SPACING_TABLE = Object.freeze([
   { maxPrice: 0.02, spacing: 20 },
   { maxPrice: 0.1, spacing: 16 },
   { maxPrice: 1, spacing: 12 },
@@ -8,7 +8,7 @@ export const SURVEY_PRESENTATION_PRICE_SPACING_TABLE = Object.freeze([
   { maxPrice: 1000000, spacing: 5.5 },
 ])
 
-export const SURVEY_ROW_CHART_PROPS_STANDARD = Object.freeze({
+const SURVEY_ROW_CHART_PROPS_STANDARD = Object.freeze({
   compact: true,
   height: 190,
   chartVariant: 'terminal',
@@ -21,7 +21,7 @@ export const SURVEY_ROW_CHART_PROPS_STANDARD = Object.freeze({
   priceBarSpacingTable: SURVEY_PRESENTATION_PRICE_SPACING_TABLE,
 })
 
-export const SURVEY_ROW_CHART_PROPS_PRESENTATION = Object.freeze({
+const SURVEY_ROW_CHART_PROPS_PRESENTATION = Object.freeze({
   compact: true,
   height: 210,
   chartVariant: 'classic',

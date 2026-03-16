@@ -62,11 +62,6 @@ if os.path.exists(env_path):
                 key, val = line.split('=', 1)
                 os.environ.setdefault(key.strip(), val.strip())
 
-worker_app_dir = os.path.join(os.path.dirname(__file__), '..', 'worker', 'app')
-if os.path.isdir('/app'):
-    worker_app_dir = '/app'
-sys.path.insert(0, os.path.abspath(worker_app_dir))
-
 import requests as req_lib
 import psycopg
 import numpy as np
@@ -85,14 +80,21 @@ DB_BATCH_SIZE = 5_000
 MAX_RETRIES = 5
 
 # Collection intervals (continuous mode)
+# GOVERNANCE_DEBT: migrate to TypedConfigRegistry
 COLLECTION_INTERVAL_S = int(os.environ.get("ONCHAIN_COLLECTION_INTERVAL_S", "3600"))
 
 # API keys
+# GOVERNANCE_DEBT: migrate to TypedConfigRegistry
 COINGLASS_API_KEY = os.environ.get("COINGLASS_API_KEY", "")
+# GOVERNANCE_DEBT: migrate to TypedConfigRegistry
 SANTIMENT_API_KEY = os.environ.get("SANTIMENT_API_KEY", "")
+# GOVERNANCE_DEBT: migrate to TypedConfigRegistry
 ETHERSCAN_API_KEY = os.environ.get("ETHERSCAN_API_KEY", "")
+# GOVERNANCE_DEBT: migrate to TypedConfigRegistry
 BSCSCAN_API_KEY = os.environ.get("BSCSCAN_API_KEY", "")
+# GOVERNANCE_DEBT: migrate to TypedConfigRegistry
 COINGECKO_API_KEY = os.environ.get("COINGECKO_API_KEY", "")
+# GOVERNANCE_DEBT: migrate to TypedConfigRegistry
 DUNE_API_KEY = os.environ.get("DUNE_API_KEY", "")
 
 # Feature materialization lookback
@@ -172,7 +174,7 @@ _thread_local = threading.local()
 
 
 def _get_session():
-    if not hasattr(_thread_local, 'session'):
+    if not hasattr(_thread_local, 'session'):  # EXEMPT: thread-local session init
         s = req_lib.Session()
         adapter = req_lib.adapters.HTTPAdapter(
             pool_connections=10, pool_maxsize=10,
@@ -2205,6 +2207,7 @@ def main():
                         help="Backfill history depth in days")
     args = parser.parse_args()
 
+    # GOVERNANCE_DEBT: migrate to TypedConfigRegistry
     db_url = os.environ.get("DATABASE_URL")
     if not db_url:
         logger.error("DATABASE_URL not set")
@@ -2344,7 +2347,7 @@ def main():
                 logger.info("  Sleeping %.0fs until next cycle...", sleep_time)
                 time.sleep(sleep_time)
 
-    except KeyboardInterrupt:
+    except KeyboardInterrupt:  # EXEMPT: graceful SIGINT shutdown
         logger.info("\nShutting down...")
     finally:
         write_queue.put(None)

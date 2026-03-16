@@ -67,13 +67,13 @@ export default function VersionsTab({
   return (
     <div className="px-4 py-3">
       {/* Point-in-time selector */}
-      <div className="flex items-center gap-2 mb-2">
+      <div className="mb-2 flex items-center gap-2">
         <label className="text-[10px] text-terminal-500">Point-in-time:</label>
         <input
           type="datetime-local"
           value={pointInTime}
           onChange={e => setPointInTime(e.target.value)}
-          className="flex-1 text-[10px] bg-terminal-900 border border-terminal-700 rounded px-1.5 py-1 text-terminal-300"
+          className="flex-1 rounded border border-terminal-700 bg-terminal-900 px-1.5 py-1 text-[10px] text-terminal-300"
         />
         {pointInTime && (
           <button onClick={() => setPointInTime('')} className="text-[10px] text-amber-400">
@@ -82,10 +82,10 @@ export default function VersionsTab({
         )}
       </div>
 
-      <div className="flex items-center justify-between mb-2">
+      <div className="mb-2 flex items-center justify-between">
         <div className="text-xs font-medium text-terminal-300">
           Version History
-          <span className="text-terminal-500 ml-1">
+          <span className="ml-1 text-terminal-500">
             ({timeFilteredVersions.length}{!showAll && versions.length > timeFilteredVersions.length ? ` of ${versions.length}` : ''})
           </span>
         </div>
@@ -100,7 +100,7 @@ export default function VersionsTab({
           {versions.length > 5 && (
             <button
               onClick={() => setShowAll(!showAll)}
-              className="text-[10px] text-amber-400 hover:text-amber-300 transition-colors"
+              className="text-[10px] text-amber-400 transition-colors hover:text-amber-300"
             >
               {showAll ? 'Show significant' : 'Show all'}
             </button>
@@ -110,7 +110,7 @@ export default function VersionsTab({
 
       {/* Timeline scrubber */}
       {significanceData.length > 1 && (
-        <div className="h-10 mb-2 bg-terminal-900 rounded border border-terminal-700 flex items-end px-1 gap-px overflow-hidden">
+        <div className="mb-2 flex h-10 items-end gap-px overflow-hidden rounded border border-terminal-700 bg-terminal-900 px-1">
           {significanceData.map(d => {
             const height = Math.max(4, (d.significance / maxSig) * 32)
             const barColor = d.status === 'deployed' ? '#22c55e' :
@@ -129,7 +129,7 @@ export default function VersionsTab({
                   }
                   setSelectedVersionForBio(d.id)
                 }}
-                className={`flex-1 min-w-[3px] max-w-[12px] rounded-t transition-all ${isSelected ? 'ring-1 ring-amber-400' : ''}`}
+                className={`min-w-[3px] max-w-[12px] flex-1 rounded-t transition-all ${isSelected ? 'ring-1 ring-amber-400' : ''}`}
                 style={{ height: `${height}px`, backgroundColor: barColor }}
                 title={`v${d.number} — sig: ${d.significance.toFixed(2)}`}
               />
@@ -139,9 +139,9 @@ export default function VersionsTab({
       )}
 
       {loadingVersions ? (
-        <div className="text-xs text-terminal-500 text-center py-4">Loading versions...</div>
+        <div className="py-4 text-center text-xs text-terminal-500">Loading versions...</div>
       ) : timeFilteredVersions.length === 0 ? (
-        <div className="text-xs text-terminal-500 text-center py-4">No versions recorded</div>
+        <div className="py-4 text-center text-xs text-terminal-500">No versions recorded</div>
       ) : (
         <div className="space-y-1">
           {timeFilteredVersions.map((v) => (
@@ -202,7 +202,7 @@ function DiffViewer({ diffVersionA, diffVersionB, diffData, loadingDiff, handleD
 
   return (
     <div className="mt-3 border-t border-terminal-700 pt-3">
-      <div className="flex items-center justify-between mb-2">
+      <div className="mb-2 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="text-[10px] font-medium text-terminal-300">
             Version Diff: v{vA?.version_number || '?'} {'\u2192'} v{vB?.version_number || '?'}
@@ -211,13 +211,13 @@ function DiffViewer({ diffVersionA, diffVersionB, diffData, loadingDiff, handleD
             <div className="flex gap-0.5">
               <button
                 onClick={() => setDiffMode('compact')}
-                className={`text-[9px] px-1.5 py-0.5 rounded ${diffMode === 'compact' ? 'bg-amber-500/20 text-amber-400' : 'text-terminal-500 hover:text-terminal-300'}`}
+                className={`rounded px-1.5 py-0.5 text-[9px] ${diffMode === 'compact' ? 'bg-amber-500/20 text-amber-400' : 'text-terminal-500 hover:text-terminal-300'}`}
               >
                 Compact
               </button>
               <button
                 onClick={() => setDiffMode('inline')}
-                className={`text-[9px] px-1.5 py-0.5 rounded ${diffMode === 'inline' ? 'bg-amber-500/20 text-amber-400' : 'text-terminal-500 hover:text-terminal-300'}`}
+                className={`rounded px-1.5 py-0.5 text-[9px] ${diffMode === 'inline' ? 'bg-amber-500/20 text-amber-400' : 'text-terminal-500 hover:text-terminal-300'}`}
               >
                 Inline
               </button>
@@ -227,16 +227,16 @@ function DiffViewer({ diffVersionA, diffVersionB, diffData, loadingDiff, handleD
         <button
           onClick={handleDiff}
           disabled={loadingDiff}
-          className="text-[10px] px-2 py-1 bg-amber-600/20 text-amber-400 rounded hover:bg-amber-600/30 disabled:opacity-30"
+          className="rounded bg-amber-600/20 px-2 py-1 text-[10px] text-amber-400 hover:bg-amber-600/30 disabled:opacity-30"
         >
           {loadingDiff ? 'Loading...' : 'Compare'}
         </button>
       </div>
 
       {diffData && (
-        <div className="bg-terminal-900 rounded border border-terminal-700 overflow-hidden">
+        <div className="overflow-hidden rounded border border-terminal-700 bg-terminal-900">
           {/* Summary bar */}
-          <div className="flex items-center gap-3 px-2 py-1.5 bg-terminal-800/50 border-b border-terminal-700">
+          <div className="flex items-center gap-3 border-b border-terminal-700 bg-terminal-800/50 px-2 py-1.5">
             {hasParams && <span className="text-[9px] text-amber-400">{Object.keys(diffData.changed_params).length} params</span>}
             {hasMetrics && <span className="text-[9px] text-blue-400">{Object.keys(diffData.metric_delta).length} metrics</span>}
             {hasStatus && <span className="text-[9px] text-purple-400">status changed</span>}
@@ -256,19 +256,19 @@ function DiffViewer({ diffVersionA, diffVersionB, diffData, loadingDiff, handleD
             >
               {diffMode === 'compact' ? (
                 Object.entries(diffData.changed_params).map(([k, v]) => (
-                  <div key={k} className="flex items-center text-[10px] font-mono gap-2 px-2 py-0.5">
-                    <span className="text-terminal-400 min-w-[80px]">{k}:</span>
-                    <span className="text-red-400 bg-red-500/10 px-1 rounded">{JSON.stringify(v.a)}</span>
+                  <div key={k} className="flex items-center gap-2 px-2 py-0.5 font-mono text-[10px]">
+                    <span className="min-w-[80px] text-terminal-400">{k}:</span>
+                    <span className="rounded bg-red-500/10 px-1 text-red-400">{JSON.stringify(v.a)}</span>
                     <span className="text-terminal-500">{'\u2192'}</span>
-                    <span className="text-green-400 bg-green-500/10 px-1 rounded">{JSON.stringify(v.b)}</span>
+                    <span className="rounded bg-green-500/10 px-1 text-green-400">{JSON.stringify(v.b)}</span>
                   </div>
                 ))
               ) : (
                 Object.entries(diffData.changed_params).map(([k, v]) => (
-                  <div key={k} className="px-2 py-1 border-b border-terminal-800 last:border-b-0">
-                    <div className="text-[10px] font-medium text-terminal-300 mb-0.5">{k}</div>
-                    <div className="text-[10px] font-mono text-red-400 bg-red-500/5 px-1.5 py-0.5 rounded">- {JSON.stringify(v.a)}</div>
-                    <div className="text-[10px] font-mono text-green-400 bg-green-500/5 px-1.5 py-0.5 rounded mt-0.5">+ {JSON.stringify(v.b)}</div>
+                  <div key={k} className="border-b border-terminal-800 px-2 py-1 last:border-b-0">
+                    <div className="mb-0.5 text-[10px] font-medium text-terminal-300">{k}</div>
+                    <div className="rounded bg-red-500/5 px-1.5 py-0.5 font-mono text-[10px] text-red-400">- {JSON.stringify(v.a)}</div>
+                    <div className="mt-0.5 rounded bg-green-500/5 px-1.5 py-0.5 font-mono text-[10px] text-green-400">+ {JSON.stringify(v.b)}</div>
                   </div>
                 ))
               )}
@@ -284,8 +284,8 @@ function DiffViewer({ diffVersionA, diffVersionB, diffData, loadingDiff, handleD
               count={Object.keys(diffData.metric_delta).length}
             >
               {Object.entries(diffData.metric_delta).map(([k, v]) => (
-                <div key={k} className="flex items-center text-[10px] font-mono gap-2 px-2 py-0.5">
-                  <span className="text-terminal-400 min-w-[80px]">{k}:</span>
+                <div key={k} className="flex items-center gap-2 px-2 py-0.5 font-mono text-[10px]">
+                  <span className="min-w-[80px] text-terminal-400">{k}:</span>
                   {v.delta != null ? (
                     <>
                       <span className="text-terminal-500">{typeof v.a === 'number' ? v.a.toFixed(4) : v.a ?? 'N/A'}</span>
@@ -310,7 +310,7 @@ function DiffViewer({ diffVersionA, diffVersionB, diffData, loadingDiff, handleD
               expanded={expandedSections.has('status')}
               onToggle={() => toggleSection('status')}
             >
-              <div className="flex items-center text-[10px] font-mono gap-2 px-2 py-0.5">
+              <div className="flex items-center gap-2 px-2 py-0.5 font-mono text-[10px]">
                 <span className="text-red-400">{diffData.status_a}</span>
                 <span className="text-terminal-500">{'\u2192'}</span>
                 <span className="text-green-400">{diffData.status_b}</span>
@@ -326,16 +326,16 @@ function DiffViewer({ diffVersionA, diffVersionB, diffData, loadingDiff, handleD
               onToggle={() => toggleSection('health')}
             >
               {vA?.staleness_state !== vB?.staleness_state && (
-                <div className="flex items-center text-[10px] font-mono gap-2 px-2 py-0.5">
-                  <span className="text-terminal-400 min-w-[80px]">staleness:</span>
+                <div className="flex items-center gap-2 px-2 py-0.5 font-mono text-[10px]">
+                  <span className="min-w-[80px] text-terminal-400">staleness:</span>
                   <span className="text-amber-400">{vA?.staleness_state || 'clean'}</span>
                   <span className="text-terminal-500">{'\u2192'}</span>
                   <span className="text-amber-300">{vB?.staleness_state || 'clean'}</span>
                 </div>
               )}
               {vA?.health_status !== vB?.health_status && (
-                <div className="flex items-center text-[10px] font-mono gap-2 px-2 py-0.5">
-                  <span className="text-terminal-400 min-w-[80px]">health:</span>
+                <div className="flex items-center gap-2 px-2 py-0.5 font-mono text-[10px]">
+                  <span className="min-w-[80px] text-terminal-400">health:</span>
                   <span className="text-amber-400">{vA?.health_status || 'unknown'}</span>
                   <span className="text-terminal-500">{'\u2192'}</span>
                   <span className="text-amber-300">{vB?.health_status || 'unknown'}</span>
@@ -355,9 +355,9 @@ function DiffSection({ title, expanded, onToggle, count, children }) {
     <div className="border-b border-terminal-800 last:border-b-0">
       <button
         onClick={onToggle}
-        className="w-full flex items-center justify-between px-2 py-1.5 text-left hover:bg-terminal-800/50 transition-colors"
+        className="flex w-full items-center justify-between px-2 py-1.5 text-left transition-colors hover:bg-terminal-800/50"
       >
-        <span className="text-[10px] text-terminal-400 font-medium">{title}</span>
+        <span className="text-[10px] font-medium text-terminal-400">{title}</span>
         <div className="flex items-center gap-1">
           {count != null && <span className="text-[9px] text-terminal-500">{count}</span>}
           <span className="text-[9px] text-terminal-600">{expanded ? '\u25B2' : '\u25BC'}</span>

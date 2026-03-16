@@ -31,7 +31,7 @@ from typing import Optional, Any, Dict, List
 
 from psycopg_pool import ConnectionPool
 from governance.bootstrap import get_config, get_lineage
-from mcas_governance import LineageEnforcer
+from governance.kernel import LineageEnforcer
 
 logger = logging.getLogger(__name__)
 

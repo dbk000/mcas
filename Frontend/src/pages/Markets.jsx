@@ -51,12 +51,12 @@ export default function Markets() {
   }, [markets])
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-operator-surface>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-terminal-100">Markets</h1>
-          <p className="text-sm text-terminal-400 mt-1">
+          <p className="mt-1 text-sm text-terminal-400">
             {data?.count || 0} trading pairs available
           </p>
         </div>
@@ -65,19 +65,19 @@ export default function Markets() {
       {/* Search and filters */}
       <Card>
         <CardContent className="flex flex-wrap items-center gap-4 py-3">
-          <div className="relative flex-1 min-w-[200px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-terminal-400" />
+          <div className="relative min-w-[200px] flex-1">
+            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-terminal-400" />
             <Input
               type="text"
               placeholder="Search symbols..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 w-full"
+              className="w-full pl-9"
             />
           </div>
           
           <div className="flex items-center gap-2">
-            <Filter className="w-4 h-4 text-terminal-400" />
+            <Filter className="size-4 text-terminal-400" />
             <Select
               value={tierFilter}
               onChange={(e) => setTierFilter(e.target.value)}
@@ -98,11 +98,11 @@ export default function Markets() {
 
       {/* Markets grid */}
       {loading ? (
-        <div className="grid gap-3 grid-cols-2 md:grid-cols-4 lg:grid-cols-6">
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4 lg:grid-cols-6">
           {Array(24).fill(0).map((_, i) => (
             <Card key={i}>
               <CardContent className="py-3">
-                <Skeleton className="h-6 w-20 mb-1" />
+                <Skeleton className="mb-1 h-6 w-20" />
                 <Skeleton className="h-4 w-12" />
               </CardContent>
             </Card>
@@ -118,10 +118,10 @@ export default function Markets() {
         <div className="space-y-6">
           {Object.entries(groupedMarkets).sort().map(([letter, letterMarkets]) => (
             <div key={letter}>
-              <h3 className="text-sm font-medium text-terminal-400 mb-3 sticky top-0 bg-terminal-900 py-2">
+              <h3 className="sticky top-0 mb-3 bg-terminal-900 py-2 text-sm font-medium text-terminal-400">
                 {letter}
               </h3>
-              <div className="grid gap-3 grid-cols-2 md:grid-cols-4 lg:grid-cols-6">
+              <div className="grid grid-cols-2 gap-3 md:grid-cols-4 lg:grid-cols-6">
                 {letterMarkets.map((market) => (
                   <MarketCard key={market.symbol} market={market} />
                 ))}
@@ -136,7 +136,7 @@ export default function Markets() {
 
 function MarketCard({ market }) {
   return (
-    <Link to={`/markets/${market.symbol}`}>
+    <Link to={`/app/markets/${market.symbol}`}>
       <Card hover>
         <CardContent className="py-3">
           <div className="flex items-center justify-between">
@@ -147,7 +147,7 @@ function MarketCard({ market }) {
               <Badge variant="warning" className="text-[10px]">Major</Badge>
             )}
           </div>
-          <p className="text-xs text-terminal-400 mt-1">{market.symbol}</p>
+          <p className="mt-1 text-xs text-terminal-400">{market.symbol}</p>
         </CardContent>
       </Card>
     </Link>

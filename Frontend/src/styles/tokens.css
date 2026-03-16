@@ -1,0 +1,37 @@
+/* Operator-Grade Mechanical Density Tokens */
+:root {
+  /* Spacing & Padding */
+  --op-card-padding: 1rem;
+  --op-row-height: 2.5rem;
+  --op-header-height: 3.5rem;
+  --op-cell-padding-x: 0.75rem;
+  --op-cell-padding-y: 0.5rem;
+  --op-gap-dense: 0.5rem;
+  --op-gap-standard: 1rem;
+
+  /* Typography Density */
+  --op-font-size-base: 0.875rem;
+  --op-line-height-base: 1.25rem;
+
+  /* Viewport Constraints */
+  --op-min-visible-rows: 8;
+  --op-max-row-height: 3rem;
+}
+
+/* Base enforcement for surfaces */
+.op-surface, [data-operator-surface] {
+  font-size: var(--op-font-size-base);
+  line-height: var(--op-line-height-base);
+}
+
+.op-row {
+  height: var(--op-row-height);
+  min-height: var(--op-row-height);
+  max-height: var(--op-max-row-height);
+  display: flex;
+  align-items: center;
+}
+
+.op-card {
+  padding: var(--op-card-padding);
+}

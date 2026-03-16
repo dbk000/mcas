@@ -14,7 +14,7 @@ import {
   Select,
   Input
 } from '../components/ui'
-import { formatRelativeTime, formatDateTime } from '../utils/formatters'
+import { formatRelativeTime } from '../utils/formatters'
 
 export default function Runs() {
   const [filters, setFilters] = useState({
@@ -32,13 +32,13 @@ export default function Runs() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-terminal-100">Runs</h1>
-          <p className="text-sm text-terminal-400 mt-1">
+          <p className="mt-1 text-sm text-terminal-400">
             Scan, backtest, and paper trading run history
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Link to="/runs/compare" className="btn btn-secondary btn-sm flex items-center gap-1.5">
-            <GitCompare className="w-4 h-4" />
+          <Link to="/app/runs/compare" className="btn btn-secondary btn-sm flex items-center gap-1.5">
+            <GitCompare className="size-4" />
             Compare
           </Link>
           <RefreshControl onRefresh={refetch} loading={loading} />
@@ -49,7 +49,7 @@ export default function Runs() {
       <Card>
         <CardContent className="flex flex-wrap items-center gap-4 py-3">
           <div className="flex items-center gap-2">
-            <Filter className="w-4 h-4 text-terminal-400" />
+            <Filter className="size-4 text-terminal-400" />
             <span className="text-sm text-terminal-400">Filters:</span>
           </div>
           
@@ -95,7 +95,7 @@ export default function Runs() {
           {[1, 2, 3, 4, 5].map(i => (
             <Card key={i}>
               <CardContent className="flex items-center gap-4">
-                <Skeleton className="w-24 h-6" />
+                <Skeleton className="h-6 w-24" />
                 <Skeleton className="flex-1" />
                 <Skeleton className="w-20" />
               </CardContent>
@@ -121,7 +121,7 @@ export default function Runs() {
 
 function RunCard({ run }) {
   return (
-    <Link to={`/runs/${run.id}`}>
+    <Link to={`/app/runs/${run.id}`}>
       <Card hover>
         <CardContent className="flex items-center gap-4">
           {/* Type badge */}
@@ -138,23 +138,23 @@ function RunCard({ run }) {
           </Badge>
 
           {/* Name and details */}
-          <div className="flex-1 min-w-0">
+          <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
-              <span className="font-medium text-terminal-100 truncate">
+              <span className="truncate font-medium text-terminal-100">
                 {run.name}
               </span>
               <StatusBadge status={run.status} />
             </div>
-            <div className="flex items-center gap-3 text-xs text-terminal-400 mt-1">
+            <div className="mt-1 flex items-center gap-3 text-xs text-terminal-400">
               {run.fingerprint && (
                 <span className="flex items-center gap-1 font-mono">
-                  <Hash className="w-3 h-3" />
+                  <Hash className="size-3" />
                   {run.fingerprint.slice(0, 8)}
                 </span>
               )}
               {run.created_at && (
                 <span className="flex items-center gap-1">
-                  <Clock className="w-3 h-3" />
+                  <Clock className="size-3" />
                   {formatRelativeTime(run.created_at)}
                 </span>
               )}
@@ -163,9 +163,9 @@ function RunCard({ run }) {
 
           {/* Summary preview */}
           {run.summary && Object.keys(run.summary).length > 0 && (
-            <div className="hidden md:block text-right">
+            <div className="hidden text-right md:block">
               <p className="text-xs text-terminal-500">Summary</p>
-              <p className="text-sm text-terminal-200 font-mono">
+              <p className="font-mono text-sm text-terminal-200">
                 {Object.entries(run.summary).slice(0, 2).map(([k, v]) => 
                   `${k}: ${typeof v === 'number' ? v.toFixed(1) : v}`
                 ).join(' | ')}
@@ -208,14 +208,14 @@ function FingerprintSearch() {
       <CardContent className="space-y-3">
         <div className="flex items-center gap-3">
           <div className="relative flex-1">
-            <Hash className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-terminal-400" />
+            <Hash className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-terminal-400" />
             <Input
               type="text"
               placeholder="Search by fingerprint..."
               value={fingerprint}
               onChange={(e) => setFingerprint(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-              className="pl-9 w-full font-mono"
+              className="w-full pl-9 font-mono"
             />
           </div>
           <button
@@ -223,7 +223,7 @@ function FingerprintSearch() {
             disabled={loading || !fingerprint.trim()}
             className="btn btn-secondary btn-sm"
           >
-            <Search className="w-4 h-4" />
+            <Search className="size-4" />
             Search
           </button>
         </div>
@@ -238,8 +238,8 @@ function FingerprintSearch() {
                 {results.runs.map((run) => (
                   <Link 
                     key={run.id}
-                    to={`/runs/${run.id}`}
-                    className="block p-2 bg-terminal-900 rounded hover:bg-terminal-700 transition-colors"
+                    to={`/app/runs/${run.id}`}
+                    className="block rounded bg-terminal-900 p-2 transition-colors hover:bg-terminal-700"
                   >
                     <div className="flex items-center justify-between">
                       <span className="text-terminal-100">{run.name}</span>

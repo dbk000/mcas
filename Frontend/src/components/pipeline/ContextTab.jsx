@@ -1,12 +1,13 @@
 import { Copy, Check } from 'lucide-react'
+import { getActiveNodeVersion } from './nodeDetailUtils'
 
 function ProvenanceRow({ label, value, mono = false, warn = false }) {
   const hasValue = value != null && value !== '' && value !== undefined
   return (
     <div className="flex items-start gap-2 text-[10px]">
-      <span className="text-terminal-500 shrink-0 w-24">{label}</span>
+      <span className="w-24 shrink-0 text-terminal-500">{label}</span>
       {hasValue ? (
-        <span className={`${mono ? 'font-mono' : ''} text-terminal-300 break-all`}>{value}</span>
+        <span className={`${mono ? 'font-mono' : ''} break-all text-terminal-300`}>{value}</span>
       ) : (
         <span className={`italic ${warn ? 'text-amber-500/70' : 'text-terminal-600'}`}>not recorded</span>
       )}
@@ -41,8 +42,7 @@ export default function ContextTab({
   copied,
   handleCopyContext,
 }) {
-  // Find the active (deployed) version, or fall back to first
-  const activeVersion = versions.find(v => v.status === 'deployed') || versions[0]
+  const activeVersion = getActiveNodeVersion(versions)
   const ctx = activeVersion?.metrics_context || {}
   const runDetail = activeVersion?.run_detail
   const hasProvenance = activeVersion && (
@@ -55,14 +55,14 @@ export default function ContextTab({
   )
 
   return (
-    <div className="px-4 py-3 space-y-3">
+    <div className="space-y-3 px-4 py-3">
       <div className="flex items-center justify-between">
         <div className="text-xs font-medium text-terminal-300">Full Context</div>
         <button
           onClick={handleCopyContext}
           className="flex items-center gap-1 text-[10px] text-amber-400 hover:text-amber-300"
         >
-          {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+          {copied ? <Check className="size-3" /> : <Copy className="size-3" />}
           {copied ? 'Copied' : 'Copy Markdown'}
         </button>
       </div>
@@ -70,14 +70,14 @@ export default function ContextTab({
       {/* Port contracts */}
       {(node.ports?.inputs?.length > 0 || node.ports?.outputs?.length > 0) && (
         <div>
-          <div className="text-[10px] text-terminal-500 mb-1">Port Contracts</div>
+          <div className="mb-1 text-[10px] text-terminal-500">Port Contracts</div>
           {node.ports?.inputs?.map(p => (
-            <div key={p.id} className="text-[10px] font-mono text-terminal-300">
+            <div key={p.id} className="font-mono text-[10px] text-terminal-300">
               <span className="text-blue-400">in</span> {p.name}: {p.data_type}
             </div>
           ))}
           {node.ports?.outputs?.map(p => (
-            <div key={p.id} className="text-[10px] font-mono text-terminal-300">
+            <div key={p.id} className="font-mono text-[10px] text-terminal-300">
               <span className="text-green-400">out</span> {p.name}: {p.data_type}
             </div>
           ))}
@@ -87,7 +87,7 @@ export default function ContextTab({
       {/* Connected nodes */}
       {graph && (
         <div>
-          <div className="text-[10px] text-terminal-500 mb-1">Connected Nodes</div>
+          <div className="mb-1 text-[10px] text-terminal-500">Connected Nodes</div>
           {[...graph.getUpstream(nodeId)].length > 0 && (
             <div className="text-[10px] text-terminal-300">
               <span className="text-terminal-500">Upstream: </span>
@@ -106,15 +106,15 @@ export default function ContextTab({
       {/* Data Provenance */}
       {hasAnyMetrics && (
         <div>
-          <div className="text-[10px] text-terminal-500 mb-1.5 flex items-center gap-1.5">
+          <div className="mb-1.5 flex items-center gap-1.5 text-[10px] text-terminal-500">
             Data Provenance
             {!hasProvenance && (
-              <span className="text-amber-500/60 italic">(incomplete)</span>
+              <span className="italic text-amber-500/60">(incomplete)</span>
             )}
           </div>
-          <div className="bg-terminal-900/50 rounded-lg p-2.5 space-y-1.5 border border-terminal-700/50">
+          <div className="space-y-1.5 rounded-lg border border-terminal-700/50 bg-terminal-900/50 p-2.5">
             {/* Simulation source */}
-            <div className="text-[10px] text-terminal-400 font-medium mb-1">Simulation Source</div>
+            <div className="mb-1 text-[10px] font-medium text-terminal-400">Simulation Source</div>
             <ProvenanceRow
               label="Run ID"
               value={activeVersion?.metrics_run_id ? activeVersion.metrics_run_id.slice(0, 8) + '...' : null}
@@ -133,17 +133,17 @@ export default function ContextTab({
             )}
 
             {/* Results location */}
-            <div className="text-[10px] text-terminal-400 font-medium mt-2.5 mb-1">Results Location</div>
+            <div className="mb-1 mt-2.5 text-[10px] font-medium text-terminal-400">Results Location</div>
             {activeVersion?.metrics_run_id ? (
-              <div className="text-[10px] font-mono text-terminal-300 bg-terminal-800 rounded px-2 py-1.5 break-all select-all">
-                SELECT * FROM simulation_results WHERE run_id = '{activeVersion.metrics_run_id.slice(0, 8)}...'
+              <div className="select-all break-all rounded bg-terminal-800 px-2 py-1.5 font-mono text-[10px] text-terminal-300">
+                {`SELECT * FROM simulation_results WHERE run_id = '${activeVersion.metrics_run_id.slice(0, 8)}...'`}
               </div>
             ) : (
               <ProvenanceRow label="Query" value={null} warn />
             )}
 
             {/* Backfill context */}
-            <div className="text-[10px] text-terminal-400 font-medium mt-2.5 mb-1">Backfill Context</div>
+            <div className="mb-1 mt-2.5 text-[10px] font-medium text-terminal-400">Backfill Context</div>
             <ProvenanceRow label="Date Range" value={formatDateRange(ctx)} warn={!formatDateRange(ctx)} />
             <ProvenanceRow label="Symbols" value={formatSymbolCount(ctx)} warn={!formatSymbolCount(ctx)} />
             <ProvenanceRow label="Timeframe" value={ctx?.timeframe} warn={!ctx?.timeframe} />
@@ -151,7 +151,7 @@ export default function ContextTab({
             <ProvenanceRow label="Data Source" value={ctx?.data_source} />
 
             {/* Source & reproducibility */}
-            <div className="text-[10px] text-terminal-400 font-medium mt-2.5 mb-1">Reproducibility</div>
+            <div className="mb-1 mt-2.5 text-[10px] font-medium text-terminal-400">Reproducibility</div>
             <ProvenanceRow label="Source Hash" value={activeVersion?.source_hash} mono />
             <ProvenanceRow
               label="Config"
@@ -160,8 +160,8 @@ export default function ContextTab({
             />
             {ctx?.reproduce_cmd ? (
               <div className="mt-1">
-                <div className="text-[10px] text-terminal-500 mb-0.5">Command</div>
-                <div className="text-[10px] font-mono text-terminal-300 bg-terminal-800 rounded px-2 py-1.5 break-all select-all">
+                <div className="mb-0.5 text-[10px] text-terminal-500">Command</div>
+                <div className="select-all break-all rounded bg-terminal-800 px-2 py-1.5 font-mono text-[10px] text-terminal-300">
                   {ctx.reproduce_cmd}
                 </div>
               </div>
@@ -175,10 +175,10 @@ export default function ContextTab({
       {/* Recent versions summary */}
       {versions.length > 0 && (
         <div>
-          <div className="text-[10px] text-terminal-500 mb-1">Recent Versions</div>
+          <div className="mb-1 text-[10px] text-terminal-500">Recent Versions</div>
           <div className="space-y-0.5">
             {versions.slice(0, 5).map(v => (
-              <div key={v.version_id} className="text-[10px] text-terminal-300 font-mono">
+              <div key={v.version_id} className="font-mono text-[10px] text-terminal-300">
                 v{v.version_number} ({v.status}) — {v.change_reason || 'no reason'}
                 {v.agg_pf != null && (
                   <span className={v.agg_pf >= 1 ? ' text-green-400' : ' text-red-400'}>

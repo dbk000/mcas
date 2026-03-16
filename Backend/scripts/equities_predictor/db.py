@@ -240,7 +240,7 @@ def load_ohlcv(
                 WHERE symbol = ANY(%s)
                   AND timeframe = %s
                   AND bar_start_ts >= %s
-                  AND bar_start_ts <= %s
+                  AND bar_start_ts < %s
                   AND is_final = TRUE
                   AND (%s::text[] IS NULL OR source = ANY(%s::text[]))
             ) q
@@ -510,7 +510,7 @@ def load_feature_events(
               AND timeframe = %s
               AND horizon = ANY(%s)
               AND bar_start_ts >= %s
-              AND bar_start_ts <= %s
+              AND bar_start_ts < %s
             ORDER BY symbol, bar_start_ts ASC, horizon ASC;
             """,
             (symbols, timeframe, horizons, start_ts, end_ts),
