@@ -47,11 +47,12 @@ export default function MarketingLayout({ children }) {
             <div className="flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-400 to-amber-700 shadow-lg shadow-amber-900/30">
               <Zap className="size-7 text-terminal-900" />
             </div>
-            <div>
-              <div className="text-xl font-bold tracking-[0.18em] text-terminal-100">MCAS</div>
-              <div className="text-sm uppercase tracking-[0.18em] text-terminal-300">Market Cognition At Scale</div>
-            </div>
+            <div className="text-xl font-bold tracking-[0.18em] text-terminal-100 sm:text-2xl">MCAS</div>
           </Link>
+
+          <div className="hidden flex-1 justify-center md:flex">
+            <span className="text-base font-semibold uppercase tracking-[0.25em] text-terminal-300 lg:text-lg">Market Cognition At Scale</span>
+          </div>
 
           <nav className="hidden items-center gap-6 md:flex">
             {navigation.map((item) => (
