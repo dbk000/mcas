@@ -43,13 +43,13 @@ export default function MarketingLayout({ children }) {
 
       <header className="sticky top-0 z-40 border-b border-terminal-700/80 bg-terminal-900/90 backdrop-blur">
         <div className="flex w-full items-center justify-between px-4 py-1.5 sm:px-8 lg:px-6">
-          <Link to="/" className="flex items-center gap-3">
-            <div className="flex size-10 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-amber-700 shadow-lg shadow-amber-900/30">
-              <Zap className="size-5 text-terminal-900" />
+          <Link to="/" className="flex items-center gap-4">
+            <div className="flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-400 to-amber-700 shadow-lg shadow-amber-900/30">
+              <Zap className="size-7 text-terminal-900" />
             </div>
             <div>
-              <div className="text-lg font-bold tracking-[0.2em] text-terminal-100">MCAS</div>
-              <div className="text-xs uppercase tracking-[0.22em] text-terminal-300">Market Cognition At Scale</div>
+              <div className="text-xl font-bold tracking-[0.18em] text-terminal-100">MCAS</div>
+              <div className="text-sm uppercase tracking-[0.18em] text-terminal-300">Market Cognition At Scale</div>
             </div>
           </Link>
 
