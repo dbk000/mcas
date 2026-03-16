@@ -1,21 +1,21 @@
 /*
- * Ocean — Navy abyss with teal bioluminescence.
- * Deep-water sonar room, pressure-tested.
+ * Ocean — Medium-dark blue-gray. Not full dark, not light.
+ * Twilight over water. Easy on the eyes for long sessions.
  */
 [data-theme="ocean"] {
-  --c-t-900: 6 10 20;
-  --c-t-800: 10 16 32;
-  --c-t-700: 14 22 44;
-  --c-t-600: 20 30 58;
-  --c-t-500: 255 255 255;
-  --c-t-400: 255 255 255;
-  --c-t-300: 255 255 255;
-  --c-t-200: 255 255 255;
-  --c-t-100: 255 255 255;
+  --c-t-900: 22 30 42;
+  --c-t-800: 30 41 59;
+  --c-t-700: 44 55 75;
+  --c-t-600: 51 65 85;
+  --c-t-500: 248 250 252;
+  --c-t-400: 226 232 240;
+  --c-t-300: 203 213 225;
+  --c-t-200: 241 245 249;
+  --c-t-100: 248 250 252;
   --c-accent: 45 212 191;
   --c-accent-light: 94 234 212;
   --c-accent-strong: 20 184 166;
   --c-signal-long: 52 211 153;
   --c-signal-short: 251 146 60;
-  --c-signal-neutral: 125 137 168;
+  --c-signal-neutral: 148 163 184;
 }

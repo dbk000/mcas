@@ -3,17 +3,17 @@ import { Palette } from 'lucide-react'
 import { STORAGE_KEYS } from '../config/storageKeys'
 
 const THEMES = [
-  { id: '', label: 'Default' },
-  { id: 'midnight', label: 'Midnight' },
-  { id: 'arctic', label: 'Arctic' },
-  { id: 'ember', label: 'Ember' },
-  { id: 'forest', label: 'Forest' },
-  { id: 'ocean', label: 'Ocean' },
-  { id: 'sand', label: 'Sand' },
-  { id: 'neon', label: 'Neon' },
-  { id: 'slate', label: 'Slate' },
-  { id: 'copper', label: 'Copper' },
-  { id: 'ultraviolet', label: 'Ultraviolet' },
+  { id: '', label: 'Default', tag: 'dark' },
+  { id: 'midnight', label: 'Midnight', tag: 'dark' },
+  { id: 'arctic', label: 'Arctic', tag: 'light' },
+  { id: 'ember', label: 'Ember', tag: 'light warm' },
+  { id: 'forest', label: 'Forest', tag: 'dark' },
+  { id: 'ocean', label: 'Ocean', tag: 'mid' },
+  { id: 'sand', label: 'Sand', tag: 'mid warm' },
+  { id: 'neon', label: 'Neon', tag: 'AMOLED' },
+  { id: 'slate', label: 'Slate', tag: 'light' },
+  { id: 'copper', label: 'Copper', tag: 'high-contrast' },
+  { id: 'ultraviolet', label: 'Ultraviolet', tag: 'dark' },
 ]
 
 function applyTheme(themeId) {
@@ -74,7 +74,8 @@ export default function ThemeSwitcher() {
                   : 'text-terminal-300 hover:bg-terminal-700 hover:text-terminal-100',
               ].join(' ')}
             >
-              {t.label}
+              <span>{t.label}</span>
+              <span className="ml-auto text-[9px] uppercase tracking-wider opacity-50">{t.tag}</span>
             </button>
           ))}
         </div>

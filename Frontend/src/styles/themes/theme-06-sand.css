@@ -1,21 +1,21 @@
 /*
- * Sand — Warm taupe-black with gold accents.
- * Desert night, brass instruments, aged leather.
+ * Sand — Warm mid-tone theme. Dark text on muted khaki.
+ * Desert operations room. Warm without being bright.
  */
 [data-theme="sand"] {
-  --c-t-900: 14 12 10;
-  --c-t-800: 22 20 16;
-  --c-t-700: 32 28 22;
-  --c-t-600: 44 38 30;
-  --c-t-500: 255 255 255;
-  --c-t-400: 255 255 255;
-  --c-t-300: 255 255 255;
-  --c-t-200: 255 255 255;
-  --c-t-100: 255 255 255;
-  --c-accent: 234 179 8;
-  --c-accent-light: 253 224 71;
-  --c-accent-strong: 202 138 4;
-  --c-signal-long: 74 222 128;
-  --c-signal-short: 239 68 68;
-  --c-signal-neutral: 168 162 158;
+  --c-t-900: 42 38 32;
+  --c-t-800: 55 50 42;
+  --c-t-700: 70 64 54;
+  --c-t-600: 88 80 68;
+  --c-t-500: 250 247 240;
+  --c-t-400: 235 230 218;
+  --c-t-300: 210 202 188;
+  --c-t-200: 245 242 235;
+  --c-t-100: 252 250 245;
+  --c-accent: 202 138 4;
+  --c-accent-light: 234 179 8;
+  --c-accent-strong: 161 98 7;
+  --c-signal-long: 22 163 74;
+  --c-signal-short: 220 38 38;
+  --c-signal-neutral: 120 113 100;
 }

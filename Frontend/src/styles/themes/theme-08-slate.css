@@ -1,21 +1,21 @@
 /*
- * Slate — Cool neutral gray, minimal color.
- * Understated, institutional, zero noise.
+ * Slate — Neutral gray light theme. No colour temperature bias.
+ * Institutional, paper-report aesthetic. All signal, zero personality.
  */
 [data-theme="slate"] {
-  --c-t-900: 15 15 18;
-  --c-t-800: 24 24 28;
-  --c-t-700: 34 34 40;
-  --c-t-600: 44 44 52;
-  --c-t-500: 255 255 255;
-  --c-t-400: 255 255 255;
-  --c-t-300: 255 255 255;
-  --c-t-200: 255 255 255;
-  --c-t-100: 255 255 255;
-  --c-accent: 148 163 184;
-  --c-accent-light: 203 213 225;
-  --c-accent-strong: 100 116 139;
-  --c-signal-long: 74 222 128;
-  --c-signal-short: 248 113 113;
+  --c-t-900: 243 244 246;
+  --c-t-800: 229 231 235;
+  --c-t-700: 209 213 219;
+  --c-t-600: 186 190 198;
+  --c-t-500: 31 41 55;
+  --c-t-400: 55 65 81;
+  --c-t-300: 75 85 99;
+  --c-t-200: 31 41 55;
+  --c-t-100: 17 24 39;
+  --c-accent: 79 70 229;
+  --c-accent-light: 129 140 248;
+  --c-accent-strong: 67 56 202;
+  --c-signal-long: 5 150 105;
+  --c-signal-short: 220 38 38;
   --c-signal-neutral: 107 114 128;
 }
