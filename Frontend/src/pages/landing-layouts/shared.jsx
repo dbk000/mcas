@@ -261,7 +261,7 @@ function HeartbeatFeed({ rows, stats, isLive }) {
 
       // Adaptive interval: spread remaining queue across ~11s (leave 1s buffer)
       const pending = queueRef.current.length
-      const ms = pending > 0 ? Math.max(40, Math.floor(13500 / pending)) : 200
+      const ms = pending > 0 ? Math.max(40, Math.floor(15500 / pending)) : 200
       timerRef.current = setTimeout(tick, ms)
     }
 
