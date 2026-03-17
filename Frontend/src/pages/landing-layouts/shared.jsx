@@ -217,14 +217,11 @@ function StaticGlassBoxReplay({ proofPack }) {
   )
 }
 
-// --- Heartbeat: terminal-native rendering via <pre> ---
-const MAX_VISIBLE_ROWS = 16
-// Monochrome terminal — no colour-coding. Data speaks for itself.
-const PHASE_COLOR = { ING: '#888', PER: '#888', IND: '#888', FTR: '#888', SIG: '#888', RSK: '#888', EMT: '#888' }
-
+// ── Heartbeat: 10 radically different rendering strategies ───────────────
+const MAX_ROWS = 16
 const pad = (s, n) => String(s).padEnd(n)
 const padL = (s, n) => String(s).padStart(n)
-const dash = (n) => padL('—', n)
+const SPARK = '▁▂▃▄▅▆▇█'
 
 function fmtTime(d) {
   if (!d) return '--:--:--'
@@ -235,92 +232,161 @@ function C({ c, children }) {
   return <span style={{ color: c }}>{children}</span>
 }
 
-function gatePips(pass, fail) {
-  const p = Math.min(pass, 6), f = Math.min(fail, 6)
-  return (
-    <>
-      <C c="#999">{'█'.repeat(p)}</C>
-      <C c="#444">{'░'.repeat(f)}</C>
-      {' '.repeat(Math.max(0, 6 - p - f))}
-    </>
-  )
+function spark(v, max) {
+  const i = Math.min(Math.floor((v / (max || 1)) * 8), 7)
+  return SPARK[i]
 }
 
-function scoreColor() { return '#999' }
-function latColor() { return '#777' }
-function driftColor() { return '#777' }
-
-// ── Column renderers ─────────────────────────────────────────────────────
-// Each returns { header: string, width: number, render: (row, sealed) => JSX }
-// `sealed` is the full sealed pipeline object (or null for activity rows)
-const COL = {
-  time:     { h: 'TIME',      w: 9,  r: (row) => <C c="#555">{pad(fmtTime(row.ts), 9)}</C> },
-  phase:    { h: 'PHASE',     w: 4,  r: (row) => <C c={PHASE_COLOR[row.phase?.code] || '#444'}>{pad(row.phase?.code || '·', 4)}</C> },
-  gates:    { h: 'GATES',     w: 8,  r: (row) => <>{gatePips(row.passCount, row.failCount)}{'  '}</> },
-  ind:      { h: 'IND',       w: 5,  r: (row) => <><C c="#666">{padL(row.indCount, 3)}</C>{'  '}</> },
-  bars:     { h: 'BARS',      w: 6,  r: (row) => <><C c="#555">{padL(row.barCount, 4)}</C>{'  '}</> },
-  score:    { h: 'SCORE',     w: 15, r: (row) => row.raw > 0
-    ? <><C c="#888">{padL(row.raw.toFixed(2), 5)}</C><C c="#444">{' → '}</C><C c={scoreColor(row.calibrated)}>{padL(row.calibrated.toFixed(2), 5)}</C>{'  '}</>
-    : <><C c="#444">{padL('—', 5)}{'   '}{padL('—', 5)}</C>{'  '}</> },
-  lat:      { h: 'LAT',       w: 8,  r: (row) => <><C c={latColor(row.latMs)}>{padL(row.latMs != null ? `${row.latMs}ms` : '—', 6)}</C>{'  '}</> },
-  hash:     { h: 'HASH',      w: 12, r: (row) => <C c="#999">{row.traceHash ? row.traceHash.slice(0, 12) : padL('·', 12)}</C> },
-  sealed:   { h: '',           w: 7,  r: (row) => row.isEmit && row.isSealed ? <C c="#ccc"> SEALED</C> : null },
-  evals:    { h: 'EVALS',     w: 7,  r: (row) => <><C c="#666">{padL(row.isActivity ? row.indCount : '—', 5)}</C>{'  '}</> },
-  signals:  { h: 'SIG',       w: 5,  r: (row) => <><C c={row.signals > 0 ? '#ccc' : '#333'}>{padL(row.signals || '·', 3)}</C>{'  '}</> },
-  breadth:  { h: 'BREADTH',   w: 9,  r: (row, s) => { const b = s?.cross_sectional_context?.breadth; return <><C c="#888">{padL(b != null ? b.toFixed(3) : '—', 7)}</C>{'  '}</> } },
-  universe: { h: 'UNIV',      w: 6,  r: (row, s) => <><C c="#666">{padL(s?.cross_sectional_context?.universe_size ?? '—', 4)}</C>{'  '}</> },
-  drift:    { h: 'DRIFT',     w: 8,  r: (row, s) => { const d = s?.microstructure?.drift_bps; return <><C c={driftColor(d)}>{padL(d != null ? `${d > 0 ? '+' : ''}${d.toFixed(0)}bp` : '—', 6)}</C>{'  '}</> } },
-  entry:    { h: 'ENTRY',     w: 8,  r: (row, s) => <><C c="#666">{pad(s?.microstructure?.entry_type ?? '—', 6)}</C>{'  '}</> },
-  rank:     { h: 'RANK',      w: 6,  r: (row, s) => <><C c="#888">{padL(s?.indicator_snapshot?.rank ?? '—', 4)}</C>{'  '}</> },
-  ret4h:    { h: 'RET4H',     w: 8,  r: (row, s) => { const r = s?.indicator_snapshot?.ret_4h; return <><C c="#888">{padL(r != null ? `${(r*100).toFixed(1)}%` : '—', 6)}</C>{'  '}</> } },
-  decile:   { h: 'DECILE',    w: 8,  r: (row, s) => <><C c="#666">{padL(s?.cross_sectional_context?.symbols_in_decile ?? '—', 4)}</C>{'  '}</> },
-  confhash: { h: 'CFGHASH',   w: 10, r: (row, s) => <C c="#888">{s?.config_snapshot ? Object.values(s.config_snapshot).join('/').slice(0, 8) : padL('·', 8)}</C> },
-  klines:   { h: '1s',        w: 5,  r: (row, s) => <><C c="#555">{padL(s?.microstructure?.n_klines ?? '—', 3)}</C>{'  '}</> },
-  gatepass: { h: 'OK',        w: 5,  r: (row) => <><C c="#999">{padL(row.passCount, 3)}</C>{'  '}</> },
-  gatefail: { h: 'FAIL',      w: 5,  r: (row) => <><C c="#666">{padL(row.failCount, 3)}</C>{'  '}</> },
-  tf:       { h: 'TF',        w: 5,  r: (row) => <><C c="#777">{pad(row.tf || '—', 3)}</C>{'  '}</> },
-  rows:     { h: 'ROWS',      w: 7,  r: (row) => <><C c="#888">{padL(row.barCount || '—', 5)}</C>{'  '}</> },
-  compms:   { h: 'MS',        w: 7,  r: (row) => <><C c="#777">{padL(row.latMs != null ? row.latMs : '—', 5)}</C>{'  '}</> },
+// Get sealed pipeline data for a row
+function getSealed(row, sealedMap) {
+  return sealedMap?.[row.sealedEventId] || null
 }
 
-// ── 10 Heartbeat Variants ────────────────────────────────────────────────
-// Now reflecting the real pipeline: ING → PER → IND → SIG → EMT(sealed)
+// ── 01: Classic printf columns ──────────────────────────────────────────
+function V01({ row }) {
+  const ph = row.phase?.code || '·'
+  const p = Math.min(row.passCount, 6), f = Math.min(row.failCount, 6)
+  const pips = '█'.repeat(p) + '░'.repeat(f) + ' '.repeat(Math.max(0, 6 - p - f))
+  const sc = row.raw > 0 ? `${padL(row.raw.toFixed(2), 5)} → ${padL(row.calibrated.toFixed(2), 5)}` : `${padL('—', 5)}   ${padL('—', 5)}`
+  const lat = row.latMs != null ? padL(`${row.latMs}ms`, 6) : padL('—', 6)
+  const hash = row.traceHash ? row.traceHash.slice(0, 12) : '            '
+  const seal = row.isEmit && row.isSealed ? ' SEALED' : ''
+  return `${pad(fmtTime(row.ts), 9)}${pad(ph, 4)}${pips}  ${padL(row.indCount, 3)}  ${padL(row.barCount, 4)}  ${sc}  ${lat}  ${hash}${seal}`
+}
+const H01 = `${pad('TIME', 9)}${pad('PH', 4)}${'GATES   '}  ${'IND'}  ${'BARS'}  ${pad('SCORE', 13)}  ${padL('LAT', 6)}  TRACE HASH`
+
+// ── 02: Structured log (key=value pairs) ────────────────────────────────
+function V02({ row, s }) {
+  const parts = [`ts=${fmtTime(row.ts)}`, `stage=${row.phase?.code || '?'}`]
+  if (row.tf) parts.push(`tf=${row.tf}`)
+  parts.push(`ind=${row.indCount}`, `bars=${row.barCount}`)
+  if (row.passCount + row.failCount > 0) parts.push(`gates=${row.passCount}/${row.passCount + row.failCount}`)
+  if (row.raw > 0) parts.push(`score=${row.raw.toFixed(2)}→${row.calibrated.toFixed(2)}`)
+  if (row.latMs != null) parts.push(`lat=${row.latMs}ms`)
+  if (row.signals > 0) parts.push(`signals=${row.signals}`)
+  if (s?.microstructure?.drift_bps != null) parts.push(`drift=${s.microstructure.drift_bps.toFixed(0)}bp`)
+  if (s?.cross_sectional_context?.breadth != null) parts.push(`breadth=${s.cross_sectional_context.breadth.toFixed(3)}`)
+  if (row.traceHash) parts.push(`hash=${row.traceHash.slice(0, 8)}`)
+  if (row.isEmit && row.isSealed) parts.push('SEALED')
+  return parts.join(' ')
+}
+
+// ── 03: JSON stream (tail -f on a log) ──────────────────────────────────
+function V03({ row, s }) {
+  const obj = { t: fmtTime(row.ts), s: row.phase?.code }
+  if (row.tf) obj.tf = row.tf
+  obj.i = row.indCount
+  obj.b = row.barCount
+  if (row.raw > 0) obj.sc = [+row.raw.toFixed(2), +row.calibrated.toFixed(2)]
+  if (row.passCount + row.failCount > 0) obj.g = `${row.passCount}/${row.passCount + row.failCount}`
+  if (row.latMs != null) obj.ms = row.latMs
+  if (s?.indicator_snapshot) obj.snap = Object.fromEntries(Object.entries(s.indicator_snapshot).map(([k, v]) => [k, typeof v === 'number' ? +v.toFixed(4) : v]))
+  if (row.traceHash) obj.h = row.traceHash.slice(0, 8)
+  if (row.isSealed) obj.SEALED = true
+  return JSON.stringify(obj)
+}
+
+// ── 04: Sparkline intensity bars ────────────────────────────────────────
+function V04({ row, s }) {
+  const ind = s?.indicator_snapshot || {}
+  const vals = Object.values(ind).filter((v) => typeof v === 'number')
+  const max = Math.max(...vals, 1)
+  const sparks = vals.map((v) => spark(Math.abs(v), max)).join('')
+  const ph = pad(row.phase?.code || '·', 4)
+  return `${pad(fmtTime(row.ts), 9)}${ph}${padL(row.indCount, 3)} ${sparks || '·'.repeat(8)}${padL(row.barCount, 5)} bars  ${row.traceHash ? row.traceHash.slice(0, 8) : '        '}${row.isSealed ? ' SEALED' : ''}`
+}
+const H04 = `${pad('TIME', 9)}${'PH  '}IND INTENSITY                   BARS  HASH`
+
+// ── 05: Gate waterfall cascade ──────────────────────────────────────────
+function V05({ row, s }) {
+  const gates = s?.gates || []
+  const cascade = gates.length > 0
+    ? gates.map((g) => `${g.gate || g.name}${g.passed ? '✓' : '✗'}`).join('→')
+    : row.passCount > 0 ? `${row.passCount}✓${row.failCount > 0 ? `→${row.failCount}✗` : ''}` : '·'
+  const result = row.isSealed ? '→SEALED' : row.signals > 0 ? '→EMIT' : ''
+  return `${pad(fmtTime(row.ts), 9)}${pad(row.phase?.code || '·', 4)}${cascade}${result}`
+}
+
+// ── 06: Dense indicator matrix ──────────────────────────────────────────
+function V06({ row, s }) {
+  const snap = s?.indicator_snapshot || {}
+  const entries = Object.entries(snap).filter(([, v]) => typeof v === 'number')
+  const cells = entries.slice(0, 8).map(([k, v]) => `${k.slice(0, 4)}=${typeof v === 'number' ? (Math.abs(v) < 1 ? v.toFixed(4) : v.toFixed(1)) : v}`).join(' ')
+  return `${pad(fmtTime(row.ts), 9)}${pad(row.phase?.code || '·', 4)}${cells || '·'}`
+}
+
+// ── 07: Config snapshot diff ────────────────────────────────────────────
+function V07({ row, s }) {
+  const cfg = s?.config_snapshot || {}
+  const entries = Object.entries(cfg)
+  if (entries.length === 0) return `${pad(fmtTime(row.ts), 9)}${pad(row.phase?.code || '·', 4)}ind=${padL(row.indCount, 3)} bars=${padL(row.barCount, 4)} ${row.tf ? `tf=${row.tf}` : ''}`
+  const cfgStr = entries.map(([k, v]) => `${k}=${v}`).join(' ')
+  return `${pad(fmtTime(row.ts), 9)}${pad(row.phase?.code || '·', 4)}${cfgStr}  hash=${row.traceHash ? row.traceHash.slice(0, 8) : '·'}`
+}
+
+// ── 08: Pipeline topology (worker routing) ──────────────────────────────
+function V08({ row }) {
+  const w = row.isActivity ? `w${row.phase?.code === 'ING' ? '0' : '?'}` : 'w?'
+  const arrow = row.isSealed ? '══►' : '──►'
+  const stage = row.phase?.code || '?'
+  const payload = `${row.indCount}ind ${row.barCount}bars`
+  const sig = row.signals > 0 ? ` ${row.signals}sig` : ''
+  const seal = row.isSealed ? ` ══► SEALED[${(row.traceHash || '').slice(0, 8)}]` : ''
+  return `${pad(fmtTime(row.ts), 9)}${w}:${stage}${arrow} ${payload}${sig}${seal}`
+}
+
+// ── 09: Narrative (plain English) ───────────────────────────────────────
+function V09({ row, s }) {
+  const stage = row.phase?.code || '?'
+  const stages = { ING: 'Ingested', PER: 'Persisted', IND: 'Computed', SIG: 'Evaluated' }
+  const verb = stages[stage] || 'Processed'
+  let line = `${fmtTime(row.ts)} ${verb} ${row.indCount} indicators across ${row.barCount} bars`
+  if (row.tf) line += ` [${row.tf}]`
+  if (row.passCount + row.failCount > 0) line += `. ${row.passCount} gates passed`
+  if (row.raw > 0) line += `. Score ${row.raw.toFixed(2)}→${row.calibrated.toFixed(2)}`
+  if (s?.microstructure?.drift_bps != null) line += `. Drift ${s.microstructure.drift_bps.toFixed(0)}bp`
+  if (row.isSealed) line += `. Sealed ${(row.traceHash || '').slice(0, 8)}`
+  return line
+}
+
+// ── 10: Hex dump aesthetic ──────────────────────────────────────────────
+function V10({ row }) {
+  const ts = Math.floor((row.ts?.getTime() || 0) / 1000)
+  const hex = ts.toString(16).padStart(8, '0')
+  const ph = (row.phase?.code || '??').padEnd(3)
+  const d1 = row.indCount.toString(16).padStart(2, '0')
+  const d2 = row.barCount.toString(16).padStart(4, '0')
+  const d3 = row.passCount.toString(16).padStart(2, '0')
+  const d4 = row.failCount.toString(16).padStart(2, '0')
+  const sc = row.raw > 0 ? Math.floor(row.raw * 255).toString(16).padStart(2, '0') + Math.floor(row.calibrated * 255).toString(16).padStart(2, '0') : '0000'
+  const hashBytes = row.traceHash ? row.traceHash.slice(0, 16) : '0'.repeat(16)
+  const sig = row.signals > 0 ? ` +${row.signals}` : '   '
+  const seal = row.isSealed ? ' *' : '  '
+  return `0x${hex}  ${ph} ${d1} ${d2} ${d3}${d4} ${sc}  ${hashBytes}${sig}${seal}`
+}
+const H10 = 'ADDR      STG IN BARS GATE SCOR  TRACE HASH       SIG'
+
+// ── Variant registry ────────────────────────────────────────────────────
 const VARIANTS = [
-  { id: 'full',       label: '01 Full Pipeline',        cols: ['time','phase','gates','ind','bars','score','lat','hash','sealed'] },
-  { id: 'stages',     label: '02 Stage Flow',           cols: ['time','phase','tf','ind','bars','compms','signals','hash'] },
-  { id: 'compact',    label: '03 Compact',              cols: ['time','phase','gates','score','hash','sealed'] },
-  { id: 'throughput', label: '04 Throughput',            cols: ['time','phase','evals','rows','signals','gatepass','gatefail','compms'] },
-  { id: 'score',      label: '05 Score Detail',         cols: ['time','phase','score','rank','breadth','ret4h','hash'] },
-  { id: 'micro',      label: '06 Microstructure',       cols: ['time','phase','drift','entry','klines','score','lat','hash'] },
-  { id: 'breadth',    label: '07 Cross-Sectional',      cols: ['time','phase','breadth','universe','decile','rank','score','sealed'] },
-  { id: 'audit',      label: '08 Audit Trail',          cols: ['time','phase','gates','score','lat','hash','confhash','sealed'] },
-  { id: 'gates',      label: '09 Gate Inspector',       cols: ['time','phase','gates','gatepass','gatefail','ind','bars','signals'] },
-  { id: 'minimal',    label: '10 Minimal Pulse',        cols: ['time','phase','tf','gates','signals'] },
+  { id: 'classic',   label: '01 Classic Pipeline',    header: H01,  render: V01 },
+  { id: 'logfmt',    label: '02 Structured Log',      header: null, render: V02 },
+  { id: 'json',      label: '03 JSON Stream',         header: null, render: V03 },
+  { id: 'spark',     label: '04 Sparkline Intensity',  header: H04,  render: V04 },
+  { id: 'waterfall', label: '05 Gate Waterfall',       header: null, render: V05 },
+  { id: 'matrix',    label: '06 Indicator Matrix',     header: null, render: V06 },
+  { id: 'config',    label: '07 Config Snapshot',      header: null, render: V07 },
+  { id: 'topology',  label: '08 Pipeline Topology',    header: null, render: V08 },
+  { id: 'narrative', label: '09 Narrative',            header: null, render: V09 },
+  { id: 'hexdump',   label: '10 Hex Dump',            header: H10,  render: V10 },
 ]
 
-function HeartbeatLine({ row, cols, sealedMap }) {
-  const sealed = sealedMap?.[row.sealedEventId] || null
-  return (
-    <div style={{ animation: 'hb-row-in 0.3s ease-out' }}>
-      {cols.map((colId) => {
-        const col = COL[colId]
-        if (!col) return null
-        const el = col.r(row, sealed)
-        return el != null ? <span key={colId}>{el}</span> : null
-      })}
-      {'\n'}
-    </div>
-  )
-}
-
 function HeartbeatFeed({ rows, stats, isLive, events }) {
-  const [variantId, setVariantId] = useState('full')
+  const [variantId, setVariantId] = useState('classic')
   const variant = VARIANTS.find((v) => v.id === variantId) || VARIANTS[0]
-  const cols = variant.cols
+  const Render = variant.render
 
-  const visible = useMemo(() => rows.slice(0, MAX_VISIBLE_ROWS), [rows])
+  const visible = useMemo(() => rows.slice(0, MAX_ROWS), [rows])
 
-  // Map sealed events by opportunity ID for column renderers that need full pipeline data
   const sealedMap = useMemo(() => {
     const m = {}
     for (const e of events) {
@@ -328,11 +394,6 @@ function HeartbeatFeed({ rows, stats, isLive, events }) {
     }
     return m
   }, [events])
-
-  const header = cols.map((colId) => {
-    const col = COL[colId]
-    return col ? pad(col.h, col.w) : ''
-  }).join('')
 
   return (
     <div className="overflow-hidden rounded-2xl bg-[#111113] px-4 py-3.5">
@@ -347,18 +408,20 @@ function HeartbeatFeed({ rows, stats, isLive, events }) {
 
       {/* Terminal output */}
       <div className="hb-fade">
-        <pre className="m-0 overflow-hidden whitespace-pre text-[11px] leading-[18px] text-[#555]">
-          <C c="#444">{header}</C>{'\n'}
+        <pre className="m-0 overflow-hidden whitespace-pre text-[11px] leading-[18px] text-[#888]">
+          {variant.header && <><C c="#555">{variant.header}</C>{'\n'}</>}
           {visible.map((row) => (
-            <HeartbeatLine key={row.id} row={row} cols={cols} sealedMap={sealedMap} />
+            <div key={row.id} style={{ animation: 'hb-row-in 0.3s ease-out' }}>
+              {Render({ row, s: getSealed(row, sealedMap) })}{'\n'}
+            </div>
           ))}
-          {visible.length === 0 && <C c="#444">{'  Waiting for pipeline events...\n'}</C>}
+          {visible.length === 0 && <C c="#444">{'  awaiting pipeline events...\n'}</C>}
         </pre>
       </div>
 
       {/* Stats bar */}
       {stats && (
-        <div className="mt-2.5 border-t border-white/[0.06] pt-2 font-mono text-[10px] text-[#444]">
+        <div className="mt-2.5 border-t border-white/[0.06] pt-2 font-mono text-[10px] text-[#555]">
           evals/h <C c="#888">{stats.evalsPerH.toLocaleString()}</C>
           {'    '}avg latency <C c="#888">{stats.avgLatMs}ms</C>
           {'    '}gate pass <C c="#888">{stats.gatePassRate}%</C>
@@ -369,15 +432,15 @@ function HeartbeatFeed({ rows, stats, isLive, events }) {
       {/* Variant selector */}
       <div className="mt-2 border-t border-white/[0.04] pt-2">
         <select
-            value={variantId}
-            onChange={(e) => setVariantId(e.target.value)}
-            className="rounded bg-[#1a1a1d] px-2 py-1 font-mono text-[10px] text-[#666] outline-none"
-          >
-            {VARIANTS.map((v) => (
-              <option key={v.id} value={v.id}>{v.label}</option>
-            ))}
-          </select>
-        </div>
+          value={variantId}
+          onChange={(e) => setVariantId(e.target.value)}
+          className="rounded bg-[#1a1a1d] px-2 py-1 font-mono text-[10px] text-[#666] outline-none"
+        >
+          {VARIANTS.map((v) => (
+            <option key={v.id} value={v.id}>{v.label}</option>
+          ))}
+        </select>
+      </div>
     </div>
   )
 }
