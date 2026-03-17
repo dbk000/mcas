@@ -270,7 +270,7 @@ function HeartbeatFeed({ rows, stats, isLive }) {
   }, [])
 
   return (
-    <div className="overflow-hidden rounded-2xl bg-[#111113] px-4 py-3.5">
+    <div className="overflow-hidden bg-[#111113] px-4 py-3.5">
       {/* Head */}
       <div className="mb-1.5 flex items-center gap-2">
         {isLive && <div className="hb-dot" />}
