@@ -1,5 +1,6 @@
+import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowRight, ShieldCheck, ScanLine, TimerReset, ChevronRight, Layers3, Radio } from 'lucide-react'
+import { ArrowRight, ShieldCheck, ScanLine, TimerReset, ChevronRight, Layers3 } from 'lucide-react'
 import { Badge, Card, CardContent, CardHeader, CardTitle } from '../../components/ui'
 import { ANALYTICS_EVENTS, trackCtaClick } from '../../utils/analytics'
 import useLiveFeed from '../../hooks/useLiveFeed'
@@ -216,104 +217,114 @@ function StaticGlassBoxReplay({ proofPack }) {
   )
 }
 
-// --- Feed event row ---
-function FeedEvent({ event }) {
-  const opp = event.opportunity
-  const pipeline = event.pipeline
-  const sim = event.simulation
-  const age = opp.created_ts
-    ? Math.round((Date.now() - new Date(opp.created_ts).getTime()) / 1000)
-    : null
+// --- Heartbeat: terminal-native rendering via <pre> ---
+const MAX_VISIBLE_ROWS = 16
+const PHASES = ['ING', 'FTR', 'SIG', 'RSK', 'EMT']
+const PHASE_COLOR = { ING: '#85B7EB', FTR: '#5DCAA5', SIG: '#EF9F27', RSK: '#ED93B1', EMT: '#AFA9EC' }
 
-  const formatAge = (s) => {
-    if (s == null) return ''
-    if (s < 60) return `${s}s ago`
-    if (s < 3600) return `${Math.floor(s / 60)}m ago`
-    return `${Math.floor(s / 3600)}h ago`
-  }
+const pad = (s, n) => String(s).padEnd(n)
+const padL = (s, n) => String(s).padStart(n)
 
-  const hasTrace = Boolean(pipeline?.trace_hash)
+function fmtTime(d) {
+  if (!d) return '--:--:--'
+  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })
+}
+
+function C({ c, children }) {
+  return <span style={{ color: c }}>{children}</span>
+}
+
+function gatePips(pass, fail) {
+  return (
+    <>
+      <C c="#5DCA5D">{'█'.repeat(pass)}</C>
+      <C c="#E24B4A">{'░'.repeat(fail)}</C>
+      {' '.repeat(Math.max(0, 6 - pass - fail))}
+    </>
+  )
+}
+
+function scoreColor(cal) {
+  return cal > 1.0 ? '#5DCA5D' : cal > 0.5 ? '#EF9F27' : '#E24B4A'
+}
+
+function latColor(ms) {
+  if (ms == null) return '#444'
+  return ms < 250 ? '#5DCA5D' : ms < 350 ? '#EF9F27' : '#E24B4A'
+}
+
+function HeartbeatLine({ row }) {
+  const time = pad(fmtTime(row.ts), 9)
+  const ind = padL(row.indCount, 3)
+  const bars = padL(row.barCount, 4)
+  const rawS = padL(row.raw.toFixed(2), 5)
+  const calS = row.calibrated.toFixed(2)
+  const latS = row.latMs != null ? padL(`${row.latMs}ms`, 6) : padL('—', 6)
+  const hash = row.traceHash ? row.traceHash.slice(0, 12) : '            '
 
   return (
-    <div className="feed-enter rounded-xl border border-terminal-800 bg-terminal-950/80 p-2.5">
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <Badge variant="info" className="text-[9px]">{opp.setup_id}</Badge>
-          <Badge className="text-[9px]">{opp.timeframe}</Badge>
-          <span className="rounded-full border border-terminal-700 bg-terminal-900 px-2 py-0.5 text-[9px] text-terminal-400">
-            crypto
-          </span>
-          {hasTrace && (
-            <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[9px] uppercase tracking-[0.18em] text-emerald-300">
-              verified
-            </span>
-          )}
-        </div>
-        <span className="text-[10px] tabular-nums text-terminal-500">{formatAge(age)}</span>
+    <div style={{ animation: 'hb-row-in 0.3s ease-out' }}>
+      <C c="#555">{time}</C>
+      <C c={PHASE_COLOR[row.phase]}>{pad(row.phase, 4)}</C>
+      {gatePips(row.passCount, row.failCount)}
+      <C c="#666">{ind}</C>{'  '}
+      <C c="#555">{bars}</C>{'  '}
+      <C c="#888">{rawS}</C>
+      <C c="#444">{' → '}</C>
+      <C c={scoreColor(row.calibrated)}>{padL(calS, 5)}</C>{'  '}
+      <C c={latColor(row.latMs)}>{latS}</C>{'  '}
+      <C c="#EF9F27">{hash}</C>
+      {row.isEmit && row.isSealed && <C c="#5DCA5D"> SEALED</C>}
+      {'\n'}
+    </div>
+  )
+}
+
+function HeartbeatFeed({ rows, stats, isLive }) {
+  const visible = useMemo(() => rows.slice(0, MAX_VISIBLE_ROWS), [rows])
+  const header = `${pad('TIME', 9)}${pad('PHASE', 4)}${pad('GATES', 8)}${padL('IND', 3)}  ${padL('BARS', 4)}  ${padL('SCORE', 13)}  ${padL('LAT', 6)}  ${'TRACE HASH'}`
+
+  return (
+    <div className="overflow-hidden rounded-2xl bg-[#111113] px-4 py-3.5">
+      {/* Head */}
+      <div className="mb-1.5 flex items-center gap-2">
+        {isLive && <div className="hb-dot" />}
+        <span className="font-mono text-[10px] uppercase tracking-[1.5px] text-[#555]">Glass Box trace stream</span>
+        {stats && (
+          <span className="ml-auto font-mono text-[10px] text-[#444]">{stats.sealedCount.toLocaleString()} sealed</span>
+        )}
       </div>
-      {pipeline && (
-        <div className="mt-1.5 flex flex-wrap gap-1.5">
-          {(pipeline.gates || []).slice(0, 4).map((g, i) => (
-            <span
-              key={i}
-              className={`rounded px-1.5 py-0.5 text-[9px] ${
-                g.passed ? 'bg-emerald-500/10 text-emerald-300' : 'bg-red-500/10 text-red-400'
-              }`}
-            >
-              {g.name}
-            </span>
+
+      {/* Terminal output */}
+      <div className="hb-fade">
+        <pre className="m-0 overflow-hidden whitespace-pre text-[11px] leading-[18px] text-[#555]">
+          <C c="#444">{header}</C>{'\n'}
+          {visible.map((row) => (
+            <HeartbeatLine key={row.id} row={row} />
           ))}
+          {visible.length === 0 && <C c="#444">{'  Waiting for pipeline events...\n'}</C>}
+        </pre>
+      </div>
+
+      {/* Stats bar */}
+      {stats && (
+        <div className="mt-2.5 border-t border-white/[0.06] pt-2 font-mono text-[10px] text-[#444]">
+          decisions/h <C c="#888">{stats.decisionsPerH.toLocaleString()}</C>
+          {'    '}avg latency <C c="#888">{stats.avgLatMs}ms</C>
+          {'    '}gate pass <C c="#888">{stats.gatePassRate}%</C>
+          {'    '}sealed <C c="#888">{stats.sealedCount.toLocaleString()}</C>
         </div>
-      )}
-      {sim?.exit_reason && (
-        <p className="mt-1 text-[10px] text-terminal-500">
-          Exit: {sim.exit_reason}
-        </p>
       )}
     </div>
   )
 }
 
-// --- Live Pipeline Feed ---
-function LivePipelineFeed({ events, isLive }) {
-  return (
-    <Card className="rounded-3xl border-terminal-800 bg-terminal-900/85">
-      <CardHeader className="p-4">
-        <CardTitle className="flex items-center justify-between text-sm text-terminal-100">
-          <span className="flex items-center gap-2">
-            <Radio className="size-3.5 text-amber-300" />
-            Pipeline feed
-          </span>
-          <span
-            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[9px] font-semibold uppercase tracking-[0.18em] ${
-              isLive
-                ? 'bg-emerald-500/15 text-emerald-300'
-                : 'bg-amber-500/15 text-amber-300'
-            }`}
-          >
-            <span className={`size-1.5 rounded-full ${isLive ? 'animate-pulse bg-emerald-400' : 'bg-amber-400'}`} />
-            {isLive ? 'Live' : 'Delayed'}
-          </span>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="max-h-[400px] space-y-2 overflow-y-auto p-4 pt-0">
-        {events.map((event) => (
-          <FeedEvent key={event.opportunity.id} event={event} />
-        ))}
-        {events.length === 0 && (
-          <p className="py-6 text-center text-xs text-terminal-500">No recent pipeline events</p>
-        )}
-      </CardContent>
-    </Card>
-  )
-}
-
-// --- Glass Box replay (live with static fallback) ---
+// --- Glass Box replay (live heartbeat with static fallback) ---
 export function GlassBoxReplay({ proofPack }) {
-  const { events, isLive } = useLiveFeed()
+  const { rows, stats, isLive, events } = useLiveFeed()
 
   if (events.length > 0) {
-    return <LivePipelineFeed events={events} isLive={isLive} />
+    return <HeartbeatFeed rows={rows} stats={stats} isLive={isLive} />
   }
 
   return <StaticGlassBoxReplay proofPack={proofPack} />
