@@ -34,6 +34,7 @@ from governance.cache_contract import (
     is_cache_ready, get_candles_as_ohlcv,
     SETUP_STATE_TTL_S, SIGNAL_MAX_AGE_S, RECONCILE_INTERVAL_S,
     INDICATOR_HISTORY_SIZE, TF_SECONDS,
+    PIPELINE_ACTIVITY_KEY, PIPELINE_ACTIVITY_MAX,
     # Unicorn keys
     get_embryo_active_symbols, read_unicorn_state,
     unicorn_state_key, UNICORN_STATE_TTL_S,
@@ -311,13 +312,20 @@ class SignalWorker(LineageEnforcer):
                     block=XREAD_BLOCK_MS,
                 )
 
+                batch_evals = 0
                 if results:
                     for stream_name, messages in results:
                         tf = b2s(stream_name).split(":")[-1]
                         for msg_id, fields in messages:
                             self._process_event(tf, fields, msg_id, stream_name)
+                            batch_evals += 1
 
                 now = time.time()
+
+                # Pipeline activity: push compact event per XREAD cycle
+                if batch_evals > 0:
+                    self._push_activity_event(now, batch_evals)
+
                 self._maybe_hot_reload_config()
 
                 if now - self.last_reconcile > RECONCILE_INTERVAL_S:
@@ -342,6 +350,45 @@ class SignalWorker(LineageEnforcer):
             except Exception as e:
                 logger.error(f"Unexpected error: {e}", exc_info=True)
                 time.sleep(1)
+
+    _last_activity_snapshot = None  # Cached per-cycle snapshot for activity events
+
+    def _push_activity_event(self, now: float, batch_evals: int):
+        """Push a full-trace activity event to Redis ring buffer.
+
+        Each event mirrors the trace_context.py shape: eval_ts, gates,
+        score, indicator count, bar count, latency. This is the firehose
+        that powers the landing page heartbeat.
+        """
+        try:
+            snap = self._last_activity_snapshot
+            gates_ok = self._diag["evaluated"] - self._diag["snapshot_fail"] - self._diag["candle_fail"] - self._diag["symbol_quality_excluded"]
+            gates_fail = self._diag["snapshot_fail"] + self._diag["candle_fail"] + self._diag["symbol_quality_excluded"]
+            total_signals = self._diag["s10_signal"] + self._diag["d1_signal"] + self._diag["s9_signal"]
+
+            event = {
+                "ts": now,
+                "w": _worker_index(),
+                "evals": batch_evals,
+                "signals": total_signals,
+                "gates": [
+                    {"name": "snapshot", "passed": self._diag["snapshot_fail"] == 0, "checked": self._diag["evaluated"]},
+                    {"name": "candles", "passed": self._diag["candle_fail"] == 0, "checked": self._diag["evaluated"]},
+                    {"name": "quality", "passed": self._diag["symbol_quality_excluded"] == 0, "checked": self._diag["evaluated"]},
+                ],
+                "gates_ok": gates_ok,
+                "gates_fail": gates_fail,
+                "ind_count": snap["ind_count"] if snap else 0,
+                "bar_count": snap["bar_count"] if snap else 0,
+                "score": snap["score"] if snap else None,
+            }
+            raw = json.dumps(event, separators=(",", ":"))
+            pipe = self.r.pipeline(transaction=False)
+            pipe.lpush(PIPELINE_ACTIVITY_KEY, raw)
+            pipe.ltrim(PIPELINE_ACTIVITY_KEY, 0, PIPELINE_ACTIVITY_MAX - 1)
+            pipe.execute()
+        except Exception:
+            pass  # Non-critical — feed degrades gracefully
 
     def _process_event(self, tf: str, fields: dict, msg_id, stream_name):
         """Process a single indicators_ready event."""
@@ -389,6 +436,14 @@ class SignalWorker(LineageEnforcer):
             self._diag["candle_fail"] += 1
             logger.debug(f"No candles in Redis for {symbol}:{tf}, skipping")
             return
+
+        # Capture snapshot metrics for activity firehose (last eval wins)
+        ind_fields = [f for f in dir(snapshot) if not f.startswith("_") and f != "ohlcv"]
+        self._last_activity_snapshot = {
+            "ind_count": len(ind_fields),
+            "bar_count": len(snapshot.ohlcv),
+            "score": None,
+        }
 
         # Registry-driven dispatch: evaluate all strategies registered for this TF
         from governance.strategy_registry import StrategyRegistry

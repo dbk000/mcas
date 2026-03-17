@@ -35,6 +35,10 @@ STALENESS_MULTIPLIER = 2.5     # Stale if age > 2.5x candle interval
 STREAM_MAXLEN = 200_000        # Per stream (approximate trim)
 WS_MAX_STREAMS_PER_CONN = 200  # Binance safe limit per connection
 SIGNAL_MAX_AGE_S = 3600        # 1h — prune signals older than this
+
+# Pipeline activity ring buffer (public feed heartbeat)
+PIPELINE_ACTIVITY_KEY = "pipeline:activity"
+PIPELINE_ACTIVITY_MAX = 200
 SETUP_STATE_TTL_S = 86400      # 24h — prevent stale state for delisted symbols
 RECONCILE_INTERVAL_S = 60      # Reconciliation loop frequency
 

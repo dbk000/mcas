@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { getPollingInterval, getRequestConfig, getStalenessThresholdS } from '../config/governed'
+import { getPollingInterval, getRequestConfig } from '../config/governed'
 import { getLogger } from '../utils/logger'
 
 const log = getLogger('live-feed')
@@ -8,18 +8,57 @@ function resolveApiBase() {
   if (import.meta.env.VITE_PUBLIC_API_BASE) return import.meta.env.VITE_PUBLIC_API_BASE
   const host = typeof window !== 'undefined' ? window.location.hostname : ''
   if (!host || host === 'localhost' || host.startsWith('127.') || host.startsWith('192.168.')) return ''
-  // pages.dev preview/prod → canonical API domain
   if (host.endsWith('.pages.dev')) return 'https://api.mcasui.com'
-  // Custom domain: mcasui.com → api.mcasui.com
   return `${window.location.protocol}//api.${host}`
 }
 
 const API_BASE = resolveApiBase()
 
-/** Derive per-event heartbeat rows from the raw pipeline trace. */
-function deriveHeartbeatRows(events) {
+// Pipeline phases for the heartbeat cascade
+const PHASES = [
+  { code: 'ING' }, { code: 'FTR' }, { code: 'SIG' },
+  { code: 'RSK' }, { code: 'EMT' },
+]
+
+/**
+ * Build heartbeat rows from activity events (the firehose — every eval cycle)
+ * and sealed events (the highlights — opportunities with trace_json).
+ */
+function buildRows(activity, sealedEvents) {
   const rows = []
-  for (const event of events) {
+
+  // Activity events → pipeline cadence rows (one row per activity event)
+  // Each activity event has the same field categories as a sealed trace:
+  // gates[], ind_count, bar_count, score — just from the firehose, not the DB
+  for (let i = 0; i < activity.length; i++) {
+    const a = activity[i]
+    const ts = a.ts ? new Date(a.ts * 1000) : null
+    const phase = PHASES[i % PHASES.length]
+    const gates = a.gates || []
+    const passCount = gates.filter((g) => g.passed).length
+    const failCount = gates.length - passCount
+
+    rows.push({
+      id: `a-${i}-${a.ts}`,
+      ts,
+      phase,
+      passCount,
+      failCount,
+      indCount: a.ind_count || a.evals || 0,
+      barCount: a.bar_count || 0,
+      raw: a.score?.raw ?? 0,
+      calibrated: a.score?.calibrated ?? 0,
+      latMs: null,
+      traceHash: null,
+      isSealed: false,
+      isEmit: false,
+      isActivity: true,
+      signals: a.signals || 0,
+    })
+  }
+
+  // Sealed events → EMIT rows with real trace data (interleaved by timestamp)
+  for (const event of sealedEvents) {
     const p = event.pipeline
     if (!p) continue
 
@@ -29,46 +68,38 @@ function deriveHeartbeatRows(events) {
     const failCount = gates.length - passCount
     const indCount = p.indicator_snapshot ? Object.keys(p.indicator_snapshot).length : 0
     const barCount = (p.candle_window || []).reduce((s, w) => s + (w.bar_count || 0), 0)
-
     const raw = p.score?.raw ?? 0
     const calibrated = p.score?.calibrated ?? 0
     const sealedAt = p.promotion?.sealed_at
     const latMs = (sealedAt && p.eval_ts) ? Math.round((sealedAt - p.eval_ts) * 1000) : null
-    const traceHash = p.trace_hash || null
-    const isSealed = Boolean(traceHash)
 
-    // Each real event maps to the EMIT phase; we synthesise the 5-phase cascade
-    const PHASES = [
-      { code: 'ING', cls: 'phase-ing' },
-      { code: 'FTR', cls: 'phase-ftr' },
-      { code: 'SIG', cls: 'phase-sig' },
-      { code: 'RSK', cls: 'phase-rsk' },
-      { code: 'EMT', cls: 'phase-emt' },
-    ]
-
-    for (const phase of PHASES) {
-      rows.push({
-        id: `${event.opportunity.id}-${phase.code}`,
-        ts: evalTs,
-        phase,
-        passCount,
-        failCount,
-        indCount,
-        barCount,
-        raw,
-        calibrated,
-        latMs,
-        traceHash,
-        isSealed,
-        isEmit: phase.code === 'EMT',
-      })
-    }
+    rows.push({
+      id: `s-${event.opportunity.id}`,
+      ts: evalTs,
+      phase: { code: 'EMT' },
+      passCount,
+      failCount,
+      indCount,
+      barCount,
+      raw,
+      calibrated,
+      latMs,
+      traceHash: p.trace_hash || null,
+      isSealed: Boolean(p.trace_hash),
+      isEmit: true,
+      isActivity: false,
+      signals: 1,
+    })
   }
+
+  // Sort by timestamp descending (newest first)
+  rows.sort((a, b) => (b.ts?.getTime() || 0) - (a.ts?.getTime() || 0))
   return rows
 }
 
 export default function useLiveFeed() {
   const [events, setEvents] = useState([])
+  const [activity, setActivity] = useState([])
   const [error, setError] = useState(null)
   const [isLive, setIsLive] = useState(false)
   const intervalRef = useRef(null)
@@ -95,19 +126,15 @@ export default function useLiveFeed() {
 
       const json = await res.json()
       const feedEvents = json?.data?.events || []
+      const feedActivity = json?.data?.activity || []
       setEvents(feedEvents)
+      setActivity(feedActivity)
       setError(null)
 
-      if (feedEvents.length > 0) {
-        const newest = feedEvents[0]
-        const createdTs = newest?.opportunity?.created_ts
-        if (createdTs) {
-          const ageS = (Date.now() - new Date(createdTs).getTime()) / 1000
-          const tf = newest?.opportunity?.timeframe || '1h'
-          setIsLive(ageS < getStalenessThresholdS(tf))
-        } else {
-          setIsLive(false)
-        }
+      // Live if we have activity within the last 30s
+      if (feedActivity.length > 0) {
+        const newestTs = feedActivity[0]?.ts || 0
+        setIsLive((Date.now() / 1000 - newestTs) < 30)
       } else {
         setIsLive(false)
       }
@@ -138,46 +165,51 @@ export default function useLiveFeed() {
     }
   }, [fetchFeed])
 
-  // Derive heartbeat rows and stats from raw events
-  const rows = useMemo(() => deriveHeartbeatRows(events), [events])
+  const rows = useMemo(() => buildRows(activity, events), [activity, events])
 
   const stats = useMemo(() => {
-    if (events.length === 0) return null
-    const latencies = []
-    let totalPass = 0
-    let totalGates = 0
-    let sealedCount = 0
+    if (activity.length === 0 && events.length === 0) return null
 
+    // From activity: total evals, gate pass rate
+    let totalEvals = 0
+    let totalGatesOk = 0
+    let totalGatesFail = 0
+    let totalSignals = 0
+    for (const a of activity) {
+      totalEvals += a.evals || 0
+      totalGatesOk += a.gates_ok || 0
+      totalGatesFail += a.gates_fail || 0
+      totalSignals += a.signals || 0
+    }
+    const totalGates = totalGatesOk + totalGatesFail
+    const gatePassRate = totalGates > 0
+      ? ((totalGatesOk / totalGates) * 100).toFixed(1)
+      : '0.0'
+
+    // Evals/h from activity time span
+    let evalsPerH = 0
+    if (activity.length >= 2) {
+      const spanS = (activity[0]?.ts || 0) - (activity[activity.length - 1]?.ts || 0)
+      if (spanS > 0) evalsPerH = Math.round(totalEvals / (spanS / 3600))
+    }
+
+    // Latency from sealed events
+    const latencies = []
+    let sealedCount = 0
     for (const e of events) {
       const p = e.pipeline
       if (!p) continue
-      const gates = p.gates || []
-      totalPass += gates.filter((g) => g.passed).length
-      totalGates += gates.length
       if (p.trace_hash) sealedCount++
       if (p.promotion?.sealed_at && p.eval_ts) {
         latencies.push(Math.round((p.promotion.sealed_at - p.eval_ts) * 1000))
       }
     }
-
-    const avgLat = latencies.length > 0
+    const avgLatMs = latencies.length > 0
       ? Math.round(latencies.reduce((a, b) => a + b, 0) / latencies.length)
       : 0
-    const gatePassRate = totalGates > 0
-      ? ((totalPass / totalGates) * 100).toFixed(1)
-      : '0.0'
 
-    // decisions/h: extrapolate from the time span of events we have
-    let decisionsPerH = 0
-    if (events.length >= 2) {
-      const newest = new Date(events[0]?.opportunity?.created_ts).getTime()
-      const oldest = new Date(events[events.length - 1]?.opportunity?.created_ts).getTime()
-      const spanH = (newest - oldest) / 3_600_000
-      if (spanH > 0) decisionsPerH = Math.round(events.length / spanH)
-    }
-
-    return { decisionsPerH, avgLatMs: avgLat, gatePassRate, sealedCount }
-  }, [events])
+    return { evalsPerH, avgLatMs, gatePassRate, sealedCount }
+  }, [activity, events])
 
   return { events, rows, stats, error, isLive }
 }

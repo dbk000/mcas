@@ -10,14 +10,41 @@ import time
 import logging
 from datetime import datetime, timezone
 
+import redis
 from fastapi import APIRouter
 
 from governance.bootstrap import get_config
+from governance.cache_contract import PIPELINE_ACTIVITY_KEY
 from api.app.db_pool import get_conn as _pool_get_conn
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/public", tags=["public"])
+
+# ---------------------------------------------------------------------------
+# Redis (lazy init for activity stream)
+# ---------------------------------------------------------------------------
+_redis_client = None
+
+
+def _get_redis():
+    global _redis_client
+    if _redis_client is None:
+        _redis_client = redis.Redis.from_url(
+            get_config().Worker.REDIS_URL, decode_responses=True
+        )
+    return _redis_client
+
+
+def _read_activity(n: int = 50) -> list[dict]:
+    """Read recent pipeline activity events from Redis ring buffer."""
+    try:
+        r = _get_redis()
+        raw = r.lrange(PIPELINE_ACTIVITY_KEY, 0, n - 1)
+        return [json.loads(item) for item in raw]
+    except Exception:
+        return []
+
 
 # ---------------------------------------------------------------------------
 # In-memory cache (governed TTL)
@@ -135,11 +162,14 @@ def _refresh_cache() -> dict:
     try:
         rows = _query_feed(_max_events())
         events = _build_events(rows)
+        activity = _read_activity(_max_events())
+        has_live = len(activity) > 0 and (time.time() - activity[0].get("ts", 0)) < 30
         result = {
             "data": {
                 "events": events,
+                "activity": activity,
                 "count": len(events),
-                "has_live_data": len(events) > 0,
+                "has_live_data": has_live or len(events) > 0,
             },
             "meta": {
                 "timestamp": datetime.now(timezone.utc).isoformat(),

@@ -255,8 +255,30 @@ function latColor(ms) {
 
 function HeartbeatLine({ row }) {
   const time = pad(fmtTime(row.ts), 9)
+  const phase = row.phase?.code || '???'
   const ind = padL(row.indCount, 3)
   const bars = padL(row.barCount, 4)
+
+  // Activity rows: show eval counts. Sealed rows: show scores.
+  if (row.isActivity) {
+    const sigTag = row.signals > 0 ? `${row.signals} signals` : '·'
+    return (
+      <div style={{ animation: 'hb-row-in 0.3s ease-out' }}>
+        <C c="#555">{time}</C>
+        <C c={PHASE_COLOR[phase]}>{pad(phase, 4)}</C>
+        {gatePips(Math.min(row.passCount, 6), Math.min(row.failCount, 6))}
+        <C c="#666">{ind}</C>{'  '}
+        <C c="#555">{bars}</C>{'  '}
+        <C c="#444">{padL('—', 5)}</C>
+        <C c="#444">{'   '}</C>
+        <C c="#444">{padL('—', 5)}</C>{'  '}
+        <C c="#444">{padL('—', 6)}</C>{'  '}
+        <C c={row.signals > 0 ? '#5DCA5D' : '#333'}>{padL(sigTag, 12)}</C>
+        {'\n'}
+      </div>
+    )
+  }
+
   const rawS = padL(row.raw.toFixed(2), 5)
   const calS = row.calibrated.toFixed(2)
   const latS = row.latMs != null ? padL(`${row.latMs}ms`, 6) : padL('—', 6)
@@ -265,7 +287,7 @@ function HeartbeatLine({ row }) {
   return (
     <div style={{ animation: 'hb-row-in 0.3s ease-out' }}>
       <C c="#555">{time}</C>
-      <C c={PHASE_COLOR[row.phase.code]}>{pad(row.phase.code, 4)}</C>
+      <C c={PHASE_COLOR[phase]}>{pad(phase, 4)}</C>
       {gatePips(row.passCount, row.failCount)}
       <C c="#666">{ind}</C>{'  '}
       <C c="#555">{bars}</C>{'  '}
