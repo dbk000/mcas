@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowRight, ShieldCheck, ScanLine, TimerReset, ChevronRight, Layers3 } from 'lucide-react'
 import { Badge, Card, CardContent, CardHeader, CardTitle } from '../../components/ui'
@@ -371,12 +371,44 @@ const VARIANTS = [
   { id: 'hexdump',   label: '10 Hex Dump',            header: H10,  render: V10 },
 ]
 
+// Line-by-line feed: renders lines progressively, scrolls viewport
+function useLineFeeder(lines, intervalMs = 350) {
+  const [visibleCount, setVisibleCount] = useState(0)
+  const prevLinesRef = useRef(null)
+  const preRef = useRef(null)
+
+  useEffect(() => {
+    // When new data arrives, start feeding from current position
+    if (lines !== prevLinesRef.current) {
+      prevLinesRef.current = lines
+      setVisibleCount((prev) => Math.min(prev, lines.length))
+    }
+  }, [lines])
+
+  useEffect(() => {
+    if (visibleCount >= lines.length) return
+    const timer = setInterval(() => {
+      setVisibleCount((c) => {
+        const next = c + 1
+        // Auto-scroll the pre element
+        if (preRef.current) {
+          preRef.current.scrollTop = preRef.current.scrollHeight
+        }
+        return next >= lines.length ? lines.length : next
+      })
+    }, intervalMs)
+    return () => clearInterval(timer)
+  }, [lines, visibleCount, intervalMs])
+
+  return { visibleCount, preRef }
+}
+
 function HeartbeatFeed({ rows, stats, isLive, events }) {
   const [variantId, setVariantId] = useState('classic')
   const variant = VARIANTS.find((v) => v.id === variantId) || VARIANTS[0]
   const Render = variant.render
 
-  const visible = useMemo(() => rows.slice(0, MAX_ROWS), [rows])
+  const allRows = useMemo(() => rows.slice(0, MAX_ROWS * 3), [rows])
 
   const sealedMap = useMemo(() => {
     const m = {}
@@ -385,6 +417,14 @@ function HeartbeatFeed({ rows, stats, isLive, events }) {
     }
     return m
   }, [events])
+
+  // Build all renderable lines
+  const lines = useMemo(() =>
+    allRows.map((row) => ({ id: row.id, content: Render({ row, s: getSealed(row, sealedMap) }) })),
+    [allRows, Render, sealedMap]
+  )
+
+  const { visibleCount, preRef } = useLineFeeder(lines)
 
   return (
     <div className="overflow-hidden rounded-2xl bg-[#111113] px-4 py-3.5">
@@ -397,16 +437,20 @@ function HeartbeatFeed({ rows, stats, isLive, events }) {
         )}
       </div>
 
-      {/* Terminal output */}
-      <div className="hb-fade">
-        <pre className="m-0 overflow-hidden whitespace-pre text-[11px] leading-[18px] text-[#888]">
+      {/* Terminal output — scrolls as lines feed in */}
+      <div className="hb-fade" style={{ maxHeight: '340px' }}>
+        <pre
+          ref={preRef}
+          className="m-0 overflow-y-auto whitespace-pre text-[11px] leading-[18px] text-[#888]"
+          style={{ maxHeight: '320px' }}
+        >
           {variant.header && <><C c="#555">{variant.header}</C>{'\n'}</>}
-          {visible.map((row) => (
-            <div key={row.id} style={{ animation: 'hb-row-in 0.3s ease-out' }}>
-              {Render({ row, s: getSealed(row, sealedMap) })}{'\n'}
+          {lines.slice(0, visibleCount).map((line) => (
+            <div key={line.id} style={{ animation: 'hb-row-in 0.3s ease-out' }}>
+              {line.content}{'\n'}
             </div>
           ))}
-          {visible.length === 0 && <C c="#444">{'  awaiting pipeline events...\n'}</C>}
+          {lines.length === 0 && <C c="#444">{'  awaiting pipeline events...\n'}</C>}
         </pre>
       </div>
 

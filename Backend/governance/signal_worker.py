@@ -381,6 +381,9 @@ class SignalWorker(LineageEnforcer):
                 "ind_count": snap["ind_count"] if snap else 0,
                 "bar_count": snap["bar_count"] if snap else 0,
                 "score": snap["score"] if snap else None,
+                "tf": snap.get("tf") if snap else None,
+                "indicators": snap.get("indicators") if snap else None,
+                "candle_window": snap.get("candle_window") if snap else None,
             }
             raw = json.dumps(event, separators=(",", ":"))
             pipe = self.r.pipeline(transaction=False)
@@ -437,12 +440,29 @@ class SignalWorker(LineageEnforcer):
             logger.debug(f"No candles in Redis for {symbol}:{tf}, skipping")
             return
 
-        # Capture snapshot metrics for activity firehose (last eval wins)
-        ind_fields = [f for f in dir(snapshot) if not f.startswith("_") and f != "ohlcv"]
+        # Capture full snapshot for activity firehose (last eval wins per cycle)
+        from dataclasses import fields as dc_fields
+        snap_dict = {}
+        for f in dc_fields(snapshot):
+            if f.name == "ohlcv":
+                continue
+            v = getattr(snapshot, f.name, None)
+            if isinstance(v, float):
+                snap_dict[f.name] = round(v, 6)
+            elif v is not None:
+                snap_dict[f.name] = v
         self._last_activity_snapshot = {
-            "ind_count": len(ind_fields),
+            "ind_count": len(snap_dict),
             "bar_count": len(snapshot.ohlcv),
             "score": None,
+            "tf": tf,
+            "indicators": snap_dict,
+            "candle_window": {
+                "first_ts": str(snapshot.ohlcv[0].timestamp),
+                "last_ts": str(snapshot.ohlcv[-1].timestamp),
+                "bar_count": len(snapshot.ohlcv),
+                "timeframe": tf,
+            },
         }
 
         # Registry-driven dispatch: evaluate all strategies registered for this TF
