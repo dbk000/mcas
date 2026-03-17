@@ -278,20 +278,24 @@ const COL = {
   klines:   { h: '1s',        w: 5,  r: (row, s) => <><C c="#555">{padL(s?.microstructure?.n_klines ?? '—', 3)}</C>{'  '}</> },
   gatepass: { h: 'OK',        w: 5,  r: (row) => <><C c="#999">{padL(row.passCount, 3)}</C>{'  '}</> },
   gatefail: { h: 'FAIL',      w: 5,  r: (row) => <><C c="#666">{padL(row.failCount, 3)}</C>{'  '}</> },
+  tf:       { h: 'TF',        w: 5,  r: (row) => <><C c="#777">{pad(row.tf || '—', 3)}</C>{'  '}</> },
+  rows:     { h: 'ROWS',      w: 7,  r: (row) => <><C c="#888">{padL(row.barCount || '—', 5)}</C>{'  '}</> },
+  compms:   { h: 'MS',        w: 7,  r: (row) => <><C c="#777">{padL(row.latMs != null ? row.latMs : '—', 5)}</C>{'  '}</> },
 }
 
 // ── 10 Heartbeat Variants ────────────────────────────────────────────────
+// Now reflecting the real pipeline: ING → PER → IND → SIG → EMT(sealed)
 const VARIANTS = [
   { id: 'full',       label: '01 Full Pipeline',        cols: ['time','phase','gates','ind','bars','score','lat','hash','sealed'] },
-  { id: 'compact',    label: '02 Compact',              cols: ['time','phase','gates','score','hash','sealed'] },
-  { id: 'throughput', label: '03 Throughput',            cols: ['time','phase','evals','signals','gatepass','gatefail','lat'] },
-  { id: 'score',      label: '04 Score Detail',         cols: ['time','phase','score','rank','breadth','ret4h','hash'] },
-  { id: 'micro',      label: '05 Microstructure',       cols: ['time','phase','drift','entry','klines','score','lat','hash'] },
-  { id: 'breadth',    label: '06 Cross-Sectional',      cols: ['time','phase','breadth','universe','decile','rank','score','sealed'] },
-  { id: 'audit',      label: '07 Audit Trail',          cols: ['time','phase','gates','score','lat','hash','confhash','sealed'] },
-  { id: 'gates',      label: '08 Gate Inspector',       cols: ['time','phase','gates','gatepass','gatefail','ind','bars','signals'] },
-  { id: 'minimal',    label: '09 Minimal Pulse',        cols: ['time','phase','gates','signals'] },
-  { id: 'candles',    label: '10 Candle + Indicators',  cols: ['time','phase','ind','bars','klines','score','drift','hash'] },
+  { id: 'stages',     label: '02 Stage Flow',           cols: ['time','phase','tf','ind','bars','compms','signals','hash'] },
+  { id: 'compact',    label: '03 Compact',              cols: ['time','phase','gates','score','hash','sealed'] },
+  { id: 'throughput', label: '04 Throughput',            cols: ['time','phase','evals','rows','signals','gatepass','gatefail','compms'] },
+  { id: 'score',      label: '05 Score Detail',         cols: ['time','phase','score','rank','breadth','ret4h','hash'] },
+  { id: 'micro',      label: '06 Microstructure',       cols: ['time','phase','drift','entry','klines','score','lat','hash'] },
+  { id: 'breadth',    label: '07 Cross-Sectional',      cols: ['time','phase','breadth','universe','decile','rank','score','sealed'] },
+  { id: 'audit',      label: '08 Audit Trail',          cols: ['time','phase','gates','score','lat','hash','confhash','sealed'] },
+  { id: 'gates',      label: '09 Gate Inspector',       cols: ['time','phase','gates','gatepass','gatefail','ind','bars','signals'] },
+  { id: 'minimal',    label: '10 Minimal Pulse',        cols: ['time','phase','tf','gates','signals'] },
 ]
 
 function HeartbeatLine({ row, cols, sealedMap }) {
