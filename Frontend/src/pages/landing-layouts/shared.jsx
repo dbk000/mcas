@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowRight, ShieldCheck, ScanLine, TimerReset, ChevronRight, Layers3 } from 'lucide-react'
 import { Badge, Card, CardContent, CardHeader, CardTitle } from '../../components/ui'
@@ -219,11 +219,11 @@ function StaticGlassBoxReplay({ proofPack }) {
 
 // --- Heartbeat: terminal-native rendering via <pre> ---
 const MAX_VISIBLE_ROWS = 16
-const PHASES = ['ING', 'FTR', 'SIG', 'RSK', 'EMT']
 const PHASE_COLOR = { ING: '#85B7EB', FTR: '#5DCAA5', SIG: '#EF9F27', RSK: '#ED93B1', EMT: '#AFA9EC' }
 
 const pad = (s, n) => String(s).padEnd(n)
 const padL = (s, n) => String(s).padStart(n)
+const dash = (n) => padL('—', n)
 
 function fmtTime(d) {
   if (!d) return '--:--:--'
@@ -235,11 +235,12 @@ function C({ c, children }) {
 }
 
 function gatePips(pass, fail) {
+  const p = Math.min(pass, 6), f = Math.min(fail, 6)
   return (
     <>
-      <C c="#5DCA5D">{'█'.repeat(pass)}</C>
-      <C c="#E24B4A">{'░'.repeat(fail)}</C>
-      {' '.repeat(Math.max(0, 6 - pass - fail))}
+      <C c="#5DCA5D">{'█'.repeat(p)}</C>
+      <C c="#E24B4A">{'░'.repeat(f)}</C>
+      {' '.repeat(Math.max(0, 6 - p - f))}
     </>
   )
 }
@@ -253,58 +254,91 @@ function latColor(ms) {
   return ms < 250 ? '#5DCA5D' : ms < 350 ? '#EF9F27' : '#E24B4A'
 }
 
-function HeartbeatLine({ row }) {
-  const time = pad(fmtTime(row.ts), 9)
-  const phase = row.phase?.code || '???'
-  const ind = padL(row.indCount, 3)
-  const bars = padL(row.barCount, 4)
+function driftColor(bps) {
+  if (bps == null) return '#444'
+  const abs = Math.abs(bps)
+  return abs < 50 ? '#5DCA5D' : abs < 150 ? '#EF9F27' : '#E24B4A'
+}
 
-  // Activity rows: show eval counts. Sealed rows: show scores.
-  if (row.isActivity) {
-    const sigTag = row.signals > 0 ? `${row.signals} signals` : '·'
-    return (
-      <div style={{ animation: 'hb-row-in 0.3s ease-out' }}>
-        <C c="#555">{time}</C>
-        <C c={PHASE_COLOR[phase]}>{pad(phase, 4)}</C>
-        {gatePips(Math.min(row.passCount, 6), Math.min(row.failCount, 6))}
-        <C c="#666">{ind}</C>{'  '}
-        <C c="#555">{bars}</C>{'  '}
-        <C c="#444">{padL('—', 5)}</C>
-        <C c="#444">{'   '}</C>
-        <C c="#444">{padL('—', 5)}</C>{'  '}
-        <C c="#444">{padL('—', 6)}</C>{'  '}
-        <C c={row.signals > 0 ? '#5DCA5D' : '#333'}>{padL(sigTag, 12)}</C>
-        {'\n'}
-      </div>
-    )
-  }
+// ── Column renderers ─────────────────────────────────────────────────────
+// Each returns { header: string, width: number, render: (row, sealed) => JSX }
+// `sealed` is the full sealed pipeline object (or null for activity rows)
+const COL = {
+  time:     { h: 'TIME',      w: 9,  r: (row) => <C c="#555">{pad(fmtTime(row.ts), 9)}</C> },
+  phase:    { h: 'PHASE',     w: 4,  r: (row) => <C c={PHASE_COLOR[row.phase?.code] || '#444'}>{pad(row.phase?.code || '·', 4)}</C> },
+  gates:    { h: 'GATES',     w: 8,  r: (row) => <>{gatePips(row.passCount, row.failCount)}{'  '}</> },
+  ind:      { h: 'IND',       w: 5,  r: (row) => <><C c="#666">{padL(row.indCount, 3)}</C>{'  '}</> },
+  bars:     { h: 'BARS',      w: 6,  r: (row) => <><C c="#555">{padL(row.barCount, 4)}</C>{'  '}</> },
+  score:    { h: 'SCORE',     w: 15, r: (row) => row.raw > 0
+    ? <><C c="#888">{padL(row.raw.toFixed(2), 5)}</C><C c="#444">{' → '}</C><C c={scoreColor(row.calibrated)}>{padL(row.calibrated.toFixed(2), 5)}</C>{'  '}</>
+    : <><C c="#444">{padL('—', 5)}{'   '}{padL('—', 5)}</C>{'  '}</> },
+  lat:      { h: 'LAT',       w: 8,  r: (row) => <><C c={latColor(row.latMs)}>{padL(row.latMs != null ? `${row.latMs}ms` : '—', 6)}</C>{'  '}</> },
+  hash:     { h: 'HASH',      w: 12, r: (row) => <C c="#EF9F27">{row.traceHash ? row.traceHash.slice(0, 12) : padL('·', 12)}</C> },
+  sealed:   { h: '',           w: 7,  r: (row) => row.isEmit && row.isSealed ? <C c="#5DCA5D"> SEALED</C> : null },
+  evals:    { h: 'EVALS',     w: 7,  r: (row) => <><C c="#666">{padL(row.isActivity ? row.indCount : '—', 5)}</C>{'  '}</> },
+  signals:  { h: 'SIG',       w: 5,  r: (row) => <><C c={row.signals > 0 ? '#5DCA5D' : '#333'}>{padL(row.signals || '·', 3)}</C>{'  '}</> },
+  breadth:  { h: 'BREADTH',   w: 9,  r: (row, s) => { const b = s?.cross_sectional_context?.breadth; return <><C c={b > 0.5 ? '#5DCA5D' : b > 0.3 ? '#EF9F27' : '#444'}>{padL(b != null ? b.toFixed(3) : '—', 7)}</C>{'  '}</> } },
+  universe: { h: 'UNIV',      w: 6,  r: (row, s) => <><C c="#666">{padL(s?.cross_sectional_context?.universe_size ?? '—', 4)}</C>{'  '}</> },
+  drift:    { h: 'DRIFT',     w: 8,  r: (row, s) => { const d = s?.microstructure?.drift_bps; return <><C c={driftColor(d)}>{padL(d != null ? `${d > 0 ? '+' : ''}${d.toFixed(0)}bp` : '—', 6)}</C>{'  '}</> } },
+  entry:    { h: 'ENTRY',     w: 8,  r: (row, s) => <><C c="#666">{pad(s?.microstructure?.entry_type ?? '—', 6)}</C>{'  '}</> },
+  rank:     { h: 'RANK',      w: 6,  r: (row, s) => <><C c="#888">{padL(s?.indicator_snapshot?.rank ?? '—', 4)}</C>{'  '}</> },
+  ret4h:    { h: 'RET4H',     w: 8,  r: (row, s) => { const r = s?.indicator_snapshot?.ret_4h; return <><C c={r > 0 ? '#5DCA5D' : '#E24B4A'}>{padL(r != null ? `${(r*100).toFixed(1)}%` : '—', 6)}</C>{'  '}</> } },
+  decile:   { h: 'DECILE',    w: 8,  r: (row, s) => <><C c="#666">{padL(s?.cross_sectional_context?.symbols_in_decile ?? '—', 4)}</C>{'  '}</> },
+  confhash: { h: 'CFGHASH',   w: 10, r: (row, s) => <C c="#888">{s?.config_snapshot ? Object.values(s.config_snapshot).join('/').slice(0, 8) : padL('·', 8)}</C> },
+  klines:   { h: '1s',        w: 5,  r: (row, s) => <><C c="#555">{padL(s?.microstructure?.n_klines ?? '—', 3)}</C>{'  '}</> },
+  gatepass: { h: 'OK',        w: 5,  r: (row) => <><C c="#5DCA5D">{padL(row.passCount, 3)}</C>{'  '}</> },
+  gatefail: { h: 'FAIL',      w: 5,  r: (row) => <><C c="#E24B4A">{padL(row.failCount, 3)}</C>{'  '}</> },
+}
 
-  const rawS = padL(row.raw.toFixed(2), 5)
-  const calS = row.calibrated.toFixed(2)
-  const latS = row.latMs != null ? padL(`${row.latMs}ms`, 6) : padL('—', 6)
-  const hash = row.traceHash ? row.traceHash.slice(0, 12) : '            '
+// ── 10 Heartbeat Variants ────────────────────────────────────────────────
+const VARIANTS = [
+  { id: 'full',       label: '01 Full Pipeline',        cols: ['time','phase','gates','ind','bars','score','lat','hash','sealed'] },
+  { id: 'compact',    label: '02 Compact',              cols: ['time','phase','gates','score','hash','sealed'] },
+  { id: 'throughput', label: '03 Throughput',            cols: ['time','phase','evals','signals','gatepass','gatefail','lat'] },
+  { id: 'score',      label: '04 Score Detail',         cols: ['time','phase','score','rank','breadth','ret4h','hash'] },
+  { id: 'micro',      label: '05 Microstructure',       cols: ['time','phase','drift','entry','klines','score','lat','hash'] },
+  { id: 'breadth',    label: '06 Cross-Sectional',      cols: ['time','phase','breadth','universe','decile','rank','score','sealed'] },
+  { id: 'audit',      label: '07 Audit Trail',          cols: ['time','phase','gates','score','lat','hash','confhash','sealed'] },
+  { id: 'gates',      label: '08 Gate Inspector',       cols: ['time','phase','gates','gatepass','gatefail','ind','bars','signals'] },
+  { id: 'minimal',    label: '09 Minimal Pulse',        cols: ['time','phase','gates','signals'] },
+  { id: 'candles',    label: '10 Candle + Indicators',  cols: ['time','phase','ind','bars','klines','score','drift','hash'] },
+]
 
+function HeartbeatLine({ row, cols, sealedMap }) {
+  const sealed = sealedMap?.[row.sealedEventId] || null
   return (
     <div style={{ animation: 'hb-row-in 0.3s ease-out' }}>
-      <C c="#555">{time}</C>
-      <C c={PHASE_COLOR[phase]}>{pad(phase, 4)}</C>
-      {gatePips(row.passCount, row.failCount)}
-      <C c="#666">{ind}</C>{'  '}
-      <C c="#555">{bars}</C>{'  '}
-      <C c="#888">{rawS}</C>
-      <C c="#444">{' → '}</C>
-      <C c={scoreColor(row.calibrated)}>{padL(calS, 5)}</C>{'  '}
-      <C c={latColor(row.latMs)}>{latS}</C>{'  '}
-      <C c="#EF9F27">{hash}</C>
-      {row.isEmit && row.isSealed && <C c="#5DCA5D"> SEALED</C>}
+      {cols.map((colId) => {
+        const col = COL[colId]
+        if (!col) return null
+        const el = col.r(row, sealed)
+        return el != null ? <span key={colId}>{el}</span> : null
+      })}
       {'\n'}
     </div>
   )
 }
 
-function HeartbeatFeed({ rows, stats, isLive }) {
+function HeartbeatFeed({ rows, stats, isLive, events }) {
+  const [variantId, setVariantId] = useState('full')
+  const variant = VARIANTS.find((v) => v.id === variantId) || VARIANTS[0]
+  const cols = variant.cols
+
   const visible = useMemo(() => rows.slice(0, MAX_VISIBLE_ROWS), [rows])
-  const header = `${pad('TIME', 9)}${pad('PHASE', 4)}${pad('GATES', 8)}${padL('IND', 3)}  ${padL('BARS', 4)}  ${padL('SCORE', 13)}  ${padL('LAT', 6)}  ${'TRACE HASH'}`
+
+  // Map sealed events by opportunity ID for column renderers that need full pipeline data
+  const sealedMap = useMemo(() => {
+    const m = {}
+    for (const e of events) {
+      if (e.pipeline) m[e.opportunity.id] = e.pipeline
+    }
+    return m
+  }, [events])
+
+  const header = cols.map((colId) => {
+    const col = COL[colId]
+    return col ? pad(col.h, col.w) : ''
+  }).join('')
 
   return (
     <div className="overflow-hidden rounded-2xl bg-[#111113] px-4 py-3.5">
@@ -322,7 +356,7 @@ function HeartbeatFeed({ rows, stats, isLive }) {
         <pre className="m-0 overflow-hidden whitespace-pre text-[11px] leading-[18px] text-[#555]">
           <C c="#444">{header}</C>{'\n'}
           {visible.map((row) => (
-            <HeartbeatLine key={row.id} row={row} />
+            <HeartbeatLine key={row.id} row={row} cols={cols} sealedMap={sealedMap} />
           ))}
           {visible.length === 0 && <C c="#444">{'  Waiting for pipeline events...\n'}</C>}
         </pre>
@@ -337,6 +371,21 @@ function HeartbeatFeed({ rows, stats, isLive }) {
           {'    '}sealed <C c="#888">{stats.sealedCount.toLocaleString()}</C>
         </div>
       )}
+
+      {/* Variant selector (dev only) */}
+      {import.meta.env.DEV && (
+        <div className="mt-2 border-t border-white/[0.04] pt-2">
+          <select
+            value={variantId}
+            onChange={(e) => setVariantId(e.target.value)}
+            className="rounded bg-[#1a1a1d] px-2 py-1 font-mono text-[10px] text-[#666] outline-none"
+          >
+            {VARIANTS.map((v) => (
+              <option key={v.id} value={v.id}>{v.label}</option>
+            ))}
+          </select>
+        </div>
+      )}
     </div>
   )
 }
@@ -345,8 +394,8 @@ function HeartbeatFeed({ rows, stats, isLive }) {
 export function GlassBoxReplay({ proofPack }) {
   const { rows, stats, isLive, events } = useLiveFeed()
 
-  if (events.length > 0) {
-    return <HeartbeatFeed rows={rows} stats={stats} isLive={isLive} />
+  if (events.length > 0 || rows.length > 0) {
+    return <HeartbeatFeed rows={rows} stats={stats} isLive={isLive} events={events} />
   }
 
   return <StaticGlassBoxReplay proofPack={proofPack} />

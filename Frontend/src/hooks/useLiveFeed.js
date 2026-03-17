@@ -89,6 +89,7 @@ function buildRows(activity, sealedEvents) {
       isEmit: true,
       isActivity: false,
       signals: 1,
+      sealedEventId: event.opportunity.id,
     })
   }
 
