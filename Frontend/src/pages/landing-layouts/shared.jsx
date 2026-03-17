@@ -226,45 +226,47 @@ function C({ c, children }) {
 function HeartbeatFeed({ rows, stats, isLive }) {
   const preRef = useRef(null)
   const queueRef = useRef([])
-  const feedingRef = useRef(false)
-  const prevRowCountRef = useRef(0)
+  const timerRef = useRef(null)
+  const seenRef = useRef(new Set())
 
-  // Stringify all rows into a queue for the DOM feeder
+  // On each poll: stringify new rows, push to queue, calculate feed rate
   useEffect(() => {
-    const newRows = rows.slice(prevRowCountRef.current)
-    prevRowCountRef.current = rows.length
-    for (const row of newRows) {
+    for (const row of rows) {
+      if (seenRef.current.has(row.id)) continue
+      seenRef.current.add(row.id)
       const text = JSON.stringify(row._raw || { ts: row.ts?.getTime() / 1000, phase: row.phase?.code })
       queueRef.current.push(text)
     }
+    // Prevent seen set from growing forever
+    if (seenRef.current.size > 500) {
+      const arr = [...seenRef.current]
+      seenRef.current = new Set(arr.slice(-200))
+    }
   }, [rows])
 
-  // DOM feeder: pops lines from queue, appends to <pre>, auto-scrolls
-  // Runs independently of React — just a setInterval on a ref
+  // Single timer: feeds one line per tick, adapts speed to queue depth
+  // Goal: spread lines evenly across the ~12s poll interval so it never stops
   useEffect(() => {
-    if (feedingRef.current) return
-    feedingRef.current = true
-
-    const interval = setInterval(() => {
+    const tick = () => {
       const pre = preRef.current
       if (!pre) return
+
       const line = queueRef.current.shift()
-      if (!line) return
-
-      pre.appendChild(document.createTextNode(line + '\n'))
-
-      // Keep DOM bounded — trim old lines when too many
-      while (pre.childNodes.length > 200) {
-        pre.removeChild(pre.firstChild)
+      if (line) {
+        pre.appendChild(document.createTextNode(line + '\n'))
+        // Trim DOM — keep last 300 text nodes
+        while (pre.childNodes.length > 300) pre.removeChild(pre.firstChild)
+        pre.scrollTop = pre.scrollHeight
       }
 
-      pre.scrollTop = pre.scrollHeight
-    }, 120)
-
-    return () => {
-      clearInterval(interval)
-      feedingRef.current = false
+      // Adaptive interval: spread remaining queue across ~11s (leave 1s buffer)
+      const pending = queueRef.current.length
+      const ms = pending > 0 ? Math.max(40, Math.floor(11000 / pending)) : 200
+      timerRef.current = setTimeout(tick, ms)
     }
+
+    timerRef.current = setTimeout(tick, 100)
+    return () => clearTimeout(timerRef.current)
   }, [])
 
   return (
