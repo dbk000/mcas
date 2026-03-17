@@ -77,6 +77,7 @@ app = FastAPI(
 _CORS_ORIGINS = get_config().Worker.CORS_ORIGINS.strip()
 _cors_origins = [o.strip() for o in _CORS_ORIGINS.split(",") if o.strip()] if _CORS_ORIGINS else []
 _cors_origins += [
+    "https://mcasui.com",
     "https://mcas.pages.dev",
     "http://localhost:3000",
     "http://localhost:5173",
