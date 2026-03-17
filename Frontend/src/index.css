@@ -58,34 +58,7 @@
   animation: shimmer 1.5s infinite;
 }
 
-/* Heartbeat feed — terminal aesthetic */
-@keyframes hb-pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.5; transform: scale(0.8); }
-}
-
-@keyframes hb-row-in {
-  from { opacity: 0; transform: translateX(-6px); }
-  to { opacity: 1; transform: translateX(0); }
-}
-
-.hb-dot {
-  width: 6px; height: 6px; border-radius: 50%;
-  background: #999;
-  animation: hb-pulse 1.5s ease-in-out infinite;
-}
-
-.hb-fade {
-  position: relative;
-}
-
-.hb-fade::after {
-  content: '';
-  position: absolute; bottom: 0; left: 0; right: 0;
-  height: 40px;
-  background: linear-gradient(transparent, #111113);
-  pointer-events: none;
-}
+/* Heartbeat feed — no decoration, pure terminal */
 
 /* Toast animations */
 .toast-enter {

@@ -270,28 +270,24 @@ function HeartbeatFeed({ rows, stats, isLive }) {
   }, [])
 
   return (
-    <div className="overflow-hidden bg-[#111113] px-4 py-3.5">
-      {/* Head */}
+    <div className="flex flex-col overflow-hidden bg-[#111113] px-4 py-3.5" style={{ height: 'calc(100vh - 200px)', minHeight: '400px' }}>
+      {/* Head — no pulsing dot, brighter wider title */}
       <div className="mb-1.5 flex items-center gap-2">
-        {isLive && <div className="hb-dot" />}
-        <span className="font-mono text-[10px] uppercase tracking-[1.5px] text-[#555]">Glass Box trace stream</span>
+        <span className="font-mono text-[11px] uppercase tracking-[3px] text-[#999]">Glass Box Trace Stream</span>
         {stats && (
           <span className="ml-auto font-mono text-[10px] text-[#444]">{stats.sealedCount.toLocaleString()} sealed</span>
         )}
       </div>
 
-      {/* Terminal: raw JSON fed directly to DOM, never re-rendered by React */}
-      <div className="hb-fade" style={{ maxHeight: '340px' }}>
-        <pre
-          ref={preRef}
-          className="m-0 overflow-y-auto whitespace-pre-wrap break-all text-[10px] leading-[16px] text-[#888]"
-          style={{ maxHeight: '320px' }}
-        />
-      </div>
+      {/* Terminal: raw JSON, hard cutoff, no fade, fills to bottom */}
+      <pre
+        ref={preRef}
+        className="m-0 flex-1 overflow-hidden whitespace-pre-wrap break-all text-[10px] leading-[16px] text-[#888]"
+      />
 
-      {/* Stats bar */}
+      {/* Stats bar — flush at bottom */}
       {stats && (
-        <div className="mt-2.5 border-t border-white/[0.06] pt-2 font-mono text-[10px] text-[#555]">
+        <div className="mt-2 border-t border-white/[0.06] pt-2 font-mono text-[10px] text-[#555]">
           evals/h <C c="#888">{stats.evalsPerH.toLocaleString()}</C>
           {'    '}avg latency <C c="#888">{stats.avgLatMs}ms</C>
           {'    '}gate pass <C c="#888">{stats.gatePassRate}%</C>
