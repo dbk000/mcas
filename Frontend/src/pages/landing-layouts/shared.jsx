@@ -331,7 +331,7 @@ function HeartbeatFeed({ rows, stats, isLive }) {
       {/* Stats bar */}
       {stats && (
         <div className="mt-2.5 border-t border-white/[0.06] pt-2 font-mono text-[10px] text-[#444]">
-          decisions/h <C c="#888">{stats.decisionsPerH.toLocaleString()}</C>
+          evals/h <C c="#888">{stats.evalsPerH.toLocaleString()}</C>
           {'    '}avg latency <C c="#888">{stats.avgLatMs}ms</C>
           {'    '}gate pass <C c="#888">{stats.gatePassRate}%</C>
           {'    '}sealed <C c="#888">{stats.sealedCount.toLocaleString()}</C>
