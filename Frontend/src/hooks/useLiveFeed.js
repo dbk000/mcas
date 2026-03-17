@@ -6,12 +6,12 @@ const log = getLogger('live-feed')
 
 function resolveApiBase() {
   if (import.meta.env.VITE_PUBLIC_API_BASE) return import.meta.env.VITE_PUBLIC_API_BASE
-  // Derive from hostname: mcasui.com → api.mcasui.com
   const host = typeof window !== 'undefined' ? window.location.hostname : ''
-  if (host && host !== 'localhost' && !host.startsWith('127.') && !host.startsWith('192.168.')) {
-    return `${window.location.protocol}//api.${host}`
-  }
-  return ''
+  if (!host || host === 'localhost' || host.startsWith('127.') || host.startsWith('192.168.')) return ''
+  // pages.dev preview/prod → canonical API domain
+  if (host.endsWith('.pages.dev')) return 'https://api.mcasui.com'
+  // Custom domain: mcasui.com → api.mcasui.com
+  return `${window.location.protocol}//api.${host}`
 }
 
 const API_BASE = resolveApiBase()

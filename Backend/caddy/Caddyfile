@@ -15,19 +15,8 @@ api.mcasui.com {
     output stdout
   }
 
-  # CORS for frontend on mcasui.com
-  header {
-    Access-Control-Allow-Origin "https://mcasui.com"
-    Access-Control-Allow-Methods "GET, POST, PUT, PATCH, DELETE, OPTIONS"
-    Access-Control-Allow-Headers "Content-Type, X-API-Key, X-Correlation-ID"
-    Access-Control-Max-Age "86400"
-  }
-
-  # Handle CORS preflight
-  @options method OPTIONS
-  handle @options {
-    respond 204
-  }
+  # CORS handled by FastAPI middleware (multi-origin aware)
+  # Do NOT set CORS headers here — Caddy would overwrite FastAPI's dynamic origin
 
   handle /health {
     reverse_proxy api:8000
