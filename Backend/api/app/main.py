@@ -1508,6 +1508,9 @@ app.include_router(trading_router, prefix="/v1", dependencies=[Depends(require_a
 from api.app.routers.telemetry import router as telemetry_router
 app.include_router(telemetry_router, prefix="/v1")
 
+from api.app.routers.public_feed import router as public_feed_router
+app.include_router(public_feed_router, prefix="/v1")  # no auth — public endpoint
+
 from api.app.routers.unicorns import router as unicorns_router
 app.include_router(unicorns_router, prefix="/v1", dependencies=[Depends(require_api_key)])
 

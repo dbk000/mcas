@@ -1,17 +1,16 @@
 {
   "version": "v1",
-  "generated_at": "2026-03-15",
-  "as_of_ts": "2026-03-15T14:32:00Z",
-  "source": "placeholder",
-  "source_status": "placeholder",
+  "generated_at": "2026-03-17",
+  "as_of_ts": "2026-03-17T00:20:00Z",
+  "source": "production",
+  "source_status": "live",
   "ui_intent": "Public proof surfaces for landing, pricing, and trust-building panels",
   "hero_metrics": [
     {
       "id": "strategies_tracked",
       "label": "Strategies tracked",
-      "value": "12",
-      "subtext": "crypto plus equities",
-      "_todo": "wire to /v1/public/stats when endpoint exists"
+      "value": "14",
+      "subtext": "crypto strategies active in last 30 days"
     },
     {
       "id": "auditable_data_flow",
@@ -23,9 +22,8 @@
     {
       "id": "daily_pf_range",
       "label": "Avg daily PF range",
-      "value": "1.2 to 2.4",
-      "subtext": "across demo strategies",
-      "_todo": "wire to /v1/public/stats when endpoint exists"
+      "value": "0.2 to 4.8",
+      "subtext": "across live strategies"
     },
     {
       "id": "decision_latency",
@@ -35,59 +33,53 @@
     }
   ],
   "glass_box_walkthrough": {
-    "title": "Sample Glass Box Replay",
-    "setup_id": "U1",
-    "symbol": "NVDA",
-    "timeframe": "15m",
-    "direction": "LONG",
-    "decision_ts": "2026-03-05T14:30:00Z",
+    "title": "Real Glass Box Replay — S9",
+    "setup_id": "S9",
+    "symbol": "ONEUSDT",
+    "timeframe": "1h",
+    "direction": "SHORT",
+    "decision_ts": "2026-03-17T00:05:06Z",
     "causality_status": "VERIFIED",
     "headline": "Every decision shows what the model saw, when it saw it, and whether the timing was clean.",
     "timeline": [
       {
         "phase": "ingest",
         "state": "verified",
-        "ts": "2026-03-05T14:29:42Z",
-        "detail": "Last market snapshot ingested before decision boundary."
+        "ts": "2026-03-17T00:05:06Z",
+        "detail": "Market data snapshot ingested before evaluation boundary."
       },
       {
-        "phase": "feature_build",
-        "state": "verified",
-        "ts": "2026-03-05T14:29:51Z",
-        "detail": "Feature bundle compiled from pre-decision bars only."
+        "phase": "gate_breadth",
+        "state": "passed",
+        "ts": "2026-03-17T00:05:06Z",
+        "detail": "breadth: actual=0.848 vs threshold=0.3"
       },
       {
-        "phase": "signal_eval",
-        "state": "verified",
-        "ts": "2026-03-05T14:29:58Z",
-        "detail": "Setup score crossed threshold with no future-bar leakage."
+        "phase": "gate_top_decile",
+        "state": "passed",
+        "ts": "2026-03-17T00:05:06Z",
+        "detail": "top_decile: rank=10 vs decile_size=32"
       },
       {
-        "phase": "risk_frame",
-        "state": "verified",
-        "ts": "2026-03-05T14:29:59Z",
-        "detail": "Risk ladder built from contemporaneous volatility state."
+        "phase": "gate_ret_4h_positive",
+        "state": "passed",
+        "ts": "2026-03-17T00:05:06Z",
+        "detail": "ret_4h_positive: actual=0.023 vs threshold=0.0"
       },
       {
         "phase": "decision_emit",
         "state": "verified",
-        "ts": "2026-03-05T14:30:00Z",
-        "detail": "Decision emitted with lineage and timing envelope intact."
+        "ts": "2026-03-17T00:05:06Z",
+        "detail": "Signal sealed with trace_hash f9b0991a8de9..."
       }
-    ],
-    "decision_inputs": [
-      "Impulse continuation score > threshold",
-      "Breadth leadership positive",
-      "Volatility state supportive",
-      "No future-bar dependency detected"
     ]
   },
   "honest_pf_demo": {
     "headline": "Aggregate PF can flatter. Avg Daily PF shows whether edge repeats day after day.",
-    "aggregate_pf": 2.64,
-    "avg_daily_pf": 1.48,
-    "days_counted": 8,
-    "days_excluded_infinite_profitable": 2,
+    "aggregate_pf": 0.88,
+    "avg_daily_pf": 1.34,
+    "days_counted": 21,
+    "days_excluded_infinite_profitable": 0,
     "method_note": "Finite daily PF values are averaged. Fully profitable zero-loss days are reported separately and excluded from the finite mean."
   },
   "evidence_blocks": [

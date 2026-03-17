@@ -43,6 +43,7 @@ const DEFAULTS = {
     snapshot_ms: 5_000,
     signals_top_ms: 30_000,
     queue_status_ms: 15_000,
+    public_feed_ms: 12_000,
   },
   timeframes: ['1m', '5m', '15m', '1h', '4h', '1d'],
   tf_seconds: { '1m': 60, '5m': 300, '15m': 900, '1h': 3600, '4h': 14400, '1d': 86400 },

@@ -1,7 +1,8 @@
 import { Link } from 'react-router-dom'
-import { ArrowRight, ShieldCheck, ScanLine, TimerReset, ChevronRight, Layers3 } from 'lucide-react'
+import { ArrowRight, ShieldCheck, ScanLine, TimerReset, ChevronRight, Layers3, Radio } from 'lucide-react'
 import { Badge, Card, CardContent, CardHeader, CardTitle } from '../../components/ui'
 import { ANALYTICS_EVENTS, trackCtaClick } from '../../utils/analytics'
+import useLiveFeed from '../../hooks/useLiveFeed'
 
 // --- Pills ---
 export function HeroPills() {
@@ -178,8 +179,8 @@ export function PerformanceStrip({ proofPack }) {
   )
 }
 
-// --- Glass Box replay ---
-export function GlassBoxReplay({ proofPack }) {
+// --- Static Glass Box replay (fallback) ---
+function StaticGlassBoxReplay({ proofPack }) {
   return (
     <Card className="rounded-3xl border-terminal-800 bg-terminal-900/85">
       <CardHeader className="p-4">
@@ -213,6 +214,109 @@ export function GlassBoxReplay({ proofPack }) {
       </CardContent>
     </Card>
   )
+}
+
+// --- Feed event row ---
+function FeedEvent({ event }) {
+  const opp = event.opportunity
+  const pipeline = event.pipeline
+  const sim = event.simulation
+  const age = opp.created_ts
+    ? Math.round((Date.now() - new Date(opp.created_ts).getTime()) / 1000)
+    : null
+
+  const formatAge = (s) => {
+    if (s == null) return ''
+    if (s < 60) return `${s}s ago`
+    if (s < 3600) return `${Math.floor(s / 60)}m ago`
+    return `${Math.floor(s / 3600)}h ago`
+  }
+
+  const hasTrace = Boolean(pipeline?.trace_hash)
+
+  return (
+    <div className="feed-enter rounded-xl border border-terminal-800 bg-terminal-950/80 p-2.5">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <Badge variant="info" className="text-[9px]">{opp.setup_id}</Badge>
+          <Badge className="text-[9px]">{opp.timeframe}</Badge>
+          <span className="rounded-full border border-terminal-700 bg-terminal-900 px-2 py-0.5 text-[9px] text-terminal-400">
+            crypto
+          </span>
+          {hasTrace && (
+            <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[9px] uppercase tracking-[0.18em] text-emerald-300">
+              verified
+            </span>
+          )}
+        </div>
+        <span className="text-[10px] tabular-nums text-terminal-500">{formatAge(age)}</span>
+      </div>
+      {pipeline && (
+        <div className="mt-1.5 flex flex-wrap gap-1.5">
+          {(pipeline.gates || []).slice(0, 4).map((g, i) => (
+            <span
+              key={i}
+              className={`rounded px-1.5 py-0.5 text-[9px] ${
+                g.passed ? 'bg-emerald-500/10 text-emerald-300' : 'bg-red-500/10 text-red-400'
+              }`}
+            >
+              {g.name}
+            </span>
+          ))}
+        </div>
+      )}
+      {sim?.exit_reason && (
+        <p className="mt-1 text-[10px] text-terminal-500">
+          Exit: {sim.exit_reason}
+        </p>
+      )}
+    </div>
+  )
+}
+
+// --- Live Pipeline Feed ---
+function LivePipelineFeed({ events, isLive }) {
+  return (
+    <Card className="rounded-3xl border-terminal-800 bg-terminal-900/85">
+      <CardHeader className="p-4">
+        <CardTitle className="flex items-center justify-between text-sm text-terminal-100">
+          <span className="flex items-center gap-2">
+            <Radio className="size-3.5 text-amber-300" />
+            Pipeline feed
+          </span>
+          <span
+            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[9px] font-semibold uppercase tracking-[0.18em] ${
+              isLive
+                ? 'bg-emerald-500/15 text-emerald-300'
+                : 'bg-amber-500/15 text-amber-300'
+            }`}
+          >
+            <span className={`size-1.5 rounded-full ${isLive ? 'animate-pulse bg-emerald-400' : 'bg-amber-400'}`} />
+            {isLive ? 'Live' : 'Delayed'}
+          </span>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="max-h-[400px] space-y-2 overflow-y-auto p-4 pt-0">
+        {events.map((event) => (
+          <FeedEvent key={event.opportunity.id} event={event} />
+        ))}
+        {events.length === 0 && (
+          <p className="py-6 text-center text-xs text-terminal-500">No recent pipeline events</p>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
+// --- Glass Box replay (live with static fallback) ---
+export function GlassBoxReplay({ proofPack }) {
+  const { events, isLive } = useLiveFeed()
+
+  if (events.length > 0) {
+    return <LivePipelineFeed events={events} isLive={isLive} />
+  }
+
+  return <StaticGlassBoxReplay proofPack={proofPack} />
 }
 
 // --- Evidence cards ---

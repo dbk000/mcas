@@ -224,6 +224,10 @@ class WorkerTypedConfig:
     CORS_ORIGINS: str = ""
     API_KEY: str = ""
 
+    # Public feed
+    PUBLIC_FEED_CACHE_TTL_S: int = 10
+    PUBLIC_FEED_MAX_EVENTS: int = 50
+
 
 @dataclass
 class IndicatorTypedConfig:

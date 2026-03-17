@@ -131,6 +131,7 @@ def _build_bootstrap_payload(request: Request, *, authenticated: bool) -> dict:
                 "snapshot_ms": 5_000,
                 "signals_top_ms": 30_000,
                 "queue_status_ms": 15_000,
+                "public_feed_ms": 12_000,
             },
             "timeframes": timeframes,
             "tf_seconds": {tf: TF_SECONDS.get(tf, 60) for tf in timeframes},
