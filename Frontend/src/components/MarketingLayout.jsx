@@ -34,13 +34,15 @@ export default function MarketingLayout({ children }) {
   const primaryLabel = isPaid ? 'Open App' : 'Upgrade'
 
   return (
-    <div
-      className="min-h-screen overflow-x-hidden bg-terminal-900 text-terminal-100"
-      style={{
-        backgroundImage: `linear-gradient(rgba(217,119,6,var(--bg-grid-opacity)) 1.2px, transparent 1.2px), linear-gradient(90deg, rgba(217,119,6,var(--bg-grid-opacity)) 1.2px, transparent 1.2px)`,
-        backgroundSize: `calc(var(--bg-grid-size) * 0.75) calc(var(--bg-grid-size) * 0.75)`,
-      }}
-    >
+    <div className="min-h-screen overflow-x-hidden bg-terminal-900 text-terminal-100">
+      {/* Grid hatching overlay — sits above bg colour, below content */}
+      <div
+        className="pointer-events-none fixed inset-0 z-0"
+        style={{
+          backgroundImage: `linear-gradient(rgba(217,119,6,0.08) 1.2px, transparent 1.2px), linear-gradient(90deg, rgba(217,119,6,0.08) 1.2px, transparent 1.2px)`,
+          backgroundSize: '30px 30px',
+        }}
+      />
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
         <div className="bg-amber-500/12 absolute -left-32 -top-32 size-72 rounded-full blur-3xl" />
         <div className="absolute -right-24 top-24 size-64 rounded-full bg-blue-500/10 blur-3xl" />
