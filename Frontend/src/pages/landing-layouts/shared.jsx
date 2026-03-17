@@ -272,18 +272,9 @@ function V02({ row, s }) {
 }
 
 // ── 03: JSON stream (tail -f on a log) ──────────────────────────────────
-function V03({ row, s }) {
-  const obj = { t: fmtTime(row.ts), s: row.phase?.code }
-  if (row.tf) obj.tf = row.tf
-  obj.i = row.indCount
-  obj.b = row.barCount
-  if (row.raw > 0) obj.sc = [+row.raw.toFixed(2), +row.calibrated.toFixed(2)]
-  if (row.passCount + row.failCount > 0) obj.g = `${row.passCount}/${row.passCount + row.failCount}`
-  if (row.latMs != null) obj.ms = row.latMs
-  if (s?.indicator_snapshot) obj.snap = Object.fromEntries(Object.entries(s.indicator_snapshot).map(([k, v]) => [k, typeof v === 'number' ? +v.toFixed(4) : v]))
-  if (row.traceHash) obj.h = row.traceHash.slice(0, 8)
-  if (row.isSealed) obj.SEALED = true
-  return JSON.stringify(obj)
+function V03({ row }) {
+  // Dump the raw data exactly as it came from the pipeline — no reshaping
+  return JSON.stringify(row._raw || { ts: row.ts?.getTime() / 1000, phase: row.phase?.code })
 }
 
 // ── 04: Sparkline intensity bars ────────────────────────────────────────

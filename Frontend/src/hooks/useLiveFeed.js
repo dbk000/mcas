@@ -56,6 +56,7 @@ function buildRows(activity, sealedEvents) {
       isActivity: true,
       signals: a.signals || 0,
       tf: a.tf || null,
+      _raw: a,
     })
   }
 
@@ -92,6 +93,7 @@ function buildRows(activity, sealedEvents) {
       isActivity: false,
       signals: 1,
       sealedEventId: event.opportunity.id,
+      _raw: p,
     })
   }
 
