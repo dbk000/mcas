@@ -34,6 +34,7 @@ from governance.cache_contract import (
     WS_MAX_STREAMS_PER_CONN, TF_SECONDS, RING_BUFFER_SIZE,
     symbol_partition,
     get_social_candidates, SOCIAL_CANDIDATES_KEY,
+    PIPELINE_ACTIVITY_KEY, PIPELINE_ACTIVITY_MAX,
 )
 
 logger = logging.getLogger("ingestor")
@@ -308,6 +309,22 @@ class ConnectionShard(threading.Thread):
                     completed["is_final"] = True  # Set in dict (invariant #29)
                     push_candle(self.r, symbol, tf, completed)
                     xadd_candle_closed(self.r, tf, symbol, completed["bar_start_ts"])
+
+                    # Pipeline activity push — non-critical
+                    try:
+                        evt = json.dumps({
+                            "ts": time.time(),
+                            "stage": "ING",
+                            "tf": tf,
+                            "bars": 1,
+                            "symbols": len(self._symbol_set),
+                        }, separators=(",", ":"))
+                        p = self.r.pipeline(transaction=False)
+                        p.lpush(PIPELINE_ACTIVITY_KEY, evt)
+                        p.ltrim(PIPELINE_ACTIVITY_KEY, 0, PIPELINE_ACTIVITY_MAX - 1)
+                        p.execute()
+                    except Exception:
+                        pass
 
         except Exception as e:
             logger.error(f"Shard {self.shard_id} message error: {e}", exc_info=True)

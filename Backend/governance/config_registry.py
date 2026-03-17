@@ -228,6 +228,9 @@ class WorkerTypedConfig:
     PUBLIC_FEED_CACHE_TTL_S: int = 10
     PUBLIC_FEED_MAX_EVENTS: int = 50
 
+    # Pipeline activity heartbeat
+    ACTIVITY_SAMPLE_EVERY: int = 10
+
 
 @dataclass
 class IndicatorTypedConfig:

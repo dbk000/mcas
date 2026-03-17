@@ -219,7 +219,8 @@ function StaticGlassBoxReplay({ proofPack }) {
 
 // --- Heartbeat: terminal-native rendering via <pre> ---
 const MAX_VISIBLE_ROWS = 16
-const PHASE_COLOR = { ING: '#85B7EB', FTR: '#5DCAA5', SIG: '#EF9F27', RSK: '#ED93B1', EMT: '#AFA9EC' }
+// Monochrome terminal — no colour-coding. Data speaks for itself.
+const PHASE_COLOR = { ING: '#888', PER: '#888', IND: '#888', FTR: '#888', SIG: '#888', RSK: '#888', EMT: '#888' }
 
 const pad = (s, n) => String(s).padEnd(n)
 const padL = (s, n) => String(s).padStart(n)
@@ -238,27 +239,16 @@ function gatePips(pass, fail) {
   const p = Math.min(pass, 6), f = Math.min(fail, 6)
   return (
     <>
-      <C c="#5DCA5D">{'█'.repeat(p)}</C>
-      <C c="#E24B4A">{'░'.repeat(f)}</C>
+      <C c="#999">{'█'.repeat(p)}</C>
+      <C c="#444">{'░'.repeat(f)}</C>
       {' '.repeat(Math.max(0, 6 - p - f))}
     </>
   )
 }
 
-function scoreColor(cal) {
-  return cal > 1.0 ? '#5DCA5D' : cal > 0.5 ? '#EF9F27' : '#E24B4A'
-}
-
-function latColor(ms) {
-  if (ms == null) return '#444'
-  return ms < 250 ? '#5DCA5D' : ms < 350 ? '#EF9F27' : '#E24B4A'
-}
-
-function driftColor(bps) {
-  if (bps == null) return '#444'
-  const abs = Math.abs(bps)
-  return abs < 50 ? '#5DCA5D' : abs < 150 ? '#EF9F27' : '#E24B4A'
-}
+function scoreColor() { return '#999' }
+function latColor() { return '#777' }
+function driftColor() { return '#777' }
 
 // ── Column renderers ─────────────────────────────────────────────────────
 // Each returns { header: string, width: number, render: (row, sealed) => JSX }
@@ -273,21 +263,21 @@ const COL = {
     ? <><C c="#888">{padL(row.raw.toFixed(2), 5)}</C><C c="#444">{' → '}</C><C c={scoreColor(row.calibrated)}>{padL(row.calibrated.toFixed(2), 5)}</C>{'  '}</>
     : <><C c="#444">{padL('—', 5)}{'   '}{padL('—', 5)}</C>{'  '}</> },
   lat:      { h: 'LAT',       w: 8,  r: (row) => <><C c={latColor(row.latMs)}>{padL(row.latMs != null ? `${row.latMs}ms` : '—', 6)}</C>{'  '}</> },
-  hash:     { h: 'HASH',      w: 12, r: (row) => <C c="#EF9F27">{row.traceHash ? row.traceHash.slice(0, 12) : padL('·', 12)}</C> },
-  sealed:   { h: '',           w: 7,  r: (row) => row.isEmit && row.isSealed ? <C c="#5DCA5D"> SEALED</C> : null },
+  hash:     { h: 'HASH',      w: 12, r: (row) => <C c="#999">{row.traceHash ? row.traceHash.slice(0, 12) : padL('·', 12)}</C> },
+  sealed:   { h: '',           w: 7,  r: (row) => row.isEmit && row.isSealed ? <C c="#ccc"> SEALED</C> : null },
   evals:    { h: 'EVALS',     w: 7,  r: (row) => <><C c="#666">{padL(row.isActivity ? row.indCount : '—', 5)}</C>{'  '}</> },
-  signals:  { h: 'SIG',       w: 5,  r: (row) => <><C c={row.signals > 0 ? '#5DCA5D' : '#333'}>{padL(row.signals || '·', 3)}</C>{'  '}</> },
-  breadth:  { h: 'BREADTH',   w: 9,  r: (row, s) => { const b = s?.cross_sectional_context?.breadth; return <><C c={b > 0.5 ? '#5DCA5D' : b > 0.3 ? '#EF9F27' : '#444'}>{padL(b != null ? b.toFixed(3) : '—', 7)}</C>{'  '}</> } },
+  signals:  { h: 'SIG',       w: 5,  r: (row) => <><C c={row.signals > 0 ? '#ccc' : '#333'}>{padL(row.signals || '·', 3)}</C>{'  '}</> },
+  breadth:  { h: 'BREADTH',   w: 9,  r: (row, s) => { const b = s?.cross_sectional_context?.breadth; return <><C c="#888">{padL(b != null ? b.toFixed(3) : '—', 7)}</C>{'  '}</> } },
   universe: { h: 'UNIV',      w: 6,  r: (row, s) => <><C c="#666">{padL(s?.cross_sectional_context?.universe_size ?? '—', 4)}</C>{'  '}</> },
   drift:    { h: 'DRIFT',     w: 8,  r: (row, s) => { const d = s?.microstructure?.drift_bps; return <><C c={driftColor(d)}>{padL(d != null ? `${d > 0 ? '+' : ''}${d.toFixed(0)}bp` : '—', 6)}</C>{'  '}</> } },
   entry:    { h: 'ENTRY',     w: 8,  r: (row, s) => <><C c="#666">{pad(s?.microstructure?.entry_type ?? '—', 6)}</C>{'  '}</> },
   rank:     { h: 'RANK',      w: 6,  r: (row, s) => <><C c="#888">{padL(s?.indicator_snapshot?.rank ?? '—', 4)}</C>{'  '}</> },
-  ret4h:    { h: 'RET4H',     w: 8,  r: (row, s) => { const r = s?.indicator_snapshot?.ret_4h; return <><C c={r > 0 ? '#5DCA5D' : '#E24B4A'}>{padL(r != null ? `${(r*100).toFixed(1)}%` : '—', 6)}</C>{'  '}</> } },
+  ret4h:    { h: 'RET4H',     w: 8,  r: (row, s) => { const r = s?.indicator_snapshot?.ret_4h; return <><C c="#888">{padL(r != null ? `${(r*100).toFixed(1)}%` : '—', 6)}</C>{'  '}</> } },
   decile:   { h: 'DECILE',    w: 8,  r: (row, s) => <><C c="#666">{padL(s?.cross_sectional_context?.symbols_in_decile ?? '—', 4)}</C>{'  '}</> },
   confhash: { h: 'CFGHASH',   w: 10, r: (row, s) => <C c="#888">{s?.config_snapshot ? Object.values(s.config_snapshot).join('/').slice(0, 8) : padL('·', 8)}</C> },
   klines:   { h: '1s',        w: 5,  r: (row, s) => <><C c="#555">{padL(s?.microstructure?.n_klines ?? '—', 3)}</C>{'  '}</> },
-  gatepass: { h: 'OK',        w: 5,  r: (row) => <><C c="#5DCA5D">{padL(row.passCount, 3)}</C>{'  '}</> },
-  gatefail: { h: 'FAIL',      w: 5,  r: (row) => <><C c="#E24B4A">{padL(row.failCount, 3)}</C>{'  '}</> },
+  gatepass: { h: 'OK',        w: 5,  r: (row) => <><C c="#999">{padL(row.passCount, 3)}</C>{'  '}</> },
+  gatefail: { h: 'FAIL',      w: 5,  r: (row) => <><C c="#666">{padL(row.failCount, 3)}</C>{'  '}</> },
 }
 
 // ── 10 Heartbeat Variants ────────────────────────────────────────────────

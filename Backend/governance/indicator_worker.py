@@ -11,6 +11,7 @@ bootstrap_genesis()  # Must populate registry before module-level reads below
 from governance.bootstrap import get_config
 from governance.infrastructure import SystemClient
 
+import json
 import time
 
 import logging
@@ -26,6 +27,8 @@ from governance.cache_contract import (
     xadd_indicators_ready, ind_meta_key, candle_meta_key,
     b2s, b2f, symbol_partition, get_universe, get_timeframes,
     is_cache_ready, TF_SECONDS, RECONCILE_INTERVAL_S,
+    PIPELINE_ACTIVITY_KEY, PIPELINE_ACTIVITY_MAX,
+    snapshot_to_flat_dict,
 )
 
 from indicators.indicators import FeatureFactory, OHLCV
@@ -77,6 +80,8 @@ class IndicatorWorker:
             max_connections=COMPUTE_WORKERS + 4,
         )
         self.last_reconcile = 0.0
+        self._activity_counter = 0
+        self._ACTIVITY_SAMPLE_EVERY = get_config().Worker.ACTIVITY_SAMPLE_EVERY
         # Per-worker consumer group: each worker instance gets ALL messages
         # and filters by partition locally. Fixes the shared-group bug where
         # ACK-ing another worker's message silently drops it.
@@ -209,7 +214,9 @@ class IndicatorWorker:
                 htf_candles = None
 
         # Compute indicators — thread-local FeatureFactory (one per compute thread)
+        t0 = time.time()
         snapshot = self._get_factory().compute(candles, htf_candles)
+        compute_duration = time.time() - t0
 
         # Store with commit marker (invariant #16, #21)
         store_indicators(self.r, symbol, tf, snapshot, bar_start_ts)
@@ -218,6 +225,26 @@ class IndicatorWorker:
         xadd_indicators_ready(self.r, tf, symbol, bar_start_ts)
 
         logger.debug(f"Indicators computed for {symbol}:{tf} bar={bar_start_ts}")
+
+        # Pipeline activity push — sampled (1 in N) to avoid flooding
+        self._activity_counter += 1
+        if self._activity_counter % self._ACTIVITY_SAMPLE_EVERY == 0:
+            try:
+                ind_count = len(snapshot_to_flat_dict(snapshot))
+                event = json.dumps({
+                    "ts": time.time(),
+                    "stage": "IND",
+                    "tf": tf,
+                    "ind_count": ind_count,
+                    "bar_count": len(candles),
+                    "compute_ms": round(compute_duration * 1000, 1),
+                }, separators=(",", ":"))
+                pipe = self.r.pipeline(transaction=False)
+                pipe.lpush(PIPELINE_ACTIVITY_KEY, event)
+                pipe.ltrim(PIPELINE_ACTIVITY_KEY, 0, PIPELINE_ACTIVITY_MAX - 1)
+                pipe.execute()
+            except Exception:
+                pass  # Non-critical — feed degrades gracefully
 
     def _reconcile(self):
         """Periodic reconciliation: check for missed updates (invariant #17).

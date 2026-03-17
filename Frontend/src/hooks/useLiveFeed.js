@@ -27,13 +27,14 @@ const PHASES = [
 function buildRows(activity, sealedEvents) {
   const rows = []
 
-  // Activity events → pipeline cadence rows (one row per activity event)
-  // Each activity event has the same field categories as a sealed trace:
-  // gates[], ind_count, bar_count, score — just from the firehose, not the DB
+  // Activity events → pipeline cadence rows
+  // stage field: ING (ingestor), PER (persister), IND (indicator), SIG (signal worker)
+  const STAGE_PHASE = { ING: 'ING', PER: 'FTR', IND: 'SIG', undefined: 'RSK' }
   for (let i = 0; i < activity.length; i++) {
     const a = activity[i]
     const ts = a.ts ? new Date(a.ts * 1000) : null
-    const phase = PHASES[i % PHASES.length]
+    const stage = a.stage || null
+    const phaseCode = stage ? (STAGE_PHASE[stage] || stage) : PHASES[i % PHASES.length].code
     const gates = a.gates || []
     const passCount = gates.filter((g) => g.passed).length
     const failCount = gates.length - passCount
@@ -41,19 +42,20 @@ function buildRows(activity, sealedEvents) {
     rows.push({
       id: `a-${i}-${a.ts}`,
       ts,
-      phase,
+      phase: { code: stage || phaseCode },
       passCount,
       failCount,
       indCount: a.ind_count || a.evals || 0,
-      barCount: a.bar_count || 0,
+      barCount: a.bar_count || a.bars || a.rows || 0,
       raw: a.score?.raw ?? 0,
       calibrated: a.score?.calibrated ?? 0,
-      latMs: null,
+      latMs: a.compute_ms || a.batch_ms || null,
       traceHash: null,
       isSealed: false,
       isEmit: false,
       isActivity: true,
       signals: a.signals || 0,
+      tf: a.tf || null,
     })
   }
 

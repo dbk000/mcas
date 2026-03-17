@@ -14,6 +14,7 @@ Key guarantees:
 """
 
 import sys
+import json
 import time
 import logging
 import threading
@@ -27,6 +28,7 @@ from governance.persistence import get_conn as _pool_get_conn
 from governance.cache_contract import (
     get_candles, b2s, get_timeframes, is_cache_ready, TF_SECONDS,
     get_known_universe,
+    PIPELINE_ACTIVITY_KEY, PIPELINE_ACTIVITY_MAX,
 )
 from governance.ohlcv_backfill import backfill_startup_recovery, backfill_recent_gaps
 
@@ -264,6 +266,7 @@ class OHLCVPersister:
             return
 
         batch_size = len(self._buffer)
+        flush_t0 = time.time()
         try:
             with _pool_get_conn() as conn:
                 with conn.cursor() as cur:
@@ -277,6 +280,7 @@ class OHLCVPersister:
                         DO NOTHING
                     """, self._buffer)
                 conn.commit()
+            flush_duration = time.time() - flush_t0
 
             # Success — ACK all pending messages
             for stream_name, msg_id in self._pending_acks:
@@ -285,6 +289,21 @@ class OHLCVPersister:
             self._counters["persisted"] += batch_size
             self._counters["flush_count"] += 1
             logger.debug("Flushed %d candles to Postgres", batch_size)
+
+            # Pipeline activity push — non-critical
+            try:
+                evt = json.dumps({
+                    "ts": time.time(),
+                    "stage": "PER",
+                    "rows": batch_size,
+                    "batch_ms": round(flush_duration * 1000, 1),
+                }, separators=(",", ":"))
+                p = self.r.pipeline(transaction=False)
+                p.lpush(PIPELINE_ACTIVITY_KEY, evt)
+                p.ltrim(PIPELINE_ACTIVITY_KEY, 0, PIPELINE_ACTIVITY_MAX - 1)
+                p.execute()
+            except Exception:
+                pass
 
         except Exception as e:
             logger.error("DB flush failed (%d rows): %s", batch_size, e)
