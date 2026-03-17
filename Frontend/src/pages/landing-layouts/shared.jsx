@@ -217,53 +217,55 @@ function StaticGlassBoxReplay({ proofPack }) {
   )
 }
 
-// ── Heartbeat: JSON stream — raw pipeline data, line by line ─────────────
-const MAX_ROWS = 48
+// ── Heartbeat: JSON stream — direct DOM, no React render loop ────────────
 
 function C({ c, children }) {
   return <span style={{ color: c }}>{children}</span>
 }
 
-// Line-by-line feed: reveals lines progressively, auto-scrolls
-function useLineFeeder(lines, intervalMs = 350) {
-  const [visibleCount, setVisibleCount] = useState(0)
-  const prevLinesRef = useRef(null)
-  const preRef = useRef(null)
-
-  useEffect(() => {
-    if (lines !== prevLinesRef.current) {
-      prevLinesRef.current = lines
-      setVisibleCount((prev) => Math.min(prev, lines.length))
-    }
-  }, [lines])
-
-  useEffect(() => {
-    if (visibleCount >= lines.length) return
-    const timer = setInterval(() => {
-      setVisibleCount((c) => {
-        const next = c + 1
-        if (preRef.current) preRef.current.scrollTop = preRef.current.scrollHeight
-        return next >= lines.length ? lines.length : next
-      })
-    }, intervalMs)
-    return () => clearInterval(timer)
-  }, [lines, visibleCount, intervalMs])
-
-  return { visibleCount, preRef }
-}
-
 function HeartbeatFeed({ rows, stats, isLive }) {
-  const allRows = useMemo(() => rows.slice(0, MAX_ROWS), [rows])
+  const preRef = useRef(null)
+  const queueRef = useRef([])
+  const feedingRef = useRef(false)
+  const prevRowCountRef = useRef(0)
 
-  const lines = useMemo(() =>
-    allRows.map((row) => ({
-      id: row.id,
-      text: JSON.stringify(row._raw || { ts: row.ts?.getTime() / 1000, phase: row.phase?.code }),
-    })),
-    [allRows]
-  )
+  // Stringify all rows into a queue for the DOM feeder
+  useEffect(() => {
+    const newRows = rows.slice(prevRowCountRef.current)
+    prevRowCountRef.current = rows.length
+    for (const row of newRows) {
+      const text = JSON.stringify(row._raw || { ts: row.ts?.getTime() / 1000, phase: row.phase?.code })
+      queueRef.current.push(text)
+    }
+  }, [rows])
 
-  const { visibleCount, preRef } = useLineFeeder(lines)
+  // DOM feeder: pops lines from queue, appends to <pre>, auto-scrolls
+  // Runs independently of React — just a setInterval on a ref
+  useEffect(() => {
+    if (feedingRef.current) return
+    feedingRef.current = true
+
+    const interval = setInterval(() => {
+      const pre = preRef.current
+      if (!pre) return
+      const line = queueRef.current.shift()
+      if (!line) return
+
+      pre.appendChild(document.createTextNode(line + '\n'))
+
+      // Keep DOM bounded — trim old lines when too many
+      while (pre.childNodes.length > 200) {
+        pre.removeChild(pre.firstChild)
+      }
+
+      pre.scrollTop = pre.scrollHeight
+    }, 120)
+
+    return () => {
+      clearInterval(interval)
+      feedingRef.current = false
+    }
+  }, [])
 
   return (
     <div className="overflow-hidden rounded-2xl bg-[#111113] px-4 py-3.5">
@@ -276,20 +278,13 @@ function HeartbeatFeed({ rows, stats, isLive }) {
         )}
       </div>
 
-      {/* Terminal: raw JSON, line by line, auto-scroll */}
+      {/* Terminal: raw JSON fed directly to DOM, never re-rendered by React */}
       <div className="hb-fade" style={{ maxHeight: '340px' }}>
         <pre
           ref={preRef}
           className="m-0 overflow-y-auto whitespace-pre-wrap break-all text-[10px] leading-[16px] text-[#888]"
           style={{ maxHeight: '320px' }}
-        >
-          {lines.slice(0, visibleCount).map((line) => (
-            <div key={line.id} style={{ animation: 'hb-row-in 0.3s ease-out' }}>
-              {line.text}{'\n'}
-            </div>
-          ))}
-          {lines.length === 0 && <C c="#444">{'  awaiting pipeline events...\n'}</C>}
-        </pre>
+        />
       </div>
 
       {/* Stats bar */}
