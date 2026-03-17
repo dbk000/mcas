@@ -33,6 +33,7 @@ from governance.config_registry import (
     S10TypedConfig,
     IndicatorTypedConfig,
     D2TypedConfig,
+    TraceTypedConfig,
 )
 
 logger = logging.getLogger(__name__)
@@ -87,6 +88,12 @@ def get_stop_policy() -> StopPolicyRegistry:
         print("FATAL: StopPolicyRegistry accessed before bootstrap_genesis()", file=sys.stderr)
         sys.exit(78)
     return _STOP_POLICY
+
+
+def get_trace_config() -> TraceTypedConfig:
+    """Return the frozen TraceTypedConfig. Crashes if bootstrap has not run."""
+    cfg = get_config()
+    return cfg.Trace
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -221,6 +228,9 @@ def _populate_config(reg: ConfigRegistry) -> None:
         COMPUTE_DARK_INDICATORS=os.getenv("COMPUTE_DARK_INDICATORS", "0") == "1",
     ))
 
+    # --- Trace config ---
+    reg._register("Trace", TraceTypedConfig())
+
     # --- D2 config ---
     reg._register("D2", D2TypedConfig(
         entry_threshold=float(os.getenv("D2_ENTRY_THRESHOLD", "0.25")),
@@ -255,18 +265,22 @@ def _populate_strategies(reg: StrategyRegistry) -> None:
         "S9": {
             "label": "S9 (Short Reversion)", "type": "crypto", "status": "active",
             "timeframe_affinity": None, "dispatch_mode": "cross_sectional",
+            "traceable": True,
         },
         "S10": {
             "label": "S10 (MACD Scalp)", "type": "crypto", "status": "active",
             "timeframe_affinity": ["5m"], "dispatch_mode": "per_symbol",
+            "traceable": True,
         },
         "U1": {
             "label": "U1 (Unicorn)", "type": "crypto", "status": "active",
             "timeframe_affinity": ["5m"], "dispatch_mode": "per_symbol",
+            "traceable": True,
         },
         "D1": {
             "label": "D1 (Dormancy Ignition)", "type": "crypto", "status": "active",
             "timeframe_affinity": ["1h"], "dispatch_mode": "per_symbol",
+            "traceable": True,
         },
         "D2": {"label": "D2 (Fade the Casino)", "type": "crypto", "status": "paper"},
         "EQFP": {"label": "EQ: Forward Predictor", "type": "equities", "status": "active"},
@@ -344,6 +358,35 @@ def _populate_stop_policies(reg: StopPolicyRegistry) -> None:
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# Post-freeze Validators
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def _validate_trace_governance(
+    strategy_reg: StrategyRegistry,
+) -> None:
+    """Verify trace governance invariants after registries are frozen.
+
+    Every strategy marked traceable=True must have status "active".
+    If any violation is found, the process dies — this is a governance
+    misconfiguration that cannot be resolved at runtime.
+    """
+    violations = []
+    for sid in strategy_reg._keys:
+        spec = getattr(strategy_reg, sid)
+        if spec.get("traceable") and spec.get("status") != "active":
+            violations.append(
+                f"  {sid}: traceable=True but status={spec.get('status')!r}"
+            )
+    if violations:
+        print(
+            "FATAL: Trace governance validation failed:\n"
+            + "\n".join(violations),
+            file=sys.stderr,
+        )
+        sys.exit(78)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # Genesis Block Builder
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -392,6 +435,9 @@ def bootstrap_genesis() -> Lineage:
     graph.include(task_reg)
     graph.include(stop_policy_reg)
     lineage = graph.seal()
+
+    # --- Phase 5b: Post-freeze validation ---
+    _validate_trace_governance(strategy_reg)
 
     # --- Phase 6: Store singletons ---
     _LINEAGE = lineage

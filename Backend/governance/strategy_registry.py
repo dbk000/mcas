@@ -18,6 +18,7 @@ class StrategyHandler:
     version: str = "v1.0"  # Strategy version for signal/trace versioning
     label: str = ""  # Human-readable display name (from frozen StrategyRegistry)
     supports_config_sync: bool = False  # Whether this strategy participates in hot-reload config sync
+    traceable: bool = False  # Whether this strategy participates in trace governance
 
 
 class RuntimeDispatchTable:

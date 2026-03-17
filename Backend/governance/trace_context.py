@@ -4,6 +4,9 @@ Computation Trace / Lineage — sealed audit trail for every opportunity.
 Every promoted opportunity gets a TraceContext that records the full
 computation lineage: candle windows, indicator values, gate evaluations,
 score components, config snapshot, and a SHA-256 integrity hash.
+
+Tracing is mandatory for all traceable strategies — there is no TRACE_ENABLED
+toggle. Schema version is governed by TraceTypedConfig in the config registry.
 """
 
 import time
@@ -12,8 +15,11 @@ import json
 from dataclasses import dataclass, field
 import contextvars
 
-TRACE_SCHEMA_VERSION = "1.0"
-TRACE_ENABLED = True  # Driven by config registry in production
+from governance.bootstrap import get_trace_config
+
+# Backward compatibility — signal_worker.py still imports this symbol.
+# Will be removed once signal_worker is updated to drop the conditional.
+TRACE_ENABLED = True
 
 def _deterministic_json(d: dict) -> str:
     return json.dumps(d, sort_keys=True, separators=(',', ':'))
@@ -100,6 +106,24 @@ class TraceContext:
             "sealed_at": time.time(),
         }
 
+        # ── Structural validation (before hash) ──────────────────────────
+        # These are STRUCTURAL mandatory fields — hardcoded, not configurable.
+        # A trace without these is structurally invalid and must not be sealed.
+        _MANDATORY = {
+            "eval_ts": self.eval_ts,
+            "strategy": self.strategy,
+            "symbol": self.symbol,
+            "timeframe": self.timeframe,
+        }
+        missing = [k for k, v in _MANDATORY.items() if not v]
+        if not self._promotion.get("sealed_at"):
+            missing.append("promotion.sealed_at")
+        if missing:
+            raise RuntimeError(
+                f"TraceContext.seal() structural validation failed — "
+                f"missing or empty: {', '.join(sorted(missing))}"
+            )
+
         indicator_params_hash = ""
         if self._indicator_params:
             raw = _deterministic_json(self._indicator_params)
@@ -107,7 +131,7 @@ class TraceContext:
                 raw.encode('utf-8')).hexdigest()[:16]
 
         trace = {
-            "v": TRACE_SCHEMA_VERSION,
+            "v": get_trace_config().schema_version,
             "strategy": self.strategy,
             "symbol": self.symbol,
             "timeframe": self.timeframe,

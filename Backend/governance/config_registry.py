@@ -254,6 +254,11 @@ class SimulationConfig:
 
 
 @dataclass(frozen=True)
+class TraceTypedConfig:
+    schema_version: str = "1.0"
+
+
+@dataclass(frozen=True)
 class D2TypedConfig:
     """D2 (Fade the Casino) configuration."""
     entry_threshold: float = 0.25
