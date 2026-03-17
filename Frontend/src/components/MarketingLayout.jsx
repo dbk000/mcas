@@ -37,7 +37,7 @@ export default function MarketingLayout({ children }) {
     <div
       className="min-h-screen overflow-x-hidden bg-terminal-900 text-terminal-100"
       style={{
-        backgroundImage: `linear-gradient(rgba(217,119,6,var(--bg-grid-opacity)) 1px, transparent 1px), linear-gradient(90deg, rgba(217,119,6,var(--bg-grid-opacity)) 1px, transparent 1px)`,
+        backgroundImage: `linear-gradient(rgba(217,119,6,var(--bg-grid-opacity)) 1.2px, transparent 1.2px), linear-gradient(90deg, rgba(217,119,6,var(--bg-grid-opacity)) 1.2px, transparent 1.2px)`,
         backgroundSize: `calc(var(--bg-grid-size) * 0.75) calc(var(--bg-grid-size) * 0.75)`,
       }}
     >
