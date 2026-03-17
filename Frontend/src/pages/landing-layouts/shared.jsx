@@ -265,7 +265,7 @@ function HeartbeatLine({ row }) {
   return (
     <div style={{ animation: 'hb-row-in 0.3s ease-out' }}>
       <C c="#555">{time}</C>
-      <C c={PHASE_COLOR[row.phase]}>{pad(row.phase, 4)}</C>
+      <C c={PHASE_COLOR[row.phase.code]}>{pad(row.phase.code, 4)}</C>
       {gatePips(row.passCount, row.failCount)}
       <C c="#666">{ind}</C>{'  '}
       <C c="#555">{bars}</C>{'  '}
