@@ -16,6 +16,7 @@
   /* Background Grid Hatching */
   --bg-grid-opacity: 0.08;
   --bg-grid-size: 40px;
+  --bg-grid-line-width: 1.2px;
 
   /* Viewport Constraints */
   --op-min-visible-rows: 8;
