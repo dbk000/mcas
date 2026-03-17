@@ -372,10 +372,9 @@ function HeartbeatFeed({ rows, stats, isLive, events }) {
         </div>
       )}
 
-      {/* Variant selector (dev only) */}
-      {import.meta.env.DEV && (
-        <div className="mt-2 border-t border-white/[0.04] pt-2">
-          <select
+      {/* Variant selector */}
+      <div className="mt-2 border-t border-white/[0.04] pt-2">
+        <select
             value={variantId}
             onChange={(e) => setVariantId(e.target.value)}
             className="rounded bg-[#1a1a1d] px-2 py-1 font-mono text-[10px] text-[#666] outline-none"
@@ -385,7 +384,6 @@ function HeartbeatFeed({ rows, stats, isLive, events }) {
             ))}
           </select>
         </div>
-      )}
     </div>
   )
 }
