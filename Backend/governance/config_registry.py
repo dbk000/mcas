@@ -62,6 +62,7 @@ class D1TypedConfig:
     W_SOCIAL_SILENCE: float = 0.10
 
     DORMANCY_LOOKBACK: int = 48
+    BOOTSTRAP_WARMUP_MULTIPLIER: float = 1.5
     BTC_BETA_WINDOW: int = 20
 
 
@@ -193,6 +194,10 @@ class WorkerTypedConfig:
     MAX_CONCURRENCY: int = 8
     DXY_REGIME_ENABLED: bool = True
 
+    # S9 Fear & Greed regime gate
+    S9_FNG_GATE_ENABLED: bool = True
+    S9_FNG_MAX_VALUE: int = 50
+
     # Path Configuration
     CORRELATION_JSON_PATH: str = "indicator_correlations.json"
     CORRELATION_TXT_PATH: str = "indicator_correlations.txt"
@@ -281,3 +286,10 @@ class D2TypedConfig:
     max_concurrent: int = 3
     risk_per_trade_pct: float = 2.0
     account_size_usd: float = 10_000.0
+
+
+@dataclass
+class AlertTypedConfig:
+    """Alert watchdog configuration. Governs staleness thresholds and webhook delivery."""
+    SIGNAL_STALE_HOURS: int = 6
+    WEBHOOK_URL: str = ""

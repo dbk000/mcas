@@ -34,6 +34,7 @@ from governance.config_registry import (
     IndicatorTypedConfig,
     D2TypedConfig,
     TraceTypedConfig,
+    AlertTypedConfig,
 )
 
 logger = logging.getLogger(__name__)
@@ -186,6 +187,8 @@ def _populate_config(reg: ConfigRegistry) -> None:
         S9_SCORE_MULT=float(os.getenv("S9_SCORE_MULT", "1.0")),
         S10_SCORE_MULT=float(os.getenv("S10_SCORE_MULT", "1.0")),
         D1_SCORE_MULT=float(os.getenv("D1_SCORE_MULT", "1.0")),
+        S9_FNG_GATE_ENABLED=os.getenv("S9_FNG_GATE_ENABLED", "true").lower() == "true",
+        S9_FNG_MAX_VALUE=int(os.getenv("S9_FNG_MAX_VALUE", "50")),
         BINANCE_TICKER_URL=os.getenv("BINANCE_TICKER_URL", "https://api.binance.com/api/v3/ticker"),
         BINANCE_KLINES_URL=os.getenv("BINANCE_KLINES_URL", "https://api.binance.com/api/v3/klines"),
         OUTPUT_DIR=os.getenv("OUTPUT_DIR", "./output"),
@@ -249,6 +252,12 @@ def _populate_config(reg: ConfigRegistry) -> None:
         max_concurrent=int(os.getenv("D2_MAX_CONCURRENT", "3")),
         risk_per_trade_pct=float(os.getenv("D2_RISK_PER_TRADE_PCT", "2.0")),
         account_size_usd=float(os.getenv("D2_ACCOUNT_SIZE_USD", "10000")),
+    ))
+
+    # --- Alert watchdog config ---
+    reg._register("Alert", AlertTypedConfig(
+        SIGNAL_STALE_HOURS=int(os.getenv("ALERT_SIGNAL_STALE_HOURS", "6")),
+        WEBHOOK_URL=os.getenv("ALERT_WEBHOOK_URL", ""),
     ))
 
 

@@ -40,7 +40,7 @@ from governance.cache_contract import (
     unicorn_state_key, UNICORN_STATE_TTL_S,
 )
 import numpy as np
-from indicators.indicators import IndicatorSnapshot
+from indicators.indicators import IndicatorSnapshot, FeatureFactory, OHLCV
 from core_logic.s9_short_reversion import S9Evaluator, S9Signal, S9State
 from core_logic.s10_macd_scalp import S10Evaluator, S10Signal
 from core_logic.u1_unicorn_ignition import U1Evaluator, U1State, U1Phase, U1Config, load_funding_rates
@@ -113,6 +113,7 @@ from core_logic.microstructure import (
 from governance.microstructure_fetcher import fetch_1s_klines_batch
 from governance.trace_context import TraceContext
 from governance.dxy_regime import get_dxy_multiplier, DXY_REGIME_ENABLED
+from governance.regime import fetch_fear_greed_index
 
 logger = logging.getLogger("signal_worker")
 
@@ -257,6 +258,7 @@ class SignalWorker(LineageEnforcer):
             "symbol_quality_excluded": 0,
             "s10_signal": 0, "d1_signal": 0,
             "s9_signal": 0, "s9_breadth_fail": 0,
+            "s9_fng_gated": 0, "s9_fng_unavailable": 0,
             "congestion_dropped": 0,
         }
         self._last_diag_log = 0.0
@@ -335,6 +337,141 @@ class SignalWorker(LineageEnforcer):
         self._volume_cache: dict[str, float] = {}
         self._volume_cache_ts: float = 0.0
 
+    # ------------------------------------------------------------------
+    # D1 Cold-Start Bootstrap
+    # ------------------------------------------------------------------
+
+    def _bootstrap_d1_states(self):
+        """Replay recent 1h OHLCV from Postgres through D1's compute_state()
+        to populate _d1_prev_states at startup — eliminates cold-start delay
+        where D1 needs DORMANCY_LOOKBACK bars to reach DORMANT_CONFIRMED.
+
+        Governance:
+        - Replay window derived from get_config().D1.DORMANCY_LOOKBACK * MULTIPLIER
+        - OHLCV from governed Postgres persistence layer
+        - FeatureFactory for indicator computation (same code path as live)
+        - is_d1_excluded() applied (same filter as live eval)
+        """
+        t0 = time.time()
+        d1_cfg = get_config().D1
+        lookback = d1_cfg.DORMANCY_LOOKBACK
+        multiplier = d1_cfg.BOOTSTRAP_WARMUP_MULTIPLIER
+        replay_bars = int(lookback * multiplier)
+        # FeatureFactory needs 201 bars minimum for indicator warmup
+        indicator_warmup = 201
+        total_bars_needed = indicator_warmup + replay_bars
+
+        symbols = get_universe(self.r)
+        eligible = [s for s in symbols if not is_d1_excluded(s)]
+
+        if not eligible:
+            logger.info("D1 bootstrap: no eligible symbols in monitored universe")
+            return
+
+        logger.info(
+            "D1 bootstrap: replaying %d bars (lookback=%d * multiplier=%.1f) "
+            "for %d eligible symbols (fetching %d bars each for indicator warmup)",
+            replay_bars, lookback, multiplier, len(eligible), total_bars_needed,
+        )
+
+        bootstrapped = 0
+        oldest_ts = None
+        newest_ts = None
+        skipped_insufficient = 0
+
+        with _pool_get_conn() as conn:
+            with conn.cursor() as cur:
+                for symbol in eligible:
+                    try:
+                        # Load last total_bars_needed rows of 1h OHLCV
+                        # Prefer ws source (live data), fall back to binance (REST backfill)
+                        cur.execute("""
+                            SELECT bar_start_ts, open, high, low, close, volume
+                            FROM (
+                                SELECT DISTINCT ON (bar_start_ts)
+                                       bar_start_ts, open, high, low, close, volume
+                                FROM ohlcv
+                                WHERE symbol = %s AND timeframe = '1h'
+                                  AND is_final = TRUE
+                                ORDER BY bar_start_ts,
+                                         CASE source
+                                             WHEN 'ws' THEN 0
+                                             WHEN 'binance' THEN 1
+                                             ELSE 2
+                                         END
+                            ) sub
+                            ORDER BY bar_start_ts DESC
+                            LIMIT %s
+                        """, (symbol, total_bars_needed))
+
+                        rows = cur.fetchall()
+
+                        if len(rows) < total_bars_needed:
+                            skipped_insufficient += 1
+                            continue
+
+                        # Reverse to chronological order (oldest first)
+                        rows = rows[::-1]
+
+                        # Convert Postgres rows to OHLCV dataclass instances
+                        # bar_start_ts is TIMESTAMPTZ — convert to epoch seconds (int)
+                        all_candles = [
+                            OHLCV(
+                                timestamp=int(row[0].timestamp()),
+                                open=float(row[1]),
+                                high=float(row[2]),
+                                low=float(row[3]),
+                                close=float(row[4]),
+                                volume=float(row[5]),
+                            )
+                            for row in rows
+                        ]
+
+                        # Replay the last replay_bars through D1 state machine
+                        ff = FeatureFactory()
+                        prev_state = None
+
+                        for i in range(replay_bars):
+                            # Window: indicator_warmup bars ending at this replay position
+                            end_idx = indicator_warmup + i + 1
+                            window = all_candles[:end_idx]
+
+                            snapshot = ff.compute(window)
+                            prev_state = self.d1_evaluator.compute_state(
+                                snapshot, prev_state=prev_state, btc_returns=None,
+                            )
+
+                        if prev_state is not None:
+                            state_key = f"{symbol}:1h"
+                            self._d1_prev_states[state_key] = prev_state
+                            bootstrapped += 1
+
+                            # Track timestamp range for log summary
+                            bar_ts = all_candles[-1].timestamp
+                            first_replay_ts = all_candles[indicator_warmup].timestamp
+                            if oldest_ts is None or first_replay_ts < oldest_ts:
+                                oldest_ts = first_replay_ts
+                            if newest_ts is None or bar_ts > newest_ts:
+                                newest_ts = bar_ts
+
+                    except Exception as e:
+                        logger.warning("D1 bootstrap failed for %s: %s", symbol, e)
+
+        elapsed = time.time() - t0
+        oldest_str = (
+            datetime.fromtimestamp(oldest_ts, tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+            if oldest_ts else "N/A"
+        )
+        newest_str = (
+            datetime.fromtimestamp(newest_ts, tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+            if newest_ts else "N/A"
+        )
+        logger.info(
+            "D1 state bootstrapped: %d symbols, oldest state from %s, newest from %s "
+            "(%.1fs, %d skipped insufficient data)",
+            bootstrapped, oldest_str, newest_str, elapsed, skipped_insufficient,
+        )
+
     def run(self):
         """Main loop."""
         logger.info(f"Signal worker {_worker_index()}/{_n_workers()} starting")
@@ -349,6 +486,10 @@ class SignalWorker(LineageEnforcer):
 
         # Startup config sync: Pipeline is source of truth.
         self._sync_node_parameters()
+
+        # D1 cold-start bootstrap: replay recent OHLCV to populate state machine
+        if _database_url():
+            self._bootstrap_d1_states()
 
         timeframes = get_timeframes(self.r)
         if not timeframes:
@@ -1466,6 +1607,22 @@ class SignalWorker(LineageEnforcer):
                         breadth, S9Evaluator.BREADTH_THRESHOLD)
             return
 
+        # Fear & Greed regime gate (fail-closed)
+        fng = {}
+        fng_value = None
+        if _worker_cfg().S9_FNG_GATE_ENABLED:
+            fng = fetch_fear_greed_index()
+            fng_value = fng.get("value")
+            if fng_value is None:
+                self._diag["s9_fng_unavailable"] += 1
+                logger.warning("S9: FnG unavailable — suppressing signals (fail-closed)")
+                return  # FAIL-CLOSED: suppress when we can't check
+            if fng_value > _worker_cfg().S9_FNG_MAX_VALUE:
+                self._diag["s9_fng_gated"] += 1
+                logger.info("S9: FnG=%d (>%d) — regime gate suppressing signals",
+                            fng_value, _worker_cfg().S9_FNG_MAX_VALUE)
+                return
+
         sorted_syms = sorted(symbol_data.items(), key=lambda x: x[1][0], reverse=True)
         decile_n = max(1, len(sorted_syms) // 10)
         top_decile = sorted_syms[:decile_n]
@@ -1571,6 +1728,8 @@ class SignalWorker(LineageEnforcer):
                     "magnitude_score": signal.magnitude_score,
                 },
                 "microstructure": micro_payload,
+                "fng_value": fng_value,
+                "fng_classification": fng.get("classification"),
             }
 
             payload["action_by_ts"] = (
@@ -1624,6 +1783,12 @@ class SignalWorker(LineageEnforcer):
             trace.record_gate("top_decile", rank + 1, decile_n, "<=", True,
                               note="rank <= decile_size")
             trace.record_gate("ret_4h_positive", ret_4h, 0.0, ">", True)
+            if fng_value is not None:
+                trace.record_gate(
+                    "fng_regime", fng_value,
+                    _worker_cfg().S9_FNG_MAX_VALUE, "<=", True,
+                    note=f"FnG={fng_value} ({fng.get('classification', '?')})",
+                )
             if micro_ctx:
                 trace.record_microstructure({
                     "n_klines": micro_ctx.n_klines,
@@ -1646,6 +1811,8 @@ class SignalWorker(LineageEnforcer):
                 "RET_LOOKBACK": S9Evaluator.RET_LOOKBACK,
                 "HOLD_BARS": S9Evaluator.HOLD_BARS,
                 "COST_BPS": S9Evaluator.COST_BPS,
+                "S9_FNG_GATE_ENABLED": _worker_cfg().S9_FNG_GATE_ENABLED,
+                "S9_FNG_MAX_VALUE": _worker_cfg().S9_FNG_MAX_VALUE,
             })
             setup_version = self._get_setup_version("S9")
             trace_dict = trace.seal(setup_version)

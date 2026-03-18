@@ -250,41 +250,8 @@ async def fetch_binance_funding_rate(symbol: str) -> Optional[float]:
         return None
 
 
-# Fear & Greed Index cache (updates daily, cache for 24h)
-_FNG_CACHE: dict = {"value": None, "classification": None, "ts": None}
-
-
-async def fetch_fear_greed_index() -> dict:
-    """Fetch current Fear & Greed Index. Cached for 24h (updates daily).
-
-    Returns {"value": int 0-100, "classification": str} or empty dict on failure.
-    """
-    now = datetime.now(timezone.utc)
-    if _FNG_CACHE["ts"] and (now - _FNG_CACHE["ts"]).total_seconds() < 86400:
-        return {"value": _FNG_CACHE["value"], "classification": _FNG_CACHE["classification"]}
-
-    import aiohttp
-    try:
-        async with aiohttp.ClientSession() as session:
-            async with session.get(
-                "https://api.alternative.me/fng/?limit=1",
-                timeout=aiohttp.ClientTimeout(total=10),
-            ) as resp:
-                if resp.status != 200:
-                    logger.warning("FNG API: HTTP %d", resp.status)
-                    return {}
-                data = await resp.json(content_type=None)
-                entry = data.get("data", [{}])[0]
-                value = int(entry.get("value", 0))
-                classification = entry.get("value_classification", "")
-                _FNG_CACHE["value"] = value
-                _FNG_CACHE["classification"] = classification
-                _FNG_CACHE["ts"] = now
-                logger.info("FNG: %d (%s)", value, classification)
-                return {"value": value, "classification": classification}
-    except Exception as e:
-        logger.warning("FNG fetch error: %s", e)
-        return {}
+# Fear & Greed Index — delegated to governance/regime.py (shared across workers)
+from governance.regime import fetch_fear_greed_index_async as fetch_fear_greed_index
 
 
 async def fetch_ohlcv_from_db(conn, symbol: str, start_ts: datetime, interval: str = "1h") -> list[tuple]:
