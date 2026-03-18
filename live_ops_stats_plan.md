@@ -181,10 +181,23 @@ Track D: Governance Verification (read-only audit)
 ### Track A — P0 Bug Fixes
 
 **A1: SNAPSHOT_FIELDS** (`governance/cache_contract.py`)
-- Add 8 missing fields to `SNAPSHOT_FIELDS` list
-- Governance: fields must match what `FeatureFactory.compute()` produces and what
-  evaluators in `core_logic/` consume. No hardcoded field names that aren't in the
-  indicator registry.
+- **Do NOT just add 8 fields manually** — that's the same governance violation that
+  caused this bug (someone adds a strategy, forgets to update a second file).
+- **Governance-correct fix:** Derive SNAPSHOT_FIELDS dynamically at bootstrap from
+  the union of all active strategies' `required_indicators`:
+  1. Iterate `StrategyRegistry` active crypto strategies
+  2. Collect each strategy's `required_indicators` (IndicatorRequirement enums)
+  3. Map via existing `INDICATOR_ID_TO_FIELD` dict → field names
+  4. Union with the base set (ATR, RSI, BB, etc. needed by all)
+  5. Freeze the result (tuple, not list — matches frozen registry pattern)
+- This means: **adding a future strategy automatically includes its indicators in
+  Redis persistence.** No serialization boundary to forget.
+- The existing `INDICATOR_ID_TO_FIELD` mapping (lines 257+) already covers the
+  indicator→field translation. May need entries for `MACD_HISTOGRAM`,
+  `MACD_PREV_HISTOGRAM`, `RVOL`, `DORMANCY_SCORE`, `ACCUM_DIVERGENCE` if missing.
+- Fallback: if dynamic derivation is too complex for this sprint, add the 8 fields
+  manually BUT add a startup assertion: `assert set(required) <= set(SNAPSHOT_FIELDS)`
+  that crashes if any active strategy needs a field not in the list.
 
 **A2: S9 NameError** (`governance/signal_worker.py`)
 - Add `from governance.strategy_registry import StrategyRegistry` at module level
@@ -238,8 +251,11 @@ WITH crypto_opps AS (
         (payload_json::jsonb->>'exit_ts')::timestamptz AS exit_ts
     FROM opportunities
     WHERE batch_id IS NULL
-      AND setup_id NOT IN ('EQFP','EQ_ATC','EQ_VPD','EQ_TSMOM',
-                           'EQ_XSMOM','EQ_REV1A','EQ_REV1B','EQ_NVDA_MACRO')
+      -- GOVERNANCE NOTE: this filter must match StrategyRegistry type='crypto'.
+      -- Currently all equities strategies follow EQ_* naming convention.
+      -- Long-term: replace with JOIN against strategy_metadata table populated
+      -- from StrategyRegistry at bootstrap. For now, naming convention filter:
+      AND setup_id NOT LIKE 'EQ%'
 ),
 with_pnl AS (
     SELECT *,
@@ -248,12 +264,17 @@ with_pnl AS (
                 WHEN 'long'  THEN (exit_price - entry_price) / entry_price * 100
                 WHEN 'short' THEN (entry_price - exit_price) / entry_price * 100
             END
-            - CASE timeframe  -- TF-scaled roundtrip cost (slippage + 4bps fee)
-                WHEN '5m'  THEN 0.19
-                WHEN '15m' THEN 0.14
-                WHEN '1h'  THEN 0.09
-                WHEN '4h'  THEN 0.07
-                ELSE 0.08
+            -- Fee schedule: SOURCE is execution.py SLIPPAGE_PROFILE_BPS + 4bps taker fee
+            -- If these values drift from execution.py, the governance audit will catch it.
+            -- Long-term: move to config_fee_schedule table populated at bootstrap.
+            - CASE timeframe
+                WHEN '1m'  THEN 0.24  -- 20bps slippage + 4bps fee
+                WHEN '5m'  THEN 0.19  -- 15bps + 4bps
+                WHEN '15m' THEN 0.14  -- 10bps + 4bps
+                WHEN '1h'  THEN 0.09  --  5bps + 4bps
+                WHEN '4h'  THEN 0.07  --  3bps + 4bps
+                WHEN '1d'  THEN 0.06  --  2bps + 4bps
+                ELSE 0.09             --  DEFAULT_SLIPPAGE_BPS(5) + 4bps
             END
         END AS pnl_pct_net,
         (exit_ts IS NOT NULL) AS is_closed
@@ -318,13 +339,46 @@ File: `Backend/api/app/routers/stats.py`
 ### Track D — Governance Audit
 
 Read-only verification during execution:
+
+**Registry completeness:**
 - [ ] `MIN_24H_QUOTE_VOLUME_USD` sourced from `get_config().Worker.MIN_24H_QUOTE_VOLUME_USD`
 - [ ] Ingestor refreshes universe dynamically (confirmed: hourly full scan at line 755)
 - [ ] D1/U1 `MIN_VOLUME_USD`/`MAX_VOLUME_USD` from their TypedConfig dataclasses
 - [ ] `SETUP_IDS` env var → loaded into TypedConfigRegistry → StrategyRegistry populated from it
-- [ ] Fee constants in view match `execution.py` `SLIPPAGE_PROFILE_BPS` + 4bps taker fee
-- [ ] SNAPSHOT_FIELDS addition is consistent with `FeatureFactory.compute()` output
-- [ ] No new hardcoded values introduced anywhere
+- [ ] `SIGNAL_TOP_N_DAILY` already in WorkerTypedConfig (line 182) — read via frozen registry
+- [ ] New `SIGNAL_TOP_N_DAILY_PER_SETUP` added to WorkerTypedConfig, read at bootstrap, process
+  crashes if missing
+
+**SNAPSHOT_FIELDS governance:**
+- [ ] If dynamic derivation: SNAPSHOT_FIELDS built from StrategyRegistry × IndicatorRequirement
+  × INDICATOR_ID_TO_FIELD at bootstrap. New strategy → fields auto-included.
+- [ ] If manual: startup assertion `assert required <= SNAPSHOT_FIELDS` for every active strategy.
+  Process crashes if any strategy's required_indicators aren't in the persistence list.
+- [ ] `INDICATOR_ID_TO_FIELD` mapping covers ALL indicator IDs referenced by active strategies'
+  `required_indicators` property. Check: MACD, MACD_PREV_HISTOGRAM, RVOL, DORMANCY_SCORE,
+  ACCUM_DIVERGENCE all have entries.
+
+**Fee model integrity:**
+- [ ] SQL view fee constants match `execution.py` `SLIPPAGE_PROFILE_BPS` + 4bps exactly:
+  1m=0.24, 5m=0.19, 15m=0.14, 1h=0.09, 4h=0.07, 1d=0.06, default=0.09
+- [ ] Long-term TODO flagged: create `config_fee_schedule` table populated from execution.py
+  at migration time. View JOINs table instead of hardcoding.
+
+**Setup ID filtering:**
+- [ ] SQL view uses `AND setup_id NOT LIKE 'EQ%'` (naming convention, not hardcoded list)
+- [ ] Verify ALL equities strategies in StrategyRegistry follow EQ_* naming convention
+- [ ] Long-term TODO flagged: create `strategy_metadata` table populated from StrategyRegistry.
+  View JOINs table for type='crypto' filter.
+
+**Alerting config:**
+- [ ] `ALERT_SIGNAL_STALE_HOURS: int = 6` in WorkerTypedConfig (or new AlertTypedConfig)
+- [ ] `ALERT_CONTAINER_RESTART_THRESHOLD: int = 3` in config
+- [ ] `ALERT_WEBHOOK_URL: str` in config (env var, read at bootstrap)
+
+**Zero new hardcoded values:**
+- [ ] Every number in the implementation traces back to a registry or a documented constant
+- [ ] No `if setup_id == "S9"` chains outside of StrategyRegistry dispatch
+- [ ] No bare `os.getenv()` outside of bootstrap
 
 ---
 
