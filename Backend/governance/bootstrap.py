@@ -187,8 +187,6 @@ def _populate_config(reg: ConfigRegistry) -> None:
         S9_SCORE_MULT=float(os.getenv("S9_SCORE_MULT", "1.0")),
         S10_SCORE_MULT=float(os.getenv("S10_SCORE_MULT", "1.0")),
         D1_SCORE_MULT=float(os.getenv("D1_SCORE_MULT", "1.0")),
-        S9_FNG_GATE_ENABLED=os.getenv("S9_FNG_GATE_ENABLED", "true").lower() == "true",
-        S9_FNG_MAX_VALUE=int(os.getenv("S9_FNG_MAX_VALUE", "50")),
         BINANCE_TICKER_URL=os.getenv("BINANCE_TICKER_URL", "https://api.binance.com/api/v3/ticker"),
         BINANCE_KLINES_URL=os.getenv("BINANCE_KLINES_URL", "https://api.binance.com/api/v3/klines"),
         OUTPUT_DIR=os.getenv("OUTPUT_DIR", "./output"),
@@ -221,9 +219,57 @@ def _populate_config(reg: ConfigRegistry) -> None:
     reg._register("Worker", worker)
 
     # --- Strategy configs ---
-    reg._register("D1", D1TypedConfig())
-    reg._register("U1", U1TypedConfig())
-    reg._register("S9", S9TypedConfig())
+    reg._register("D1", D1TypedConfig(
+        DORMANCY_THRESHOLD=float(os.getenv("D1_DORMANCY_THRESHOLD", "0.75")),
+        BB_WIDTH_COMPRESS=float(os.getenv("D1_BB_WIDTH_COMPRESS", "0.05")),
+        VOLUME_Z_SPIKE=float(os.getenv("D1_VOLUME_Z_SPIKE", "2.0")),
+        RVOL_MIN=float(os.getenv("D1_RVOL_MIN", "3.0")),
+        STOP_PCT=float(os.getenv("D1_STOP_PCT", "0.015")),
+        TP1_PCT=float(os.getenv("D1_TP1_PCT", "0.10")),
+        TP2_PCT=float(os.getenv("D1_TP2_PCT", "0.20")),
+        TIME_STOP_BARS_1H=int(os.getenv("D1_TIME_STOP_BARS_1H", "72")),
+        SOCIAL_SILENCE_MAX_MENTIONS=int(os.getenv("D1_SOCIAL_SILENCE_MAX_MENTIONS", "3")),
+        ONCHAIN_GATE_ENABLED=os.getenv("D1_ONCHAIN_GATE_ENABLED", "false").lower() == "true",
+        W_DORMANCY=float(os.getenv("D1_W_DORMANCY", "0.20")),
+        W_VOL_Z=float(os.getenv("D1_W_VOL_Z", "0.25")),
+        W_ACCUM_DIV=float(os.getenv("D1_W_ACCUM_DIV", "0.15")),
+        W_BB_EXPANSION=float(os.getenv("D1_W_BB_EXPANSION", "0.15")),
+        W_RVOL=float(os.getenv("D1_W_RVOL", "0.05")),
+        W_BTC_ADJ_RET=float(os.getenv("D1_W_BTC_ADJ_RET", "0.10")),
+        W_SOCIAL_SILENCE=float(os.getenv("D1_W_SOCIAL_SILENCE", "0.10")),
+        W_ONCHAIN_FLOW=float(os.getenv("D1_W_ONCHAIN_FLOW", "0.0")),
+    ))
+    reg._register("U1", U1TypedConfig(
+        IGNITION_SCORE_THRESHOLD=float(os.getenv("U1_IGNITION_SCORE_THRESHOLD", "0.40")),
+        VOL_Z_MIN=float(os.getenv("U1_VOL_Z_MIN", "1.5")),
+        TRADABILITY_IMPROVEMENT_FACTOR=float(os.getenv("U1_TRADABILITY_IMPROVEMENT_FACTOR", "0.85")),
+        PARTICIPATION_GROWTH_FACTOR=float(os.getenv("U1_PARTICIPATION_GROWTH_FACTOR", "1.2")),
+        RANGE_PCT_THRESHOLD=float(os.getenv("U1_RANGE_PCT_THRESHOLD", "0.10")),
+        REL_VOL_IGNITION_MIN=float(os.getenv("U1_REL_VOL_IGNITION_MIN", "3.0")),
+        STOP_RANGE_MULT=float(os.getenv("U1_STOP_RANGE_MULT", "3.0")),
+        MIN_STOP_PCT=float(os.getenv("U1_MIN_STOP_PCT", "0.005")),
+        TP1_R=float(os.getenv("U1_TP1_R", "1.0")),
+        TP2_R=float(os.getenv("U1_TP2_R", "2.0")),
+        TIME_STOP_BARS_5M=int(os.getenv("U1_TIME_STOP_BARS_5M", "12")),
+        MAX_EMBRYO_ACTIVE=int(os.getenv("U1_MAX_EMBRYO_ACTIVE", "200")),
+        HYPE_REL_VOL_CAP=float(os.getenv("U1_HYPE_REL_VOL_CAP", "20.0")),
+        HYPE_RANGE_CAP=float(os.getenv("U1_HYPE_RANGE_CAP", "0.50")),
+        MAX_MIN_NOTIONAL=int(os.getenv("U1_MAX_MIN_NOTIONAL", "100")),
+        MIN_VOLUME_USD=float(os.getenv("U1_MIN_VOLUME_USD", "75000")),
+        MAX_VOLUME_USD=float(os.getenv("U1_MAX_VOLUME_USD", "3000000")),
+        GATE_TIMEFRAME=os.getenv("U1_GATE_TIMEFRAME", "5m"),
+        GATE_WINDOW_BARS=int(os.getenv("U1_GATE_WINDOW_BARS", "48")),
+    ))
+    reg._register("S9", S9TypedConfig(
+        RET_LOOKBACK=int(os.getenv("S9_RET_LOOKBACK", "4")),
+        HOLD_BARS=int(os.getenv("S9_HOLD_BARS", "48")),
+        PERCENTILE=int(os.getenv("S9_PERCENTILE", "10")),
+        BREADTH_THRESHOLD=float(os.getenv("S9_BREADTH_THRESHOLD", "0.3")),
+        COST_BPS=int(os.getenv("S9_COST_BPS", "18")),
+        MIN_RET_4H=float(os.getenv("S9_MIN_RET_4H", "0.05")),
+        FNG_GATE_ENABLED=os.getenv("S9_FNG_GATE_ENABLED", "true").lower() == "true",
+        FNG_MAX_VALUE=int(os.getenv("S9_FNG_MAX_VALUE", "50")),
+    ))
     reg._register("S10", S10TypedConfig())
 
     # --- Indicator config ---

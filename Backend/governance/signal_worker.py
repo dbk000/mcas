@@ -258,7 +258,7 @@ class SignalWorker(LineageEnforcer):
             "symbol_quality_excluded": 0,
             "s10_signal": 0, "d1_signal": 0,
             "s9_signal": 0, "s9_breadth_fail": 0,
-            "s9_fng_gated": 0, "s9_fng_unavailable": 0,
+            "s9_fng_gated": 0, "s9_fng_unavailable": 0, "s9_magnitude_filtered": 0,
             "congestion_dropped": 0,
         }
         self._last_diag_log = 0.0
@@ -332,6 +332,56 @@ class SignalWorker(LineageEnforcer):
         logger.info("SNAPSHOT_FIELDS assertion passed: all registered strategies' "
                      "required_indicators are satisfiable")
         # ── End A1 Startup Assertion ──────────────────────────────────────
+
+        # ── A2 Registry ↔ Class Constant Sync Assertions ─────────────────
+        # Crash at boot if registry values diverge from core_logic class constants.
+        # core_logic modules still read class constants (D1Config, U1Config) internally;
+        # signal_worker reads from registry. Both MUST agree.
+        _d1_reg = get_config().D1
+        _d1_sync_fields = {
+            "DORMANCY_THRESHOLD": (D1Config.DORMANCY_THRESHOLD, _d1_reg.DORMANCY_THRESHOLD),
+            "BB_WIDTH_COMPRESS": (D1Config.BB_WIDTH_COMPRESS, _d1_reg.BB_WIDTH_COMPRESS),
+            "VOLUME_Z_SPIKE": (D1Config.VOLUME_Z_SPIKE, _d1_reg.VOLUME_Z_SPIKE),
+            "RVOL_MIN": (D1Config.RVOL_MIN, _d1_reg.RVOL_MIN),
+            "STOP_PCT": (D1Config.STOP_PCT, _d1_reg.STOP_PCT),
+            "TP1_PCT": (D1Config.TP1_PCT, _d1_reg.TP1_PCT),
+            "TP2_PCT": (D1Config.TP2_PCT, _d1_reg.TP2_PCT),
+            "TIME_STOP_BARS_1H": (D1Config.TIME_STOP_BARS_1H, _d1_reg.TIME_STOP_BARS_1H),
+            "DORMANCY_LOOKBACK": (D1Config.DORMANCY_LOOKBACK, _d1_reg.DORMANCY_LOOKBACK),
+            "SOCIAL_SILENCE_MAX_MENTIONS": (D1Config.SOCIAL_SILENCE_MAX_MENTIONS, _d1_reg.SOCIAL_SILENCE_MAX_MENTIONS),
+            "ONCHAIN_GATE_ENABLED": (D1Config.ONCHAIN_GATE_ENABLED, _d1_reg.ONCHAIN_GATE_ENABLED),
+            "W_DORMANCY": (D1Config.W_DORMANCY, _d1_reg.W_DORMANCY),
+            "W_VOL_Z": (D1Config.W_VOL_Z, _d1_reg.W_VOL_Z),
+            "W_BTC_ADJ_RET": (D1Config.W_BTC_ADJ_RET, _d1_reg.W_BTC_ADJ_RET),
+        }
+        for field_name, (class_val, reg_val) in _d1_sync_fields.items():
+            assert class_val == reg_val, (
+                f"D1 {field_name}: class={class_val} != registry={reg_val}"
+            )
+        _u1_reg = get_config().U1
+        _u1_sync_fields = {
+            "IGNITION_SCORE_THRESHOLD": (U1Config.IGNITION_SCORE_THRESHOLD, _u1_reg.IGNITION_SCORE_THRESHOLD),
+            "VOL_Z_MIN": (U1Config.VOL_Z_MIN, _u1_reg.VOL_Z_MIN),
+            "TRADABILITY_IMPROVEMENT_FACTOR": (U1Config.TRADABILITY_IMPROVEMENT_FACTOR, _u1_reg.TRADABILITY_IMPROVEMENT_FACTOR),
+            "PARTICIPATION_GROWTH_FACTOR": (U1Config.PARTICIPATION_GROWTH_FACTOR, _u1_reg.PARTICIPATION_GROWTH_FACTOR),
+            "RANGE_PCT_THRESHOLD": (U1Config.RANGE_PCT_THRESHOLD, _u1_reg.RANGE_PCT_THRESHOLD),
+            "REL_VOL_IGNITION_MIN": (U1Config.REL_VOL_IGNITION_MIN, _u1_reg.REL_VOL_IGNITION_MIN),
+            "STOP_RANGE_MULT": (U1Config.STOP_RANGE_MULT, _u1_reg.STOP_RANGE_MULT),
+            "MIN_STOP_PCT": (U1Config.MIN_STOP_PCT, _u1_reg.MIN_STOP_PCT),
+            "TP1_R": (U1Config.TP1_R, _u1_reg.TP1_R),
+            "TP2_R": (U1Config.TP2_R, _u1_reg.TP2_R),
+            "TIME_STOP_BARS_5M": (U1Config.TIME_STOP_BARS_5M, _u1_reg.TIME_STOP_BARS_5M),
+            "MAX_EMBRYO_ACTIVE": (U1Config.MAX_EMBRYO_ACTIVE, _u1_reg.MAX_EMBRYO_ACTIVE),
+            "GATE_TIMEFRAME": (U1Config.GATE_TIMEFRAME, _u1_reg.GATE_TIMEFRAME),
+            "GATE_WINDOW_BARS": (U1Config.GATE_WINDOW_BARS, _u1_reg.GATE_WINDOW_BARS),
+        }
+        for field_name, (class_val, reg_val) in _u1_sync_fields.items():
+            assert class_val == reg_val, (
+                f"U1 {field_name}: class={class_val} != registry={reg_val}"
+            )
+        logger.info("A2 Registry sync assertions passed: D1 (%d fields), U1 (%d fields)",
+                     len(_d1_sync_fields), len(_u1_sync_fields))
+        # ── End A2 Registry Sync Assertions ──────────────────────────────
 
         # 24h volume cache: {symbol: volume_usd}, refreshed every 5 min
         self._volume_cache: dict[str, float] = {}
@@ -925,6 +975,8 @@ class SignalWorker(LineageEnforcer):
         if is_d1_excluded(symbol):
             return
 
+        d1_cfg = get_config().D1
+
         try:
             state_key = f"{symbol}:{tf}"
             prev_state = self._d1_prev_states.get(state_key)
@@ -946,7 +998,7 @@ class SignalWorker(LineageEnforcer):
                 state.social_mention_count = get_social_silence_count(
                     symbol, conn_factory=_pool_get_conn, trigger_bar_start_ts=trigger_ts,
                 )
-                if D1Config.ONCHAIN_GATE_ENABLED:
+                if d1_cfg.ONCHAIN_GATE_ENABLED:
                     state.onchain_netflow = get_exchange_netflow(
                         symbol, conn_factory=_pool_get_conn, as_of_ts=trigger_ts,
                     )
@@ -983,7 +1035,7 @@ class SignalWorker(LineageEnforcer):
 
             social_silence_passed = (
                 state.social_mention_count < 0
-                or state.social_mention_count <= D1Config.SOCIAL_SILENCE_MAX_MENTIONS
+                or state.social_mention_count <= d1_cfg.SOCIAL_SILENCE_MAX_MENTIONS
             )
 
             payload = {
@@ -1015,43 +1067,43 @@ class SignalWorker(LineageEnforcer):
                 "social_mentions_24h": state.social_mention_count,
                 "social_silence_passed": social_silence_passed,
                 "onchain_netflow": state.onchain_netflow,
-                "onchain_gate_enabled": D1Config.ONCHAIN_GATE_ENABLED,
+                "onchain_gate_enabled": d1_cfg.ONCHAIN_GATE_ENABLED,
                 "score_components": sig.score_components,
                 "gates": {
-                    "Gate 1 - Dormancy": f"dormancy_score >= {D1Config.DORMANCY_THRESHOLD}",
-                    "Gate 2 - Compression": f"bb_width < {D1Config.BB_WIDTH_COMPRESS}",
+                    "Gate 1 - Dormancy": f"dormancy_score >= {d1_cfg.DORMANCY_THRESHOLD}",
+                    "Gate 2 - Compression": f"bb_width < {d1_cfg.BB_WIDTH_COMPRESS}",
                     "Gate 3 - Volume spike": (
-                        f"volume_z >= {D1Config.VOLUME_Z_SPIKE} AND "
-                        f"rvol >= {D1Config.RVOL_MIN}"
+                        f"volume_z >= {d1_cfg.VOLUME_Z_SPIKE} AND "
+                        f"rvol >= {d1_cfg.RVOL_MIN}"
                     ),
                     "Gate 4 - Breakout": "close > prev_compression_box_high (previous donchian_high_20)",
                     "Gate 5 - BB expanding": "bb_width > bb_width_prev",
                     "Gate 6 - Social silence (soft)": (
-                        f"mentions_24h <= {D1Config.SOCIAL_SILENCE_MAX_MENTIONS} "
-                        f"(actual: {state.social_mention_count}, score weight: {D1Config.W_SOCIAL_SILENCE})"
+                        f"mentions_24h <= {d1_cfg.SOCIAL_SILENCE_MAX_MENTIONS} "
+                        f"(actual: {state.social_mention_count}, score weight: {d1_cfg.W_SOCIAL_SILENCE})"
                     ),
                     "Gate 7 - Exchange net flow (soft)": (
                         f"netflow < 0 = accumulation "
-                        f"(actual: {state.onchain_netflow}, enabled: {D1Config.ONCHAIN_GATE_ENABLED}, "
-                        f"score weight: {D1Config.W_ONCHAIN_FLOW})"
+                        f"(actual: {state.onchain_netflow}, enabled: {d1_cfg.ONCHAIN_GATE_ENABLED}, "
+                        f"score weight: {d1_cfg.W_ONCHAIN_FLOW})"
                     ),
                 },
                 "exit_config": {
                     "trail": "none",
-                    "stop_pct": D1Config.STOP_PCT,
-                    "tp1_pct": D1Config.TP1_PCT,
-                    "tp2_pct": D1Config.TP2_PCT,
-                    "time_stop_bars_1h": D1Config.TIME_STOP_BARS_1H,
+                    "stop_pct": d1_cfg.STOP_PCT,
+                    "tp1_pct": d1_cfg.TP1_PCT,
+                    "tp2_pct": d1_cfg.TP2_PCT,
+                    "time_stop_bars_1h": d1_cfg.TIME_STOP_BARS_1H,
                 },
                 "scoring_weights": {
-                    "dormancy": D1Config.W_DORMANCY,
-                    "vol_z": D1Config.W_VOL_Z,
-                    "accum_div": D1Config.W_ACCUM_DIV,
-                    "bb_expansion": D1Config.W_BB_EXPANSION,
-                    "rvol": D1Config.W_RVOL,
-                    "btc_adj_ret": D1Config.W_BTC_ADJ_RET,
-                    "social_silence": D1Config.W_SOCIAL_SILENCE,
-                    "onchain_flow": D1Config.W_ONCHAIN_FLOW,
+                    "dormancy": d1_cfg.W_DORMANCY,
+                    "vol_z": d1_cfg.W_VOL_Z,
+                    "accum_div": d1_cfg.W_ACCUM_DIV,
+                    "bb_expansion": d1_cfg.W_BB_EXPANSION,
+                    "rvol": d1_cfg.W_RVOL,
+                    "btc_adj_ret": d1_cfg.W_BTC_ADJ_RET,
+                    "social_silence": d1_cfg.W_SOCIAL_SILENCE,
+                    "onchain_flow": d1_cfg.W_ONCHAIN_FLOW,
                 },
             }
 
@@ -1084,13 +1136,13 @@ class SignalWorker(LineageEnforcer):
             trace.record_state(state.to_dict(), is_hydrated=is_hydrated)
             close = snapshot.ohlcv[-1].close if snapshot.ohlcv else 0.0
             trace.record_gate("dormancy", state.dormancy_score,
-                              D1Config.DORMANCY_THRESHOLD, ">=", True)
+                              d1_cfg.DORMANCY_THRESHOLD, ">=", True)
             trace.record_gate("compression", state.bb_width,
-                              D1Config.BB_WIDTH_COMPRESS, "<", True)
+                              d1_cfg.BB_WIDTH_COMPRESS, "<", True)
             trace.record_gate("volume_z", state.volume_z,
-                              D1Config.VOLUME_Z_SPIKE, ">=", True)
+                              d1_cfg.VOLUME_Z_SPIKE, ">=", True)
             trace.record_gate("rvol", state.rvol,
-                              D1Config.RVOL_MIN, ">=", True)
+                              d1_cfg.RVOL_MIN, ">=", True)
             trace.record_gate("breakout", close,
                               state.prev_compression_box_high, ">", True,
                               note="close > prev_compression_box_high")
@@ -1098,11 +1150,11 @@ class SignalWorker(LineageEnforcer):
                               state.bb_width_prev, ">", True,
                               note="bb_width > bb_width_prev")
             trace.record_gate("social_silence", state.social_mention_count,
-                              D1Config.SOCIAL_SILENCE_MAX_MENTIONS, "<=",
+                              d1_cfg.SOCIAL_SILENCE_MAX_MENTIONS, "<=",
                               social_silence_passed,
                               note=f"soft gate: mentions_24h={state.social_mention_count}, "
-                                   f"threshold={D1Config.SOCIAL_SILENCE_MAX_MENTIONS}, "
-                                   f"score_weight={D1Config.W_SOCIAL_SILENCE}")
+                                   f"threshold={d1_cfg.SOCIAL_SILENCE_MAX_MENTIONS}, "
+                                   f"score_weight={d1_cfg.W_SOCIAL_SILENCE}")
             onchain_passed = (
                 state.onchain_netflow is None
                 or state.onchain_netflow < 0
@@ -1110,26 +1162,26 @@ class SignalWorker(LineageEnforcer):
             trace.record_gate("onchain_netflow", state.onchain_netflow,
                               0, "<", onchain_passed,
                               note=f"soft gate: netflow={state.onchain_netflow}, "
-                                   f"enabled={D1Config.ONCHAIN_GATE_ENABLED}, "
-                                   f"score_weight={D1Config.W_ONCHAIN_FLOW}")
+                                   f"enabled={d1_cfg.ONCHAIN_GATE_ENABLED}, "
+                                   f"score_weight={d1_cfg.W_ONCHAIN_FLOW}")
             trace.record_score(
                 sig.score_components, sig.setup_score,
                 calib_mult, calibrated_score, promotion_threshold=0.0,
             )
             trace.record_config({
-                "DORMANCY_THRESHOLD": D1Config.DORMANCY_THRESHOLD,
-                "BB_WIDTH_COMPRESS": D1Config.BB_WIDTH_COMPRESS,
-                "VOLUME_Z_SPIKE": D1Config.VOLUME_Z_SPIKE,
-                "RVOL_MIN": D1Config.RVOL_MIN,
-                "STOP_PCT": D1Config.STOP_PCT,
-                "TP1_PCT": D1Config.TP1_PCT,
-                "TP2_PCT": D1Config.TP2_PCT,
-                "TIME_STOP_BARS_1H": D1Config.TIME_STOP_BARS_1H,
-                "SOCIAL_SILENCE_LOOKBACK_HOURS": D1Config.SOCIAL_SILENCE_LOOKBACK_HOURS,
-                "SOCIAL_SILENCE_MAX_MENTIONS": D1Config.SOCIAL_SILENCE_MAX_MENTIONS,
-                "ONCHAIN_GATE_ENABLED": D1Config.ONCHAIN_GATE_ENABLED,
-                "ONCHAIN_NETFLOW_LOOKBACK_HOURS": D1Config.ONCHAIN_NETFLOW_LOOKBACK_HOURS,
-                "W_ONCHAIN_FLOW": D1Config.W_ONCHAIN_FLOW,
+                "DORMANCY_THRESHOLD": d1_cfg.DORMANCY_THRESHOLD,
+                "BB_WIDTH_COMPRESS": d1_cfg.BB_WIDTH_COMPRESS,
+                "VOLUME_Z_SPIKE": d1_cfg.VOLUME_Z_SPIKE,
+                "RVOL_MIN": d1_cfg.RVOL_MIN,
+                "STOP_PCT": d1_cfg.STOP_PCT,
+                "TP1_PCT": d1_cfg.TP1_PCT,
+                "TP2_PCT": d1_cfg.TP2_PCT,
+                "TIME_STOP_BARS_1H": d1_cfg.TIME_STOP_BARS_1H,
+                "SOCIAL_SILENCE_LOOKBACK_HOURS": d1_cfg.SOCIAL_SILENCE_LOOKBACK_HOURS,
+                "SOCIAL_SILENCE_MAX_MENTIONS": d1_cfg.SOCIAL_SILENCE_MAX_MENTIONS,
+                "ONCHAIN_GATE_ENABLED": d1_cfg.ONCHAIN_GATE_ENABLED,
+                "ONCHAIN_NETFLOW_LOOKBACK_HOURS": d1_cfg.ONCHAIN_NETFLOW_LOOKBACK_HOURS,
+                "W_ONCHAIN_FLOW": d1_cfg.W_ONCHAIN_FLOW,
             })
             setup_version = self._get_setup_version("D1")
             trace_dict = trace.seal(setup_version)
@@ -1158,6 +1210,7 @@ class SignalWorker(LineageEnforcer):
         Accepts the same (symbol, tf, snapshot, bar_start_ts) signature as all
         other _evaluate_* methods — extracts candles internally.
         """
+        u1_cfg = get_config().U1
         candles = snapshot.ohlcv
 
         self._refresh_embryo_active_cache()
@@ -1216,24 +1269,24 @@ class SignalWorker(LineageEnforcer):
                               True, "==", u1_state.gate3_passed)
             trace.record_gate("ignition_score",
                               u1_state.ignition_score,
-                              U1Config.IGNITION_SCORE_THRESHOLD, ">=", True)
+                              u1_cfg.IGNITION_SCORE_THRESHOLD, ">=", True)
             trace.record_score(
                 {"setup_score": u1_signal.setup_score},
                 u1_signal.setup_score, 1.0, u1_signal.setup_score,
-                promotion_threshold=U1Config.IGNITION_SCORE_THRESHOLD,
+                promotion_threshold=u1_cfg.IGNITION_SCORE_THRESHOLD,
             )
             trace.record_config({
-                "TRADABILITY_IMPROVEMENT_FACTOR": U1Config.TRADABILITY_IMPROVEMENT_FACTOR,
-                "PARTICIPATION_GROWTH_FACTOR": U1Config.PARTICIPATION_GROWTH_FACTOR,
-                "RANGE_PCT_THRESHOLD": U1Config.RANGE_PCT_THRESHOLD,
-                "REL_VOL_IGNITION_MIN": U1Config.REL_VOL_IGNITION_MIN,
-                "VOL_Z_MIN": U1Config.VOL_Z_MIN,
-                "IGNITION_SCORE_THRESHOLD": U1Config.IGNITION_SCORE_THRESHOLD,
-                "STOP_RANGE_MULT": U1Config.STOP_RANGE_MULT,
-                "MIN_STOP_PCT": U1Config.MIN_STOP_PCT,
-                "TP1_R": U1Config.TP1_R,
-                "TP2_R": U1Config.TP2_R,
-                "TIME_STOP_BARS_5M": U1Config.TIME_STOP_BARS_5M,
+                "TRADABILITY_IMPROVEMENT_FACTOR": u1_cfg.TRADABILITY_IMPROVEMENT_FACTOR,
+                "PARTICIPATION_GROWTH_FACTOR": u1_cfg.PARTICIPATION_GROWTH_FACTOR,
+                "RANGE_PCT_THRESHOLD": u1_cfg.RANGE_PCT_THRESHOLD,
+                "REL_VOL_IGNITION_MIN": u1_cfg.REL_VOL_IGNITION_MIN,
+                "VOL_Z_MIN": u1_cfg.VOL_Z_MIN,
+                "IGNITION_SCORE_THRESHOLD": u1_cfg.IGNITION_SCORE_THRESHOLD,
+                "STOP_RANGE_MULT": u1_cfg.STOP_RANGE_MULT,
+                "MIN_STOP_PCT": u1_cfg.MIN_STOP_PCT,
+                "TP1_R": u1_cfg.TP1_R,
+                "TP2_R": u1_cfg.TP2_R,
+                "TIME_STOP_BARS_5M": u1_cfg.TIME_STOP_BARS_5M,
             })
             setup_version = self._get_setup_version("U1")
             trace_dict = trace.seal(setup_version)
@@ -1601,31 +1654,42 @@ class SignalWorker(LineageEnforcer):
         n_positive = sum(1 for _, (_, r24, _) in symbol_data.items() if r24 > 0)
         breadth = n_positive / len(symbol_data)
 
-        if breadth <= S9Evaluator.BREADTH_THRESHOLD:
+        s9_cfg = get_config().S9
+        if breadth <= s9_cfg.BREADTH_THRESHOLD:
             self._diag["s9_breadth_fail"] += 1
             logger.info("S9: breadth=%.3f <= %.1f, no signals",
-                        breadth, S9Evaluator.BREADTH_THRESHOLD)
+                        breadth, s9_cfg.BREADTH_THRESHOLD)
             return
 
         # Fear & Greed regime gate (fail-closed)
         fng = {}
         fng_value = None
-        if _worker_cfg().S9_FNG_GATE_ENABLED:
+        if s9_cfg.FNG_GATE_ENABLED:
             fng = fetch_fear_greed_index()
             fng_value = fng.get("value")
             if fng_value is None:
                 self._diag["s9_fng_unavailable"] += 1
                 logger.warning("S9: FnG unavailable — suppressing signals (fail-closed)")
                 return  # FAIL-CLOSED: suppress when we can't check
-            if fng_value > _worker_cfg().S9_FNG_MAX_VALUE:
+            if fng_value > s9_cfg.FNG_MAX_VALUE:
                 self._diag["s9_fng_gated"] += 1
                 logger.info("S9: FnG=%d (>%d) — regime gate suppressing signals",
-                            fng_value, _worker_cfg().S9_FNG_MAX_VALUE)
+                            fng_value, s9_cfg.FNG_MAX_VALUE)
                 return
 
         sorted_syms = sorted(symbol_data.items(), key=lambda x: x[1][0], reverse=True)
         decile_n = max(1, len(sorted_syms) // 10)
         top_decile = sorted_syms[:decile_n]
+
+        # Magnitude gate: filter out coins with ret_4h below threshold
+        min_ret = s9_cfg.MIN_RET_4H
+        pre_filter_count = len(top_decile)
+        top_decile = [(sym, rets) for sym, rets in top_decile if rets[0] >= min_ret]
+        if not top_decile:
+            self._diag["s9_magnitude_filtered"] += 1
+            logger.info("S9: breadth=%.3f OK but all %d top-decile ret_4h < %.1f%% — no outliers",
+                        breadth, pre_filter_count, min_ret * 100)
+            return
 
         state = S9State(
             breadth=breadth,
@@ -1659,7 +1723,7 @@ class SignalWorker(LineageEnforcer):
         s9_cross_ctx = {
             "universe_size": len(symbol_data),
             "breadth": breadth,
-            "breadth_threshold": S9Evaluator.BREADTH_THRESHOLD,
+            "breadth_threshold": s9_cfg.BREADTH_THRESHOLD,
             "decile_threshold_ret_4h": top_decile[-1][1][0] if top_decile else 0.0,
             "symbols_in_decile": decile_n,
             "eval_hour": eval_hour_iso,
@@ -1765,10 +1829,10 @@ class SignalWorker(LineageEnforcer):
                     timeframe="1s", note="microstructure tape",
                 )
             trace.record_indicator_params({
-                "ret_4h_window": S9Evaluator.RET_LOOKBACK,
+                "ret_4h_window": s9_cfg.RET_LOOKBACK,
                 "ret_24h_window": 24,
-                "breadth_threshold": S9Evaluator.BREADTH_THRESHOLD,
-                "decile_pct": S9Evaluator.PERCENTILE / 100.0,
+                "breadth_threshold": s9_cfg.BREADTH_THRESHOLD,
+                "decile_pct": s9_cfg.PERCENTILE / 100.0,
             })
             trace.record_indicators_bulk({
                 "ret_4h": ret_4h,
@@ -1779,14 +1843,17 @@ class SignalWorker(LineageEnforcer):
             trace.record_state({"is_hydrated": False})
             trace.record_cross_sectional_context(s9_cross_ctx)
             trace.record_gate("breadth", breadth,
-                              S9Evaluator.BREADTH_THRESHOLD, ">", True)
+                              s9_cfg.BREADTH_THRESHOLD, ">", True)
             trace.record_gate("top_decile", rank + 1, decile_n, "<=", True,
                               note="rank <= decile_size")
             trace.record_gate("ret_4h_positive", ret_4h, 0.0, ">", True)
+            trace.record_gate("magnitude", ret_4h,
+                              s9_cfg.MIN_RET_4H, ">=", True,
+                              note=f"ret_4h={ret_4h:.4f} >= {s9_cfg.MIN_RET_4H}")
             if fng_value is not None:
                 trace.record_gate(
                     "fng_regime", fng_value,
-                    _worker_cfg().S9_FNG_MAX_VALUE, "<=", True,
+                    s9_cfg.FNG_MAX_VALUE, "<=", True,
                     note=f"FnG={fng_value} ({fng.get('classification', '?')})",
                 )
             if micro_ctx:
@@ -1806,13 +1873,14 @@ class SignalWorker(LineageEnforcer):
                 promotion_threshold=0.0,
             )
             trace.record_config({
-                "BREADTH_THRESHOLD": S9Evaluator.BREADTH_THRESHOLD,
-                "PERCENTILE": S9Evaluator.PERCENTILE,
-                "RET_LOOKBACK": S9Evaluator.RET_LOOKBACK,
-                "HOLD_BARS": S9Evaluator.HOLD_BARS,
-                "COST_BPS": S9Evaluator.COST_BPS,
-                "S9_FNG_GATE_ENABLED": _worker_cfg().S9_FNG_GATE_ENABLED,
-                "S9_FNG_MAX_VALUE": _worker_cfg().S9_FNG_MAX_VALUE,
+                "BREADTH_THRESHOLD": s9_cfg.BREADTH_THRESHOLD,
+                "PERCENTILE": s9_cfg.PERCENTILE,
+                "RET_LOOKBACK": s9_cfg.RET_LOOKBACK,
+                "HOLD_BARS": s9_cfg.HOLD_BARS,
+                "COST_BPS": s9_cfg.COST_BPS,
+                "FNG_GATE_ENABLED": s9_cfg.FNG_GATE_ENABLED,
+                "FNG_MAX_VALUE": s9_cfg.FNG_MAX_VALUE,
+                "MIN_RET_4H": s9_cfg.MIN_RET_4H,
             })
             setup_version = self._get_setup_version("S9")
             trace_dict = trace.seal(setup_version)

@@ -30,6 +30,7 @@ from indicators.indicators import FeatureFactory, IndicatorSnapshot, OHLCV
 from core_logic.setups import S9Evaluator, S9Signal, S9State
 from core_logic.setups import S10Evaluator, S10Signal
 from governance.data_layer import log_signal_event
+from governance.regime import fetch_fear_greed_index
 
 logger = logging.getLogger(__name__)
 
@@ -667,14 +668,36 @@ class SignalEngine:
         n_positive = sum(1 for _, (_, r24, _) in symbol_data.items() if r24 > 0)
         breadth = n_positive / len(symbol_data)
 
-        if breadth <= S9Evaluator.BREADTH_THRESHOLD:
+        s9_cfg = get_config().S9
+        if breadth <= s9_cfg.BREADTH_THRESHOLD:
             logger.debug("S9: breadth=%.3f <= threshold, skipping", breadth)
             return []
+
+        # Fear & Greed regime gate (fail-closed)
+        if s9_cfg.FNG_GATE_ENABLED:
+            fng = fetch_fear_greed_index()
+            fng_value = fng.get("value")
+            if fng_value is None:
+                logger.warning("S9 REST: FnG unavailable — suppressing signals (fail-closed)")
+                return []
+            if fng_value > s9_cfg.FNG_MAX_VALUE:
+                logger.info("S9 REST: FnG=%d (>%d) — regime gate suppressing signals",
+                            fng_value, s9_cfg.FNG_MAX_VALUE)
+                return []
 
         # Rank by ret_4h descending, select top decile
         sorted_syms = sorted(symbol_data.items(), key=lambda x: x[1][0], reverse=True)
         decile_n = max(1, len(sorted_syms) // 10)
         top_decile = sorted_syms[:decile_n]
+
+        # Magnitude gate: filter out coins with ret_4h below threshold
+        min_ret = s9_cfg.MIN_RET_4H
+        pre_filter_count = len(top_decile)
+        top_decile = [(sym, rets) for sym, rets in top_decile if rets[0] >= min_ret]
+        if not top_decile:
+            logger.info("S9 REST: breadth OK but all %d top-decile ret_4h < %.1f%% — no outliers",
+                        pre_filter_count, min_ret * 100)
+            return []
 
         state = S9State(
             breadth=breadth,

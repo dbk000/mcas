@@ -238,6 +238,7 @@ def had_recent_hype(symbol: str, lookback_days: int = 30) -> bool:
     - max(rel_volume_30d) > HYPE_REL_VOL_CAP
     - max(range_pct_30d) > HYPE_RANGE_CAP
     """
+    u1_cfg = get_config().U1
     candles = fetch_daily_candles(symbol, lookback_days)
     if not candles:
         return False
@@ -251,14 +252,14 @@ def had_recent_hype(symbol: str, lookback_days: int = 30) -> bool:
     # Check volume spike
     if baseline_vol > 0:
         max_rel_vol = max(v / baseline_vol for v in volumes)
-        if max_rel_vol > U1Config.HYPE_REL_VOL_CAP:
+        if max_rel_vol > u1_cfg.HYPE_REL_VOL_CAP:
             return True
 
     # Check range spike
     for c in candles:
         if c["close"] > 0:
             range_pct = (c["high"] - c["low"]) / c["close"]
-            if range_pct > U1Config.HYPE_RANGE_CAP:
+            if range_pct > u1_cfg.HYPE_RANGE_CAP:
                 return True
 
     return False
@@ -269,6 +270,7 @@ def build_embryo_universe(r) -> list[str]:
     Build embryo universe - deterministic selection.
     MVP: Spot USDT pairs only.
     """
+    u1_cfg = get_config().U1
     logger.info("Building embryo universe...")
 
     # Fetch all symbols
@@ -284,7 +286,7 @@ def build_embryo_universe(r) -> list[str]:
         symbol = info["symbol"]
 
         # Min notional too high
-        if info["min_notional"] > U1Config.MAX_MIN_NOTIONAL:
+        if info["min_notional"] > u1_cfg.MAX_MIN_NOTIONAL:
             excluded.add(symbol)
             continue
 
@@ -305,10 +307,10 @@ def build_embryo_universe(r) -> list[str]:
     volume_filtered = []
     for symbol in candidates:
         vol_24h = volumes.get(symbol, 0)
-        if U1Config.MIN_VOLUME_USD <= vol_24h <= U1Config.MAX_VOLUME_USD:
+        if u1_cfg.MIN_VOLUME_USD <= vol_24h <= u1_cfg.MAX_VOLUME_USD:
             volume_filtered.append(symbol)
 
-    logger.info(f"After volume filter ({U1Config.MIN_VOLUME_USD}-{U1Config.MAX_VOLUME_USD} USD): {len(volume_filtered)} candidates")
+    logger.info(f"After volume filter ({u1_cfg.MIN_VOLUME_USD}-{u1_cfg.MAX_VOLUME_USD} USD): {len(volume_filtered)} candidates")
 
     # Step 4: Exclude recent hype (sampling for performance)
     # Full hype check is expensive - do it on a sample or during promotion
@@ -493,8 +495,9 @@ class UnicornPipeline:
         Returns (state, metrics, was_fetched, trigger_fired) or None.
         Incremental: processes one symbol at a time, no bulk accumulation.
         """
-        tf = U1Config.GATE_TIMEFRAME
-        required_bars = U1Config.GATE_WINDOW_BARS * 2  # 96
+        u1_cfg = get_config().U1
+        tf = u1_cfg.GATE_TIMEFRAME
+        required_bars = u1_cfg.GATE_WINDOW_BARS * 2  # 96
 
         # Step 1: Get candles (try Redis first, fetch from Binance if needed)
         candles = get_candles_as_ohlcv(self.r, symbol, tf)
@@ -664,7 +667,7 @@ class UnicornPipeline:
 
         # Take top MAX_EMBRYO_ACTIVE
         keep = set()
-        for symbol, score in ranked[:U1Config.MAX_EMBRYO_ACTIVE]:
+        for symbol, score in ranked[:get_config().U1.MAX_EMBRYO_ACTIVE]:
             keep.add(symbol)
             add_to_embryo_active(self.r, symbol, score)
 

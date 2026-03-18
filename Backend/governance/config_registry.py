@@ -58,7 +58,7 @@ class D1TypedConfig:
     W_ACCUM_DIV: float = 0.15
     W_BB_EXPANSION: float = 0.15
     W_RVOL: float = 0.05
-    W_BTC_AD_RET: float = 0.10
+    W_BTC_ADJ_RET: float = 0.10
     W_SOCIAL_SILENCE: float = 0.10
 
     DORMANCY_LOOKBACK: int = 48
@@ -153,6 +153,11 @@ class S9TypedConfig:
     PERCENTILE: int = 10
     BREADTH_THRESHOLD: float = 0.3
     COST_BPS: int = 18
+    # Magnitude gate: minimum 4h return to qualify as outlier pump
+    MIN_RET_4H: float = 0.05
+    # FnG regime gate (moved from WorkerTypedConfig)
+    FNG_GATE_ENABLED: bool = True
+    FNG_MAX_VALUE: int = 50
 
 
 @dataclass
@@ -193,10 +198,6 @@ class WorkerTypedConfig:
     OUTPUT_DIR: str = "./output"
     MAX_CONCURRENCY: int = 8
     DXY_REGIME_ENABLED: bool = True
-
-    # S9 Fear & Greed regime gate
-    S9_FNG_GATE_ENABLED: bool = True
-    S9_FNG_MAX_VALUE: int = 50
 
     # Path Configuration
     CORRELATION_JSON_PATH: str = "indicator_correlations.json"
