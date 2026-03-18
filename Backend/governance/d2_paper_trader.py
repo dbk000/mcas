@@ -170,6 +170,9 @@ class D2State:
     last_price: Optional[float] = None
     state_transitions: list = field(default_factory=list)
 
+    # DB row ID (set when OPEN position written at entry)
+    paper_position_id: Optional[str] = None
+
     def log_transition(self, from_phase: str, to_phase: str, reason: str = ""):
         self.state_transitions.append({
             "from": from_phase,
@@ -528,11 +531,69 @@ def update_cluster_status(conn, event_id: int, status: str, **extra_fields):
     conn.commit()
 
 
+def write_open_paper_position(conn, state: D2State) -> str:
+    """Write OPEN D2 position to paper_positions at entry time.
+
+    Makes open positions visible to the dashboard. Returns the position ID
+    stored in state.paper_position_id for later UPDATE on close.
+    """
+    pos_id = str(uuid.uuid4())
+    run_id = _get_or_create_d2_run(conn)
+    risk = state.stop_price - state.entry_price if state.stop_price and state.entry_price else 0
+
+    entry_trace = {
+        "cluster_event_id": state.cluster_event_id,
+        "cluster_start_ts": state.cluster_start_ts.isoformat(),
+        "pre_pump_price": state.pre_pump_price,
+        "max_pct_change": state.max_pct_change,
+        "alert_count": state.alert_count,
+        "entry_hwm": state.entry_hwm,
+        "signal_price": state.signal_price,
+        "execution_price": state.execution_price,
+        "slippage_bps": state.slippage_bps,
+        "funding_rate_at_entry": state.funding_rate,
+        "vol_24h_at_entry": state.vol_24h_usd,
+        "fng_value": state.fng_value,
+        "fng_classification": state.fng_classification,
+        "config": {
+            "entry_threshold": CFG.entry_threshold,
+            "stop_pct": CFG.stop_pct,
+            "time_stop_hours": CFG.time_stop_hours,
+            "max_watch_hours": CFG.max_watch_hours,
+            "mania_gate_pct": CFG.mania_gate_pct,
+            "candle_interval": CFG.candle_interval,
+        },
+    }
+
+    with conn.cursor() as cur:
+        cur.execute("""
+            INSERT INTO paper_positions
+                (id, run_id, symbol, timeframe, side, setup_id, status,
+                 signal_ts, signal_price, entry_ts, entry_price,
+                 entry_price_with_slippage, stop_price, tp1_price,
+                 r_value, position_size, notional_value, risk_amount,
+                 high_water_mark, trace_json)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                    %s, %s, %s, %s, %s, %s)
+        """, (
+            pos_id, run_id, state.symbol, "1h", "short", "D2", "OPEN",
+            state.cluster_start_ts, state.signal_price,
+            state.entry_ts, state.entry_price,
+            state.execution_price,
+            state.stop_price, state.tp_price,
+            risk,
+            state.position_size, state.notional_value, state.risk_amount,
+            state.entry_hwm,
+            json.dumps(entry_trace),
+        ))
+    conn.commit()
+    logger.info("POSITION OPEN: %s id=%s entry=%.4f", state.symbol, pos_id[:8], state.entry_price)
+    return pos_id
+
+
 def write_paper_position(conn, state: D2State, exit_reason: str,
                          exit_price: float, exit_ts: datetime) -> str:
-    """Write completed D2 trade to paper_positions."""
-    pos_id = str(uuid.uuid4())
-
+    """Close a D2 paper position — UPDATE existing OPEN row or INSERT if missing."""
     # PnL for short: entry - exit
     pnl_pct = (state.entry_price - exit_price) / state.entry_price
     risk = state.stop_price - state.entry_price
@@ -568,37 +629,66 @@ def write_paper_position(conn, state: D2State, exit_reason: str,
         },
     }
 
-    # We need a run_id — create or reuse a D2 paper trading run
-    run_id = _get_or_create_d2_run(conn)
+    realized_pnl = round(pnl_pct * (state.notional_value or 0), 2)
 
-    with conn.cursor() as cur:
-        cur.execute("""
-            INSERT INTO paper_positions
-                (id, run_id, symbol, timeframe, side, setup_id, status,
-                 signal_ts, signal_price, entry_ts, entry_price,
-                 entry_price_with_slippage, stop_price, tp1_price,
-                 r_value, position_size, notional_value, risk_amount,
-                 current_price, unrealized_pnl, high_water_mark, bars_held,
-                 exit_ts, exit_price, exit_reason, realized_pnl, r_multiple,
-                 trace_json)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
-                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-        """, (
-            pos_id, run_id, state.symbol, "1h", "short", "D2", "CLOSED",
-            state.cluster_start_ts, state.signal_price,
-            state.entry_ts, state.entry_price,
-            state.execution_price,
-            state.stop_price, state.tp_price,
-            risk,
-            state.position_size, state.notional_value, state.risk_amount,
-            exit_price, round(pnl_pct * (state.notional_value or 0), 2),
-            state.entry_hwm, state.bars_polled,
-            exit_ts, exit_price, exit_reason,
-            round(pnl_pct * (state.notional_value or 0), 2),
-            round(r_multiple, 4),
-            json.dumps(trace),
-        ))
-    conn.commit()
+    if state.paper_position_id:
+        # UPDATE existing OPEN row
+        with conn.cursor() as cur:
+            cur.execute("""
+                UPDATE paper_positions SET
+                    status = 'CLOSED',
+                    current_price = %s,
+                    unrealized_pnl = %s,
+                    bars_held = %s,
+                    exit_ts = %s,
+                    exit_price = %s,
+                    exit_reason = %s,
+                    realized_pnl = %s,
+                    r_multiple = %s,
+                    trace_json = %s,
+                    updated_at = NOW()
+                WHERE id = %s
+            """, (
+                exit_price, realized_pnl, state.bars_polled,
+                exit_ts, exit_price, exit_reason,
+                realized_pnl, round(r_multiple, 4),
+                json.dumps(trace),
+                state.paper_position_id,
+            ))
+        conn.commit()
+        pos_id = state.paper_position_id
+    else:
+        # Fallback: INSERT if no OPEN row exists (e.g. positions opened before this change)
+        pos_id = str(uuid.uuid4())
+        run_id = _get_or_create_d2_run(conn)
+        with conn.cursor() as cur:
+            cur.execute("""
+                INSERT INTO paper_positions
+                    (id, run_id, symbol, timeframe, side, setup_id, status,
+                     signal_ts, signal_price, entry_ts, entry_price,
+                     entry_price_with_slippage, stop_price, tp1_price,
+                     r_value, position_size, notional_value, risk_amount,
+                     current_price, unrealized_pnl, high_water_mark, bars_held,
+                     exit_ts, exit_price, exit_reason, realized_pnl, r_multiple,
+                     trace_json)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """, (
+                pos_id, run_id, state.symbol, "1h", "short", "D2", "CLOSED",
+                state.cluster_start_ts, state.signal_price,
+                state.entry_ts, state.entry_price,
+                state.execution_price,
+                state.stop_price, state.tp_price,
+                risk,
+                state.position_size, state.notional_value, state.risk_amount,
+                exit_price, realized_pnl,
+                state.entry_hwm, state.bars_polled,
+                exit_ts, exit_price, exit_reason,
+                realized_pnl, round(r_multiple, 4),
+                json.dumps(trace),
+            ))
+        conn.commit()
+
     logger.info(
         "POSITION CLOSED: %s %s exit=%.4f R=%.2f pnl=%.2f%%",
         state.symbol, exit_reason, exit_price, r_multiple, pnl_pct * 100,
@@ -885,6 +975,9 @@ class D2PaperTrader:
         state.phase = D2Phase.POSITION_ACTIVE
         update_cluster_status(self.conn, state.cluster_event_id, "ENTERED",
                               pre_pump_price=state.pre_pump_price)
+
+        # Write OPEN position to DB (visible to dashboard)
+        state.paper_position_id = write_open_paper_position(self.conn, state)
 
         logger.info(
             "ENTRY: %s SHORT @ %.4f | HWM=%.4f | stop=%.4f | TP=%.4f | "
