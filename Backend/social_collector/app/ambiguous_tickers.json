@@ -1,0 +1,23 @@
+{
+  "_comment": "Tickers that collide with common English words. These get is_ambiguous=TRUE in symbol_aliases, meaning they only match with cashtag form ($WIN) or with crypto context words nearby. Maintain this list — add any ticker that generates false positives in symbol_matcher.",
+  "ambiguous_tickers": [
+    "SUN", "WIN", "ALICE", "PEOPLE", "SPELL", "RARE", "LEVER", "HIGH",
+    "LOOM", "FOR", "ANY", "KEY", "FUN", "ONE", "THE", "GAS", "FIT",
+    "BETA", "ALPHA", "DOCK", "HARD", "IRIS", "JUST", "TROY", "WING",
+    "BOND", "FARM", "REEF", "ROSE", "LINA", "VITE", "PEARL", "PIXEL",
+    "BURGER", "CREAM", "HOOK", "COMBO", "PROS", "DATA", "FLUX",
+    "QUICK", "SUPER", "CYBER", "MAGIC", "FRONT", "AUCTION", "CHESS",
+    "POND", "TORN", "ARPA", "BAKE", "BARN", "BLAZE", "BLUR",
+    "CITY", "COCOS", "DASH", "DENT", "DODO", "DUSK", "FIDA",
+    "FLOW", "FORTH", "GLM", "GOAL", "HIT", "JASMY", "JOE",
+    "KAVA", "KEEP", "LAZIO", "LEVER", "MANA", "MASK", "MAV",
+    "MDX", "MINA", "MOBILE", "MOVE", "MULTI", "NEAR", "NFT",
+    "OGN", "OMG", "OP", "ORBS", "PEPE", "PERP", "PLAY",
+    "POLS", "PORTO", "POWR", "PROM", "RAMP", "RAY", "RENDER",
+    "REQ", "RIF", "RLC", "RSR", "RUN", "SAFE", "SAND",
+    "SCRT", "SLP", "SNT", "SOLO", "SPELL", "SSV", "STEEM",
+    "STORJ", "STPT", "STRAX", "STRONG", "SXP", "TRU", "TUSD",
+    "UFT", "UNFI", "UTK", "VANRY", "VEGA", "VENOM", "VOXEL",
+    "WAVES", "WIF", "WING", "WOO", "XAI"
+  ]
+}

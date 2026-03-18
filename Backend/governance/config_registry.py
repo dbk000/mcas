@@ -180,6 +180,7 @@ class WorkerTypedConfig:
     LOG_LEVEL: str = "INFO"
     SYMBOL_QUALITY_FILTER: bool = False
     SIGNAL_TOP_N_DAILY: int = 10
+    SIGNAL_TOP_N_DAILY_PER_SETUP: int = 50
     CAPACITY_THRESHOLD_USD: float = 1_000_000.0
     U1_SCORE_MULT: float = 1.0
     S9_SCORE_MULT: float = 1.0

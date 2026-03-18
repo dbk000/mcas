@@ -251,6 +251,10 @@ SNAPSHOT_FIELDS = [
     "ema20_slope_atr", "ema50_slope_atr",
     "donchian_high_20", "donchian_low_20", "donchian_mid_20",
     "vwap", "vwap_upper_2sd", "vwap_lower_2sd", "vwap_distance_atr",
+    # S10 MACD Scalp
+    "sma_20", "macd_line", "macd_signal", "macd_histogram", "macd_prev_histogram", "rvol",
+    # D1 Dormancy Ignition
+    "dormancy_score", "accum_divergence",
 ]
 
 # Mapping from indicator_id to snapshot field name for per-indicator keys
@@ -290,6 +294,16 @@ INDICATOR_ID_TO_FIELD = {
     "VWAP_UPPER_2SD": "vwap_upper_2sd",
     "VWAP_LOWER_2SD": "vwap_lower_2sd",
     "VWAP_DISTANCE_ATR": "vwap_distance_atr",
+    # S10 MACD Scalp
+    "SMA_20": "sma_20",
+    "MACD_LINE": "macd_line",
+    "MACD_SIGNAL": "macd_signal",
+    "MACD_HISTOGRAM": "macd_histogram",
+    "MACD_PREV_HISTOGRAM": "macd_prev_histogram",
+    "RVOL": "rvol",
+    # D1 Dormancy Ignition
+    "DORMANCY_SCORE": "dormancy_score",
+    "ACCUM_DIVERGENCE": "accum_divergence",
 }
 
 

@@ -163,6 +163,10 @@ def _signal_top_n_daily() -> int:
     return _worker_cfg().SIGNAL_TOP_N_DAILY
 
 
+def _signal_top_n_daily_per_setup() -> int:
+    return _worker_cfg().SIGNAL_TOP_N_DAILY_PER_SETUP
+
+
 def _capacity_threshold_usd() -> float:
     return _worker_cfg().CAPACITY_THRESHOLD_USD
 
@@ -267,6 +271,66 @@ class SignalWorker(LineageEnforcer):
             sid: handler.traceable
             for sid, handler in StrategyRegistry._strategies.items()
         }
+
+        # ── A1 Startup Assertion ──────────────────────────────────────────
+        # Crash at boot if any registered strategy's evaluator needs
+        # indicator fields that SNAPSHOT_FIELDS doesn't carry through Redis.
+        # This makes the failure mode LOUD (process death) instead of silent
+        # (zeroed fields at runtime).
+        from governance.cache_contract import SNAPSHOT_FIELDS
+        from core_logic.setup_base import IndicatorRequirement
+        _INDICATOR_REQ_TO_SNAPSHOT_FIELDS = {
+            IndicatorRequirement.OHLCV: [],  # stored in ring buffer, not ind_snap
+            IndicatorRequirement.ATR: ["atr"],
+            IndicatorRequirement.CLV: ["clv"],
+            IndicatorRequirement.VOLUME_Z: ["volume_z"],
+            IndicatorRequirement.RSI: ["rsi", "rsi_sma", "rsi_slope"],
+            IndicatorRequirement.SMA_50: ["sma_50"],
+            IndicatorRequirement.SMA_200: ["sma_200"],
+            IndicatorRequirement.EMA_9: ["ema_9"],
+            IndicatorRequirement.EMA_20: ["ema_20"],
+            IndicatorRequirement.EMA_21: ["ema_21"],
+            IndicatorRequirement.EMA_50: ["ema_50"],
+            IndicatorRequirement.BB_BANDS: ["bb_mb", "bb_ub", "bb_lb", "bb_width"],
+            IndicatorRequirement.KC_BANDS: ["kc_mb", "kc_ub", "kc_lb"],
+            IndicatorRequirement.SMA_SLOPES: ["sma50_slope_atr", "sma200_slope_atr"],
+            IndicatorRequirement.MA_GAP: ["ma_gap_atr"],
+            IndicatorRequirement.HTF_INDICATORS: ["htf_close", "htf_sma50", "htf_bb_mb"],
+            IndicatorRequirement.MACD: ["macd_line", "macd_signal", "macd_histogram", "macd_prev_histogram"],
+            IndicatorRequirement.SMA_20: ["sma_20"],
+            IndicatorRequirement.DONCHIAN: ["donchian_high_20", "donchian_low_20", "donchian_mid_20"],
+            IndicatorRequirement.VWAP_IND: ["vwap", "vwap_upper_2sd", "vwap_lower_2sd", "vwap_distance_atr"],
+            IndicatorRequirement.EMA_SLOPES: ["ema20_slope_atr", "ema50_slope_atr"],
+            IndicatorRequirement.DORMANCY_SCORE: ["dormancy_score"],
+            IndicatorRequirement.ACCUM_DIVERGENCE: ["accum_divergence"],
+        }
+        snapshot_fields_set = set(SNAPSHOT_FIELDS)
+        for sid, handler in StrategyRegistry._strategies.items():
+            evaluator = handler.evaluator
+            if evaluator is None:
+                continue
+            if not hasattr(evaluator, 'required_indicators'):
+                continue
+            for req in evaluator.required_indicators:
+                mapped_fields = _INDICATOR_REQ_TO_SNAPSHOT_FIELDS.get(req)
+                if mapped_fields is None:
+                    raise RuntimeError(
+                        f"GOVERNANCE VIOLATION: Strategy {sid} requires {req.name} "
+                        f"but no SNAPSHOT_FIELDS mapping exists for it. "
+                        f"Add a mapping in signal_worker.__init__ assertion."
+                    )
+                missing = [f for f in mapped_fields if f not in snapshot_fields_set]
+                if missing:
+                    raise RuntimeError(
+                        f"GOVERNANCE VIOLATION: Strategy {sid} requires {req.name} "
+                        f"which maps to SNAPSHOT_FIELDS {mapped_fields}, but "
+                        f"{missing} are NOT in SNAPSHOT_FIELDS. "
+                        f"Add them to cache_contract.py SNAPSHOT_FIELDS."
+                    )
+        logger.info("SNAPSHOT_FIELDS assertion passed: all registered strategies' "
+                     "required_indicators are satisfiable")
+        # ── End A1 Startup Assertion ──────────────────────────────────────
+
         # 24h volume cache: {symbol: volume_usd}, refreshed every 5 min
         self._volume_cache: dict[str, float] = {}
         self._volume_cache_ts: float = 0.0
@@ -503,22 +567,22 @@ class SignalWorker(LineageEnforcer):
         return symbol in self._excluded_symbols_cache
 
     # ------------------------------------------------------------------
-    # Signal Congestion Control
+    # Signal Congestion Control (per-strategy budgets)
     # ------------------------------------------------------------------
 
-    def _daily_count_key(self) -> str:
+    def _daily_count_key(self, setup_id: str) -> str:
         today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-        return f"signals:daily_count:{today}"
+        return f"signals:daily_count:{setup_id}:{today}"
 
-    def _get_daily_signal_count(self) -> int:
+    def _get_daily_signal_count(self, setup_id: str) -> int:
         try:
-            val = self.r.get(self._daily_count_key())
+            val = self.r.get(self._daily_count_key(setup_id))
             return int(val) if val else 0
         except Exception:
             return 0
 
-    def _increment_daily_signal_count(self) -> int:
-        key = self._daily_count_key()
+    def _increment_daily_signal_count(self, setup_id: str) -> int:
+        key = self._daily_count_key(setup_id)
         try:
             new_val = self.r.incr(key)
             if new_val == 1:
@@ -527,19 +591,19 @@ class SignalWorker(LineageEnforcer):
         except Exception:
             return 0
 
-    def _is_budget_exhausted(self) -> bool:
-        top_n = _signal_top_n_daily()
+    def _is_budget_exhausted(self, setup_id: str) -> bool:
+        top_n = _signal_top_n_daily_per_setup()
         if top_n <= 0:
             return False
-        return self._get_daily_signal_count() >= top_n
+        return self._get_daily_signal_count(setup_id) >= top_n
 
     def _try_emit_signal(self, symbol: str, tf: str, setup_id: str,
                          calibrated_score: float) -> bool:
-        top_n = _signal_top_n_daily()
+        top_n = _signal_top_n_daily_per_setup()
         if top_n <= 0:
             return True
 
-        current = self._get_daily_signal_count()
+        current = self._get_daily_signal_count(setup_id)
         if current >= top_n:
             self._diag["congestion_dropped"] += 1
             logger.info(
@@ -549,7 +613,7 @@ class SignalWorker(LineageEnforcer):
             )
             return False
 
-        self._increment_daily_signal_count()
+        self._increment_daily_signal_count(setup_id)
         return True
 
     # ------------------------------------------------------------------
@@ -1098,6 +1162,7 @@ class SignalWorker(LineageEnforcer):
 
     def _get_setup_version(self, setup_id: str) -> str:
         """Get setup version from StrategyRegistry handler."""
+        from governance.strategy_registry import StrategyRegistry
         handler = StrategyRegistry.get_handler(setup_id)
         if handler:
             return handler.version
@@ -1105,6 +1170,7 @@ class SignalWorker(LineageEnforcer):
 
     def _get_setup_label(self, setup_id: str) -> str:
         """Get human-readable setup name from StrategyRegistry handler."""
+        from governance.strategy_registry import StrategyRegistry
         handler = StrategyRegistry.get_handler(setup_id)
         if handler and handler.label:
             return handler.label

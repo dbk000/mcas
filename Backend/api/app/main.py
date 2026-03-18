@@ -1546,3 +1546,6 @@ except ImportError:
     pass
 
 app.include_router(d2_router, prefix="/v1", dependencies=[Depends(require_api_key)])
+
+from api.app.routers.stats import router as stats_router
+app.include_router(stats_router, prefix="/v1", dependencies=[Depends(require_api_key)])
