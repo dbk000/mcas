@@ -84,7 +84,7 @@ router = APIRouter(prefix="/stats", tags=["stats"])
 # -------------------------
 
 _STATS_COLUMNS = [
-    "window", "asset_class", "setup_id",
+    "time_window", "asset_class", "setup_id",
     "opp_count", "closed_count", "open_count",
     "avg_pnl_pct", "total_pnl_pct", "max_pnl_pct", "min_pnl_pct",
     "win_rate", "profit_factor",
@@ -143,12 +143,12 @@ def get_opportunity_stats():
 
     with get_conn() as conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT * FROM v_live_opportunity_stats ORDER BY window, setup_id;")
+            cur.execute("SELECT * FROM v_live_opportunity_stats ORDER BY time_window, setup_id;")
             rows = cur.fetchall()
 
             for row in rows:
                 row_dict = _row_to_dict(_STATS_COLUMNS, row)
-                window_key = row_dict.pop("window")
+                window_key = row_dict.pop("time_window")
                 if window_key in windows:
                     windows[window_key].append(row_dict)
 
