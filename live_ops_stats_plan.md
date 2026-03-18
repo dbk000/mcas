@@ -221,19 +221,43 @@ exactly the runtime derivation the governance module was built to prevent.
 - Governance: the cap must be in TypedConfigRegistry. Add
   `SIGNAL_TOP_N_DAILY_PER_SETUP: int = 50` to WorkerTypedConfig.
 
-**A5: Minimum viable alerting** — Prevent future multi-day silent failures:
-- Cron job (every 6 hours) checks
-  `SELECT MAX(created_ts) FROM opportunities WHERE batch_id IS NULL`
-- If older than 6 hours AND market is open, send alert via webhook
-  (Discord/Telegram — user's choice of channel)
-- Also alert if any container has restarted more than 3 times in 1 hour
-- Governance: alert thresholds in TypedConfigRegistry
+**A5: Governed alert watchdog** (`scripts/alert_watchdog.py`)
+- NOT a bare cron script. A governed script that imports `bootstrap_genesis()`,
+  reads thresholds from TypedConfigRegistry, checks DB, sends webhook, exits.
+- Reads: `ALERT_SIGNAL_STALE_HOURS`, `ALERT_CONTAINER_RESTART_THRESHOLD`,
+  `ALERT_WEBHOOK_URL` from config registry. Process crashes if missing.
+- Checks: `SELECT MAX(created_ts) FROM opportunities WHERE batch_id IS NULL`
+  → stale if older than threshold hours
+- Checks: container restart counts via Docker API or `docker inspect`
+- Sends: webhook POST to configured URL (Discord/Telegram)
+- Runs from cron (every 6h), but the script itself is governance-compliant.
+- The bare `except Exception` in S9 that swallowed 352 signals for 36 hours
+  proves this isn't optional.
 
 ### Track B — DB Migration
 
 File: `Backend/docs/db/migrations/20260318_live_opportunity_stats.sql`
 
 ```sql
+-- B0: Fee schedule table (populated from execution.py constants — zero future drift)
+CREATE TABLE IF NOT EXISTS config_fee_schedule (
+    timeframe TEXT PRIMARY KEY,
+    slippage_bps DOUBLE PRECISION NOT NULL,
+    fee_bps DOUBLE PRECISION NOT NULL DEFAULT 4.0,
+    roundtrip_cost_pct DOUBLE PRECISION GENERATED ALWAYS AS
+        ((slippage_bps + fee_bps) / 100.0) STORED
+);
+INSERT INTO config_fee_schedule (timeframe, slippage_bps) VALUES
+    ('1m',  20.0),
+    ('5m',  15.0),
+    ('15m', 10.0),
+    ('1h',   5.0),
+    ('4h',   3.0),
+    ('1d',   2.0)
+ON CONFLICT (timeframe) DO UPDATE SET slippage_bps = EXCLUDED.slippage_bps;
+-- SOURCE: execution.py SLIPPAGE_PROFILE_BPS + DEFAULT_FEE_BPS=4.0
+-- If execution.py changes, re-run this INSERT to sync. The VIEW reads the table.
+
 -- B1: Partial index (CRITICAL for performance)
 CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_opps_live_created
     ON opportunities (created_ts DESC)
@@ -259,27 +283,17 @@ WITH crypto_opps AS (
       AND setup_id NOT LIKE 'EQ%'
 ),
 with_pnl AS (
-    SELECT *,
-        CASE WHEN exit_price IS NOT NULL AND entry_price > 0 THEN
-            CASE direction
-                WHEN 'long'  THEN (exit_price - entry_price) / entry_price * 100
-                WHEN 'short' THEN (entry_price - exit_price) / entry_price * 100
+    SELECT co.*,
+        CASE WHEN co.exit_price IS NOT NULL AND co.entry_price > 0 THEN
+            CASE co.direction
+                WHEN 'long'  THEN (co.exit_price - co.entry_price) / co.entry_price * 100
+                WHEN 'short' THEN (co.entry_price - co.exit_price) / co.entry_price * 100
             END
-            -- Fee schedule: SOURCE is execution.py SLIPPAGE_PROFILE_BPS + 4bps taker fee
-            -- If these values drift from execution.py, the governance audit will catch it.
-            -- Long-term: move to config_fee_schedule table populated at bootstrap.
-            - CASE timeframe
-                WHEN '1m'  THEN 0.24  -- 20bps slippage + 4bps fee
-                WHEN '5m'  THEN 0.19  -- 15bps + 4bps
-                WHEN '15m' THEN 0.14  -- 10bps + 4bps
-                WHEN '1h'  THEN 0.09  --  5bps + 4bps
-                WHEN '4h'  THEN 0.07  --  3bps + 4bps
-                WHEN '1d'  THEN 0.06  --  2bps + 4bps
-                ELSE 0.09             --  DEFAULT_SLIPPAGE_BPS(5) + 4bps
-            END
+            - COALESCE(fs.roundtrip_cost_pct, 0.09)  -- default 5bps slippage + 4bps fee
         END AS pnl_pct_net,
-        (exit_ts IS NOT NULL) AS is_closed
-    FROM crypto_opps
+        (co.exit_ts IS NOT NULL) AS is_closed
+    FROM crypto_opps co
+    LEFT JOIN config_fee_schedule fs ON fs.timeframe = co.timeframe
 )
 SELECT * FROM with_pnl;
 
@@ -382,10 +396,11 @@ Read-only verification during execution:
 - [ ] No runtime derivation. One frozen list, one file, one assertion.
 
 **Fee model integrity:**
-- [ ] SQL view fee constants match `execution.py` `SLIPPAGE_PROFILE_BPS` + 4bps exactly:
-  1m=0.24, 5m=0.19, 15m=0.14, 1h=0.09, 4h=0.07, 1d=0.06, default=0.09
-- [ ] Long-term TODO flagged: create `config_fee_schedule` table populated from execution.py
-  at migration time. View JOINs table instead of hardcoding.
+- [ ] `config_fee_schedule` table created and populated from execution.py constants
+- [ ] View JOINs table — no hardcoded fee values in SQL
+- [ ] Table values match `execution.py` `SLIPPAGE_PROFILE_BPS` + 4bps exactly:
+  1m=20+4=24, 5m=15+4=19, 15m=10+4=14, 1h=5+4=9, 4h=3+4=7, 1d=2+4=6
+- [ ] COALESCE default (0.09) matches DEFAULT_SLIPPAGE_BPS(5) + 4bps
 
 **Setup ID filtering:**
 - [ ] SQL view uses `AND setup_id NOT LIKE 'EQ%'` (naming convention, not hardcoded list)
@@ -407,6 +422,10 @@ Read-only verification during execution:
 
 ## Deploy Sequence
 
+Three P0 fixes deploying simultaneously means if one breaks you can't tell which.
+Four sequential restarts, four independent verifications. Takes 15 extra minutes.
+Saves hours of debugging if something goes wrong.
+
 ```
 1. [Tracks A+B+C+D in parallel — code changes + SQL + audit]
 
@@ -414,33 +433,45 @@ Read-only verification during execution:
 
 3. Push to GitHub → git pull on /srv/mcas
 
-4. Run migration on production:
-   cat docs/db/migrations/20260318_live_opportunity_stats.sql \
-     | docker exec -i backend-postgres-1 psql -U trading -d trading
-
-5. Rebuild + restart affected services (order matters):
-   docker compose -f docker-compose.yml build indicator_worker_0 indicator_worker_1 \
-     signal_worker_0 signal_worker_1 social_collector api
-   docker compose -f docker-compose.yml up -d --no-deps \
+4. Build ALL images (once, before any restart):
+   cd /srv/mcas/Backend && docker compose -f docker-compose.yml build \
      indicator_worker_0 indicator_worker_1 \
      signal_worker_0 signal_worker_1 \
      social_collector api
 
-6. Verify (within 5 minutes of restart):
-   # SNAPSHOT_FIELDS fix
-   docker exec backend-redis-1 redis-cli HGET "ind_snap:BTCUSDT:5m" macd_histogram
-   docker exec backend-redis-1 redis-cli HGET "ind_snap:BTCUSDT:1h" dormancy_score
+5. SEQUENTIAL RESTARTS WITH INDEPENDENT VERIFICATION:
 
-   # S9 NameError fix (wait for hourly eval, check no errors)
-   docker compose logs --tail=50 signal_worker_0 | grep -i error
+   Step 5a — Indicator workers (SNAPSHOT_FIELDS fix):
+     docker compose -f docker-compose.yml up -d --no-deps indicator_worker_0 indicator_worker_1
+     # Wait 60s for first candle close to propagate
+     docker exec backend-redis-1 redis-cli HGET "ind_snap:BTCUSDT:5m" macd_histogram
+     docker exec backend-redis-1 redis-cli HGET "ind_snap:BTCUSDT:1h" dormancy_score
+     docker exec backend-redis-1 redis-cli HGET "ind_snap:BTCUSDT:5m" rvol
+     # ALL must return non-zero floats, not (nil). If ANY is nil, STOP. Do not proceed.
 
-   # social_collector not crash-looping
-   docker compose logs --tail=10 social_collector
+   Step 5b — Signal workers (S9 NameError fix + per-strategy budget):
+     docker compose -f docker-compose.yml up -d --no-deps signal_worker_0 signal_worker_1
+     # Wait 90s for one full eval cycle
+     docker compose -f docker-compose.yml logs --tail=50 signal_worker_0 | grep -i "error\|NameError"
+     # Must return ZERO matches. If any NameError, STOP.
+     docker compose -f docker-compose.yml logs --tail=20 signal_worker_0 | grep "Signal diagnostics"
+     # Verify s10_signal, d1_signal counters appear (may still be 0 — market dependent)
 
-   # API endpoint
-   curl -s -H "X-API-Key: $API_KEY" https://api.mcasui.com/v1/stats/opportunities | python3 -m json.tool
+   Step 5c — Social collector (D2 data feed):
+     docker compose -f docker-compose.yml up -d --no-deps social_collector
+     # Wait 30s
+     docker compose -f docker-compose.yml logs --tail=10 social_collector
+     # Must NOT show "No such file or directory". Should show startup/connection logs.
 
-7. Save post-execution report to repo root
+   Step 5d — Migration + API (stats endpoint):
+     cat docs/db/migrations/20260318_live_opportunity_stats.sql \
+       | docker exec -i backend-postgres-1 psql -U trading -d trading
+     docker compose -f docker-compose.yml up -d --no-deps api
+     # Wait 10s
+     curl -s -H "X-API-Key: $API_KEY" https://api.mcasui.com/v1/stats/opportunities | python3 -m json.tool
+     # Must return JSON with windows.24h, windows.7d, windows.30d, windows.all_time
+
+6. Save post-execution report to repo root
 ```
 
 ---
