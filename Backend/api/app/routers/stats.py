@@ -84,7 +84,7 @@ router = APIRouter(prefix="/stats", tags=["stats"])
 # -------------------------
 
 _STATS_COLUMNS = [
-    "time_window", "asset_class", "setup_id",
+    "time_window", "setup_id",
     "opp_count", "closed_count", "open_count",
     "avg_pnl_pct", "total_pnl_pct", "max_pnl_pct", "min_pnl_pct",
     "win_rate", "profit_factor",
