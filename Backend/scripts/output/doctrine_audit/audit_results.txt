@@ -1,0 +1,83 @@
+=== DOCTRINE COMPLIANCE AUDIT ===
+Date: 2026-03-14T18:45:48Z
+
+=== 1. getattr/hasattr/setattr/__dict__ in governance/ ===
+governance/run_executor.py:528:            today_str = ts.isoformat()[:10] if hasattr(ts, "isoformat") else str(ts)[:10]
+governance/run_executor.py:688:                ts_ms = int(bar_ts.timestamp() * 1000) if hasattr(bar_ts, "timestamp") else int(bar_ts)
+governance/run_executor.py:788:                            "state_snapshot": {k: (v.value if hasattr(v, 'value') else v) for k, v in asdict(s1_state).items()},
+governance/run_executor.py:1050:                "ts": ts.isoformat() if hasattr(ts, "isoformat") else str(ts),
+governance/run_executor.py:1188:                            if hasattr(t0, "timestamp"):
+governance/data_layer.py:287:            status = getattr(getattr(e, "response", None), "status_code", None)
+governance/signal_worker.py:155:    root.setLevel(getattr(logging, LOG_LEVEL.upper(), logging.INFO))
+governance/signal_worker.py:168:        v = getattr(state, f.name)
+governance/signal_worker.py:771:                # dataclass field on D1State — getattr with default is the correct pattern.
+governance/signal_worker.py:772:                is_hydrated = getattr(state, '_hydrated', False)
+governance/signal_worker.py:969:            "trigger_path": getattr(signal, "trigger_path", "traditional"),
+governance/signal_worker.py:990:            f"path={getattr(signal, 'trigger_path', 'traditional')}"
+governance/cc/evaluator.py:446:        # with compute_state/evaluate_trigger methods. No hasattr needed.
+governance/cc/simulator.py:201:            # with known declared fields. getattr with explicit defaults is acceptable
+governance/cc/simulator.py:203:            signal_ts=getattr(signal, 'signal_ts', None) or datetime.now(timezone.utc),
+governance/cc/simulator.py:204:            signal_bar_ts=getattr(signal, 'bar_start_ts', None) or datetime.now(timezone.utc),
+governance/cc/simulator.py:205:            direction=getattr(signal, 'direction', Direction.LONG),
+governance/cc/simulator.py:206:            stop_price=getattr(signal, 'stop_price', 0.0),
+governance/cc/simulator.py:207:            tp1_price=getattr(signal, 'tp1_price', None),
+governance/cc/simulator.py:208:            tp2_price=getattr(signal, 'tp2_price', None),
+governance/cc/simulator.py:209:            r_value=getattr(signal, 'r_value', 0.0),
+governance/signal_engine.py:217:                    "http_status": getattr(e.response, "status_code", None),
+governance/price_feed.py:282:            status = getattr(getattr(e, "response", None), "status_code", None)
+governance/unicorn_pipeline.py:87:    root.setLevel(getattr(logging, LOG_LEVEL.upper(), logging.INFO))
+governance/unicorn_pipeline.py:583:            "trigger_path": getattr(signal, "trigger_path", "traditional"),
+governance/unicorn_pipeline.py:584:            "reversion_score": getattr(signal, "reversion_score", 0),
+governance/ingestor.py:90:    root.setLevel(getattr(logging, LOG_LEVEL.upper(), logging.INFO))
+governance/cache_contract.py:297:        val = getattr(snapshot, field_name, None)
+governance/cache_contract.py:307:        val = getattr(snapshot, field_name, None)
+governance/ohlcv_persister.py:69:    root.setLevel(getattr(logging, LOG_LEVEL.upper(), logging.INFO))
+governance/equities/features.py:163:            if hasattr(ts, 'date'):
+governance/equities/features.py:248:            d = ts.date() if hasattr(ts, 'date') else ts
+governance/equities/features.py:291:            if hasattr(available_at_ts, 'astimezone'):
+governance/equities/features.py:293:            elif hasattr(available_at_ts, 'date'):
+governance/equities/features.py:536:    if hasattr(latest, 'timestamp'):
+
+=== 2. os.getenv in governance/ without BOOTSTRAP_BOUNDARY ===
+governance/bootstrap.py:7:modules read config from the registry — never from os.getenv directly.
+governance/bootstrap.py:39:        REDIS_URL=os.getenv("REDIS_URL", "redis://redis:6379/0"),
+governance/bootstrap.py:40:        DATABASE_URL=os.getenv("DATABASE_URL", ""),
+governance/bootstrap.py:41:        WORKER_INDEX=int(os.getenv("WORKER_INDEX", "0")),
+governance/bootstrap.py:42:        N_WORKERS=int(os.getenv("N_WORKERS", "1")),
+governance/bootstrap.py:43:        LOG_LEVEL=os.getenv("LOG_LEVEL", "INFO"),
+governance/bootstrap.py:44:        SYMBOL_QUALITY_FILTER=os.getenv("SYMBOL_QUALITY_FILTER", "0") == "1",
+governance/bootstrap.py:45:        SIGNAL_TOP_N_DAILY=int(os.getenv("SIGNAL_TOP_N_DAILY", "10")),
+governance/bootstrap.py:46:        CAPACITY_THRESHOLD_USD=float(os.getenv("CAPACITY_THRESHOLD_USD", "1000000")),
+governance/bootstrap.py:47:        U1_SCORE_MULT=float(os.getenv("U1_SCORE_MULT", "1.0")),
+governance/bootstrap.py:48:        S9_SCORE_MULT=float(os.getenv("S9_SCORE_MULT", "1.0")),
+governance/bootstrap.py:49:        S10_SCORE_MULT=float(os.getenv("S10_SCORE_MULT", "1.0")),
+governance/bootstrap.py:50:        D1_SCORE_MULT=float(os.getenv("D1_SCORE_MULT", "1.0")),
+governance/bootstrap.py:51:        BINANCE_TICKER_URL=os.getenv("BINANCE_TICKER_URL", ""),
+governance/bootstrap.py:52:        BINANCE_KLINES_URL=os.getenv("BINANCE_KLINES_URL", ""),
+governance/bootstrap.py:53:        OUTPUT_DIR=os.getenv("OUTPUT_DIR", "./output"),
+governance/bootstrap.py:54:        MAX_CONCURRENCY=int(os.getenv("MAX_CONCURRENCY", "8")),
+governance/bootstrap.py:67:        COMPUTE_DARK_INDICATORS=os.getenv("COMPUTE_DARK_INDICATORS", "0") == "1",
+governance/signal_worker.py:135:    "U1": float(os.getenv("U1_SCORE_MULT", "1.0")),
+governance/signal_worker.py:136:    "S9": float(os.getenv("S9_SCORE_MULT", "1.0")),
+governance/signal_worker.py:137:    "S10": float(os.getenv("S10_SCORE_MULT", "1.0")),
+governance/signal_worker.py:138:    "D1": float(os.getenv("D1_SCORE_MULT", "1.0")),
+governance/d2_paper_trader.py:49:    return os.getenv(name, default)
+governance/d2_paper_trader.py:53:        return float(os.getenv(name, str(default)))
+governance/d2_paper_trader.py:59:        return int(os.getenv(name, str(default)))
+governance/d2_paper_trader.py:64:    raw = os.getenv(name)
+governance/infrastructure.py:169:        return os.getenv(key, default)
+
+=== 3. os.getenv in core_logic/ ===
+(zero — clean)
+
+=== 4. if setup_id == in governance/ ===
+(zero — clean)
+
+=== 5. _STRATEGY_DISPATCH / resolve_by_title ===
+(zero — clean)
+
+=== 6. Bare except: in governance/ ===
+(zero — clean)
+
+=== 7. os.getenv in api/ without BOOTSTRAP_BOUNDARY ===
+(all marked)

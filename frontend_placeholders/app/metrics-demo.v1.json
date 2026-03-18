@@ -1,0 +1,123 @@
+{
+  "version": "v1",
+  "generated_at": "2026-03-15",
+  "source": "placeholder",
+  "ui_intent": "Avg Daily PF demo, mocked metrics surfaces, and deterministic test fixtures",
+  "run_detail": {
+    "summary": {
+      "profit_factor": 2.36,
+      "total_trades": 7,
+      "net_pnl": 190.0
+    },
+    "trades": [
+      {
+        "id": "trade_001",
+        "exit_ts": "2026-03-10T15:30:00Z",
+        "entry_ts": "2026-03-10T14:45:00Z",
+        "pnl_net": 120.0
+      },
+      {
+        "id": "trade_002",
+        "exit_ts": "2026-03-10T18:00:00Z",
+        "entry_ts": "2026-03-10T17:10:00Z",
+        "pnl_net": -50.0
+      },
+      {
+        "id": "trade_003",
+        "exit_ts": "2026-03-11T13:10:00Z",
+        "entry_ts": "2026-03-11T12:15:00Z",
+        "pnl_net": 90.0
+      },
+      {
+        "id": "trade_004",
+        "exit_ts": "2026-03-11T20:15:00Z",
+        "entry_ts": "2026-03-11T19:00:00Z",
+        "pnl_net": -30.0
+      },
+      {
+        "id": "trade_005",
+        "exit_ts": "2026-03-12T16:40:00Z",
+        "entry_ts": "2026-03-12T15:00:00Z",
+        "pnl_net": 60.0
+      },
+      {
+        "id": "trade_006",
+        "exit_ts": "2026-03-12T18:20:00Z",
+        "entry_ts": "2026-03-12T17:30:00Z",
+        "pnl_net": -60.0
+      },
+      {
+        "id": "trade_007",
+        "exit_ts": "2026-03-13T15:10:00Z",
+        "entry_ts": "2026-03-13T14:25:00Z",
+        "pnl_net": 60.0
+      }
+    ],
+    "expected": {
+      "aggregate_pf": 2.36,
+      "avg_daily_pf": 2.13,
+      "days_counted_finite": 3,
+      "days_excluded_infinite_profitable": 1,
+      "timestamp_field": "exit_ts",
+      "pnl_field": "pnl_net"
+    }
+  },
+  "simulation_results": {
+    "summary": {
+      "profit_factor": 1.56,
+      "simulated_count": 6,
+      "net_pnl": 75.0
+    },
+    "results": [
+      {
+        "id": "sim_001",
+        "exit_ts": "2026-03-10T15:45:00Z",
+        "created_at": "2026-03-10T14:00:00Z",
+        "pnl_net": 80.0
+      },
+      {
+        "id": "sim_002",
+        "exit_ts": "2026-03-10T19:05:00Z",
+        "created_at": "2026-03-10T17:30:00Z",
+        "pnl_net": -40.0
+      },
+      {
+        "id": "sim_003",
+        "exit_ts": "2026-03-11T13:25:00Z",
+        "created_at": "2026-03-11T12:05:00Z",
+        "pnl_net": 50.0
+      },
+      {
+        "id": "sim_004",
+        "exit_ts": "2026-03-11T18:55:00Z",
+        "created_at": "2026-03-11T17:20:00Z",
+        "pnl_net": -25.0
+      },
+      {
+        "id": "sim_005",
+        "exit_ts": "2026-03-12T17:20:00Z",
+        "created_at": "2026-03-12T16:00:00Z",
+        "pnl_net": -70.0
+      },
+      {
+        "id": "sim_006",
+        "exit_ts": "2026-03-13T15:15:00Z",
+        "created_at": "2026-03-13T13:50:00Z",
+        "pnl_net": 45.0
+      }
+    ],
+    "expected": {
+      "aggregate_pf": 1.56,
+      "avg_daily_pf": 1.33,
+      "days_counted_finite": 3,
+      "days_excluded_infinite_profitable": 1,
+      "timestamp_field_primary": "exit_ts",
+      "timestamp_field_fallback": "created_at",
+      "pnl_field": "pnl_net"
+    }
+  },
+  "methodology_copy": {
+    "headline": "Avg Daily PF = arithmetic mean of finite daily PF values.",
+    "detail": "Daily PF is gross profit divided by gross loss for each day with realized trades. Fully profitable zero-loss days are tracked separately and excluded from the finite average."
+  }
+}

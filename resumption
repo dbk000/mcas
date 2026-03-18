@@ -1,0 +1,505 @@
+Good progress, but this is not closed out yet. The current frontend snapshot has real structure in place, but it is still failing at the integration layer.
+
+Current state
+
+What is clearly there:
+
+public/app route split
+
+paid gate structure
+
+marketing shell vs app shell split
+
+frontend analytics scaffold
+
+metadata/social preview machinery
+
+most major pages/components present
+
+What is not yet acceptable:
+
+the snapshot is not self-contained
+
+the build is not reproducible from the handoff
+
+the placeholder/curation contract is broken
+
+the automated UI suite is still materially red
+
+Immediate blockers
+
+Build/handoff integrity is broken
+
+npm run build does not reproduce cleanly from the zip as delivered.
+
+Do not ship handoff archives with a broken packaged node_modules state.
+
+Future handoffs should be source-first and reinstall cleanly.
+
+Missing curation assets are breaking the frontend contract
+Present:
+
+public/curation/proof-pack.v1.json
+
+public/curation/winners.v1.json
+
+Missing but referenced by code:
+
+public/curation/pricing-matrix.v1.json
+
+public/curation/onboarding-flow.v1.json
+
+public/curation/strategy-dashboard-demo.v1.json
+
+public/curation/glass-box-cases.v1.json
+
+public/curation/metrics-demo.v1.json
+
+Landing still imports from the old placeholder path
+
+src/pages/Landing.jsx still imports from ../../../frontend_placeholders/...
+
+That must be removed. This repo must be self-contained.
+
+The current Playwright status is still red
+Existing result set shows:
+
+2 passed
+
+8 failed
+
+Failures hit:
+
+landing CTA mobile behavior
+
+checkout success
+
+checkout cancel
+
+unpaid paywall mobile behavior
+
+paid-but-unconfigured redirect
+
+strategy dashboard mobile usability
+
+opportunity detail Glass Box badge
+
+simulation Avg Daily PF
+
+Required actions
+Codex 1 — Public funnel, conversion pages, public curation assets
+
+Own the public-facing product and conversion surface only.
+
+Required fixes
+
+Make the public funnel self-contained
+
+Remove old frontend_placeholders imports from src/pages/Landing.jsx
+
+Repoint landing to canonical in-repo data source
+
+Ensure public pages do not depend on external placeholder paths
+
+Create and wire missing public conversion assets
+Add:
+
+public/curation/pricing-matrix.v1.json
+
+public/curation/onboarding-flow.v1.json
+
+Verify use in:
+
+src/pages/Pricing.jsx
+
+src/pages/Upgrade.jsx
+
+src/pages/CheckoutSuccess.jsx
+
+src/pages/Settings.jsx
+
+Fix landing mobile conversion behavior
+
+primary CTA must stay above the fold on target phone sizes
+
+no horizontal scroll
+
+no layout shift moving CTA after load
+
+metadata/title/description must remain route-correct
+
+Fix pricing page mobile conversion behavior
+
+upgrade CTA above fold
+
+no horizontal scroll
+
+route-specific metadata intact
+
+pricing matrix degrades cleanly if authored data is missing
+
+Fix checkout success page
+
+local Pro activation must actually persist:
+
+mcas_tier = paid
+
+mcas_tier_activated_at = valid ISO timestamp
+
+page copy and next-step flow must match actual implemented behavior
+
+onboarding blocks must render from canonical in-repo asset
+
+Fix checkout cancel page
+
+must clearly return user to proof surfaces
+
+proof/pricing continuity must be visible
+
+page must not feel like a dead end
+
+Recheck public metadata/shareability
+Confirm public routes have clean title/description/social preview behavior:
+
+/
+
+/winners
+
+/pricing
+
+/upgrade
+
+/checkout/success
+
+/checkout/cancel
+
+Codex 1 files
+
+src/pages/Landing.jsx
+
+src/pages/Pricing.jsx
+
+src/pages/Upgrade.jsx
+
+src/pages/CheckoutSuccess.jsx
+
+src/pages/CheckoutCancel.jsx
+
+public/curation/pricing-matrix.v1.json
+
+public/curation/onboarding-flow.v1.json
+
+public social/meta assets as needed
+
+Codex 1 definition of done
+
+landing no longer imports old placeholder path
+
+public pages build from repo-only assets
+
+landing/pricing mobile CTA tests pass
+
+checkout success/cancel tests pass
+
+public routes remain premium and coherent
+
+Codex 2 — App-facing placeholder completeness, strategy surfaces, Glass Box, metrics honesty
+
+Own the app-side frontend surfaces and their authored fallback completeness.
+
+Required fixes
+
+Create missing app/demo curation assets
+Add:
+
+public/curation/strategy-dashboard-demo.v1.json
+
+public/curation/glass-box-cases.v1.json
+
+public/curation/metrics-demo.v1.json
+
+Fix strategy dashboard fallback behavior
+
+src/pages/StrategyDashboard.jsx
+
+page must remain usable on mobile with stubbed or authored data
+
+no horizontal scroll
+
+dense operator-grade rendering, not thin stub output
+
+strategy cards must render correctly from live or fallback source
+
+Fix opportunity detail Glass Box continuity
+
+src/pages/OpportunityDetail.jsx
+
+src/components/opportunities/GlassBoxBadge.jsx
+
+mocked/live payload with sim_trace.kline_lineage must render correct badge state
+
+no crash on partial lineage payload
+
+badge must be actually tied to payload state, not decorative
+
+Fix Avg Daily PF visibility and fallback
+
+src/pages/SimulationResults.jsx
+
+src/pages/RunDetail.jsx
+
+aggregate PF and Avg Daily PF must render together where required
+
+fallback metrics demo must work if live data is missing
+
+no mathematically misleading empty-state behavior
+
+Fix app placeholder contract
+
+app pages must degrade to canonical authored data where intended
+
+no blank screens, weak stubs, or broken fallback chains
+
+no references to missing app placeholder files
+
+Codex 2 files
+
+src/pages/StrategyDashboard.jsx
+
+src/pages/OpportunityDetail.jsx
+
+src/components/opportunities/GlassBoxBadge.jsx
+
+src/pages/SimulationResults.jsx
+
+src/pages/RunDetail.jsx
+
+public/curation/strategy-dashboard-demo.v1.json
+
+public/curation/glass-box-cases.v1.json
+
+public/curation/metrics-demo.v1.json
+
+Codex 2 definition of done
+
+strategy dashboard mobile test passes
+
+mocked opportunity detail Glass Box test passes
+
+mocked simulation Avg Daily PF test passes
+
+app authored fallback surfaces are present and dense
+
+no missing app-side curation references remain
+
+Codex 3 — Routing/gating integration, build integrity, tests, hotspots, final seam control
+
+Own the shared hotspots, route/gate integration, test harness, and repo integrity.
+
+Required fixes
+
+Fix paid-gate/app-shell integration
+
+unpaid /app access must show paywall cleanly on mobile
+
+no horizontal scroll on paywall
+
+CTA above fold
+
+paid-but-unconfigured must route to /settings
+
+app/public shell boundaries must remain strict
+
+Fix reproducible build hygiene
+
+ensure clean install works from source
+
+do not rely on zipped node_modules
+
+validate:
+
+fresh install
+
+build
+
+unit tests
+
+Playwright
+
+Resolve shared route/gate hotspots
+Review and fix as needed:
+
+src/App.jsx
+
+src/components/PaidRoute.jsx
+
+src/components/Layout.jsx
+
+src/context/ApiContext.jsx
+
+any shared redirect/localStorage handling paths
+
+Repair test harness against final contracts
+
+rerun and stabilize tests/full-ui.spec.js
+
+rerun and stabilize tests/pf.unit.test.js
+
+remove any stale dependency on old placeholder locations
+
+ensure tests reference current canonical data sources
+
+Remove stale documentation artefacts
+
+README.md
+
+UI_AUDIT_RESULTS.md
+These currently read like older dashboard-era remnants and can mislead future passes. Rewrite or remove anything no longer canonical.
+
+Final seam verification
+After Codex 1 and 2 merge:
+
+route sweep
+
+shell sweep
+
+localStorage/gating sweep
+
+public/app CTA continuity sweep
+
+placeholder-source integrity sweep
+
+metadata consistency sweep
+
+mobile sweep on key routes
+
+Analytics verification
+Do not redesign analytics, but verify current named events actually emit on real surfaces:
+
+landing CTA
+
+winners CTA
+
+pricing CTA
+
+paywall CTA
+
+checkout success landed
+
+checkout cancel landed
+
+settings configured
+
+strategy card clicked
+
+Codex 3 files
+
+src/App.jsx
+
+src/components/PaidRoute.jsx
+
+src/components/Layout.jsx
+
+src/context/ApiContext.jsx
+
+src/utils/pageMeta.js if shared metadata patching is needed
+
+src/utils/publicJson.js if shared fallback loading is the issue
+
+tests/full-ui.spec.js
+
+tests/pf.unit.test.js
+
+package.json
+
+README.md
+
+UI_AUDIT_RESULTS.md
+
+Codex 3 definition of done
+
+unpaid paywall mobile test passes
+
+paid-but-unconfigured redirect test passes
+
+clean install/build/test flow passes from source
+
+stale docs no longer contradict current architecture
+
+shared routing/gating behavior is coherent after merge
+
+Merge order
+
+Codex 1
+
+Codex 2
+
+Codex 3
+
+Reason:
+
+Codex 1 restores the public conversion and onboarding asset chain
+
+Codex 2 restores app-facing authored completeness
+
+Codex 3 then resolves shared route/gate/test seams against the now-complete UI surface
+
+Final acceptance criteria
+
+This is only done when all of the below are true:
+
+The repo is self-contained
+
+no old frontend_placeholders dependency
+
+all referenced curation files exist in-repo
+
+The repo is reproducible
+
+clean install
+
+build passes
+
+unit tests pass
+
+Playwright passes
+
+The current failing UI contract is green:
+
+landing CTA mobile
+
+checkout success
+
+checkout cancel
+
+unpaid paywall mobile
+
+paid-but-unconfigured redirect
+
+strategy dashboard mobile
+
+Glass Box opportunity detail
+
+Avg Daily PF simulation view
+
+Public pages feel commercial and coherent
+
+no dead ends
+
+no broken proof continuity
+
+no weak placeholder feel
+
+App fallback surfaces are complete enough to hold shape even when live backend data is absent
+
+Shared route/gate logic behaves correctly across direct loads, refreshes, and localStorage states
+
+Bottom line
+
+This is not a “tiny bugfix pass”.
+This is an integration completion pass.
+
+The architecture is mostly there.
+The finish layer is not.
+
+Close the missing asset chain, remove the stale placeholder dependency, restore reproducible build integrity, then force the full UI suite green.

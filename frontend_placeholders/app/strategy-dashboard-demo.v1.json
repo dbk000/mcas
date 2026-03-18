@@ -1,0 +1,180 @@
+{
+  "version": "v1",
+  "generated_at": "2026-03-15",
+  "source": "placeholder",
+  "source_status": "placeholder",
+  "ui_intent": "Operator-grade strategy dashboard demo/fallback with ranked density and live-looking tapes",
+  "as_of_ts": "2026-03-15T14:32:00Z",
+  "market_state": {
+    "regime": "mixed risk-on with semis leadership and crypto breakout rotation",
+    "breadth_score": 68,
+    "volatility_state": "contained",
+    "cross_asset_note": "Semiconductors leading, majors bid, rates stable enough for continuation setups."
+  },
+  "alerts_tape": [
+    "U1 leadership persistence rising in NVDA and META",
+    "S9 expansion watch remains active in BTCUSDT and ETHUSDT",
+    "S10 reversal quality deteriorating in low-liquidity names"
+  ],
+  "leaderboard": [
+    {
+      "rank": 1,
+      "setup_id": "U1",
+      "label": "U1 Unicorn Ignition",
+      "status": "active",
+      "live_count": 4,
+      "verified_count": 3,
+      "avg_score": 89.7,
+      "freshest_signal_age_minutes": 2,
+      "urgency_band": "high",
+      "dominant_regime": "leadership continuation",
+      "top_opportunities": [
+        {
+          "rank": 1,
+          "id": "U1:NVDA:15m",
+          "symbol": "NVDA",
+          "timeframe": "15m",
+          "direction": "LONG",
+          "score": 92.4,
+          "decision_ts": "2026-03-15T14:30:00Z",
+          "age_minutes": 2,
+          "action_window_minutes": 11,
+          "causality_status": "VERIFIED",
+          "thesis": "Continuation with leadership and tight timing envelope"
+        },
+        {
+          "rank": 2,
+          "id": "U1:META:30m",
+          "symbol": "META",
+          "timeframe": "30m",
+          "direction": "LONG",
+          "score": 88.1,
+          "decision_ts": "2026-03-15T14:26:00Z",
+          "age_minutes": 6,
+          "action_window_minutes": 19,
+          "causality_status": "VERIFIED",
+          "thesis": "Rotation follow-through with orderly pullback completion"
+        },
+        {
+          "rank": 3,
+          "id": "U1:AMD:15m",
+          "symbol": "AMD",
+          "timeframe": "15m",
+          "direction": "SHORT",
+          "score": 84.6,
+          "decision_ts": "2026-03-15T14:23:00Z",
+          "age_minutes": 9,
+          "action_window_minutes": 8,
+          "causality_status": "UNKNOWN",
+          "thesis": "Failed leadership impulse and momentum rollover"
+        }
+      ]
+    },
+    {
+      "rank": 2,
+      "setup_id": "S9",
+      "label": "S9 Dormancy Breakout",
+      "status": "active",
+      "live_count": 5,
+      "verified_count": 4,
+      "avg_score": 86.2,
+      "freshest_signal_age_minutes": 4,
+      "urgency_band": "medium",
+      "dominant_regime": "volatility expansion",
+      "top_opportunities": [
+        {
+          "rank": 1,
+          "id": "S9:BTCUSDT:1h",
+          "symbol": "BTCUSDT",
+          "timeframe": "1h",
+          "direction": "LONG",
+          "score": 90.1,
+          "decision_ts": "2026-03-15T14:28:00Z",
+          "age_minutes": 4,
+          "action_window_minutes": 34,
+          "causality_status": "VERIFIED",
+          "thesis": "Compression break with broad participation and stable tape"
+        },
+        {
+          "rank": 2,
+          "id": "S9:ETHUSDT:4h",
+          "symbol": "ETHUSDT",
+          "timeframe": "4h",
+          "direction": "LONG",
+          "score": 85.7,
+          "decision_ts": "2026-03-15T14:16:00Z",
+          "age_minutes": 16,
+          "action_window_minutes": 57,
+          "causality_status": "VERIFIED",
+          "thesis": "Base breakout aligned with sector rotation"
+        },
+        {
+          "rank": 3,
+          "id": "S9:SOLUSDT:30m",
+          "symbol": "SOLUSDT",
+          "timeframe": "30m",
+          "direction": "SHORT",
+          "score": 82.8,
+          "decision_ts": "2026-03-15T14:21:00Z",
+          "age_minutes": 11,
+          "action_window_minutes": 12,
+          "causality_status": "VIOLATION",
+          "thesis": "Failed breakout unwind with urgency but weaker lineage"
+        }
+      ]
+    },
+    {
+      "rank": 3,
+      "setup_id": "S10",
+      "label": "S10 MACD Scalp",
+      "status": "active",
+      "live_count": 3,
+      "verified_count": 2,
+      "avg_score": 78.9,
+      "freshest_signal_age_minutes": 1,
+      "urgency_band": "very_high",
+      "dominant_regime": "micro-reversal",
+      "top_opportunities": [
+        {
+          "rank": 1,
+          "id": "S10:TSLA:5m",
+          "symbol": "TSLA",
+          "timeframe": "5m",
+          "direction": "LONG",
+          "score": 81.4,
+          "decision_ts": "2026-03-15T14:31:00Z",
+          "age_minutes": 1,
+          "action_window_minutes": 5,
+          "causality_status": "VERIFIED",
+          "thesis": "Fast exhaustion reversal with clean liquidity"
+        },
+        {
+          "rank": 2,
+          "id": "S10:BTCUSDT:15m",
+          "symbol": "BTCUSDT",
+          "timeframe": "15m",
+          "direction": "SHORT",
+          "score": 79.3,
+          "decision_ts": "2026-03-15T14:29:00Z",
+          "age_minutes": 3,
+          "action_window_minutes": 7,
+          "causality_status": "UNKNOWN",
+          "thesis": "Momentum hook with compact unwind window"
+        },
+        {
+          "rank": 3,
+          "id": "S10:ETHUSDT:15m",
+          "symbol": "ETHUSDT",
+          "timeframe": "15m",
+          "direction": "LONG",
+          "score": 76.0,
+          "decision_ts": "2026-03-15T14:25:00Z",
+          "age_minutes": 7,
+          "action_window_minutes": 6,
+          "causality_status": "N_A",
+          "thesis": "Reset-and-go attempt with narrower edge"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,283 @@
+MCAS Frontend State Dump                                                                                                                                                                    
+                                                                                                                                                                                              
+  1. Structure                                                                                                                                                                                
+                                                                  
+  Framework: Vite + React 18 (JSX, not TypeScript) + React Router v6 + Tailwind CSS 3
+  Not Next.js — uses src/pages/ as a convention but routes via react-router-dom in App.jsx
+
+  File counts: ~31,329 lines across all .tsx/.ts/.jsx/.js/.css files
+
+  Directory layout:
+  src/
+  ├── App.jsx              (router, lazy routes, error boundary)
+  ├── main.jsx             (entry point, provider tree)
+  ├── index.css            (imports tokens.css + tailwind)
+  ├── api/                 (6 files: apiClient, sessionClient, requestClient, errors, devOverrides, telemetryClient, publicJsonClient, downloads)
+  ├── components/          (25 files: Layout, MarketingLayout, PaidRoute, ui.jsx, TraceViewer, pipeline/*, opportunities/*)
+  ├── config/              (pipelineFeatures.js)
+  ├── context/             (5 contexts: Api, Connection, Session, Subscription, Toast)
+  ├── hooks/               (6 hooks: useData, useConnectionStatus, useSession, usePipelineGraph, usePipelineUrlState, useNodeVisualState)
+  ├── mocks/               (MSW-based: handlers.js, browser.js, fixtures/, generated/)
+  ├── pages/               (20 top-level pages + 48 sub-files in subdirectories)
+  ├── styles/              (tokens.css)
+  ├── utils/               (11 files: formatters, logger, hardening, analytics, eventTreeBuilder, eventAdjusters, pf, returnTo, integrity, publicJson, pageMeta)
+  └── workers/             (layoutWorker.js)
+
+  2. Routes (from App.jsx)
+
+  Public routes (wrapped in MarketingLayout):
+
+  ┌───────────────────┬─────────────────┐
+  │       Path        │    Component    │
+  ├───────────────────┼─────────────────┤
+  │ /                 │ Landing         │
+  ├───────────────────┼─────────────────┤
+  │ /winners          │ Winners         │
+  ├───────────────────┼─────────────────┤
+  │ /pricing          │ Pricing         │
+  ├───────────────────┼─────────────────┤
+  │ /upgrade          │ Upgrade         │
+  ├───────────────────┼─────────────────┤
+  │ /checkout/success │ CheckoutSuccess │
+  ├───────────────────┼─────────────────┤
+  │ /checkout/cancel  │ CheckoutCancel  │
+  ├───────────────────┼─────────────────┤
+  │ /settings         │ Settings        │
+  └───────────────────┴─────────────────┘
+
+  Protected routes (wrapped in PaidRoute -> ProtectedRoute -> Layout):
+
+  ┌─────────────────────────────┬─────────────────────┐
+  │            Path             │      Component      │
+  ├─────────────────────────────┼─────────────────────┤
+  │ /app                        │ Dashboard           │
+  ├─────────────────────────────┼─────────────────────┤
+  │ /app/strategies             │ StrategyDashboard   │
+  ├─────────────────────────────┼─────────────────────┤
+  │ /app/opportunities          │ Opportunities       │
+  ├─────────────────────────────┼─────────────────────┤
+  │ /app/opportunities/survey   │ OpportunitySurvey   │
+  ├─────────────────────────────┼─────────────────────┤
+  │ /app/opportunities/:id      │ OpportunityDetail   │
+  ├─────────────────────────────┼─────────────────────┤
+  │ /app/markets                │ Markets             │
+  ├─────────────────────────────┼─────────────────────┤
+  │ /app/markets/:symbol        │ MarketDetail        │
+  ├─────────────────────────────┼─────────────────────┤
+  │ /app/runs                   │ Runs                │
+  ├─────────────────────────────┼─────────────────────┤
+  │ /app/runs/compare           │ RunCompare          │
+  ├─────────────────────────────┼─────────────────────┤
+  │ /app/runs/:id               │ RunDetail           │
+  ├─────────────────────────────┼─────────────────────┤
+  │ /app/runs/:id/simulation    │ SimulationResults   │
+  ├─────────────────────────────┼─────────────────────┤
+  │ /app/control                │ ControlPlane        │
+  ├─────────────────────────────┼─────────────────────┤
+  │ /app/paper                  │ PaperTrading        │
+  ├─────────────────────────────┼─────────────────────┤
+  │ /app/analytics/correlations │ CorrelationAnalysis │
+  ├─────────────────────────────┼─────────────────────┤
+  │ /app/pipeline               │ Pipeline            │
+  └─────────────────────────────┴─────────────────────┘
+
+  All routes are lazy-loaded via React.lazy with instrumented load timing.
+
+  Protection layers:
+  1. PaidRoute — checks SubscriptionContext (localStorage mcas_local_access_tier = paid)
+  2. ProtectedRoute — checks config.baseUrl exists + session has auth === 'ok'; redirects to /settings if not
+
+  3. API Integration
+
+  No .env files exist. API base URL is user-configured at runtime via Settings page, persisted to localStorage key mcas_api_base_url.
+
+  Vite dev proxy: /v1 -> http://localhost:8002 (in vite.config.js)
+
+  API layer architecture:
+  main.jsx
+  └── Provider tree: Toast -> Session -> Connection -> Api -> Subscription -> App
+
+  SessionProvider (SessionContext.jsx)
+  ├── Reads/writes localStorage for base URL
+  ├── Creates sessionClient (sessionClient.js) for bootstrap/session endpoints
+  ├── Auto-bootstraps on mount: GET /v1/session/bootstrap
+  ├── createSession: POST /v1/session (with api_key)
+  ├── clearSession: DELETE /v1/session
+  └── Exposes: config, session, sessionReady, createSession, clearSession
+
+  ConnectionProvider (ConnectionContext.jsx)
+  ├── Uses sessionClient for GET /health
+  ├── Merges health state with session auth state
+  └── Exposes: connectionStatus, isConnected
+
+  ApiProvider (ApiContext.jsx)
+  ├── Creates apiClient (apiClient.js) — generic request/get/post
+  ├── Creates telemetryClient — POST /v1/telemetry/frontend-logs
+  ├── Chaos mode + fixture state (dev only, localStorage)
+  └── Exposes: get, post, request, testConfig, testConnection, chaosMode
+
+  Data hooks (useData.js) — all built on useFetch / usePolling:
+
+  ┌───────────────────────────┬───────────────────────────────────────────┬──────────────┐
+  │           Hook            │                 Endpoint                  │   Interval   │
+  ├───────────────────────────┼───────────────────────────────────────────┼──────────────┤
+  │ useFetch                  │ Generic GET                               │ One-shot     │
+  ├───────────────────────────┼───────────────────────────────────────────┼──────────────┤
+  │ usePolling                │ Generic GET                               │ Configurable │
+  ├───────────────────────────┼───────────────────────────────────────────┼──────────────┤
+  │ useMarkets                │ /v1/markets                               │ One-shot     │
+  ├───────────────────────────┼───────────────────────────────────────────┼──────────────┤
+  │ useTimeframes             │ /v1/timeframes                            │ One-shot     │
+  ├───────────────────────────┼───────────────────────────────────────────┼──────────────┤
+  │ useStrategies             │ /v1/strategies                            │ One-shot     │
+  ├───────────────────────────┼───────────────────────────────────────────┼──────────────┤
+  │ useOpportunities          │ /v1/opportunities                         │ 15s          │
+  ├───────────────────────────┼───────────────────────────────────────────┼──────────────┤
+  │ useOpportunity            │ /v1/opportunities/:id                     │ One-shot     │
+  ├───────────────────────────┼───────────────────────────────────────────┼──────────────┤
+  │ useOpportunityPriceWindow │ /v1/opportunities/:id/price-window        │ One-shot     │
+  ├───────────────────────────┼───────────────────────────────────────────┼──────────────┤
+  │ useLiveOpportunity        │ /v1/opportunities/live/:setup/:symbol/:tf │ One-shot     │
+  ├───────────────────────────┼───────────────────────────────────────────┼──────────────┤
+  │ useTopSignals             │ /v1/signals/top                           │ 30s          │
+  ├───────────────────────────┼───────────────────────────────────────────┼──────────────┤
+  │ useRuns                   │ /v1/runs                                  │ One-shot     │
+  ├───────────────────────────┼───────────────────────────────────────────┼──────────────┤
+  │ useLatestRun              │ /v1/runs/latest                           │ One-shot     │
+  ├───────────────────────────┼───────────────────────────────────────────┼──────────────┤
+  │ useRun                    │ /v1/runs/:id                              │ One-shot     │
+  ├───────────────────────────┼───────────────────────────────────────────┼──────────────┤
+  │ useRunTrades              │ /v1/runs/:id/trades                       │ One-shot     │
+  ├───────────────────────────┼───────────────────────────────────────────┼──────────────┤
+  │ useRunEvents              │ /v1/runs/:id/events                       │ One-shot     │
+  ├───────────────────────────┼───────────────────────────────────────────┼──────────────┤
+  │ useQueueStatus            │ /v1/control/queue                         │ 15s          │
+  ├───────────────────────────┼───────────────────────────────────────────┼──────────────┤
+  │ usePaperStatus            │ /v1/control/paper/status                  │ 5s           │
+  ├───────────────────────────┼───────────────────────────────────────────┼──────────────┤
+  │ useTradingAccount         │ /v1/trading/account                       │ 5s           │
+  ├───────────────────────────┼───────────────────────────────────────────┼──────────────┤
+  │ usePositions              │ /v1/trading/positions                     │ 5s           │
+  ├───────────────────────────┼───────────────────────────────────────────┼──────────────┤
+  │ useTrades                 │ /v1/trading/trades                        │ One-shot     │
+  ├───────────────────────────┼───────────────────────────────────────────┼──────────────┤
+  │ usePerformance            │ /v1/trading/performance                   │ One-shot     │
+  ├───────────────────────────┼───────────────────────────────────────────┼──────────────┤
+  │ useLiveOHLCV              │ /v1/ohlcv                                 │ 5s           │
+  ├───────────────────────────┼───────────────────────────────────────────┼──────────────┤
+  │ useSnapshot               │ /v1/snapshot/minute                       │ 5s           │
+  ├───────────────────────────┼───────────────────────────────────────────┼──────────────┤
+  │ useSqueezeState           │ /v1/squeeze/state                         │ One-shot     │
+  ├───────────────────────────┼───────────────────────────────────────────┼──────────────┤
+  │ useBtcSqueezeStatus       │ /v1/btc/squeeze-status                    │ One-shot     │
+  ├───────────────────────────┼───────────────────────────────────────────┼──────────────┤
+  │ useDataAvailability       │ /v1/control/data/availability             │ One-shot     │
+  └───────────────────────────┴───────────────────────────────────────────┴──────────────┘
+
+  Response envelope: API responses are unwrapped from { data, meta } envelope automatically by requestClient.js.
+
+  Auth model: HTTP-only cookie sessions. POST /v1/session with api_key body creates server session, GET /v1/session/bootstrap checks existing cookie.
+
+  4. Build Health
+
+  Build: PASSES — vite build succeeds in 5.97s
+  - Total JS: 1093.52 KB (limit 1110 KB) — close to budget
+  - Largest chunk: framework at 338.73 KB (limit 350 KB) — close to budget
+  - Pipeline chunk: 133.34 KB (limit 135 KB) — dangerously close to budget
+  - 35 JS chunks, 22 async route chunks
+
+  TypeScript: NOT CONFIGURED — npx tsc --noEmit shows help text (no tsconfig.json). Project is pure JSX/JS.
+
+  Lint: ALL CLEAN — Both eslint and stylelint pass with zero errors/warnings.
+
+  5. State Management
+
+  Pure React Context — no Redux, Zustand, Jotai, or external state library.
+
+  5 contexts in the provider tree:
+  1. ToastContext — notification toasts with auto-dismiss
+  2. SessionContext — API config (baseUrl), session state (auth/bootstrap), persistence to localStorage
+  3. ConnectionContext — health check state, merged with session auth
+  4. ApiContext — API client, telemetry, chaos mode (dev), fixture state (dev)
+  5. SubscriptionContext — browser-local "paid/free" tier (localStorage), NOT server-backed
+
+  Auth flow:
+  1. User enters base URL + API key on /settings
+  2. POST /v1/session creates server-side cookie session
+  3. GET /v1/session/bootstrap validates on each app load
+  4. ProtectedRoute gates all /app/* routes on valid session
+  5. PaidRoute gates on localStorage mcas_local_access_tier === 'paid'
+
+  6. Styling
+
+  Tailwind CSS 3 with custom config:
+  - Dark theme with terminal-* color scale (900=#0a0a0c through 100=#ffffff)
+  - Signal colors: signal-long (green), signal-short (red), signal-neutral (gray)
+  - Full amber palette
+  - Fonts: JetBrains Mono (mono), Inter (sans)
+  - Custom animations: pulse-slow, fade-in, slide-up
+
+  Operator density tokens in tokens.css:
+  - CSS custom properties for card padding, row height, font size, etc.
+  - .op-surface, .op-row classes for consistent density
+
+  No CSS modules, no styled-components. Pure Tailwind utility classes.
+
+  7. Dependencies
+
+  Runtime (7):
+  - @xyflow/react ^12.10.1 — pipeline DAG visualization
+  - dagre ^0.8.5 — DAG layout algorithm
+  - date-fns ^2.30.0 — date formatting
+  - lightweight-charts ^4.1.0 — TradingView charts
+  - lucide-react ^0.294.0 — icons
+  - react ^18.2.0, react-dom ^18.2.0
+  - react-router-dom ^6.20.0
+
+  Dev (17): eslint, stylelint, knip, msw, playwright, vite, rollup-visualizer, tailwindcss, postcss, autoprefixer, etc.
+
+  8. MSW Mocking
+
+  - msw ^2.12.11 with msw-auto-mock
+  - Dev-only: import('./mocks/browser') in main.jsx
+  - Authored overrides for session, analytics dashboard, metrics, glass-box traces
+  - Generated handlers from OpenAPI spec in mocks/generated/
+  - Fixture states: curated (default), premium, degraded — controlled by X-Fixture-State header
+
+  9. Pipeline System (largest subsystem)
+
+  ~2,100+ lines across Pipeline.jsx (753 lines), components/pipeline/ (14 files), hooks (usePipelineGraph 575 lines, usePipelineUrlState 99 lines, useNodeVisualState 63 lines).
+
+  Features implemented via feature flags in pipelineFeatures.js:
+  - Wave 1 (Graph readability): All disabled (LOD, keyboard shortcuts, TV scaling, web worker layout, collapsible groups, etc.)
+  - Wave 2 (Timeline & biography): All enabled (event tree, progressive disclosure, critical path, slicing, recent activity)
+  - Wave 3 (Dependency hardening): All enabled (staleness, drift detection, diff, tiered confirmation)
+  - Wave 4 (Advanced interaction): All enabled (lineage depth, search, focus mode, split panel, composition draft)
+  - Wave 5 (Interoperability): All enabled (OpenLineage, provenance search)
+
+  10. Debug Residue
+
+  TODOs/FIXMEs: NONE found. Clean.
+
+  console.log/warn/error: 9 instances, all legitimate:
+  - logger.js (structured logging to console)
+  - Pipeline.jsx (web worker fallback warning)
+  - FeedbackOnset.jsx (error logging)
+  - BiographyTab.jsx, NodeDetailPanel.jsx (fetch error logging)
+  - PipelineErrorBoundary.jsx (error boundary)
+
+  Backup files: NONE found.
+
+  11. Notable Observations (raw, no fixes)
+
+  1. Bundle budget is tight. Pipeline chunk at 98.8% of its 135 KB limit. Total JS at 98.5% of 1110 KB limit. One new dependency or feature expansion could break the build.
+  2. SubscriptionContext is browser-local only. hasServerBackedEntitlement: false is hardcoded. The "paid" gate is just a localStorage flag — no server validation.
+  3. No TypeScript. Entire codebase is JSX/JS with no tsconfig. Type checking relies purely on eslint.
+  4. Wave 1 pipeline features all disabled. LOD tiers, keyboard shortcuts, web worker layout, collapsible groups, etc. — all false. Wave 2-5 all true. This means the pipeline has advanced
+  features (slicing, compositions, experiments) but lacks basic usability features (keyboard nav, LOD rendering, group collapse).
+  5. No .env files. API URL is runtime-configured. The vite dev proxy targets localhost:8002.
+  6. MSW mocking is comprehensive — session flow, analytics, traces all have authored fixtures. Generated handlers from OpenAPI complement these.
+  7. The useSession and useConnectionStatus hooks are thin re-exports of their context hooks — indirection layer that may or may not be intentional.
+  8. All 20 pages are lazy-loaded with instrumented timing via lazyPage() wrapper.
+  9. requestClient.js auto-unwraps { data, meta } envelope and attaches meta as non-enumerable __meta property on the data object.
+  10. Pipeline.jsx at 23,921 bytes is the largest page file by far. Second is StrategyDashboard.jsx at 18,464 bytes.

@@ -1,0 +1,117 @@
+<style>
+.hb{background:#111113;border-radius:var(--border-radius-lg);padding:14px 16px;max-width:680px;font-family:var(--font-mono);overflow:hidden}
+.hb-head{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.hb-dot{width:6px;height:6px;border-radius:50%;background:#5DCA5D;animation:hbp 1.5s ease-in-out infinite}
+@keyframes hbp{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.8)}}
+.hb-title{font-size:10px;color:#555;letter-spacing:1.5px;text-transform:uppercase}
+.hb-cols{display:flex;gap:0;padding:4px 0;border-bottom:0.5px solid rgba(255,255,255,.08);margin-bottom:4px}
+.hb-cols span{font-size:9px;color:#444;letter-spacing:.5px;text-transform:uppercase}
+.hb-row{display:flex;align-items:center;gap:0;padding:3px 0;border-bottom:0.5px solid rgba(255,255,255,.03);animation:hbIn .3s ease-out;font-size:11px}
+@keyframes hbIn{from{opacity:0;transform:translateX(-6px)}to{opacity:1;transform:translateX(0)}}
+.c-ts{color:#555;width:62px;flex-shrink:0}
+.c-phase{width:38px;flex-shrink:0;font-size:10px;font-weight:500}
+.c-gates{width:52px;flex-shrink:0;font-size:10px}
+.c-gate-bar{display:inline-flex;gap:1px}
+.c-gate-pip{width:4px;height:10px;border-radius:1px}
+.pip-pass{background:#5DCA5D}
+.pip-fail{background:#E24B4A}
+.c-ind{width:34px;flex-shrink:0;color:#666;font-size:10px;text-align:center}
+.c-bars{width:38px;flex-shrink:0;color:#555;font-size:10px;text-align:center}
+.c-score{width:72px;flex-shrink:0;display:flex;align-items:center;gap:3px;font-size:10px}
+.c-score-raw{color:#888}
+.c-score-arrow{color:#444;font-size:8px}
+.c-score-cal{font-weight:500}
+.c-lat{width:42px;flex-shrink:0;font-size:10px;text-align:right}
+.c-hash{flex:1;color:#EF9F27;font-size:10px;letter-spacing:.5px;text-align:right}
+.c-seal{font-size:8px;color:#5DCA5D;letter-spacing:.3px;margin-left:6px;opacity:.7}
+.lat-fast{color:#5DCA5D}
+.lat-med{color:#EF9F27}
+.lat-slow{color:#E24B4A}
+.phase-ing{color:#85B7EB}
+.phase-ftr{color:#5DCAA5}
+.phase-sig{color:#EF9F27}
+.phase-rsk{color:#ED93B1}
+.phase-emt{color:#AFA9EC}
+.hb-fade{position:relative}
+.hb-fade::after{content:'';position:absolute;bottom:0;left:0;right:0;height:40px;background:linear-gradient(transparent,#111113);pointer-events:none}
+.hb-stats{display:flex;gap:16px;margin-top:10px;padding-top:8px;border-top:0.5px solid rgba(255,255,255,.06);font-size:10px;color:#444}
+.hb-stats span{display:flex;align-items:center;gap:4px}
+.hb-stats .val{color:#888;font-weight:500}
+</style>
+<div class="hb">
+<div class="hb-head"><div class="hb-dot"></div><span class="hb-title">Glass Box trace stream</span><span style="margin-left:auto;font-size:10px;color:#444" id="hb-count"></span></div>
+<div class="hb-cols">
+<span style="width:62px">time</span>
+<span style="width:38px">phase</span>
+<span style="width:52px">gates</span>
+<span style="width:34px;text-align:center">ind</span>
+<span style="width:38px;text-align:center">bars</span>
+<span style="width:72px">score</span>
+<span style="width:42px;text-align:right">lat</span>
+<span style="flex:1;text-align:right">trace hash</span>
+</div>
+<div class="hb-fade" id="hbf"></div>
+<div class="hb-stats">
+<span>decisions/h <span class="val" id="dph">847</span></span>
+<span>avg latency <span class="val" id="alat">261ms</span></span>
+<span>gate pass rate <span class="val" id="gpr">73.2%</span></span>
+<span>sealed <span class="val" id="scount">12,847</span></span>
+</div>
+</div>
+<script>
+const P=[
+{code:'ING',cls:'phase-ing'},{code:'FTR',cls:'phase-ftr'},
+{code:'SIG',cls:'phase-sig'},{code:'RSK',cls:'phase-rsk'},
+{code:'EMT',cls:'phase-emt'}
+];
+function rh(n){return Array.from({length:n},()=>'0123456789abcdef'[Math.floor(Math.random()*16)]).join('')}
+function fT(d){return d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false})}
+
+let totalDecisions=12847;
+let totalLat=0;let latCount=0;
+
+function mkRow(i){
+const d=document.createElement('div');d.className='hb-row';
+const t=new Date(Date.now()-i*2800);
+const p=P[Math.floor(Math.random()*P.length)];
+const isEmit=p.code==='EMT';
+
+const nGates=isEmit?Math.floor(Math.random()*3)+4:Math.floor(Math.random()*5)+1;
+const passGates=Math.floor(Math.random()*nGates)+1;
+const failGates=nGates-passGates;
+const pips=Array(passGates).fill('<div class="c-gate-pip pip-pass"></div>').join('')+Array(failGates).fill('<div class="c-gate-pip pip-fail"></div>').join('');
+
+const nInd=Math.floor(Math.random()*40)+12;
+const nBars=Math.floor(Math.random()*200)+50;
+
+const rawScore=(Math.random()*1.8+0.2);
+const calMult=(Math.random()*0.4+0.8);
+const calScore=rawScore*calMult;
+
+const lat=Math.floor(Math.random()*280)+140;
+totalLat+=lat;latCount++;
+const latCls=lat<250?'lat-fast':lat<350?'lat-med':'lat-slow';
+
+const hash=rh(12);
+
+d.innerHTML=`<span class="c-ts">${fT(t)}</span><span class="c-phase ${p.cls}">${p.code}</span><span class="c-gates"><span class="c-gate-bar">${pips}</span></span><span class="c-ind">${nInd}</span><span class="c-bars">${nBars}</span><span class="c-score"><span class="c-score-raw">${rawScore.toFixed(2)}</span><span class="c-score-arrow">→</span><span class="c-score-cal" style="color:${calScore>1.0?'#5DCA5D':calScore>0.5?'#EF9F27':'#E24B4A'}">${calScore.toFixed(2)}</span></span><span class="c-lat ${latCls}">${lat}ms</span><span class="c-hash">${hash}${isEmit?'<span class="c-seal">SEALED</span>':''}</span>`;
+return d;
+}
+
+const f=document.getElementById('hbf');
+for(let i=0;i<14;i++)f.appendChild(mkRow(i));
+
+document.getElementById('hb-count').textContent=totalDecisions.toLocaleString()+' sealed';
+
+setInterval(()=>{
+const r=mkRow(0);
+f.insertBefore(r,f.firstChild);
+if(f.children.length>16)f.removeChild(f.lastChild);
+totalDecisions++;
+document.getElementById('hb-count').textContent=totalDecisions.toLocaleString()+' sealed';
+document.getElementById('alat').textContent=Math.round(totalLat/latCount)+'ms';
+document.getElementById('dph').textContent=Math.floor(800+Math.random()*100);
+document.getElementById('gpr').textContent=(70+Math.random()*8).toFixed(1)+'%';
+document.getElementById('scount').textContent=totalDecisions.toLocaleString();
+},2200);
+</script>

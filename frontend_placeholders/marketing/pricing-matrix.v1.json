@@ -1,0 +1,115 @@
+{
+  "version": "v1",
+  "generated_at": "2026-03-15",
+  "source": "placeholder",
+  "source_status": "placeholder",
+  "ui_intent": "Pricing comparison surface with enough structure to render a dense matrix instead of two vague cards",
+  "plans": [
+    {
+      "id": "free",
+      "label": "Free",
+      "price_label": "EUR0",
+      "tagline": "Validate edge without getting copyable live timing.",
+      "cta_label": "See free winners",
+      "cta_href": "/winners"
+    },
+    {
+      "id": "pro",
+      "label": "Pro",
+      "price_label": "EUR50/mo",
+      "tagline": "Live strategy dashboard, causality traces, and honest performance framing.",
+      "cta_label": "Upgrade",
+      "cta_href": "/upgrade"
+    }
+  ],
+  "value_stack": [
+    {
+      "id": "timing_fidelity",
+      "headline": "Timing fidelity stays front and center",
+      "body": "Pro keeps live urgency windows, decision timing, and operator-ready ladders visible instead of collapsing everything into a generic feed.",
+      "priority_rank": 1
+    },
+    {
+      "id": "causality_visibility",
+      "headline": "Glass Box visibility keeps the trust story intact",
+      "body": "Users are buying the ability to inspect whether the timing envelope was clean, not just the existence of a signal.",
+      "priority_rank": 2
+    },
+    {
+      "id": "metric_honesty",
+      "headline": "Metric honesty survives the sales page",
+      "body": "Aggregate PF and Avg Daily PF remain paired so the flattering metric never hides the stricter one.",
+      "priority_rank": 3
+    },
+    {
+      "id": "operator_density",
+      "headline": "Operator density beats oversized empty SaaS chrome",
+      "body": "The paid shell is about ranked strategy context, proof continuity, and scan-fast panels that still hold up on mobile.",
+      "priority_rank": 4
+    }
+  ],
+  "comparison_rows": [
+    {
+      "feature": "Curated historical winners",
+      "priority_rank": 1,
+      "free": "Included",
+      "pro": "Included"
+    },
+    {
+      "feature": "Live opportunities by strategy",
+      "priority_rank": 2,
+      "free": "No",
+      "pro": "Included"
+    },
+    {
+      "feature": "Glass Box causality state",
+      "priority_rank": 3,
+      "free": "Preview only",
+      "pro": "Included"
+    },
+    {
+      "feature": "Exact live timing and urgency window",
+      "priority_rank": 4,
+      "free": "No",
+      "pro": "Included"
+    },
+    {
+      "feature": "Aggregate Profit Factor",
+      "priority_rank": 5,
+      "free": "Preview copy only",
+      "pro": "Included"
+    },
+    {
+      "feature": "Avg Daily PF methodology and live metrics",
+      "priority_rank": 6,
+      "free": "Preview copy only",
+      "pro": "Included"
+    },
+    {
+      "feature": "Strategy dashboard density",
+      "priority_rank": 7,
+      "free": "Teaser panels",
+      "pro": "Full operator view"
+    },
+    {
+      "feature": "Backend connection to your MCAS endpoint",
+      "priority_rank": 8,
+      "free": "N/A",
+      "pro": "Required after activation"
+    }
+  ],
+  "faq": [
+    {
+      "q": "Does Pro unlock on every device automatically?",
+      "a": "Not in the front-end-only implementation. Activation is local to this browser until a secure entitlement backend exists."
+    },
+    {
+      "q": "Why show Avg Daily PF and aggregate PF together?",
+      "a": "Aggregate PF shows the total run. Avg Daily PF shows how repeatable the edge looks day by day."
+    },
+    {
+      "q": "Why is the free tier intentionally incomplete?",
+      "a": "It should validate edge without exposing enough timing detail to clone the workflow."
+    }
+  ]
+}

@@ -1,0 +1,53 @@
+{
+  "version": "v1",
+  "generated_at": "2026-03-15",
+  "source": "placeholder",
+  "source_status": "placeholder",
+  "ui_intent": "Upgrade and post-checkout flow with explicit return-to and trust copy",
+  "steps": [
+    {
+      "id": "subscribe",
+      "label": "Subscribe",
+      "headline": "Start the hosted checkout flow",
+      "body": "Redirect to the configured payment URL or a stub checkout flow in demo mode."
+    },
+    {
+      "id": "activate_device",
+      "label": "Activate this browser",
+      "headline": "Enable Pro locally",
+      "body": "The front-end-only implementation stores paid state locally in this browser."
+    },
+    {
+      "id": "connect_backend",
+      "label": "Connect backend",
+      "headline": "Point the UI at your MCAS endpoint",
+      "body": "Set API base URL and API key in Settings before loading live app routes."
+    },
+    {
+      "id": "open_strategy_view",
+      "label": "Open strategy view",
+      "headline": "Land the user on the most relevant live surface",
+      "body": "Respect return-to intent if present. Otherwise route to /app/strategies."
+    }
+  ],
+  "success_routing": {
+    "if_paid_and_configured": "returnTo if valid, otherwise /app/strategies",
+    "if_paid_and_unconfigured": "/settings?from=checkout-success",
+    "if_return_to_missing": "/app/strategies"
+  },
+  "return_to_examples": [
+    {
+      "from": "/app/opportunities/U1:NVDA:15m",
+      "upgrade_href": "/upgrade?returnTo=%2Fapp%2Fopportunities%2FU1%3ANVDA%3A15m"
+    },
+    {
+      "from": "/app/strategies",
+      "upgrade_href": "/upgrade?returnTo=%2Fapp%2Fstrategies"
+    }
+  ],
+  "trust_copy": {
+    "activation_scope": "Pro activation in this implementation is local to this browser.",
+    "payment_proof": "Return parameters are UI signals only and are not treated as secure payment verification.",
+    "backend_step": "Connecting your backend is a separate step after activation."
+  }
+}

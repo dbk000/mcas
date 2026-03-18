@@ -1,0 +1,87 @@
+{
+  "version": "v1",
+  "generated_at": "2026-03-15",
+  "design_target": "Bloomberg-terminal-grade information density with a warmer, more legible presentation",
+  "root": "/home/darren/Documents/MCAS/frontend_placeholders",
+  "packs": [
+    {
+      "id": "marketing_winners",
+      "path": "marketing/winners.v1.json",
+      "owner": "Codex 1",
+      "required_when_live_source_missing": true,
+      "primary_consumers": [
+        "/winners",
+        "landing winners teaser",
+        "pricing proof strip"
+      ]
+    },
+    {
+      "id": "marketing_proof_pack",
+      "path": "marketing/proof-pack.v1.json",
+      "owner": "Codex 1",
+      "required_when_live_source_missing": true,
+      "primary_consumers": [
+        "/",
+        "/pricing",
+        "public trust surfaces",
+        "Glass Box replay teaser"
+      ]
+    },
+    {
+      "id": "marketing_pricing_matrix",
+      "path": "marketing/pricing-matrix.v1.json",
+      "owner": "Codex 1",
+      "required_when_live_source_missing": true,
+      "primary_consumers": [
+        "/pricing",
+        "/upgrade"
+      ]
+    },
+    {
+      "id": "marketing_onboarding_flow",
+      "path": "marketing/onboarding-flow.v1.json",
+      "owner": "Codex 1",
+      "required_when_live_source_missing": true,
+      "primary_consumers": [
+        "/upgrade",
+        "/checkout/success",
+        "/checkout/cancel",
+        "/settings"
+      ]
+    },
+    {
+      "id": "app_strategy_dashboard_demo",
+      "path": "app/strategy-dashboard-demo.v1.json",
+      "owner": "Codex 1",
+      "required_when_live_source_missing": true,
+      "primary_consumers": [
+        "/app/strategies",
+        "paid demo mode",
+        "sales walkthrough"
+      ]
+    },
+    {
+      "id": "app_glass_box_cases",
+      "path": "app/glass-box-cases.v1.json",
+      "owner": "Codex 2",
+      "required_when_live_source_missing": true,
+      "primary_consumers": [
+        "/app/opportunities/:id",
+        "public Glass Box walkthrough",
+        "badge-state mocked tests"
+      ]
+    },
+    {
+      "id": "app_metrics_demo",
+      "path": "app/metrics-demo.v1.json",
+      "owner": "Codex 3",
+      "required_when_live_source_missing": true,
+      "primary_consumers": [
+        "/app/runs/:id",
+        "/app/runs/:id/simulation",
+        "Avg Daily PF explainer",
+        "metrics mocked tests"
+      ]
+    }
+  ]
+}

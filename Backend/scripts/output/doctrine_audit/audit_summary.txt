@@ -1,0 +1,51 @@
+DOCTRINE COMPLIANCE AUDIT SUMMARY
+===================================
+Date: 2026-03-14
+
+VIOLATIONS FIXED (6 categories from ChatGPT audit):
+
+1. Dynamic Logic in Governed Paths — FIXED
+   - _STRATEGY_DISPATCH string dict: DELETED
+   - getattr dispatch in signal_worker: REPLACED with registry callable refs
+   - getattr on exec_config.fills in run_executor: REPLACED with direct access
+   - setattr/getattr config mutation in D1: REPLACED with TypedConfigRegistry atomic re-registration
+   - __dict__ in _serialize_state: REPLACED with dataclasses.fields()
+   - _backfill_degraded getattr: REPLACED with public declared field
+   - hasattr on signals in cc/simulator: REPLACED with getattr+defaults on known fields
+   - hasattr on evaluator in cc/evaluator: REPLACED with None check
+   - hasattr/getattr on U1 quote_volume: REPLACED with Optional field + direct access
+   - bare except in price_feed: REPLACED with explicit exception types
+   - type() inference in equities: REPLACED with np.ndarray
+
+2. governance/ as Catch-All Bucket — DEFERRED (per plan, not a real violation)
+
+3. Split Authority — Root setup_base.py — FIXED
+   - Placeholder classes removed, clean re-export shim only
+
+4. os.getenv Authority — FIXED
+   - All module-level reads marked BOOTSTRAP_BOUNDARY
+   - Mid-execution reads migrated to TypedConfigRegistry or module-level constants
+   - core_logic/ has zero os.getenv (clean)
+   - api/ all marked BOOTSTRAP_BOUNDARY
+   - bootstrap.py is THE bootstrap (os.getenv is correct there)
+
+5. TaskRegistry Title-Pattern Folklore — FIXED
+   - resolve_by_title() and _title_patterns removed from TaskRegistry
+   - Title routing moved to caller as Final constant mapping
+
+6. signal_worker Hidden Dispatch Residue — FIXED
+   - _STRATEGY_DISPATCH deleted
+   - Registry-driven callable dispatch via handler.worker_evaluate
+
+REMAINING ACCEPTABLE PATTERNS:
+- getattr(logging, LOG_LEVEL.upper(), logging.INFO) — standard Python logging
+- getattr(state, f.name) in _serialize_state — iterating known dataclass fields
+- getattr(e.response, "status_code") — exception attribute access
+- hasattr(ts, "isoformat") — polymorphic timestamp type guards
+- getattr(signal, "trigger_path", "traditional") — known signal field with default
+- cc/simulator getattr(signal, field, default) — typed signal fields across signal types
+- bootstrap.py os.getenv — IS the bootstrap boundary itself
+- d2_paper_trader _env() helpers — marked as startup-only
+- infrastructure.py get_env() — documented governance wrapper
+
+FILES CHANGED: ~30 files across Backend/

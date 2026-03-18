@@ -23,6 +23,10 @@ pnpm-debug.log*
 **/__pycache__/
 *.pyc
 *.pyo
+.venv/
+**/.venv/
+venv/
+**/venv/
 
 # Claude Code local settings
 .claude/settings.local.json
@@ -37,3 +41,9 @@ MCAS_Codex/
 
 # Archives
 *.zip
+
+# Large media files
+*.MOV
+*.mov
+*.mp4
+*.avi

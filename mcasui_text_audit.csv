@@ -1,0 +1,116 @@
+screen,component,header_text,body_text,font_size,file_path,screenshot
+Landing,HeroPills,Live Strategies,,text-xs,Frontend/src/pages/landing-layouts/shared.jsx,docs/landing_fullpage.png
+Landing,HeroPills,Glass Box Verified,,text-xs,Frontend/src/pages/landing-layouts/shared.jsx,docs/landing_fullpage.png
+Landing,HeroHeadline,"Comprehensive realtime intelligence that shows the flattering number, the stricter number, and the timing integrity behind both.",,text-xl sm:text-4xl lg:text-6xl,Frontend/src/pages/landing-layouts/shared.jsx,docs/landing_fullpage.png
+Landing,HeroCopy,,"MCAS splits the public archive from the paid operator app. Free pages show ranked historical winners and verified proof strips. Pro unlocks live strategy ladders, Glass Box causality, and action-window context inside the app shell.",text-[13px] sm:text-lg,Frontend/src/pages/landing-layouts/shared.jsx,docs/landing_fullpage.png
+Landing,ProofBadges,Causality verified,,text-[9px],Frontend/src/pages/landing-layouts/shared.jsx,docs/landing_fullpage.png
+Landing,ProofBadges,perfect days excluded from average,,text-[9px],Frontend/src/pages/landing-layouts/shared.jsx,docs/landing_fullpage.png
+Landing,HeroCTAs,Open strategy dashboard,,text-sm sm:text-base,Frontend/src/pages/landing-layouts/shared.jsx,docs/landing_fullpage.png
+Landing,HeroCTAs,Inspect top winners,,text-sm sm:text-base,Frontend/src/pages/landing-layouts/shared.jsx,docs/landing_fullpage.png
+Landing,HeroCTAs,See pricing,,text-xs sm:text-sm,Frontend/src/pages/landing-layouts/shared.jsx,docs/landing_fullpage.png
+Landing,Disclaimer,,Not financial advice. Public pages show selected historical examples. Live app functionality remains access-limited and depends on local Pro activation plus your API configuration.,text-[10px] sm:text-xs,Frontend/src/pages/landing-layouts/shared.jsx,docs/landing_fullpage.png
+Landing,HeroMetric,Strategies tracked,crypto strategies active in last 30 days,text-[10px] uppercase,Frontend/public/curation/proof-pack.v1.json,docs/landing_fullpage.png
+Landing,HeroMetric,Data flow,verified signal lineage,text-[10px] uppercase,Frontend/public/curation/proof-pack.v1.json,docs/landing_fullpage.png
+Landing,HeroMetric,Avg daily PF range,across live strategies,text-[10px] uppercase,Frontend/public/curation/proof-pack.v1.json,docs/landing_fullpage.png
+Landing,HeroMetric,Decision latency,from data to decision,text-[10px] uppercase,Frontend/public/curation/proof-pack.v1.json,docs/landing_fullpage.png
+Landing,PerformanceStrip,Performance snapshot,,text-sm,Frontend/src/pages/landing-layouts/shared.jsx,docs/landing_fullpage.png
+Landing,PerformanceStrip,Aggregate PF,,text-[9px] uppercase,Frontend/src/pages/landing-layouts/shared.jsx,docs/landing_fullpage.png
+Landing,PerformanceStrip,Avg Daily PF,,text-[9px] uppercase,Frontend/src/pages/landing-layouts/shared.jsx,docs/landing_fullpage.png
+Landing,PerformanceStrip,Days,,text-[9px] uppercase,Frontend/src/pages/landing-layouts/shared.jsx,docs/landing_fullpage.png
+Landing,PerformanceStrip,,Finite daily PF values are averaged. Fully profitable zero-loss days are reported separately and excluded from the finite mean.,text-[11px],Frontend/public/curation/proof-pack.v1.json,docs/landing_fullpage.png
+Landing,StaticGlassBoxReplay,Sample Glass Box replay,,text-sm,Frontend/src/pages/landing-layouts/shared.jsx,docs/landing_fullpage.png
+Landing,HeartbeatFeed,Glass Box trace stream,,text-[10px] uppercase,Frontend/src/pages/landing-layouts/shared.jsx,docs/landing_fullpage.png
+Landing,HeartbeatFeed,sealed,,text-[10px],Frontend/src/pages/landing-layouts/shared.jsx,docs/landing_fullpage.png
+Landing,HeartbeatStats,evals/h,,text-[10px],Frontend/src/pages/landing-layouts/shared.jsx,docs/landing_fullpage.png
+Landing,HeartbeatStats,avg latency,,text-[10px],Frontend/src/pages/landing-layouts/shared.jsx,docs/landing_fullpage.png
+Landing,HeartbeatStats,gate pass,,text-[10px],Frontend/src/pages/landing-layouts/shared.jsx,docs/landing_fullpage.png
+Landing,HeartbeatStats,sealed,,text-[10px],Frontend/src/pages/landing-layouts/shared.jsx,docs/landing_fullpage.png
+Landing,EvidenceCards,Timing integrity,"Every decision is timestamped, traceable, and auditable. See exactly what data the model had, when it received it, and whether the signal fired before or after the price moved. No black boxes.",text-base / text-xs,Frontend/public/curation/proof-pack.v1.json,docs/landing_fullpage.png
+Landing,EvidenceCards,"Two numbers, not one","The flattering number and the stricter number, side by side. Aggregate profit factor looks great. Average daily profit factor tells you if the edge repeats. We show both so you can decide what matters.",text-base / text-xs,Frontend/public/curation/proof-pack.v1.json,docs/landing_fullpage.png
+Landing,EvidenceCards,Built for operators,"A live workstation, not a marketing dashboard. Dense data, ranked tables, real-time state — designed for people who trade, not people who browse. Every pixel earns its place.",text-base / text-xs,Frontend/public/curation/proof-pack.v1.json,docs/landing_fullpage.png
+Landing,WinnersPreview,Preview continuity,,text-[10px] uppercase,Frontend/src/pages/landing-layouts/shared.jsx,docs/landing_fullpage.png
+Landing,WinnersPreview,Ranked winners stay strategy-native and dense.,,text-xl sm:text-2xl,Frontend/src/pages/landing-layouts/shared.jsx,docs/landing_fullpage.png
+Landing,WinnersPreview,View all winners,,text-xs,Frontend/src/pages/landing-layouts/shared.jsx,docs/landing_fullpage.png
+Navigation,MarketingLayout,MCAS,,text-xl sm:text-2xl,Frontend/src/components/MarketingLayout.jsx,docs/landing_fullpage.png
+Navigation,MarketingLayout,Market Cognition At Scale,,text-base lg:text-lg uppercase,Frontend/src/components/MarketingLayout.jsx,docs/landing_fullpage.png
+Navigation,MarketingLayout,Overview,,text-sm,Frontend/src/components/MarketingLayout.jsx,docs/landing_fullpage.png
+Navigation,MarketingLayout,Winners,,text-sm,Frontend/src/components/MarketingLayout.jsx,docs/landing_fullpage.png
+Navigation,MarketingLayout,Pricing,,text-sm,Frontend/src/components/MarketingLayout.jsx,docs/landing_fullpage.png
+Navigation,MarketingLayout,Settings,,text-sm,Frontend/src/components/MarketingLayout.jsx,docs/landing_fullpage.png
+Navigation,MarketingLayout,Take the tour,,btn btn-ghost btn-sm,Frontend/src/components/MarketingLayout.jsx,docs/landing_fullpage.png
+Navigation,MarketingLayout,Upgrade,,btn btn-primary btn-sm,Frontend/src/components/MarketingLayout.jsx,docs/landing_fullpage.png
+Winners,WinnersPage,"Curated winners by strategy, regime, and timing quality.","These are curated historical examples, not the live paid operator surface. The free tier proves edge and methodology without exposing exact live execution detail.",text-4xl sm:text-5xl / text-sm,Frontend/src/pages/Winners.jsx,docs/winners_fullpage.png
+Winners,WinnersPage,,Not financial advice. Historical examples are curated for proof continuity. Paid routes unlock live opportunity timing and Glass Box state.,text-sm,Frontend/src/pages/Winners.jsx,docs/winners_fullpage.png
+Winners,WinnersPage,Unlock Live Routes,,btn btn-sm,Frontend/src/pages/Winners.jsx,docs/winners_fullpage.png
+Winners,WinnersPage,Compare Plans,,btn btn-sm,Frontend/src/pages/Winners.jsx,docs/winners_fullpage.png
+Winners,WinnerCard,Quality,,text-xs uppercase,Frontend/src/pages/Winners.jsx,docs/winners_fullpage.png
+Winners,WinnerCard,Holding Bars,,text-xs uppercase,Frontend/src/pages/Winners.jsx,docs/winners_fullpage.png
+Winners,WinnerCard,Unlock Live Timing,,btn btn-primary btn-sm,Frontend/src/pages/Winners.jsx,docs/winners_fullpage.png
+Pricing,PricingPage,"Sell actionability, timing fidelity, and metric honesty instead of a vague feature list.","The free tier validates the proof story with curated examples. Pro unlocks the live operator surfaces, Glass Box visibility, and the backend connection workflow that powers /app/*.",text-4xl sm:text-5xl / text-sm,Frontend/src/pages/Pricing.jsx,docs/pricing_fullpage.png
+Pricing,PricingPage,Upgrade,,btn btn-sm,Frontend/src/pages/Pricing.jsx,docs/pricing_fullpage.png
+Pricing,PricingPage,See Free Winners,,btn btn-sm,Frontend/src/pages/Pricing.jsx,docs/pricing_fullpage.png
+Pricing,ValueStack,Timing fidelity stays front and center,"Pro keeps live urgency windows, decision timing, and operator-ready ladders visible instead of collapsing everything into a generic feed.",text-xl / text-sm,Frontend/public/curation/pricing-matrix.v1.json,docs/pricing_fullpage.png
+Pricing,ValueStack,Glass Box visibility keeps the trust story intact,"Users are buying the ability to inspect whether the timing envelope was clean, not just the existence of a signal.",text-xl / text-sm,Frontend/public/curation/pricing-matrix.v1.json,docs/pricing_fullpage.png
+Pricing,ValueStack,Metric honesty survives the sales page,Aggregate PF and Avg Daily PF remain paired so the flattering metric never hides the stricter one.,text-xl / text-sm,Frontend/public/curation/pricing-matrix.v1.json,docs/pricing_fullpage.png
+Pricing,ValueStack,Operator density beats oversized empty SaaS chrome,"The paid shell is about ranked strategy context, proof continuity, and scan-fast panels that still hold up on mobile.",text-xl / text-sm,Frontend/public/curation/pricing-matrix.v1.json,docs/pricing_fullpage.png
+Pricing,PricingCard,Free,Validate edge without getting copyable live timing.,text-3xl / text-sm,Frontend/public/curation/pricing-matrix.v1.json,docs/pricing_fullpage.png
+Pricing,PricingCard,Pro,"Live strategy dashboard, causality traces, and honest performance framing.",text-3xl / text-sm,Frontend/public/curation/pricing-matrix.v1.json,docs/pricing_fullpage.png
+Pricing,ComparisonMatrix,Free stays proof-first. Pro stays action-first.,,text-2xl,Frontend/src/pages/Pricing.jsx,docs/pricing_fullpage.png
+Pricing,ComparisonMatrix,Curated historical winners,"Free: Included, Pro: Included",text-sm,Frontend/public/curation/pricing-matrix.v1.json,docs/pricing_fullpage.png
+Pricing,ComparisonMatrix,Live opportunities by strategy,"Free: No, Pro: Included",text-sm,Frontend/public/curation/pricing-matrix.v1.json,docs/pricing_fullpage.png
+Pricing,ComparisonMatrix,Glass Box causality state,"Free: Preview only, Pro: Included",text-sm,Frontend/public/curation/pricing-matrix.v1.json,docs/pricing_fullpage.png
+Pricing,ComparisonMatrix,Exact live timing and urgency window,"Free: No, Pro: Included",text-sm,Frontend/public/curation/pricing-matrix.v1.json,docs/pricing_fullpage.png
+Pricing,ComparisonMatrix,Aggregate Profit Factor,"Free: Preview copy only, Pro: Included",text-sm,Frontend/public/curation/pricing-matrix.v1.json,docs/pricing_fullpage.png
+Pricing,ComparisonMatrix,Avg Daily PF methodology and live metrics,"Free: Preview copy only, Pro: Included",text-sm,Frontend/public/curation/pricing-matrix.v1.json,docs/pricing_fullpage.png
+Pricing,ComparisonMatrix,Strategy dashboard density,"Free: Teaser panels, Pro: Full operator view",text-sm,Frontend/public/curation/pricing-matrix.v1.json,docs/pricing_fullpage.png
+Pricing,ComparisonMatrix,Backend connection to your MCAS endpoint,"Free: N/A, Pro: Required after activation",text-sm,Frontend/public/curation/pricing-matrix.v1.json,docs/pricing_fullpage.png
+Pricing,HonestMetrics,Aggregate PF keeps context. Avg Daily PF keeps you honest.,,text-2xl,Frontend/src/pages/Pricing.jsx,docs/pricing_fullpage.png
+Pricing,HonestMetrics,Aggregate PF,,text-xs uppercase,Frontend/src/pages/Pricing.jsx,docs/pricing_fullpage.png
+Pricing,HonestMetrics,Avg Daily PF,,text-xs uppercase,Frontend/src/pages/Pricing.jsx,docs/pricing_fullpage.png
+Pricing,FAQ,Does Pro unlock on every device automatically?,Not in the front-end-only implementation. Activation is local to this browser until a secure entitlement backend exists.,text-lg / text-sm,Frontend/public/curation/pricing-matrix.v1.json,docs/pricing_fullpage.png
+Pricing,FAQ,Why show Avg Daily PF and aggregate PF together?,Aggregate PF shows the total run. Avg Daily PF shows how repeatable the edge looks day by day.,text-lg / text-sm,Frontend/public/curation/pricing-matrix.v1.json,docs/pricing_fullpage.png
+Pricing,FAQ,Why is the free tier intentionally incomplete?,It should validate edge without exposing enough timing detail to clone the workflow.,text-lg / text-sm,Frontend/public/curation/pricing-matrix.v1.json,docs/pricing_fullpage.png
+Settings,SettingsPage,Settings,Establish a server-backed backend session without the app sidebar shell.,text-3xl / text-sm,Frontend/src/pages/Settings.jsx,docs/settings_fullpage.png
+Settings,SettingsPage,,Local Pro activation is already set in this browser. Connect the backend once to unlock the paid app routes.,text-sm,Frontend/src/pages/Settings.jsx,docs/settings_fullpage.png
+Settings,SettingsPage,,Settings stays public so you can preconfigure the backend before activation or finish backend onboarding after checkout.,text-sm,Frontend/src/pages/Settings.jsx,docs/settings_fullpage.png
+Settings,BackendSession,Backend Session,,CardTitle,Frontend/src/pages/Settings.jsx,docs/settings_fullpage.png
+Settings,FormField,API Base URL,"The backend origin used for session bootstrap, health checks, telemetry, and API calls.",text-sm,Frontend/src/pages/Settings.jsx,docs/settings_fullpage.png
+Settings,FormField,API Key,The browser submits the key once to create an HttpOnly backend session. It is not persisted in frontend config.,text-sm,Frontend/src/pages/Settings.jsx,docs/settings_fullpage.png
+Settings,BackendSession,Save persists only the base URL. Connect creates a server-backed session on the selected backend.,,text-xs,Frontend/src/pages/Settings.jsx,docs/settings_fullpage.png
+Settings,BackendSession,Connect Backend,,btn btn-primary,Frontend/src/pages/Settings.jsx,docs/settings_fullpage.png
+Settings,BackendSession,Save URL,,btn btn-secondary,Frontend/src/pages/Settings.jsx,docs/settings_fullpage.png
+Settings,BackendSession,Clear Session,,btn btn-secondary,Frontend/src/pages/Settings.jsx,docs/settings_fullpage.png
+Settings,ConnectionStatus,Connection Status,,CardTitle,Frontend/src/pages/Settings.jsx,docs/settings_fullpage.png
+Settings,ConnectionStatus,Backend Health,,text-sm,Frontend/src/pages/Settings.jsx,docs/settings_fullpage.png
+Settings,ConnectionStatus,Session Authentication,,text-sm,Frontend/src/pages/Settings.jsx,docs/settings_fullpage.png
+Settings,ConnectionStatus,Redis Latency,,text-sm,Frontend/src/pages/Settings.jsx,docs/settings_fullpage.png
+Settings,ConnectionStatus,PostgreSQL Latency,,text-sm,Frontend/src/pages/Settings.jsx,docs/settings_fullpage.png
+Settings,SessionSnapshot,Current Session Snapshot,,CardTitle,Frontend/src/pages/Settings.jsx,docs/settings_fullpage.png
+Upgrade,UpgradePage,"Activate Pro, then connect your backend.","The upgrade flow is front-end-only in this release. Checkout success only marks this browser as Pro locally. Backend connection is a second step after checkout, and secure entitlement enforcement is still out of scope.",text-4xl sm:text-5xl / text-sm,Frontend/src/pages/Upgrade.jsx,docs/upgrade_fullpage.png
+Upgrade,OnboardingStep,Subscribe,Start the hosted checkout flow. Redirect to the configured payment URL or a stub checkout flow in demo mode.,text-xl / text-sm,Frontend/public/curation/onboarding-flow.v1.json,docs/upgrade_fullpage.png
+Upgrade,OnboardingStep,Activate this browser,The front-end-only implementation stores paid state locally in this browser.,text-xl / text-sm,Frontend/public/curation/onboarding-flow.v1.json,docs/upgrade_fullpage.png
+Upgrade,OnboardingStep,Connect backend,Set API base URL and API key in Settings before loading live app routes.,text-xl / text-sm,Frontend/public/curation/onboarding-flow.v1.json,docs/upgrade_fullpage.png
+Upgrade,OnboardingStep,Open strategy view,Respect return-to intent if present. Otherwise route to /app/strategies.,text-xl / text-sm,Frontend/public/curation/onboarding-flow.v1.json,docs/upgrade_fullpage.png
+Upgrade,UpgradePage,Open Hosted Checkout,,btn btn-primary btn-sm,Frontend/src/pages/Upgrade.jsx,docs/upgrade_fullpage.png
+Upgrade,UpgradePage,Back To Pricing,,btn btn-secondary btn-sm,Frontend/src/pages/Upgrade.jsx,docs/upgrade_fullpage.png
+CheckoutSuccess,CheckoutSuccessPage,This browser is now marked as Pro.,"Query parameters are not treated as secure payment proof in this release. This page only activates the local UX tier, sanitizes any requested return path, and points you to the next onboarding step.",text-4xl sm:text-5xl / text-sm,Frontend/src/pages/CheckoutSuccess.jsx,docs/upgrade_fullpage.png
+CheckoutSuccess,CheckoutSuccessPage,Continue,,btn btn-primary btn-sm,Frontend/src/pages/CheckoutSuccess.jsx,docs/upgrade_fullpage.png
+CheckoutSuccess,CheckoutSuccessPage,Open /app,,btn btn-secondary btn-sm,Frontend/src/pages/CheckoutSuccess.jsx,docs/upgrade_fullpage.png
+Dashboard,DashboardHeader,Dashboard,Market overview and system status,text-2xl / text-sm,Frontend/src/pages/Dashboard.jsx,
+Dashboard,DashboardWarning,,Not connected to backend. Please configure your connection in Settings.,text-sm,Frontend/src/pages/Dashboard.jsx,
+Dashboard,SystemStatusPanel,System Status,,CardTitle text-sm,Frontend/src/pages/Dashboard.jsx,
+Dashboard,LatestScanPanel,Latest Scan,,CardTitle text-sm,Frontend/src/pages/Dashboard.jsx,
+Dashboard,TopSignalsPanel,Top Signals,,CardTitle text-sm,Frontend/src/pages/Dashboard.jsx,
+Dashboard,PaperTradingPanel,Paper Trading,,CardTitle text-sm,Frontend/src/pages/Dashboard.jsx,
+Dashboard,PaperTradingPanel,Start Paper Trading,,btn btn-primary btn-sm,Frontend/src/pages/Dashboard.jsx,
+ControlPlane,ControlPlaneHeader,Control Plane,Create and manage trading runs,text-2xl / text-sm,Frontend/src/pages/ControlPlane.jsx,
+AppNav,Layout,Dashboard,,text-sm,Frontend/src/components/Layout.jsx,
+AppNav,Layout,Strategies,,text-sm,Frontend/src/components/Layout.jsx,
+AppNav,Layout,Opportunities,,text-sm,Frontend/src/components/Layout.jsx,
+AppNav,Layout,Markets,,text-sm,Frontend/src/components/Layout.jsx,
+AppNav,Layout,Runs,,text-sm,Frontend/src/components/Layout.jsx,
+AppNav,Layout,Control Plane,,text-sm,Frontend/src/components/Layout.jsx,
+AppNav,Layout,Paper Trading,,text-sm,Frontend/src/components/Layout.jsx,
+AppNav,Layout,Correlations,,text-sm,Frontend/src/components/Layout.jsx,
+AppNav,Layout,Pipeline,,text-sm,Frontend/src/components/Layout.jsx,
+AppNav,Layout,Settings,,text-sm,Frontend/src/components/Layout.jsx,
