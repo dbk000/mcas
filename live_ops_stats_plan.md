@@ -18,7 +18,7 @@ converged on findings the original Sonnet plan completely missed.
 
 | # | Bug | Impact | Root Cause |
 |---|-----|--------|------------|
-| **P0-1** | **SNAPSHOT_FIELDS serialization boundary** | S10 and D1 have NEVER fired a live signal. Indicator worker computes all values, but `store_indicators()` only persists fields in `SNAPSHOT_FIELDS` list. 7 critical fields silently dropped. Signal worker reads zeroed defaults from Redis. | `cache_contract.py` SNAPSHOT_FIELDS missing: `macd_line`, `macd_signal`, `macd_histogram`, `macd_prev_histogram`, `sma_20`, `rvol`, `dormancy_score`, `accum_divergence` |
+| **P0-1** | **SNAPSHOT_FIELDS serialization boundary** | S10 and D1 have NEVER fired a live signal. Indicator worker computes all values, but `store_indicators()` only persists fields in `SNAPSHOT_FIELDS` list. **8** critical fields silently dropped. Signal worker reads zeroed defaults from Redis. | `cache_contract.py` SNAPSHOT_FIELDS missing: `sma_20`, `macd_line`, `macd_signal`, `macd_histogram`, `macd_prev_histogram`, `rvol`, `dormancy_score`, `accum_divergence` (all confirmed on `IndicatorSnapshot` dataclass lines 475-515) |
 | **P0-2** | **S9 NameError on StrategyRegistry (ACTIVELY DESTROYING SIGNALS)** | S9 breadth was ABOVE 0.30 for 11 hours on March 18 (00:00-10:00 UTC). Klines fetched for 31-33 top-decile symbols each hour. ALL evaluations then crashed with NameError at persist stage. ~352 signals lost TODAY ALONE. `_get_setup_version()` and `_get_setup_label()` reference `StrategyRegistry` which is only locally imported in `__init__`, not at module level. Swallowed by `except Exception` at line 1365, zero crash, zero signal, zero alert. | `signal_worker.py` lines 1101, 1108 — bare `StrategyRegistry` reference with no local import |
 | **P0-3** | **social_collector missing entry point** | D2 data feed dead. `collector.py` lost in repo move. Container crash-looping with `No such file or directory`. | Bind mount `./social_collector/app:/app` empty. Files exist in old snapshots. |
 
@@ -181,23 +181,24 @@ Track D: Governance Verification (read-only audit)
 ### Track A — P0 Bug Fixes
 
 **A1: SNAPSHOT_FIELDS** (`governance/cache_contract.py`)
-- **Do NOT just add 8 fields manually** — that's the same governance violation that
-  caused this bug (someone adds a strategy, forgets to update a second file).
-- **Governance-correct fix:** Derive SNAPSHOT_FIELDS dynamically at bootstrap from
-  the union of all active strategies' `required_indicators`:
-  1. Iterate `StrategyRegistry` active crypto strategies
-  2. Collect each strategy's `required_indicators` (IndicatorRequirement enums)
-  3. Map via existing `INDICATOR_ID_TO_FIELD` dict → field names
-  4. Union with the base set (ATR, RSI, BB, etc. needed by all)
-  5. Freeze the result (tuple, not list — matches frozen registry pattern)
-- This means: **adding a future strategy automatically includes its indicators in
-  Redis persistence.** No serialization boundary to forget.
-- The existing `INDICATOR_ID_TO_FIELD` mapping (lines 257+) already covers the
-  indicator→field translation. May need entries for `MACD_HISTOGRAM`,
-  `MACD_PREV_HISTOGRAM`, `RVOL`, `DORMANCY_SCORE`, `ACCUM_DIVERGENCE` if missing.
-- Fallback: if dynamic derivation is too complex for this sprint, add the 8 fields
-  manually BUT add a startup assertion: `assert set(required) <= set(SNAPSHOT_FIELDS)`
-  that crashes if any active strategy needs a field not in the list.
+
+The governance pattern is frozen central lists with enforcement — not runtime
+derivation chains. Dynamic derivation from StrategyRegistry × IndicatorRequirement
+× INDICATOR_ID_TO_FIELD is the wrong approach: the namespaces don't match
+(IndicatorRequirement.MACD ≠ INDICATOR_ID_TO_FIELD keys like "ATR_14"), MACD
+expands to 4 fields, and the expansion mapping doesn't exist. Building one is
+exactly the runtime derivation the governance module was built to prevent.
+
+**Correct fix (matches frozen registry pattern):**
+1. Add the 8 missing fields to `SNAPSHOT_FIELDS` in `cache_contract.py`:
+   `sma_20`, `macd_line`, `macd_signal`, `macd_histogram`, `macd_prev_histogram`,
+   `rvol`, `dormancy_score`, `accum_divergence`
+   (all verified against `IndicatorSnapshot` dataclass, lines 475-515)
+2. Add a **startup assertion** in `signal_worker.__init__()` that crashes if any
+   registered strategy's evaluator has a `required_indicators` field that doesn't
+   map to at least one entry in `SNAPSHOT_FIELDS`. This makes the failure mode
+   **loud (process death at boot)** instead of silent (zeroed fields at runtime).
+3. One frozen list, one file, one assertion. No runtime derivation.
 
 **A2: S9 NameError** (`governance/signal_worker.py`)
 - Add `from governance.strategy_registry import StrategyRegistry` at module level
@@ -282,40 +283,62 @@ with_pnl AS (
 )
 SELECT * FROM with_pnl;
 
--- B3: Stats rollup view
+-- B3: Stats rollup view — WIDE scope. Every metric extractable from payload_json.
+-- Descoping a column from a VIEW is trivial. Adding one later requires re-reading
+-- the data model. The 60s TTL cache amortizes compute. Be generous.
 CREATE OR REPLACE VIEW v_live_opportunity_stats AS
-SELECT window, asset_class, setup_id,
-       opp_count, closed_count, open_count,
-       avg_pnl_pct, win_rate, avg_hours_held
-FROM (
-    SELECT '24h'::text AS window, asset_class, setup_id,
+WITH windowed AS (
+    SELECT *,
+        CASE
+            WHEN created_ts >= NOW() - INTERVAL '24 hours' THEN '24h'
+            WHEN created_ts >= NOW() - INTERVAL '7 days' THEN '7d'
+            WHEN created_ts >= NOW() - INTERVAL '30 days' THEN '30d'
+            ELSE 'all_time'
+        END AS min_window
+    FROM v_live_opportunity_pnl
+),
+per_window AS (
+    SELECT
+        w.window,
+        p.asset_class,
+        p.setup_id,
+        -- Counts
         COUNT(*) AS opp_count,
-        COUNT(*) FILTER (WHERE is_closed) AS closed_count,
-        COUNT(*) FILTER (WHERE NOT is_closed) AS open_count,
-        ROUND(AVG(pnl_pct_net) FILTER (WHERE is_closed)::numeric, 3) AS avg_pnl_pct,
-        ROUND((COUNT(*) FILTER (WHERE is_closed AND pnl_pct_net > 0)::numeric
-            / NULLIF(COUNT(*) FILTER (WHERE is_closed), 0)), 3) AS win_rate,
-        ROUND(AVG(EXTRACT(EPOCH FROM (exit_ts - created_ts)) / 3600)
-            FILTER (WHERE is_closed)::numeric, 1) AS avg_hours_held
-    FROM v_live_opportunity_pnl
-    WHERE created_ts >= NOW() - INTERVAL '24 hours'
-    GROUP BY asset_class, setup_id
-
-    UNION ALL
-
-    SELECT '7d'::text, asset_class, setup_id,
-        COUNT(*),
-        COUNT(*) FILTER (WHERE is_closed),
-        COUNT(*) FILTER (WHERE NOT is_closed),
-        ROUND(AVG(pnl_pct_net) FILTER (WHERE is_closed)::numeric, 3),
-        ROUND((COUNT(*) FILTER (WHERE is_closed AND pnl_pct_net > 0)::numeric
-            / NULLIF(COUNT(*) FILTER (WHERE is_closed), 0)), 3),
-        ROUND(AVG(EXTRACT(EPOCH FROM (exit_ts - created_ts)) / 3600)
-            FILTER (WHERE is_closed)::numeric, 1)
-    FROM v_live_opportunity_pnl
-    WHERE created_ts >= NOW() - INTERVAL '7 days'
-    GROUP BY asset_class, setup_id
-) sub;
+        COUNT(*) FILTER (WHERE p.is_closed) AS closed_count,
+        COUNT(*) FILTER (WHERE NOT p.is_closed) AS open_count,
+        -- PnL
+        ROUND(AVG(p.pnl_pct_net) FILTER (WHERE p.is_closed)::numeric, 3) AS avg_pnl_pct,
+        ROUND(SUM(p.pnl_pct_net) FILTER (WHERE p.is_closed)::numeric, 3) AS total_pnl_pct,
+        ROUND(MAX(p.pnl_pct_net) FILTER (WHERE p.is_closed)::numeric, 3) AS max_pnl_pct,
+        ROUND(MIN(p.pnl_pct_net) FILTER (WHERE p.is_closed)::numeric, 3) AS min_pnl_pct,
+        -- Win rate & profit factor
+        ROUND((COUNT(*) FILTER (WHERE p.is_closed AND p.pnl_pct_net > 0)::numeric
+            / NULLIF(COUNT(*) FILTER (WHERE p.is_closed), 0)), 3) AS win_rate,
+        ROUND((SUM(p.pnl_pct_net) FILTER (WHERE p.is_closed AND p.pnl_pct_net > 0)
+            / NULLIF(ABS(SUM(p.pnl_pct_net) FILTER (WHERE p.is_closed AND p.pnl_pct_net <= 0)), 0))::numeric, 3)
+            AS profit_factor,
+        -- Timing
+        ROUND(AVG(EXTRACT(EPOCH FROM (p.exit_ts - p.created_ts)) / 3600)
+            FILTER (WHERE p.is_closed)::numeric, 1) AS avg_hours_held,
+        -- Score
+        ROUND(AVG(p.score)::numeric, 3) AS avg_score,
+        -- Direction split
+        COUNT(*) FILTER (WHERE p.direction = 'long') AS long_count,
+        COUNT(*) FILTER (WHERE p.direction = 'short') AS short_count,
+        -- Exit reason distribution
+        COUNT(*) FILTER (WHERE p.exit_reason = 'STOP_LOSS') AS stop_loss_count,
+        COUNT(*) FILTER (WHERE p.exit_reason = 'TIME_HORIZON') AS time_stop_count,
+        COUNT(*) FILTER (WHERE p.exit_reason LIKE 'TP%' OR p.exit_reason LIKE 'TAKE%') AS tp_count,
+        COUNT(*) FILTER (WHERE p.exit_reason = 'FAIL_FAST') AS fail_fast_count
+    FROM windowed p
+    CROSS JOIN (VALUES ('24h'), ('7d'), ('30d'), ('all_time')) AS w(window)
+    WHERE (w.window = '24h' AND p.min_window = '24h')
+       OR (w.window = '7d' AND p.min_window IN ('24h', '7d'))
+       OR (w.window = '30d' AND p.min_window IN ('24h', '7d', '30d'))
+       OR (w.window = 'all_time')
+    GROUP BY w.window, p.asset_class, p.setup_id
+)
+SELECT * FROM per_window;
 ```
 
 Also add a `30d` and `all_time` window to the UNION ALL so the dashboard shows
@@ -349,14 +372,14 @@ Read-only verification during execution:
 - [ ] New `SIGNAL_TOP_N_DAILY_PER_SETUP` added to WorkerTypedConfig, read at bootstrap, process
   crashes if missing
 
-**SNAPSHOT_FIELDS governance:**
-- [ ] If dynamic derivation: SNAPSHOT_FIELDS built from StrategyRegistry × IndicatorRequirement
-  × INDICATOR_ID_TO_FIELD at bootstrap. New strategy → fields auto-included.
-- [ ] If manual: startup assertion `assert required <= SNAPSHOT_FIELDS` for every active strategy.
-  Process crashes if any strategy's required_indicators aren't in the persistence list.
-- [ ] `INDICATOR_ID_TO_FIELD` mapping covers ALL indicator IDs referenced by active strategies'
-  `required_indicators` property. Check: MACD, MACD_PREV_HISTOGRAM, RVOL, DORMANCY_SCORE,
-  ACCUM_DIVERGENCE all have entries.
+**SNAPSHOT_FIELDS governance (frozen list + assertion pattern):**
+- [ ] 8 fields added to SNAPSHOT_FIELDS: `sma_20`, `macd_line`, `macd_signal`,
+  `macd_histogram`, `macd_prev_histogram`, `rvol`, `dormancy_score`, `accum_divergence`
+- [ ] All 8 verified against IndicatorSnapshot dataclass field names (indicators.py:475-515)
+- [ ] Startup assertion in signal_worker.__init__() crashes if any registered strategy's
+  evaluator needs a field not in SNAPSHOT_FIELDS. Failure = process death at boot, not
+  silent zeroed fields at runtime.
+- [ ] No runtime derivation. One frozen list, one file, one assertion.
 
 **Fee model integrity:**
 - [ ] SQL view fee constants match `execution.py` `SLIPPAGE_PROFILE_BPS` + 4bps exactly:
