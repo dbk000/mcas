@@ -991,6 +991,39 @@ class D2PaperTrader:
         """Active position: monitor for exit conditions."""
         now = datetime.now(timezone.utc)
 
+        # Thesis re-evaluation: FnG regime shift check
+        # D2 thesis = "this pump will revert to pre-pump price"
+        # If FnG spikes into mania territory, short thesis weakens
+        fng_soft_gate = CFG.fng_soft_gate
+        if fng_soft_gate not in ("log_only", "disabled", ""):
+            try:
+                fng = await fetch_fear_greed_index()
+                fng_now = fng.get("value")
+                if fng_now is not None:
+                    # Check if FnG has risen above entry-time value by a significant margin
+                    entry_fng = state.fng_value  # captured at cluster detection
+                    fng_threshold = int(fng_soft_gate) if fng_soft_gate.isdigit() else 75
+                    if fng_now > fng_threshold and (entry_fng is None or fng_now > entry_fng + 15):
+                        bar_close_for_exit = None
+                        klines_pre = await fetch_binance_klines(state.symbol, CFG.candle_interval, limit=1)
+                        if klines_pre:
+                            bar_close_for_exit = klines_pre[0]["close"]
+                        if bar_close_for_exit is not None:
+                            state.log_transition(
+                                "POSITION_ACTIVE", "COMPLETED",
+                                f"EDGE_INVALIDATED: FnG regime shift {entry_fng}->{fng_now} (threshold={fng_threshold})"
+                            )
+                            state.phase = D2Phase.COMPLETED
+                            write_paper_position(self.conn, state, "EDGE_INVALIDATED", bar_close_for_exit, now)
+                            update_cluster_status(self.conn, state.cluster_event_id, "COMPLETED")
+                            logger.info(
+                                "D2 EDGE_INVALIDATED: %s FnG regime shift %s->%d (threshold=%d)",
+                                state.symbol, entry_fng, fng_now, fng_threshold,
+                            )
+                            return
+            except Exception as e:
+                logger.debug("D2 FnG re-eval failed for %s: %s", state.symbol, e)
+
         # Fetch latest candle
         klines = await fetch_binance_klines(state.symbol, CFG.candle_interval, limit=2)
         if not klines:

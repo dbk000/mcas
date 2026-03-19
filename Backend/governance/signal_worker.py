@@ -537,6 +537,14 @@ class SignalWorker(LineageEnforcer):
         # Startup config sync: Pipeline is source of truth.
         self._sync_node_parameters()
 
+        # Sync config hashes to config_active_strategies for dashboard tracking
+        if _database_url() and _worker_index() == 0:
+            try:
+                from governance.bootstrap import sync_config_hashes
+                sync_config_hashes()
+            except Exception as e:
+                logger.warning("Config hash sync failed (non-fatal): %s", e)
+
         # D1 cold-start bootstrap: replay recent OHLCV to populate state machine
         if _database_url():
             self._bootstrap_d1_states()
@@ -851,6 +859,8 @@ class SignalWorker(LineageEnforcer):
         """Run S10 MACD Scalp evaluator on 5m bars."""
         try:
             state = self.s10_evaluator.compute_state(snapshot)
+            # Edge re-evaluation for active S10 opps on this symbol/tf
+            self._reeval_s10_edge(symbol, tf, state)
             sig = self.s10_evaluator.evaluate_trigger(snapshot, state, symbol, tf)
             if sig is None:
                 return
@@ -985,6 +995,9 @@ class SignalWorker(LineageEnforcer):
                 snapshot, prev_state=prev_state, btc_returns=None,
             )
             self._d1_prev_states[state_key] = state
+
+            # Edge re-evaluation for active D1 opps on this symbol/tf
+            self._reeval_d1_edge(symbol, tf, state)
 
             if state.phase in (D1Phase.DORMANT_CONFIRMED, D1Phase.ACCUMULATING):
                 trigger_ts = None
@@ -1227,6 +1240,9 @@ class SignalWorker(LineageEnforcer):
         except Exception as e:
             logger.debug(f"Failed to deserialize U1 state for {symbol}: {e}")
             return
+
+        # Edge re-evaluation for active U1 opps on this symbol/tf
+        self._reeval_u1_edge(symbol, tf, u1_state, snapshot=snapshot)
 
         if u1_state.phase not in (U1Phase.EMBRYO_ACTIVE, U1Phase.IGNITION_WATCH):
             return
@@ -1585,6 +1601,12 @@ class SignalWorker(LineageEnforcer):
             logger.debug(f"Postgres persist failed for {setup_id}:{symbol}:{tf}: {e}")
 
     def _expire_stale_pg_signals(self):
+        """Safety-net garbage collector — expires opps older than 7 days.
+
+        Normal expiry is handled by per-strategy edge re-evaluation.
+        This only catches opps whose symbols left the monitored universe entirely.
+        """
+        SAFETY_NET_SECONDS = 7 * 86400  # 7 days
         if not _database_url():
             return
         try:
@@ -1592,14 +1614,237 @@ class SignalWorker(LineageEnforcer):
                 with conn.cursor() as cur:
                     cur.execute("""
                         UPDATE opportunities
-                        SET status = 'expired'
+                        SET status = 'expired',
+                            payload_json = jsonb_set(
+                                COALESCE(payload_json::jsonb, '{}'::jsonb),
+                                '{edge_invalidated}',
+                                %s::jsonb
+                            )::text
                         WHERE status = 'active'
                           AND setup_id NOT LIKE 'EQ_%%'
                           AND updated_ts < NOW() - %s * INTERVAL '1 second';
-                    """, (int(SIGNAL_MAX_AGE_S),))
+                    """, (
+                        json.dumps({"reason": "safety_net_7d", "ts": time.time()}),
+                        SAFETY_NET_SECONDS,
+                    ))
                 conn.commit()
         except Exception as e:
             logger.debug(f"Postgres expire stale signals failed: {e}")
+
+    # ------------------------------------------------------------------
+    # Edge Re-Evaluation Helpers
+    # ------------------------------------------------------------------
+
+    _active_opps_cache: dict = {}
+    _active_opps_cache_ts: float = 0.0
+    _ACTIVE_OPPS_CACHE_TTL_S = 10.0  # refresh every 10s
+
+    def _get_active_opps(self, setup_id: str) -> list[dict]:
+        """Fetch all active opps for a setup (cached per cycle)."""
+        now = time.time()
+        if now - self._active_opps_cache_ts > self._ACTIVE_OPPS_CACHE_TTL_S:
+            self._active_opps_cache = {}
+            self._active_opps_cache_ts = now
+
+        if setup_id in self._active_opps_cache:
+            return self._active_opps_cache[setup_id]
+
+        opps = []
+        if not _database_url():
+            return opps
+        try:
+            with _pool_get_conn() as conn:
+                with conn.cursor() as cur:
+                    cur.execute("""
+                        SELECT id, symbol, timeframe, payload_json
+                        FROM opportunities
+                        WHERE status = 'active'
+                          AND setup_id = %s
+                          AND batch_id IS NULL
+                    """, (setup_id,))
+                    for row in cur.fetchall():
+                        opps.append({
+                            "id": row[0],
+                            "symbol": row[1],
+                            "timeframe": row[2],
+                            "payload_json": row[3],
+                        })
+        except Exception as e:
+            logger.debug(f"Failed to fetch active opps for {setup_id}: {e}")
+        self._active_opps_cache[setup_id] = opps
+        return opps
+
+    def _expire_opp_edge_gone(self, opp_id: int, reason: str):
+        """Expire an opp with edge_invalidated metadata in payload."""
+        try:
+            with _pool_get_conn() as conn:
+                with conn.cursor() as cur:
+                    cur.execute("""
+                        UPDATE opportunities
+                        SET status = 'expired',
+                            payload_json = jsonb_set(
+                                COALESCE(payload_json::jsonb, '{}'::jsonb),
+                                '{edge_invalidated}',
+                                %s::jsonb
+                            )::text
+                        WHERE id = %s AND status = 'active';
+                    """, (
+                        json.dumps({"reason": reason, "ts": time.time()}),
+                        opp_id,
+                    ))
+                conn.commit()
+            logger.info("Edge expired opp %d: %s", opp_id, reason)
+        except Exception as e:
+            logger.debug(f"Failed to expire opp {opp_id}: {e}")
+
+    def _bump_opp_alive(self, opp_id: int):
+        """Bump updated_ts to keep opp alive (edge still valid)."""
+        try:
+            with _pool_get_conn() as conn:
+                with conn.cursor() as cur:
+                    cur.execute("""
+                        UPDATE opportunities
+                        SET updated_ts = NOW()
+                        WHERE id = %s AND status = 'active';
+                    """, (opp_id,))
+                conn.commit()
+        except Exception as e:
+            logger.debug(f"Failed to bump opp {opp_id}: {e}")
+
+    def _reeval_s9_edge(self, breadth: float, top_decile_symbols: set,
+                        symbol_data: dict, s9_cfg, fng_value):
+        """Re-evaluate edge for all active S9 opps."""
+        active_opps = self._get_active_opps("S9")
+        if not active_opps:
+            return
+
+        expired_count = 0
+        alive_count = 0
+        for opp in active_opps:
+            sym = opp["symbol"]
+            opp_id = opp["id"]
+
+            # Gate 1: Breadth
+            if breadth <= s9_cfg.BREADTH_THRESHOLD:
+                self._expire_opp_edge_gone(opp_id, f"breadth_collapsed_{breadth:.3f}")
+                expired_count += 1
+                continue
+
+            # Gate 2: FnG
+            if fng_value is not None and fng_value > s9_cfg.FNG_MAX_VALUE:
+                self._expire_opp_edge_gone(opp_id, f"fng_regime_{fng_value}")
+                expired_count += 1
+                continue
+
+            # Gate 3: Still in top decile
+            if sym not in top_decile_symbols:
+                self._expire_opp_edge_gone(opp_id, "left_top_decile")
+                expired_count += 1
+                continue
+
+            # Gate 4: Magnitude still holds
+            sym_rets = symbol_data.get(sym)
+            if sym_rets is None or sym_rets[0] < s9_cfg.MIN_RET_4H:
+                self._expire_opp_edge_gone(opp_id, f"magnitude_faded_{sym_rets[0]:.4f}" if sym_rets else "symbol_data_missing")
+                expired_count += 1
+                continue
+
+            # All gates pass — keep alive
+            self._bump_opp_alive(opp_id)
+            alive_count += 1
+
+        if expired_count > 0 or alive_count > 0:
+            logger.info("S9 edge re-eval: %d expired, %d alive", expired_count, alive_count)
+
+    def _reeval_d1_edge(self, symbol: str, tf: str, state):
+        """Re-evaluate edge for active D1 opp on this symbol/tf."""
+        active_opps = self._get_active_opps("D1")
+        for opp in active_opps:
+            if opp["symbol"] != symbol or opp["timeframe"] != tf:
+                continue
+
+            opp_id = opp["id"]
+
+            # Phase regression: if state machine is below TRIGGERED, edge is gone
+            if state.phase.value < D1Phase.TRIGGERED.value:
+                self._expire_opp_edge_gone(opp_id, f"phase_regressed_to_{state.phase.name}")
+                return
+
+            # Re-check key gates
+            d1_cfg = get_config().D1
+            if state.dormancy_score < d1_cfg.DORMANCY_THRESHOLD:
+                self._expire_opp_edge_gone(opp_id, f"dormancy_below_{state.dormancy_score:.2f}")
+                return
+            if state.volume_z < d1_cfg.VOLUME_Z_SPIKE:
+                self._expire_opp_edge_gone(opp_id, f"volume_z_faded_{state.volume_z:.2f}")
+                return
+            if state.rvol < d1_cfg.RVOL_MIN:
+                self._expire_opp_edge_gone(opp_id, f"rvol_faded_{state.rvol:.2f}")
+                return
+
+            # Edge intact — bump
+            self._bump_opp_alive(opp_id)
+            return
+
+    def _reeval_s10_edge(self, symbol: str, tf: str, state):
+        """Re-evaluate edge for active S10 opp on this symbol/tf."""
+        active_opps = self._get_active_opps("S10")
+        for opp in active_opps:
+            if opp["symbol"] != symbol or opp["timeframe"] != tf:
+                continue
+
+            opp_id = opp["id"]
+
+            # Key gates: trend, momentum, breakout
+            if not state.above_sma200:
+                self._expire_opp_edge_gone(opp_id, "trend_lost_below_sma200")
+                return
+            if state.macd_histogram is not None and state.macd_histogram <= 0:
+                self._expire_opp_edge_gone(opp_id, f"momentum_lost_macd_{state.macd_histogram:.6f}")
+                return
+            if not state.breakout:
+                self._expire_opp_edge_gone(opp_id, "breakout_lost_below_flat_top")
+                return
+
+            # Edge intact
+            self._bump_opp_alive(opp_id)
+            return
+
+    def _reeval_u1_edge(self, symbol: str, tf: str, u1_state, snapshot=None):
+        """Re-evaluate edge for active U1 opp on this symbol/tf."""
+        active_opps = self._get_active_opps("U1")
+        for opp in active_opps:
+            if opp["symbol"] != symbol or opp["timeframe"] != tf:
+                continue
+
+            opp_id = opp["id"]
+
+            # Phase demotion
+            if u1_state.phase not in (U1Phase.EMBRYO_ACTIVE, U1Phase.IGNITION_WATCH):
+                self._expire_opp_edge_gone(opp_id, f"phase_demoted_to_{u1_state.phase.name}")
+                return
+
+            # Gate checks
+            if not u1_state.gate1_passed:
+                self._expire_opp_edge_gone(opp_id, "gate1_tradability_failed")
+                return
+            if not u1_state.gate2_passed:
+                self._expire_opp_edge_gone(opp_id, "gate2_participation_failed")
+                return
+            if not u1_state.gate3_passed:
+                self._expire_opp_edge_gone(opp_id, "gate3_compression_failed")
+                return
+
+            # Volume regime check (volume_z from snapshot if available)
+            u1_cfg = get_config().U1
+            if snapshot is not None and hasattr(snapshot, 'volume_z'):
+                if snapshot.volume_z < u1_cfg.VOL_Z_MIN:
+                    self._expire_opp_edge_gone(opp_id, f"volume_z_below_{snapshot.volume_z:.2f}")
+                    return
+
+            # Edge intact
+            self._bump_opp_alive(opp_id)
+            return
 
     # ------------------------------------------------------------------
     # S9 - Cross-Sectional Short Reversion
@@ -1659,6 +1904,7 @@ class SignalWorker(LineageEnforcer):
             self._diag["s9_breadth_fail"] += 1
             logger.info("S9: breadth=%.3f <= %.1f, no signals",
                         breadth, s9_cfg.BREADTH_THRESHOLD)
+            self._reeval_s9_edge(breadth, set(), symbol_data, s9_cfg, None)
             return
 
         # Fear & Greed regime gate (fail-closed)
@@ -1675,6 +1921,7 @@ class SignalWorker(LineageEnforcer):
                 self._diag["s9_fng_gated"] += 1
                 logger.info("S9: FnG=%d (>%d) — regime gate suppressing signals",
                             fng_value, s9_cfg.FNG_MAX_VALUE)
+                self._reeval_s9_edge(breadth, set(), symbol_data, s9_cfg, fng_value)
                 return
 
         sorted_syms = sorted(symbol_data.items(), key=lambda x: x[1][0], reverse=True)
@@ -1892,6 +2139,10 @@ class SignalWorker(LineageEnforcer):
                                        final_score, reason, payload,
                                        trace_json=trace_dict)
             count += 1
+
+        # Edge re-evaluation: check active opps against current cross-sectional state
+        top_decile_set = set(top_symbols)
+        self._reeval_s9_edge(breadth, top_decile_set, symbol_data, s9_cfg, fng_value)
 
         self._diag["s9_signal"] += count
         skipped = sum(1 for s in top_symbols

@@ -509,3 +509,94 @@ def bootstrap_genesis() -> Lineage:
     print("[BOOTSTRAP] Genesis block complete.", file=sys.stderr)
 
     return lineage
+
+
+def sync_config_hashes():
+    """Compute config hashes for each active crypto strategy and sync to DB.
+
+    Uses the same deterministic JSON + SHA-256[:16] as TraceContext.record_config().
+    Call after bootstrap_genesis() when DB is available.
+    """
+    import hashlib
+    import json
+    import psycopg
+
+    def _det_json(d: dict) -> str:
+        return json.dumps(d, sort_keys=True, separators=(',', ':'))
+
+    def _config_hash(d: dict) -> str:
+        return hashlib.sha256(_det_json(d).encode('utf-8')).hexdigest()[:16]
+
+    cfg = get_config()
+
+    hashes = {}
+
+    # S9
+    s9 = cfg.S9
+    hashes["S9"] = _config_hash({
+        "BREADTH_THRESHOLD": s9.BREADTH_THRESHOLD,
+        "PERCENTILE": s9.PERCENTILE,
+        "RET_LOOKBACK": s9.RET_LOOKBACK,
+        "HOLD_BARS": s9.HOLD_BARS,
+        "COST_BPS": s9.COST_BPS,
+        "FNG_GATE_ENABLED": s9.FNG_GATE_ENABLED,
+        "FNG_MAX_VALUE": s9.FNG_MAX_VALUE,
+        "MIN_RET_4H": s9.MIN_RET_4H,
+    })
+
+    # D1
+    d1 = cfg.D1
+    hashes["D1"] = _config_hash({
+        "DORMANCY_THRESHOLD": d1.DORMANCY_THRESHOLD,
+        "BB_WIDTH_COMPRESS": d1.BB_WIDTH_COMPRESS,
+        "VOLUME_Z_SPIKE": d1.VOLUME_Z_SPIKE,
+        "RVOL_MIN": d1.RVOL_MIN,
+        "STOP_PCT": d1.STOP_PCT,
+        "TP1_PCT": d1.TP1_PCT,
+        "TP2_PCT": d1.TP2_PCT,
+        "TIME_STOP_BARS_1H": d1.TIME_STOP_BARS_1H,
+        "SOCIAL_SILENCE_MAX_MENTIONS": d1.SOCIAL_SILENCE_MAX_MENTIONS,
+        "ONCHAIN_GATE_ENABLED": d1.ONCHAIN_GATE_ENABLED,
+        "W_ONCHAIN_FLOW": d1.W_ONCHAIN_FLOW,
+    })
+
+    # U1
+    u1 = cfg.U1
+    hashes["U1"] = _config_hash({
+        "TRADABILITY_IMPROVEMENT_FACTOR": u1.TRADABILITY_IMPROVEMENT_FACTOR,
+        "PARTICIPATION_GROWTH_FACTOR": u1.PARTICIPATION_GROWTH_FACTOR,
+        "RANGE_PCT_THRESHOLD": u1.RANGE_PCT_THRESHOLD,
+        "REL_VOL_IGNITION_MIN": u1.REL_VOL_IGNITION_MIN,
+        "VOL_Z_MIN": u1.VOL_Z_MIN,
+        "IGNITION_SCORE_THRESHOLD": u1.IGNITION_SCORE_THRESHOLD,
+        "STOP_RANGE_MULT": u1.STOP_RANGE_MULT,
+        "MIN_STOP_PCT": u1.MIN_STOP_PCT,
+        "TP1_R": u1.TP1_R,
+        "TP2_R": u1.TP2_R,
+        "TIME_STOP_BARS_5M": u1.TIME_STOP_BARS_5M,
+    })
+
+    # S10 — no typed config params, use empty dict for now
+    hashes["S10"] = _config_hash({})
+
+    # Write to DB
+    db_url = cfg.Worker.DATABASE_URL
+    if not db_url:
+        logger.warning("sync_config_hashes: no DATABASE_URL, skipping")
+        return hashes
+
+    try:
+        with psycopg.connect(db_url) as conn:
+            with conn.cursor() as cur:
+                for setup_id, config_hash in hashes.items():
+                    cur.execute("""
+                        UPDATE config_active_strategies
+                        SET current_config_hash = %s
+                        WHERE setup_id = %s;
+                    """, (config_hash, setup_id))
+            conn.commit()
+        logger.info("Config hashes synced: %s", hashes)
+    except Exception as e:
+        logger.warning("sync_config_hashes failed: %s", e)
+
+    return hashes
