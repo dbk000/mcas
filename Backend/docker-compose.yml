@@ -346,6 +346,26 @@ services:
     networks:
       - backend
 
+  # Strategy builder evaluator. DO NOT scale replicas > 1 without
+  # redesigning crossover state (cstrat_prev write path).
+  custom_strategy_worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      SERVICE_NAME: custom_strategy_worker
+    command: ["python", "-u", "governance/custom_strategy_worker.py"]
+    mem_limit: 512m
+    cpus: "1.0"
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - backend
+
   expired_opp_exit_settler:
     build:
       context: .

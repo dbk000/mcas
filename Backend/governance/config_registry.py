@@ -294,3 +294,72 @@ class AlertTypedConfig:
     """Alert watchdog configuration. Governs staleness thresholds and webhook delivery."""
     SIGNAL_STALE_HOURS: int = 6
     WEBHOOK_URL: str = ""
+
+
+@dataclass(frozen=True)
+class PMTypedConfig:
+    """Polymarket prediction market bot configuration."""
+    # LLM provider keys (validated in bootstrap — required when paper_mode=False)
+    groq_api_key: str = ""
+    gemini_api_key: str = ""
+
+    # Model cutoff dates (ISO format) — used by classify_info_freshness()
+    model_cutoff_gemini: str = "2025-01-01"
+    model_cutoff_qwen3: str = "2025-03-01"
+    model_cutoff_llama31: str = "2024-12-01"
+
+    # Scanning
+    scan_interval_s: int = 3600
+    min_volume_24h: float = 50_000.0
+    min_liquidity: float = 10_000.0
+    min_days_to_resolution: int = 2
+    max_days_to_resolution: int = 90
+    re_estimate_cooldown_hours: int = 24
+
+    # Complexity routing thresholds (T1/T2/T3 classification)
+    complexity_description_len_t1: int = 500
+    complexity_description_len_t2: int = 200
+    complexity_categories_t1: tuple = field(default_factory=lambda: tuple(sorted([
+        "politics", "geopolitics", "legal", "regulation"
+    ])))
+
+    # Edge
+    min_executable_edge_pct: float = 8.0
+    consensus_edge_pct: float = 15.0
+
+    # Sizing
+    bankroll_usd: float = 10_000.0
+    kelly_fraction: float = 0.25
+    max_position_pct: float = 5.0
+    max_category_exposure_pct: float = 15.0
+    holdout_pct: float = 20.0
+
+    # Operational
+    poll_interval_s: int = 300
+    monitor_interval_s: int = 14400
+    resolution_interval_s: int = 3600
+    circuit_breaker_failures: int = 5
+    circuit_breaker_backoff_s: int = 1800
+    paper_mode: bool = True
+
+    # Daily budget management
+    groq_daily_limit: int = 14400
+    gemini_daily_limit: int = 1000
+    budget_reserve_pct: float = 10.0
+
+    # Gamma API backoff
+    gamma_request_delay_s: float = 0.1
+    gamma_backoff_multiplier: float = 2.0
+
+
+@dataclass(frozen=True)
+class StrategyBuilderTypedConfig:
+    """Strategy builder limits and operational config."""
+    max_strategies_per_user: int = 10
+    max_conditions_per_strategy: int = 8
+    strategy_cache_refresh_s: int = 60
+    cooldown_floor_minutes: int = 5
+    cooldown_default_minutes: int = 60
+    evaluation_log_interval_s: int = 300
+    max_fire_rate_pct: float = 50.0
+    max_hits_per_day_per_user: int = 5000

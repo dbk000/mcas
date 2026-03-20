@@ -56,6 +56,7 @@ const ControlPlane = lazyPage('app:control', () => import('./pages/ControlPlane'
 const PaperTrading = lazyPage('app:paper', () => import('./pages/PaperTrading'))
 const CorrelationAnalysis = lazyPage('app:analytics-correlations', () => import('./pages/CorrelationAnalysis'))
 const Pipeline = lazyPage('app:pipeline', () => import('./pages/Pipeline'))
+const StrategyBuilder = lazyPage('app:strategy-builder', () => import('./pages/StrategyBuilder'))
 
 function RouteLogger() {
   const { pathname } = useLocation()
@@ -260,6 +261,7 @@ export default function App() {
           >
             <Route index element={<Dashboard />} />
             <Route path="strategies" element={<StrategyDashboard />} />
+            <Route path="strategies/builder" element={<StrategyBuilder />} />
           </Route>
           <Route
             element={(

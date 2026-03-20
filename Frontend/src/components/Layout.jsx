@@ -28,6 +28,7 @@ const log = getLogger('layout')
 const navigation = [
   { name: 'Dashboard', href: '/app', icon: LayoutDashboard },
   { name: 'Strategies', href: '/app/strategies', icon: Layers3 },
+  { name: 'Strategy Builder', href: '/app/strategies/builder', icon: Zap },
   { name: 'Opportunities', href: '/app/opportunities', icon: Target },
   { name: 'Markets', href: '/app/markets', icon: BarChart3 },
   { name: 'Runs', href: '/app/runs', icon: Play },

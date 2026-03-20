@@ -35,6 +35,8 @@ from governance.config_registry import (
     D2TypedConfig,
     TraceTypedConfig,
     AlertTypedConfig,
+    PMTypedConfig,
+    StrategyBuilderTypedConfig,
 )
 
 logger = logging.getLogger(__name__)
@@ -306,6 +308,35 @@ def _populate_config(reg: ConfigRegistry) -> None:
         WEBHOOK_URL=os.getenv("ALERT_WEBHOOK_URL", ""),
     ))
 
+    # --- Polymarket config ---
+    pm_cfg = PMTypedConfig(
+        groq_api_key=os.getenv("PM_GROQ_API_KEY", ""),
+        gemini_api_key=os.getenv("PM_GEMINI_API_KEY", ""),
+        min_volume_24h=float(os.getenv("PM_MIN_VOLUME_24H", "50000")),
+        min_liquidity=float(os.getenv("PM_MIN_LIQUIDITY", "10000")),
+        scan_interval_s=int(os.getenv("PM_SCAN_INTERVAL_S", "3600")),
+        min_executable_edge_pct=float(os.getenv("PM_MIN_EXECUTABLE_EDGE_PCT", "8.0")),
+        bankroll_usd=float(os.getenv("PM_BANKROLL_USD", "10000")),
+        kelly_fraction=float(os.getenv("PM_KELLY_FRACTION", "0.25")),
+        paper_mode=os.getenv("PM_PAPER_MODE", "true").lower() in {"1", "true", "yes"},
+    )
+    if not pm_cfg.paper_mode:
+        if not pm_cfg.groq_api_key or not pm_cfg.gemini_api_key:
+            raise RuntimeError("PM_GROQ_API_KEY and PM_GEMINI_API_KEY required when PM_PAPER_MODE=false")
+    reg._register("PM", pm_cfg)
+
+    # --- Strategy Builder config ---
+    reg._register("StrategyBuilder", StrategyBuilderTypedConfig(
+        max_strategies_per_user=int(os.getenv("SB_MAX_STRATEGIES_PER_USER", "10")),
+        max_conditions_per_strategy=int(os.getenv("SB_MAX_CONDITIONS_PER_STRATEGY", "8")),
+        strategy_cache_refresh_s=int(os.getenv("SB_STRATEGY_CACHE_REFRESH_S", "60")),
+        cooldown_floor_minutes=int(os.getenv("SB_COOLDOWN_FLOOR_MINUTES", "5")),
+        cooldown_default_minutes=int(os.getenv("SB_COOLDOWN_DEFAULT_MINUTES", "60")),
+        evaluation_log_interval_s=int(os.getenv("SB_EVALUATION_LOG_INTERVAL_S", "300")),
+        max_fire_rate_pct=float(os.getenv("SB_MAX_FIRE_RATE_PCT", "50.0")),
+        max_hits_per_day_per_user=int(os.getenv("SB_MAX_HITS_PER_DAY_PER_USER", "5000")),
+    ))
+
 
 def _populate_strategies(reg: StrategyRegistry) -> None:
     """Register canonical strategy definitions (metadata only).
@@ -338,6 +369,7 @@ def _populate_strategies(reg: StrategyRegistry) -> None:
             "traceable": True,
         },
         "D2": {"label": "D2 (Fade the Casino)", "type": "crypto", "status": "paper"},
+        "PM": {"label": "PM (Polymarket)", "type": "prediction", "status": "paper", "dispatch_mode": "standalone"},
         "EQFP": {"label": "EQ: Forward Predictor", "type": "equities", "status": "active"},
         "EQ_TSMOM": {"label": "EQ: TSMOM (20d)", "type": "equities", "status": "active"},
         "EQ_XSMOM": {"label": "EQ: XS Momentum (20d)", "type": "equities", "status": "active"},
@@ -374,7 +406,7 @@ def _populate_stop_policies(reg: StopPolicyRegistry) -> None:
     # Derive setup IDs from the strategy catalog (which is already populated
     # but not yet frozen at this point — we use the hardcoded catalog directly).
     _SETUP_IDS = sorted([
-        "S1", "S2", "S6", "S9", "S10", "U1", "D1", "D2",
+        "S1", "S2", "S6", "S9", "S10", "U1", "D1", "D2", "PM",
         "EQFP", "EQ_TSMOM", "EQ_XSMOM", "EQ_REV1A", "EQ_REV1B",
         "EQ_VPD", "EQ_ATC", "EQ_NVDA_MACRO",
     ])

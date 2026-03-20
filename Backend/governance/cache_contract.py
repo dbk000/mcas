@@ -127,6 +127,48 @@ def ts_zset_key(setup_id: str, tf: str) -> str:
 
 
 # =============================================================================
+# Composable Strategy (user strategy builder) fields & keys
+# =============================================================================
+
+# Fields available to user-defined composable strategies.
+# Subset of SNAPSHOT_FIELDS that are meaningful as condition operands.
+COMPOSABLE_FIELDS = frozenset([
+    # Price
+    "open", "high", "low", "close", "volume",
+    # Core indicators
+    "atr", "clv", "volume_z", "rsi", "rsi_sma", "rsi_slope",
+    "sma_50", "sma_200", "ema_9", "ema_20", "ema_21", "ema_50",
+    "bb_mb", "bb_ub", "bb_lb", "bb_width",
+    "kc_mb", "kc_ub", "kc_lb",
+    "sma50_slope_atr", "sma200_slope_atr", "ma_gap_atr",
+    # MACD
+    "sma_20", "macd_line", "macd_signal", "macd_histogram", "rvol",
+    # D1
+    "dormancy_score", "accum_divergence",
+    # VWAP
+    "vwap", "vwap_distance_atr",
+    # Donchian
+    "donchian_high_20", "donchian_low_20", "donchian_mid_20",
+    # Dark-mode (available when COMPUTE_DARK_INDICATORS=1)
+    "stoch_k", "stoch_d", "williams_r", "adx", "obv_slope_atr",
+    "mfi", "cci", "roc", "chaikin_vol", "price_dist_ema20_atr",
+    # L2 proxy
+    "range_to_volume_ratio", "volume_acceleration",
+])
+
+# Consumer group for the composable strategy evaluator
+CSTRAT_CONSUMER_GROUP = "cstrat_group"
+
+
+CSTRAT_GEN_KEY = "cstrat_gen"
+
+
+def cstrat_prev_key(symbol: str, tf: str) -> str:
+    """Previous-bar snapshot for crossover detection in user strategies."""
+    return f"cstrat_prev:{symbol}:{tf}"
+
+
+# =============================================================================
 # Candle serialization
 # =============================================================================
 
@@ -255,6 +297,13 @@ SNAPSHOT_FIELDS = [
     "sma_20", "macd_line", "macd_signal", "macd_histogram", "macd_prev_histogram", "rvol",
     # D1 Dormancy Ignition
     "dormancy_score", "accum_divergence",
+    # OHLCV price fields (composable strategy access)
+    "open", "high", "low", "close", "volume",
+    # Dark-mode expansion indicators
+    "stoch_k", "stoch_d", "williams_r", "adx", "obv_slope_atr",
+    "mfi", "cci", "roc", "chaikin_vol", "price_dist_ema20_atr",
+    # L2 proxy features
+    "range_to_volume_ratio", "volume_acceleration",
 ]
 
 # Mapping from indicator_id to snapshot field name for per-indicator keys
@@ -342,15 +391,24 @@ def read_indicator_snapshot(r, symbol: str, tf: str):
     if not snap_data:
         return None
 
+    # OHLCV price fields are written to ind_snap for composable strategy access
+    # but are NOT constructor args of IndicatorSnapshot — skip them.
+    _OHLCV_ONLY = {"open", "high", "low", "close", "volume"}
+
     kwargs = {}
     for field_name in SNAPSHOT_FIELDS:
+        if field_name in _OHLCV_ONLY:
+            continue
         raw = snap_data.get(field_name)
         if raw is not None:
             val = b2f(raw)
             kwargs[field_name] = val
         elif field_name in ("htf_close", "htf_sma50", "htf_bb_mb",
                             "vwap", "vwap_upper_2sd", "vwap_lower_2sd",
-                            "vwap_distance_atr"):
+                            "vwap_distance_atr",
+                            "stoch_k", "stoch_d", "williams_r", "adx",
+                            "obv_slope_atr", "mfi", "cci", "roc",
+                            "chaikin_vol", "price_dist_ema20_atr"):
             kwargs[field_name] = None
         else:
             kwargs[field_name] = 0.0
@@ -385,8 +443,16 @@ def store_indicators(r, symbol: str, tf: str, snapshot, bar_start_ts):
             "is_final": True,
         }))
 
-    # 2. Bulk snapshot HASH
-    pipe.hset(ind_snap_key(symbol, tf), mapping=snapshot_to_flat_dict(snapshot))
+    # 2. Bulk snapshot HASH (includes OHLCV price fields from current bar)
+    flat = snapshot_to_flat_dict(snapshot)
+    if snapshot.ohlcv:
+        last_bar = snapshot.ohlcv[-1]
+        flat["open"] = str(last_bar.open)
+        flat["high"] = str(last_bar.high)
+        flat["low"] = str(last_bar.low)
+        flat["close"] = str(last_bar.close)
+        flat["volume"] = str(last_bar.volume)
+    pipe.hset(ind_snap_key(symbol, tf), mapping=flat)
 
     # 3. History lists (for percentile calcs)
     bb_hist_k = ind_hist_key("bb_width", symbol, tf)
@@ -505,6 +571,7 @@ def create_consumer_groups(r, timeframes: list[str]):
         for stream, group in [
             (f"stream:candle_closed:{tf}", "indicator_group"),
             (f"stream:indicators_ready:{tf}", "signal_group"),
+            (f"stream:indicators_ready:{tf}", CSTRAT_CONSUMER_GROUP),
         ]:
             try:
                 r.xgroup_create(stream, group, id="0", mkstream=True)
