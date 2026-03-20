@@ -7,3 +7,4 @@ requests
 alembic
 SQLAlchemy
 python-json-logger
+numpy

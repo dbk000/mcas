@@ -24,7 +24,7 @@ from governance.bootstrap import get_config
 from governance.cache_contract import (
     COMPOSABLE_FIELDS, ind_snap_key, get_universe, TF_SECONDS,
 )
-from governance.regime import fetch_fear_greed_index_async
+from governance.regime import fetch_fear_greed_index
 
 logger = logging.getLogger(__name__)
 
@@ -290,10 +290,10 @@ def symbol_seasonality(
 # ---------------------------------------------------------------------------
 
 @router.get("/market/fear-greed")
-async def fear_greed():
+def fear_greed():
     """Current Fear & Greed index from alternative.me (cached per fng_cache_ttl_s)."""
     t0 = time.time()
-    result = await fetch_fear_greed_index_async()
+    result = fetch_fear_greed_index()
 
     value = result.get("value")
     classification = result.get("classification")
