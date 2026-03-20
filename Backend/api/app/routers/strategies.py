@@ -20,7 +20,7 @@ from api.app.db_pool import get_conn as _pool_get_conn
 from governance.bootstrap import get_config
 from governance.cache_contract import (
     COMPOSABLE_FIELDS, CSTRAT_GEN_KEY,
-    read_fresh_snapshot, ind_snap_key, get_universe,
+    ind_snap_key, get_universe,
 )
 from core_logic.user_strategy_eval import evaluate_conditions
 
@@ -103,28 +103,21 @@ def _validate_conditions(conditions: list, cfg) -> list[str]:
     return errors
 
 
-def _snap_to_current(snap, r, symbol, tf) -> dict:
-    """Convert IndicatorSnapshot + ind_snap OHLCV fields to flat eval dict."""
-    from dataclasses import asdict
-    snap_dict = asdict(snap)
+def _read_snap_as_dict(r, symbol, tf) -> dict | None:
+    """Read ind_snap hash directly as a flat dict. No IndicatorSnapshot import."""
+    from governance.cache_contract import b2f
+    snap_key = ind_snap_key(symbol, tf)
+    raw = r.hgetall(snap_key)
+    if not raw:
+        return None
     current = {}
-    for k, v in snap_dict.items():
-        if k in COMPOSABLE_FIELDS and v is not None and not isinstance(v, (list, dict)):
+    for k, v in raw.items():
+        if k in COMPOSABLE_FIELDS:
             try:
                 current[k] = float(v)
             except (ValueError, TypeError):
                 pass
-    # OHLCV price fields from ind_snap (written by indicator worker)
-    snap_key = ind_snap_key(symbol, tf)
-    for pf in ("close", "open", "high", "low"):
-        if pf not in current:
-            raw = r.hget(snap_key, pf)
-            if raw is not None:
-                try:
-                    current[pf] = float(raw)
-                except (ValueError, TypeError):
-                    pass
-    return current
+    return current if current else None
 
 
 def _health_check(conditions: list, timeframes: list) -> dict:
@@ -140,10 +133,9 @@ def _health_check(conditions: list, timeframes: list) -> dict:
 
     for symbol in sample:
         for tf in timeframes:
-            snap, _ = read_fresh_snapshot(r, symbol, tf)
-            if snap is None:
+            current = _read_snap_as_dict(r, symbol, tf)
+            if current is None:
                 continue
-            current = _snap_to_current(snap, r, symbol, tf)
             total_sampled += 1
             passed, _ = evaluate_conditions(conditions, current, None)
             if passed:
