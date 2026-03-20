@@ -259,7 +259,13 @@ class CustomStrategyWorker:
                         pass
 
             # Evaluate each strategy
-            triggered_ts = float(bar_start_ts) if bar_start_ts.replace(".", "").isdigit() else time.time()
+            # bar_start_ts from Binance is milliseconds — divide by 1000
+            try:
+                triggered_ts = float(bar_start_ts)
+                if triggered_ts > 1e12:  # ms → s
+                    triggered_ts = triggered_ts / 1000.0
+            except (ValueError, TypeError):
+                triggered_ts = time.time()
 
             for strategy in self._strategies:
                 # Skip if strategy doesn't target this timeframe
