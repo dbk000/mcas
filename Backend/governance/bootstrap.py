@@ -37,6 +37,7 @@ from governance.config_registry import (
     AlertTypedConfig,
     PMTypedConfig,
     StrategyBuilderTypedConfig,
+    MarketIntelTypedConfig,
 )
 
 logger = logging.getLogger(__name__)
@@ -335,6 +336,15 @@ def _populate_config(reg: ConfigRegistry) -> None:
         evaluation_log_interval_s=int(os.getenv("SB_EVALUATION_LOG_INTERVAL_S", "300")),
         max_fire_rate_pct=float(os.getenv("SB_MAX_FIRE_RATE_PCT", "50.0")),
         max_hits_per_day_per_user=int(os.getenv("SB_MAX_HITS_PER_DAY_PER_USER", "5000")),
+    ))
+
+    # --- Market Intelligence surface config ---
+    reg._register("MarketIntel", MarketIntelTypedConfig(
+        derivatives_min_completeness=float(os.getenv("MI_DERIVATIVES_MIN_COMPLETENESS", "0.5")),
+        heatmap_staleness_multiplier=float(os.getenv("MI_HEATMAP_STALENESS_MULT", "2.5")),
+        seasonality_default_years=int(os.getenv("MI_SEASONALITY_DEFAULT_YEARS", "3")),
+        seasonality_min_months=int(os.getenv("MI_SEASONALITY_MIN_MONTHS", "24")),
+        fng_cache_ttl_s=int(os.getenv("MI_FNG_CACHE_TTL_S", "3600")),
     ))
 
 

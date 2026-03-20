@@ -57,6 +57,8 @@ const PaperTrading = lazyPage('app:paper', () => import('./pages/PaperTrading'))
 const CorrelationAnalysis = lazyPage('app:analytics-correlations', () => import('./pages/CorrelationAnalysis'))
 const Pipeline = lazyPage('app:pipeline', () => import('./pages/Pipeline'))
 const StrategyBuilder = lazyPage('app:strategy-builder', () => import('./pages/StrategyBuilder'))
+const DerivativesDashboard = lazyPage('app:derivatives', () => import('./pages/DerivativesDashboard'))
+const Heatmap = lazyPage('app:heatmap', () => import('./pages/Heatmap'))
 
 function RouteLogger() {
   const { pathname } = useLocation()
@@ -315,6 +317,8 @@ export default function App() {
             <Route path="paper" element={<PaperTrading />} />
             <Route path="analytics/correlations" element={<CorrelationAnalysis />} />
             <Route path="pipeline" element={<Pipeline />} />
+            <Route path="heatmap" element={<Heatmap />} />
+            <Route path="derivatives" element={<DerivativesDashboard />} />
           </Route>
         </Route>
 

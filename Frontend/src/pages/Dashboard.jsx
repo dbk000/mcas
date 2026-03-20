@@ -1,33 +1,35 @@
+import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { 
-  Activity, 
-  Target, 
+import {
+  Activity,
+  Target,
   Wallet,
   Play,
   AlertCircle,
   CheckCircle,
   Clock,
   ArrowRight,
-  Zap
+  Zap,
+  Gauge
 } from 'lucide-react'
 import { useApi } from '../context/ApiContext'
 import { useTradingAccount, useTopSignals, useLatestRun } from '../hooks/useData'
-import { 
-  Card, 
-  CardHeader, 
-  CardTitle, 
-  CardContent, 
-  Badge, 
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+  Badge,
   StatusBadge,
   DirectionBadge,
   Skeleton,
   EmptyState,
   RefreshControl
 } from '../components/ui'
-import { 
-  formatPrice, 
-  formatPercent, 
-  formatPnL, 
+import {
+  formatPrice,
+  formatPercent,
+  formatPnL,
   formatR,
   formatRelativeTime,
   formatDollar,
@@ -73,6 +75,9 @@ export default function Dashboard() {
 
         {/* Paper Trading Snapshot */}
         <div className="op-row h-auto"><PaperTradingPanel /></div>
+
+        {/* Fear & Greed Index */}
+        <div className="op-row h-auto"><FearGreedWidget /></div>
       </div>
     </div>
   )
@@ -383,6 +388,164 @@ function PaperTradingPanel() {
               </span>
             </div>
           </div>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
+function FearGreedGauge({ value }) {
+  const clampedValue = Math.max(0, Math.min(100, value ?? 0))
+  const angle = (clampedValue / 100) * 180 - 90 // -90 (left) to +90 (right)
+
+  // Needle endpoint
+  const needleLength = 62
+  const rad = (angle * Math.PI) / 180
+  const nx = 75 + needleLength * Math.cos(rad)
+  const ny = 80 + needleLength * Math.sin(rad)
+
+  // Arc segment helper: startPct and endPct are 0-100 mapped to 180deg arc
+  function arcPath(startPct, endPct) {
+    const r = 65
+    const cx = 75
+    const cy = 80
+    const startAngle = ((startPct / 100) * 180 - 180) * (Math.PI / 180)
+    const endAngle = ((endPct / 100) * 180 - 180) * (Math.PI / 180)
+    const x1 = cx + r * Math.cos(startAngle)
+    const y1 = cy + r * Math.sin(startAngle)
+    const x2 = cx + r * Math.cos(endAngle)
+    const y2 = cy + r * Math.sin(endAngle)
+    const largeArc = endPct - startPct > 50 ? 1 : 0
+    return `M ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2}`
+  }
+
+  const zones = [
+    { start: 0, end: 25, color: '#ef4444' },    // red — extreme fear
+    { start: 25, end: 45, color: '#f97316' },    // orange — fear
+    { start: 45, end: 55, color: '#eab308' },    // yellow — neutral
+    { start: 55, end: 75, color: '#4ade80' },    // light green — greed
+    { start: 75, end: 100, color: '#22c55e' },   // green — extreme greed
+  ]
+
+  return (
+    <svg viewBox="0 0 150 95" className="mx-auto w-full max-w-[200px]">
+      {zones.map((z) => (
+        <path
+          key={z.start}
+          d={arcPath(z.start, z.end)}
+          fill="none"
+          stroke={z.color}
+          strokeWidth="10"
+          strokeLinecap="butt"
+          opacity="0.35"
+        />
+      ))}
+      {/* Active arc up to current value */}
+      {zones.filter(z => z.start < clampedValue).map((z) => {
+        const segEnd = Math.min(z.end, clampedValue)
+        if (segEnd <= z.start) return null
+        return (
+          <path
+            key={`active-${z.start}`}
+            d={arcPath(z.start, segEnd)}
+            fill="none"
+            stroke={z.color}
+            strokeWidth="10"
+            strokeLinecap="butt"
+          />
+        )
+      })}
+      {/* Needle */}
+      <line
+        x1="75" y1="80" x2={nx} y2={ny}
+        stroke="#f5f5f5" strokeWidth="2" strokeLinecap="round"
+      />
+      <circle cx="75" cy="80" r="4" fill="#f5f5f5" />
+      {/* Value text */}
+      <text x="75" y="78" textAnchor="middle" fill="#f5f5f5" fontSize="18" fontWeight="bold" fontFamily="monospace">
+        {clampedValue}
+      </text>
+    </svg>
+  )
+}
+
+function getClassification(value) {
+  if (value <= 25) return 'Extreme Fear'
+  if (value <= 45) return 'Fear'
+  if (value <= 55) return 'Neutral'
+  if (value <= 75) return 'Greed'
+  return 'Extreme Greed'
+}
+
+function getRegimeBadgeVariant(regime) {
+  if (!regime) return 'default'
+  const r = regime.toLowerCase()
+  if (r === 'extreme_fear' || r === 'extreme fear') return 'error'
+  if (r === 'fear') return 'warning'
+  if (r === 'neutral') return 'default'
+  if (r === 'greed') return 'success'
+  if (r === 'extreme_greed' || r === 'extreme greed') return 'success'
+  return 'default'
+}
+
+function FearGreedWidget() {
+  const { get, isConnected } = useApi()
+  const [data, setData] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  const fetchData = useCallback(async () => {
+    if (!isConnected) return
+    try {
+      setLoading(true)
+      const result = await get('/v1/market/fear-greed')
+      setData(result?.data ?? result)
+      setError(null)
+    } catch (err) {
+      setError(err.message || 'Failed to fetch')
+    } finally {
+      setLoading(false)
+    }
+  }, [get, isConnected])
+
+  useEffect(() => {
+    fetchData()
+  }, [fetchData])
+
+  const value = data?.value
+  const classification = data?.classification || (value != null ? getClassification(value) : null)
+  const regime = data?.regime
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Gauge className="size-4 text-amber-400" />
+          Fear &amp; Greed Index
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        {loading && !data ? (
+          <div className="space-y-3">
+            <Skeleton className="mx-auto h-24 w-48" />
+            <Skeleton className="mx-auto w-24" />
+          </div>
+        ) : error ? (
+          <p className="py-4 text-center text-sm text-terminal-400">Unable to load index</p>
+        ) : value != null ? (
+          <div className="space-y-3">
+            <FearGreedGauge value={value} />
+            <div className="text-center">
+              <p className="text-sm font-medium text-terminal-100">{classification}</p>
+              {regime && (
+                <Badge variant={getRegimeBadgeVariant(regime)} className="mt-1">
+                  {regime.replace(/_/g, ' ').toUpperCase()}
+                </Badge>
+              )}
+            </div>
+          </div>
+        ) : (
+          <p className="py-4 text-center text-sm text-terminal-400">No data available</p>
         )}
       </CardContent>
     </Card>

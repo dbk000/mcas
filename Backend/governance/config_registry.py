@@ -363,3 +363,21 @@ class StrategyBuilderTypedConfig:
     evaluation_log_interval_s: int = 300
     max_fire_rate_pct: float = 50.0
     max_hits_per_day_per_user: int = 5000
+
+
+@dataclass(frozen=True)
+class MarketIntelTypedConfig:
+    """Market intelligence surface configuration (Wave 0)."""
+    # Derivatives dashboard
+    derivatives_min_completeness: float = 0.5
+
+    # Heatmap
+    heatmap_staleness_multiplier: float = 2.5
+    heatmap_allowed_periods: tuple = field(default_factory=lambda: ("1h", "4h", "24h"))
+
+    # Seasonality
+    seasonality_default_years: int = 3
+    seasonality_min_months: int = 24
+
+    # Fear & Greed
+    fng_cache_ttl_s: int = 3600

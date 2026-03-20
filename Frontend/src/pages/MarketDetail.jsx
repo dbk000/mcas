@@ -1,21 +1,22 @@
-import { startTransition, useDeferredValue, useEffect, useMemo, useState } from 'react'
+import { startTransition, useCallback, useDeferredValue, useEffect, useMemo, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { ArrowLeft, Clock, Activity, Target, TrendingUp } from 'lucide-react'
+import { ArrowLeft, Clock, Activity, Target, TrendingUp, Calendar } from 'lucide-react'
 import { useTimeframes, useLiveOHLCV, useSnapshot, useSqueezeState, useBtcSqueezeStatus } from '../hooks/useData'
-import { 
-  Card, 
-  CardHeader, 
-  CardTitle, 
-  CardContent, 
-  Badge, 
+import { useApi } from '../context/ApiContext'
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+  Badge,
   Skeleton,
   Select,
   DataRow,
   RefreshControl
 } from '../components/ui'
-import { 
-  formatPrice, 
-  formatNumber, 
+import {
+  formatPrice,
+  formatNumber,
   formatRelativeTime
 } from '../utils/formatters'
 import OpportunityCurveChart from '../components/opportunities/OpportunityCurveChart'
@@ -128,6 +129,9 @@ export default function MarketDetail() {
           <BtcCorrelationPanel timeframe={selectedTf} />
         </div>
       </div>
+
+      {/* Seasonality */}
+      <SeasonalityPanel symbol={symbol} />
     </div>
   )
 }
@@ -370,6 +374,94 @@ function BtcCorrelationPanel({ timeframe }) {
               </>
             )}
           </div>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
+function SeasonalityPanel({ symbol }) {
+  const { get, isConnected } = useApi()
+  const [data, setData] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  const fetchData = useCallback(async () => {
+    if (!isConnected || !symbol) return
+    try {
+      setLoading(true)
+      const result = await get(`/v1/symbols/${encodeURIComponent(symbol)}/seasonality`, { years: 3 })
+      setData(result?.data ?? result)
+      setError(null)
+    } catch (err) {
+      setError(err.message || 'Failed to fetch')
+    } finally {
+      setLoading(false)
+    }
+  }, [get, isConnected, symbol])
+
+  useEffect(() => {
+    fetchData()
+  }, [fetchData])
+
+  const months = data?.monthly_returns || []
+  const maxAbs = useMemo(
+    () => months.reduce((m, row) => Math.max(m, Math.abs(row.avg_return_pct || 0)), 1),
+    [months]
+  )
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Calendar className="size-4 text-amber-400" />
+          Seasonal Patterns
+        </CardTitle>
+        {data?.data_months != null && (
+          <p className="mt-1 text-xs text-terminal-500">
+            Based on {data.data_months} months of data ({data.years_requested}y requested)
+          </p>
+        )}
+      </CardHeader>
+      <CardContent>
+        {data?.warning && (
+          <div className="mb-4 flex items-center gap-2 rounded-lg border border-amber-700/50 bg-amber-900/20 px-3 py-2 text-xs text-amber-300">
+            {data.warning}
+          </div>
+        )}
+
+        {loading && !data ? (
+          <div className="space-y-2">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <Skeleton key={i} className="h-5" />
+            ))}
+          </div>
+        ) : error ? (
+          <p className="py-4 text-center text-sm text-terminal-400">Unable to load seasonality data</p>
+        ) : months.length > 0 ? (
+          <div className="space-y-1.5">
+            {months.map((row) => {
+              const avg = row.avg_return_pct ?? 0
+              const barWidth = Math.min(Math.abs(avg) / maxAbs * 100, 100)
+              const isPositive = avg >= 0
+              return (
+                <div key={row.month} className="flex items-center gap-2">
+                  <span className="w-8 shrink-0 text-xs text-terminal-400">{row.month_name}</span>
+                  <div className="relative h-5 flex-1 rounded bg-terminal-800">
+                    <div
+                      className={`h-full rounded ${isPositive ? 'bg-green-600' : 'bg-red-600'}`}
+                      style={{ width: `${barWidth}%` }}
+                    />
+                  </div>
+                  <span className={`w-24 shrink-0 text-right font-mono text-xs ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
+                    {avg >= 0 ? '+' : ''}{avg.toFixed(1)}% (n={row.sample_count})
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        ) : (
+          <p className="py-4 text-center text-sm text-terminal-400">No seasonality data</p>
         )}
       </CardContent>
     </Card>

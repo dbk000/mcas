@@ -2,9 +2,11 @@ import { useEffect, useState } from 'react'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import {
   BarChart3,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   GitBranch,
+  Grid3X3,
   LayoutDashboard,
   Layers3,
   Menu,
@@ -13,6 +15,7 @@ import {
   Settings,
   Target,
   Terminal,
+  TrendingUp,
   Wallet,
   Wifi,
   WifiOff,
@@ -25,18 +28,119 @@ import { getLogger } from '../utils/logger'
 
 const log = getLogger('layout')
 
-const navigation = [
-  { name: 'Dashboard', href: '/app', icon: LayoutDashboard },
-  { name: 'Strategies', href: '/app/strategies', icon: Layers3 },
-  { name: 'Strategy Builder', href: '/app/strategies/builder', icon: Zap },
-  { name: 'Opportunities', href: '/app/opportunities', icon: Target },
-  { name: 'Markets', href: '/app/markets', icon: BarChart3 },
-  { name: 'Runs', href: '/app/runs', icon: Play },
-  { name: 'Control Plane', href: '/app/control', icon: Terminal },
-  { name: 'Paper Trading', href: '/app/paper', icon: Wallet },
-  { name: 'Correlations', href: '/app/analytics/correlations', icon: GitBranch },
-  { name: 'Pipeline', href: '/app/pipeline', icon: Network },
+const navSections = [
+  {
+    id: 'core',
+    label: null,
+    items: [
+      { name: 'Dashboard', href: '/app', icon: LayoutDashboard },
+      { name: 'Opportunities', href: '/app/opportunities', icon: Target },
+      { name: 'Markets', href: '/app/markets', icon: BarChart3 },
+      { name: 'Strategies', href: '/app/strategies', icon: Layers3 },
+    ],
+  },
+  {
+    id: 'intel',
+    label: 'MARKET INTEL',
+    defaultExpanded: true,
+    items: [
+      { name: 'Heatmap', href: '/app/heatmap', icon: Grid3X3 },
+      { name: 'Derivatives', href: '/app/derivatives', icon: TrendingUp },
+    ],
+  },
+  {
+    id: 'research',
+    label: 'RESEARCH',
+    defaultExpanded: false,
+    items: [
+      { name: 'Correlations', href: '/app/analytics/correlations', icon: GitBranch },
+      { name: 'Strategy Builder', href: '/app/strategies/builder', icon: Zap },
+    ],
+  },
+  {
+    id: 'operator',
+    label: 'OPERATOR',
+    defaultExpanded: false,
+    items: [
+      { name: 'Runs', href: '/app/runs', icon: Play },
+      { name: 'Paper Trading', href: '/app/paper', icon: Wallet },
+      { name: 'Control Plane', href: '/app/control', icon: Terminal },
+      { name: 'Pipeline', href: '/app/pipeline', icon: Network },
+    ],
+  },
 ]
+
+function loadSectionState() {
+  try {
+    const stored = localStorage.getItem('mcas_nav_sections')
+    return stored ? JSON.parse(stored) : {}
+  } catch {
+    return {}
+  }
+}
+
+function NavSection({ section, collapsed, isDesktop, location, onNavClick }) {
+  const stored = loadSectionState()
+  const defaultState = section.label === null ? true : (stored[section.id] !== undefined ? stored[section.id] : section.defaultExpanded)
+  const [expanded, setExpanded] = useState(defaultState)
+
+  const toggleExpanded = () => {
+    if (section.label === null) return
+    setExpanded((prev) => {
+      const next = !prev
+      try {
+        const current = loadSectionState()
+        current[section.id] = next
+        localStorage.setItem('mcas_nav_sections', JSON.stringify(current))
+      } catch { /* ignore */ }
+      return next
+    })
+  }
+
+  const showItems = section.label === null || expanded || collapsed
+
+  return (
+    <div>
+      {section.label && !collapsed && (
+        <button
+          type="button"
+          onClick={toggleExpanded}
+          className="flex w-full items-center justify-between px-3 pt-4 pb-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-terminal-500 hover:text-terminal-400 transition-colors"
+        >
+          <span>{section.label}</span>
+          <ChevronDown
+            className={[
+              'size-3 transition-transform duration-200',
+              expanded ? '' : '-rotate-90',
+            ].join(' ')}
+          />
+        </button>
+      )}
+      {showItems && section.items.map((item) => {
+        const isActive = isNavItemActive(location.pathname, item.href)
+
+        return (
+          <NavLink
+            key={item.href}
+            to={item.href}
+            onClick={onNavClick}
+            className={[
+              'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
+              collapsed ? 'md:justify-center md:px-2.5 md:gap-0' : '',
+              isActive
+                ? 'bg-amber-600/20 text-amber-400'
+                : 'text-terminal-300 hover:bg-terminal-700 hover:text-terminal-100',
+            ].join(' ')}
+            title={collapsed ? item.name : undefined}
+          >
+            <item.icon className="size-5 shrink-0" />
+            {!collapsed && <span className="whitespace-nowrap">{item.name}</span>}
+          </NavLink>
+        )
+      })}
+    </div>
+  )
+}
 
 function isNavItemActive(pathname, href) {
   if (href === '/app') {
@@ -270,28 +374,16 @@ export default function Layout({ children }) {
         </div>
 
         <nav className="flex-1 space-y-1 px-3 py-4">
-          {navigation.map((item) => {
-            const isActive = isNavItemActive(location.pathname, item.href)
-
-            return (
-              <NavLink
-                key={item.href}
-                to={item.href}
-                onClick={() => !isDesktop && setMobileOpen(false)}
-                className={[
-                  'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
-                  collapsed ? 'md:justify-center md:px-2.5 md:gap-0' : '',
-                  isActive
-                    ? 'bg-amber-600/20 text-amber-400'
-                    : 'text-terminal-300 hover:bg-terminal-700 hover:text-terminal-100',
-                ].join(' ')}
-                title={collapsed ? item.name : undefined}
-              >
-                <item.icon className="size-5 shrink-0" />
-                {!collapsed && <span className="whitespace-nowrap">{item.name}</span>}
-              </NavLink>
-            )
-          })}
+          {navSections.map((section) => (
+            <NavSection
+              key={section.id}
+              section={section}
+              collapsed={collapsed}
+              isDesktop={isDesktop}
+              location={location}
+              onNavClick={() => !isDesktop && setMobileOpen(false)}
+            />
+          ))}
         </nav>
 
         <div className="px-3 pb-4">
