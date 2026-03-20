@@ -342,7 +342,7 @@ export default function StrategyBuilder() {
     if (!isConnected) return
     try {
       const [stratRes, menuRes] = await Promise.all([
-        get('/v1/strategies'),
+        get('/v1/user-strategies'),
         get('/v1/indicators/menu'),
       ])
       setStrategies(stratRes?.data || [])
@@ -398,7 +398,7 @@ export default function StrategyBuilder() {
         symbol_filter: symbolFilter,
       }
 
-      const res = await post('/v1/strategies', body)
+      const res = await post('/v1/user-strategies', body)
       if (res?.data) {
         setHealthCheck(res.data.health_check)
         addToast({ type: 'success', message: `Strategy "${name}" created` })

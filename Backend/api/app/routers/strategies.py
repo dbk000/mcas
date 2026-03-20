@@ -164,7 +164,7 @@ def _health_check(conditions: list, timeframes: list) -> dict:
 # Endpoints
 # ---------------------------------------------------------------------------
 
-@router.post("/strategies")
+@router.post("/user-strategies")
 def create_strategy(
     body: dict,
     x_api_key: str = Header(default="", alias="X-API-Key"),
@@ -241,7 +241,7 @@ def create_strategy(
     }, t0)
 
 
-@router.get("/strategies")
+@router.get("/user-strategies")
 def list_strategies(
     x_api_key: str = Header(default="", alias="X-API-Key"),
 ):
@@ -288,7 +288,7 @@ def list_strategies(
     return _envelope(strategies, t0)
 
 
-@router.get("/strategies/{strategy_id}")
+@router.get("/user-strategies/{strategy_id}")
 def get_strategy(
     strategy_id: int,
     x_api_key: str = Header(default="", alias="X-API-Key"),
@@ -321,7 +321,7 @@ def get_strategy(
     }, t0)
 
 
-@router.put("/strategies/{strategy_id}")
+@router.put("/user-strategies/{strategy_id}")
 def update_strategy(
     strategy_id: int,
     body: dict,
@@ -420,7 +420,7 @@ def update_strategy(
     return _envelope(result, t0)
 
 
-@router.delete("/strategies/{strategy_id}")
+@router.delete("/user-strategies/{strategy_id}")
 def delete_strategy(
     strategy_id: int,
     x_api_key: str = Header(default="", alias="X-API-Key"),
