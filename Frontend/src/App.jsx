@@ -230,7 +230,7 @@ class ErrorBoundary extends React.Component {
 export default function App() {
   return (
     <>
-      <maintovelray />
+      <MaintenanceOverlay />
     <ErrorBoundary>
       <DevHUD />
       <RouteLogger />
