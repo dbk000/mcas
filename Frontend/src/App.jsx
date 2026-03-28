@@ -231,102 +231,103 @@ export default function App() {
   return (
     <>
       <MaintenanceOverlay />
-    <ErrorBoundary>
-      <DevHUD />
-      <RouteLogger />
-      <Routes>
-        <Route element={<PublicLayoutRoute />}>
-          <Route
-            element={(
-              <RouteFamilyBoundary
-                title="Loading public route"
-                detail="Fetching the marketing surface for this destination."
-              />
-            )}
-          >
-            <Route path="/" element={<Landing />} />
-            <Route path="/winners" element={<Winners />} />
-            <Route path="/pricing" element={<Pricing />} />
-            <Route path="/upgrade" element={<Upgrade />} />
-            <Route path="/checkout/success" element={<CheckoutSuccess />} />
-            <Route path="/checkout/cancel" element={<CheckoutCancel />} />
-            <Route path="/settings" element={<Settings />} />
+      <ErrorBoundary>
+        <DevHUD />
+        <RouteLogger />
+        <Routes>
+          <Route element={<PublicLayoutRoute />}>
+            <Route
+              element={(
+                <RouteFamilyBoundary
+                  title="Loading public route"
+                  detail="Fetching the marketing surface for this destination."
+                />
+              )}
+            >
+              <Route path="/" element={<Landing />} />
+              <Route path="/winners" element={<Winners />} />
+              <Route path="/pricing" element={<Pricing />} />
+              <Route path="/upgrade" element={<Upgrade />} />
+              <Route path="/checkout/success" element={<CheckoutSuccess />} />
+              <Route path="/checkout/cancel" element={<CheckoutCancel />} />
+              <Route path="/settings" element={<Settings />} />
+            </Route>
           </Route>
-        </Route>
 
-        <Route path="/app" element={<AppShell />}>
-          <Route
-            element={(
-              <RouteFamilyBoundary
-                appShell
-                title="Loading dashboard"
-                detail="Preparing the operator summary surfaces."
-              />
-            )}
-          >
-            <Route index element={<Dashboard />} />
-            <Route path="strategies" element={<StrategyDashboard />} />
-            <Route path="strategies/builder" element={<StrategyBuilder />} />
+          <Route path="/app" element={<AppShell />}>
+            <Route
+              element={(
+                <RouteFamilyBoundary
+                  appShell
+                  title="Loading dashboard"
+                  detail="Preparing the operator summary surfaces."
+                />
+              )}
+            >
+              <Route index element={<Dashboard />} />
+              <Route path="strategies" element={<StrategyDashboard />} />
+              <Route path="strategies/builder" element={<StrategyBuilder />} />
+            </Route>
+            <Route
+              element={(
+                <RouteFamilyBoundary
+                  appShell
+                  title="Loading opportunities"
+                  detail="Fetching the opportunity analysis surface."
+                />
+              )}
+            >
+              <Route path="opportunities" element={<Opportunities />} />
+              <Route path="opportunities/survey" element={<OpportunitySurvey />} />
+              <Route path="opportunities/:id" element={<OpportunityDetail />} />
+            </Route>
+            <Route
+              element={(
+                <RouteFamilyBoundary
+                  appShell
+                  title="Loading markets"
+                  detail="Preparing market detail tools and charting assets."
+                />
+              )}
+            >
+              <Route path="markets" element={<Markets />} />
+              <Route path="markets/:symbol" element={<MarketDetail />} />
+            </Route>
+            <Route
+              element={(
+                <RouteFamilyBoundary
+                  appShell
+                  title="Loading runs"
+                  detail="Fetching run history and simulation comparisons."
+                />
+              )}
+            >
+              <Route path="runs" element={<Runs />} />
+              <Route path="runs/compare" element={<RunCompare />} />
+              <Route path="runs/:id" element={<RunDetail />} />
+              <Route path="runs/:id/simulation" element={<SimulationResults />} />
+            </Route>
+            <Route
+              element={(
+                <RouteFamilyBoundary
+                  appShell
+                  title="Loading operator surface"
+                  detail="Fetching advanced analysis and control tools."
+                />
+              )}
+            >
+              <Route path="control" element={<ControlPlane />} />
+              <Route path="paper" element={<PaperTrading />} />
+              <Route path="analytics/correlations" element={<CorrelationAnalysis />} />
+              <Route path="pipeline" element={<Pipeline />} />
+              <Route path="heatmap" element={<Heatmap />} />
+              <Route path="derivatives" element={<DerivativesDashboard />} />
+            </Route>
           </Route>
-          <Route
-            element={(
-              <RouteFamilyBoundary
-                appShell
-                title="Loading opportunities"
-                detail="Fetching the opportunity analysis surface."
-              />
-            )}
-          >
-            <Route path="opportunities" element={<Opportunities />} />
-            <Route path="opportunities/survey" element={<OpportunitySurvey />} />
-            <Route path="opportunities/:id" element={<OpportunityDetail />} />
-          </Route>
-          <Route
-            element={(
-              <RouteFamilyBoundary
-                appShell
-                title="Loading markets"
-                detail="Preparing market detail tools and charting assets."
-              />
-            )}
-          >
-            <Route path="markets" element={<Markets />} />
-            <Route path="markets/:symbol" element={<MarketDetail />} />
-          </Route>
-          <Route
-            element={(
-              <RouteFamilyBoundary
-                appShell
-                title="Loading runs"
-                detail="Fetching run history and simulation comparisons."
-              />
-            )}
-          >
-            <Route path="runs" element={<Runs />} />
-            <Route path="runs/compare" element={<RunCompare />} />
-            <Route path="runs/:id" element={<RunDetail />} />
-            <Route path="runs/:id/simulation" element={<SimulationResults />} />
-          </Route>
-          <Route
-            element={(
-              <RouteFamilyBoundary
-                appShell
-                title="Loading operator surface"
-                detail="Fetching advanced analysis and control tools."
-              />
-            )}
-          >
-            <Route path="control" element={<ControlPlane />} />
-            <Route path="paper" element={<PaperTrading />} />
-            <Route path="analytics/correlations" element={<CorrelationAnalysis />} />
-            <Route path="pipeline" element={<Pipeline />} />
-            <Route path="heatmap" element={<Heatmap />} />
-            <Route path="derivatives" element={<DerivativesDashboard />} />
-          </Route>
-        </Route>
 
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </ErrorBoundary>
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </ErrorBoundary>
+    </>
   )
 }
