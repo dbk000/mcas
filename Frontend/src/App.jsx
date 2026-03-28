@@ -1,3 +1,4 @@
+import MaintenanceOverlay from './components/MaintenanceOverlay'
 import React, { Suspense, lazy, useEffect } from 'react'
 import { Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useApi } from './context/ApiContext'
@@ -228,6 +229,8 @@ class ErrorBoundary extends React.Component {
 
 export default function App() {
   return (
+    <>
+      <maintovelray />
     <ErrorBoundary>
       <DevHUD />
       <RouteLogger />
