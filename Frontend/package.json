@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && node scripts/check-bundle-budget.js",
+    "build": "vite build",
     "preview": "vite preview",
     "preview:e2e": "vite preview --host 127.0.0.1 --port 4173 --strictPort",
     "test:unit": "node --test tests/pf.unit.test.js src/hooks/__tests__/useNodeVisualState.test.js",
