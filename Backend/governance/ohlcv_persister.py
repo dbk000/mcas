@@ -401,6 +401,15 @@ class OHLCVPersister:
 # Entry point
 # ---------------------------------------------------------------------------
 
+async def run():
+    """Async wrapper for supervisor. Runs OHLCVPersister in a thread."""
+    import asyncio
+    _init_config()
+    setup_logging()
+    persister = OHLCVPersister()
+    await asyncio.to_thread(persister.run)
+
+
 if __name__ == "__main__":
     from governance.bootstrap import bootstrap_genesis
     bootstrap_genesis()

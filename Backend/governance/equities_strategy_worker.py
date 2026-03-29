@@ -481,6 +481,12 @@ def main():
             time.sleep(300)  # Wait 5 min before retry
 
 
+async def run():
+    """Async wrapper for supervisor. Runs equities strategy worker in a thread."""
+    import asyncio
+    await asyncio.to_thread(main)
+
+
 if __name__ == "__main__":
     from governance.bootstrap import bootstrap_config
     bootstrap_config()

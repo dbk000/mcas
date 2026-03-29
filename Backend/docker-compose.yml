@@ -1,3 +1,7 @@
+# MCAS — 8-container consolidated topology
+# Replaces the previous 22-service layout.
+# See docker-consolidation-plan.md for the rationale and migration details.
+
 services:
   caddy:
     image: caddy:2
@@ -9,7 +13,7 @@ services:
       - 8.8.8.8
       - 8.8.4.4
     volumes:
-      - ./caddy/Caddyfile:/etc/caddy/Caddyfile
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile  # third-party image config
       - caddy_data:/data
       - caddy_config:/config
     mem_limit: 256m
@@ -28,21 +32,9 @@ services:
     environment:
       SERVICE_NAME: api
     mem_limit: 512m
-    networks:
-      - backend
-
-  worker:
-    build:
-      context: .
-      dockerfile: Dockerfile.worker
-    restart: unless-stopped
-    env_file:
-      - .env
-    environment:
-      SERVICE_NAME: worker
-    volumes:
-      - ./scripts:/scripts
-    mem_limit: 8g
+    depends_on:
+      - postgres
+      - redis
     networks:
       - backend
 
@@ -73,260 +65,75 @@ services:
     networks:
       - backend
 
-  ingestor:
+  collectors:
     build:
       context: .
-      dockerfile: Dockerfile.worker
+      dockerfile: Dockerfile.collectors
     restart: unless-stopped
     env_file:
       - .env
     environment:
-      SERVICE_NAME: ingestor
-    command: ["python", "-u", "governance/ingestor.py"]
-    mem_limit: 512m
-    networks:
-      - backend
-
-  indicator_worker_0:
-    build:
-      context: .
-      dockerfile: Dockerfile.worker
-    restart: unless-stopped
-    env_file:
-      - .env
-    environment:
-      SERVICE_NAME: indicator_worker
-      WORKER_INDEX: "0"
-      N_WORKERS: "2"
-    command: ["python", "-u", "governance/indicator_worker.py"]
-    mem_limit: 1g
-    networks:
-      - backend
-
-  indicator_worker_1:
-    build:
-      context: .
-      dockerfile: Dockerfile.worker
-    restart: unless-stopped
-    env_file:
-      - .env
-    environment:
-      SERVICE_NAME: indicator_worker
-      WORKER_INDEX: "1"
-      N_WORKERS: "2"
-    command: ["python", "-u", "governance/indicator_worker.py"]
-    mem_limit: 1g
-    networks:
-      - backend
-
-  signal_worker_0:
-    build:
-      context: .
-      dockerfile: Dockerfile.worker
-    restart: unless-stopped
-    env_file:
-      - .env
-    environment:
-      SERVICE_NAME: signal_worker
-      WORKER_INDEX: "0"
-      N_WORKERS: "2"
-    command: ["python", "-u", "governance/signal_worker.py"]
-    mem_limit: 512m
-    networks:
-      - backend
-
-  signal_worker_1:
-    build:
-      context: .
-      dockerfile: Dockerfile.worker
-    restart: unless-stopped
-    env_file:
-      - .env
-    environment:
-      SERVICE_NAME: signal_worker
-      WORKER_INDEX: "1"
-      N_WORKERS: "2"
-    command: ["python", "-u", "governance/signal_worker.py"]
-    mem_limit: 512m
-    networks:
-      - backend
-
-  unicorn_pipeline:
-    build:
-      context: .
-      dockerfile: Dockerfile.worker
-    restart: unless-stopped
-    env_file:
-      - .env
-    environment:
-      SERVICE_NAME: unicorn_pipeline
-      UNICORN_PIPELINE_INTERVAL_S: "300"
-    command: ["python", "-u", "governance/unicorn_pipeline.py"]
-    mem_limit: 512m
-    networks:
-      - backend
-
-  ohlcv_persister:
-    build:
-      context: .
-      dockerfile: Dockerfile.worker
-    restart: unless-stopped
-    env_file:
-      - .env
-    environment:
-      SERVICE_NAME: ohlcv_persister
-    command: ["python", "-u", "governance/ohlcv_persister.py"]
-    mem_limit: 256m
-    networks:
-      - backend
-
-  social_collector:
-    build:
-      context: ./social_collector
-      dockerfile: Dockerfile
-    restart: unless-stopped
-    env_file:
-      - .env
-    environment:
-      SERVICE_NAME: social_collector
-    volumes:
-      - ./social_collector/app:/app
-      - social_telegram_sessions:/app/sessions
-    mem_limit: 512m
-    networks:
-      - backend
-
-  derivatives_collector:
-    build:
-      context: .
-      dockerfile: Dockerfile.worker
-    restart: unless-stopped
-    env_file:
-      - .env
-    environment:
-      SERVICE_NAME: derivatives_collector
+      SERVICE_NAME: collectors
       COLLECTION_INTERVAL_S: "3600"
       FUNDING_INTERVAL_S: "14400"
-    command: ["python", "-u", "/scripts/derivatives_collector.py"]
-    volumes:
-      - ./scripts:/scripts
-    mem_limit: 512m
-    networks:
-      - backend
-
-  onchain_collector:
-    build:
-      context: .
-      dockerfile: Dockerfile.worker
-    restart: unless-stopped
-    env_file:
-      - .env
-    environment:
-      SERVICE_NAME: onchain_collector
       ONCHAIN_COLLECTION_INTERVAL_S: "3600"
       DUNE_API_KEY: ${DUNE_API_KEY:-}
-    command: ["python", "-u", "/scripts/onchain_collector.py"]
+      CPU_SAMPLE_INTERVAL: "5"
+      CPU_HISTORY_TTL: "86400"
+      CPU_DOCKER_STATS: "true"
+      CPU_ALERT_THRESHOLD: "85"
+      CPU_ALERT_SUSTAINED: "30"
+      HOST_PROC: /host/proc
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      TELEGRAM_SESSION_PATH: /backend/social_collector/sessions/mcas
     volumes:
-      - ./scripts:/scripts
-    mem_limit: 1g
-    networks:
-      - backend
-
-  cpu_collector:
-    build:
-      context: ./monitoring
-      dockerfile: Dockerfile
-    container_name: mcas-cpu-collector
-    restart: unless-stopped
-    volumes:
-      - /proc:/host/proc:ro
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - /usr/bin/docker:/usr/bin/docker:ro
-      - ./monitoring/cpu_collector.py:/app/cpu_collector.py:ro
-      - ./monitoring/cpu_query.py:/app/cpu_query.py:ro
-    environment:
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - REDIS_DB=0
-      - CPU_SAMPLE_INTERVAL=5
-      - CPU_HISTORY_TTL=86400
-      - CPU_DOCKER_STATS=true
-      - CPU_ALERT_THRESHOLD=85
-      - CPU_ALERT_SUSTAINED=30
-      - HOST_PROC=/host/proc
-    command: ["python", "-u", "cpu_collector.py"]
-    deploy:
-      resources:
-        limits:
-          cpus: '0.10'
-          memory: 64M
-        reservations:
-          cpus: '0.01'
-          memory: 16M
-    networks:
-      - backend
-
-  equities_pipeline:
-    build:
-      context: .
-      dockerfile: Dockerfile.worker
-    restart: unless-stopped
-    env_file:
-      - .env
-    environment:
-      SERVICE_NAME: equities_pipeline
-    command: ["python", "-u", "/scripts/equities_pipeline_runner.py", "--loop", "--interval-seconds", "600"]
-    volumes:
-      - ./scripts:/scripts
-    cpus: "2.0"
-    mem_limit: 6g
-    networks:
-      - backend
-
-  equities_strategy_worker:
-    build:
-      context: .
-      dockerfile: Dockerfile.worker
-    restart: unless-stopped
-    env_file:
-      - .env
-    environment:
-      SERVICE_NAME: equities_strategy_worker
-    command: ["python", "-u", "governance/equities_strategy_worker.py"]
-    volumes:
-      - ./scripts:/scripts
-    mem_limit: 1g
+      - social_telegram_sessions:/backend/social_collector/sessions  # persistent state only
+      - /proc:/host/proc:ro          # host system — cpu_collector
+      - /var/run/docker.sock:/var/run/docker.sock:ro  # host system — cpu_collector
+    healthcheck:
+      test: ["CMD-SHELL", "test -f /tmp/healthy"]
+      interval: 30s
+      retries: 3
+      start_period: 60s
+    mem_limit: 3g
     depends_on:
       - postgres
       - redis
     networks:
       - backend
 
-  equities_task_worker:
+  computers:
     build:
       context: .
-      dockerfile: Dockerfile.worker
+      dockerfile: Dockerfile.computers
     restart: unless-stopped
     env_file:
       - .env
     environment:
-      SERVICE_NAME: equities_task_worker
-    command: ["python", "-u", "/scripts/equities_task_worker_loop.py"]
-    volumes:
-      - ./scripts:/scripts
-    mem_limit: 1g
+      SERVICE_NAME: computers
+      N_WORKERS: "2"
+    healthcheck:
+      test: ["CMD-SHELL", "test -f /tmp/healthy"]
+      interval: 30s
+      retries: 3
+      start_period: 60s
+    mem_limit: 12g
+    depends_on:
+      - postgres
+      - redis
     networks:
       - backend
 
-  d2_paper_trader:
+  strats_evals:
     build:
       context: .
-      dockerfile: Dockerfile.worker
+      dockerfile: Dockerfile.strats_evals
     restart: unless-stopped
     env_file:
       - .env
     environment:
-      SERVICE_NAME: d2_paper_trader
+      SERVICE_NAME: strats_evals
       D2_ENTRY_THRESHOLD: "0.25"
       D2_STOP_PCT: "0.15"
       D2_TIME_STOP_HOURS: "72"
@@ -338,50 +145,40 @@ services:
       D2_CLUSTER_POLL_S: "30"
       D2_MAX_CONCURRENT: "3"
       D2_FNG_SOFT_GATE: "log_only"
-    command: ["python", "-u", "governance/d2_paper_trader.py"]
-    mem_limit: 1g
+      UNICORN_PIPELINE_INTERVAL_S: "300"
+      SETTLER_INTERVAL_S: "3600"
+    healthcheck:
+      test: ["CMD-SHELL", "test -f /tmp/healthy"]
+      interval: 30s
+      retries: 3
+      start_period: 60s
+    cpus: "2.0"
+    mem_limit: 12g
     depends_on:
       - postgres
       - redis
     networks:
       - backend
 
-  # Strategy builder evaluator. DO NOT scale replicas > 1 without
-  # redesigning crossover state (cstrat_prev write path).
-  custom_strategy_worker:
+  strats_features:
     build:
       context: .
-      dockerfile: Dockerfile.worker
+      dockerfile: Dockerfile.strats_features
     restart: unless-stopped
     env_file:
       - .env
     environment:
       SERVICE_NAME: custom_strategy_worker
-    command: ["python", "-u", "governance/custom_strategy_worker.py"]
+    healthcheck:
+      test: ["CMD-SHELL", "test -f /tmp/healthy"]
+      interval: 30s
+      retries: 3
+      start_period: 60s
     mem_limit: 512m
     cpus: "1.0"
     depends_on:
       - postgres
       - redis
-    networks:
-      - backend
-
-  expired_opp_exit_settler:
-    build:
-      context: .
-      dockerfile: Dockerfile.worker
-    restart: unless-stopped
-    env_file:
-      - .env
-    environment:
-      SERVICE_NAME: expired_opp_exit_settler
-      SETTLER_INTERVAL_S: "3600"
-    command: ["python", "-u", "/scripts/expired_opportunity_exit_settler.py", "--loop", "--interval-seconds", "3600", "--limit", "5000"]
-    volumes:
-      - ./scripts:/scripts
-    mem_limit: 1g
-    depends_on:
-      - postgres
     networks:
       - backend
 

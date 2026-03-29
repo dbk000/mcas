@@ -1,0 +1,16 @@
+FROM python:3.12-slim
+
+WORKDIR /backend
+
+COPY requirements-strats-evals.txt /backend/requirements.txt
+RUN pip install --no-cache-dir -r /backend/requirements.txt
+
+COPY core_logic /backend/core_logic
+COPY governance /backend/governance
+COPY indicators /backend/indicators
+COPY scripts /backend/scripts
+COPY strats_evals /backend/strats_evals
+
+ENV PYTHONPATH=/backend:/backend/scripts
+
+CMD ["python", "-u", "strats_evals/main.py"]

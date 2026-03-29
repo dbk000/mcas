@@ -445,5 +445,15 @@ def main() -> None:
     )
 
 
+async def run():
+    """Async wrapper for supervisor. Runs settler in a thread with --loop."""
+    import asyncio
+    import sys
+    # Simulate CLI args for the argparse-based main()
+    sys.argv = ["expired_opportunity_exit_settler.py", "--loop",
+                "--interval-seconds", "3600", "--limit", "5000"]
+    await asyncio.to_thread(main)
+
+
 if __name__ == "__main__":
     main()

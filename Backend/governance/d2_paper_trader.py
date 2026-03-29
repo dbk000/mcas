@@ -1076,7 +1076,8 @@ class D2PaperTrader:
 # Entrypoint
 # ═══════════════════════════════════════════════════════════════════════════
 
-async def main():
+async def run():
+    """Supervised entry point — native async, no to_thread needed."""
     trader = D2PaperTrader()
     try:
         await trader.start()
@@ -1084,6 +1085,11 @@ async def main():
         logger.info("Interrupted")
     finally:
         trader.shutdown()
+
+
+# Keep main() alias for standalone use
+async def main():
+    await run()
 
 
 if __name__ == "__main__":

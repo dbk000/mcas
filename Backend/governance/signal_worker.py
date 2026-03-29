@@ -8,6 +8,7 @@ events, reads indicator snapshots with mandatory m1/snap/m2 consistency
 BTC stale -> degrade gracefully (invariant #12).
 """
 
+import asyncio
 import sys
 import json
 import time
@@ -140,11 +141,24 @@ def _database_url() -> str:
     return _worker_cfg().DATABASE_URL
 
 
+# Thread-local overrides for worker_index/n_workers — used when two
+# SignalWorker instances share one process (consolidated container).
+# Each asyncio.to_thread gets its own thread, so thread-local is safe.
+import threading as _threading
+_thread_overrides = _threading.local()
+
+
 def _worker_index() -> int:
+    override = getattr(_thread_overrides, "worker_index", None)
+    if override is not None:
+        return override
     return _worker_cfg().WORKER_INDEX
 
 
 def _n_workers() -> int:
+    override = getattr(_thread_overrides, "n_workers", None)
+    if override is not None:
+        return override
     return _worker_cfg().N_WORKERS
 
 
@@ -2353,7 +2367,26 @@ class SignalWorker(LineageEnforcer):
 
 
 # ---------------------------------------------------------------------------
-# Entry point
+# Supervised entry point (for consolidated containers)
+# ---------------------------------------------------------------------------
+
+async def run(worker_index: int | None = None, n_workers: int | None = None):
+    """Async wrapper for supervisor. Sets thread-local overrides then runs in a thread."""
+    def _run_sync():
+        # Set thread-local overrides (safe — each to_thread gets its own thread)
+        if worker_index is not None:
+            _thread_overrides.worker_index = worker_index
+        if n_workers is not None:
+            _thread_overrides.n_workers = n_workers
+        setup_logging()
+        worker = SignalWorker()
+        worker.run()
+
+    await asyncio.to_thread(_run_sync)
+
+
+# ---------------------------------------------------------------------------
+# Standalone entry point
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":

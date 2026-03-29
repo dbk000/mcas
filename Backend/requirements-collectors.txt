@@ -1,0 +1,19 @@
+# Governance core
+psycopg[binary]
+psycopg_pool
+redis
+requests
+aiohttp
+numpy
+scipy
+python-json-logger
+websocket-client
+groq
+google-genai
+# Social collector deps
+praw
+telethon
+feedparser
+anthropic
+discord.py-self
+# CPU collector (docker stats via subprocess, no extra deps)

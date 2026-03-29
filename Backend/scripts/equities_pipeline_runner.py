@@ -381,5 +381,14 @@ def main() -> int:
     return 0
 
 
+async def run():
+    """Async wrapper for supervisor. Runs equities pipeline in a thread with --loop."""
+    import asyncio
+    import sys
+    # Simulate CLI args for the argparse-based main()
+    sys.argv = ["equities_pipeline_runner.py", "--loop", "--interval-seconds", "600"]
+    await asyncio.to_thread(main)
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

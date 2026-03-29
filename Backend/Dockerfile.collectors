@@ -1,0 +1,19 @@
+FROM python:3.12-slim
+
+WORKDIR /backend
+
+COPY requirements-collectors.txt /backend/requirements.txt
+RUN pip install --no-cache-dir -r /backend/requirements.txt
+
+COPY core_logic /backend/core_logic
+COPY governance /backend/governance
+COPY indicators /backend/indicators
+COPY social_collector /backend/social_collector
+COPY monitoring /backend/monitoring
+COPY scripts /backend/scripts
+COPY collectors /backend/collectors
+
+# social_collector/app uses bare imports (config, db, collectors.*)
+ENV PYTHONPATH=/backend:/backend/scripts:/backend/social_collector/app
+
+CMD ["python", "-u", "collectors/main.py"]

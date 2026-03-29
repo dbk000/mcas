@@ -951,6 +951,15 @@ class Ingestor:
 # Entry point
 # ---------------------------------------------------------------------------
 
+async def run():
+    """Async wrapper for supervisor. Runs Ingestor in a thread."""
+    import asyncio
+    _init_config()
+    setup_logging()
+    ingestor = Ingestor()
+    await asyncio.to_thread(ingestor.run)
+
+
 if __name__ == "__main__":
     from governance.bootstrap import bootstrap_genesis
     bootstrap_genesis()

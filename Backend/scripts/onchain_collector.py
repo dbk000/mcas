@@ -2355,5 +2355,14 @@ def main():
         logger.info("On-chain collector stopped. %d total rows.", writer_stats["rows_written"])
 
 
+async def run():
+    """Async wrapper for supervisor. Runs onchain collector in a thread."""
+    import asyncio
+    import sys
+    # No args = continuous mode (default behavior)
+    sys.argv = ["onchain_collector.py"]
+    await asyncio.to_thread(main)
+
+
 if __name__ == "__main__":
     main()

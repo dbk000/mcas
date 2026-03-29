@@ -639,6 +639,12 @@ def main():
         })
 
 
+async def run():
+    """Async wrapper for supervisor. Runs worker main() in a thread."""
+    import asyncio
+    await asyncio.to_thread(main)
+
+
 if __name__ == "__main__":
     from governance.bootstrap import bootstrap_genesis
     bootstrap_genesis()

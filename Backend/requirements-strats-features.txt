@@ -1,3 +1,4 @@
+# Governance core + compute deps (custom strategy worker)
 psycopg[binary]
 psycopg_pool
 redis
@@ -7,3 +8,5 @@ numpy
 scipy
 python-json-logger
 websocket-client
+groq
+google-genai

@@ -182,5 +182,11 @@ def main():
             pass
 
 
+async def run():
+    """Async wrapper for supervisor. Runs social collector in a thread."""
+    import asyncio
+    await asyncio.to_thread(main)
+
+
 if __name__ == "__main__":
     main()

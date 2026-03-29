@@ -697,6 +697,13 @@ def run_pipeline():
     pipeline.run()
 
 
+async def run():
+    """Async wrapper for supervisor. Runs pipeline in a thread."""
+    import asyncio
+    setup_logging()
+    await asyncio.to_thread(run_pipeline)
+
+
 if __name__ == "__main__":
     from governance.bootstrap import bootstrap_config
     bootstrap_config()

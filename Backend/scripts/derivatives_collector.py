@@ -1307,5 +1307,14 @@ def main():
         logger.info("Derivatives collector stopped.")
 
 
+async def run():
+    """Async wrapper for supervisor. Runs derivatives collector in a thread."""
+    import asyncio
+    import sys
+    # No args = continuous mode (default behavior)
+    sys.argv = ["derivatives_collector.py"]
+    await asyncio.to_thread(main)
+
+
 if __name__ == "__main__":
     main()

@@ -267,5 +267,11 @@ def main() -> int:
     return 0
 
 
+async def run():
+    """Async wrapper for supervisor. Runs task worker in a thread."""
+    import asyncio
+    await asyncio.to_thread(main)
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

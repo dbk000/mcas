@@ -6,11 +6,10 @@ Dataclass imports are explicitly injected to guarantee semantics.
 """
 
 from dataclasses import dataclass, field, asdict
-from governance.bootstrap import bootstrap_genesis
-bootstrap_genesis()  # Must populate registry before module-level reads below
-from governance.bootstrap import get_config
+from governance.bootstrap import bootstrap_genesis, get_config
 from governance.infrastructure import SystemClient
 
+import asyncio
 import json
 import time
 
@@ -35,25 +34,13 @@ from indicators.indicators import FeatureFactory, OHLCV
 
 logger = logging.getLogger("indicator_worker")
 
-_worker_config = get_config().Worker
-
-REDIS_URL = _worker_config.REDIS_URL
-
-WORKER_INDEX = _worker_config.WORKER_INDEX
-
-N_WORKERS = _worker_config.N_WORKERS
-
-LOG_LEVEL = _worker_config.LOG_LEVEL
-
-CONSUMER_NAME = f"ind-{WORKER_INDEX}"
-
 COMPUTE_WORKERS = 4     # ThreadPool size for parallel indicator compute
 
 XREAD_BLOCK_MS = 5000   # 5s blocking read
 
 XREAD_COUNT = COMPUTE_WORKERS  # Cap to pool size — prevents unbounded future accumulation
 
-def setup_logging():
+def setup_logging(log_level="INFO"):
     handler = logging.StreamHandler(SystemClient.get_stdout())
     handler.setFormatter(logging.Formatter(
         "%(asctime)s [%(name)s] %(levelname)s %(message)s",
@@ -62,7 +49,7 @@ def setup_logging():
     root = logging.getLogger()
     root.handlers.clear()
     root.addHandler(handler)
-    root.setLevel(logging.getLevelName(LOG_LEVEL.upper()))
+    root.setLevel(logging.getLevelName(log_level.upper()))
 
 HTF_MAP = {"1m": "5m", "5m": "15m", "15m": "1h", "1h": "4h", "4h": "1d"}
 
@@ -72,25 +59,37 @@ class IndicatorWorker:
     # Thread-local FeatureFactory — one per compute thread, avoids sharing
     _thread_local = threading.local()
 
-    def __init__(self):
+    def __init__(self, worker_index: int | None = None, n_workers: int | None = None):
+        """Accept optional worker_index/n_workers overrides for consolidated containers.
+
+        When two instances share one process, env vars are the same for both —
+        the caller passes explicit values to differentiate them.
+        """
+        cfg = get_config().Worker
+        self.REDIS_URL = cfg.REDIS_URL
+        self.WORKER_INDEX = worker_index if worker_index is not None else cfg.WORKER_INDEX
+        self.N_WORKERS = n_workers if n_workers is not None else cfg.N_WORKERS
+        self.LOG_LEVEL = cfg.LOG_LEVEL
+        self.CONSUMER_NAME = f"ind-{self.WORKER_INDEX}"
+
         # Invariant #24: decode_responses=True mandatory
         # Connection pool sized >= COMPUTE_WORKERS + main thread + headroom
         self.r = redis.Redis.from_url(
-            REDIS_URL, decode_responses=True,
+            self.REDIS_URL, decode_responses=True,
             max_connections=COMPUTE_WORKERS + 4,
         )
         self.last_reconcile = 0.0
         self._activity_counter = 0
-        self._ACTIVITY_SAMPLE_EVERY = get_config().Worker.ACTIVITY_SAMPLE_EVERY
+        self._ACTIVITY_SAMPLE_EVERY = cfg.ACTIVITY_SAMPLE_EVERY
         # Per-worker consumer group: each worker instance gets ALL messages
         # and filters by partition locally. Fixes the shared-group bug where
         # ACK-ing another worker's message silently drops it.
-        self.group_name = f"indicator_group_{WORKER_INDEX}"
+        self.group_name = f"indicator_group_{self.WORKER_INDEX}"
         self._compute_pool = ThreadPoolExecutor(max_workers=COMPUTE_WORKERS)
 
     def run(self):
         """Main loop: wait for cache ready, then consume streams."""
-        logger.info(f"Indicator worker {WORKER_INDEX}/{N_WORKERS} starting")
+        logger.info(f"Indicator worker {self.WORKER_INDEX}/{self.N_WORKERS} starting")
 
         # Wait for ingestor to finish seeding
         while not is_cache_ready(self.r):
@@ -124,7 +123,7 @@ class IndicatorWorker:
                 # count=COMPUTE_WORKERS ensures at most pool-size futures outstanding
                 results = self.r.xreadgroup(
                     groupname=self.group_name,
-                    consumername=CONSUMER_NAME,
+                    consumername=self.CONSUMER_NAME,
                     streams=streams,
                     count=XREAD_COUNT,
                     block=XREAD_BLOCK_MS,
@@ -184,7 +183,7 @@ class IndicatorWorker:
             return
 
         # Only process symbols in our partition (invariant #17)
-        if symbol_partition(symbol, N_WORKERS) != WORKER_INDEX:
+        if symbol_partition(symbol, self.N_WORKERS) != self.WORKER_INDEX:
             self.r.xack(stream_name, self.group_name, msg_id)
             return
 
@@ -258,7 +257,7 @@ class IndicatorWorker:
 
             my_symbols = [
                 s for s in all_symbols
-                if symbol_partition(s, N_WORKERS) == WORKER_INDEX
+                if symbol_partition(s, self.N_WORKERS) == self.WORKER_INDEX
             ]
 
             recomputed = 0
@@ -281,11 +280,23 @@ class IndicatorWorker:
 
 
 # ---------------------------------------------------------------------------
-# Entry point
+# Supervised entry point (for consolidated containers)
+# ---------------------------------------------------------------------------
+
+async def run(worker_index: int | None = None, n_workers: int | None = None):
+    """Async wrapper for supervisor. Runs IndicatorWorker in a thread."""
+    worker = IndicatorWorker(worker_index=worker_index, n_workers=n_workers)
+    await asyncio.to_thread(worker.run)
+
+
+# ---------------------------------------------------------------------------
+# Standalone entry point
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    setup_logging()
+    bootstrap_genesis()
+    cfg = get_config().Worker
+    setup_logging(cfg.LOG_LEVEL)
     worker = IndicatorWorker()
     worker.run()
 

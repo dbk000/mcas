@@ -23,8 +23,8 @@ from datetime import datetime, timezone, timedelta
 import redis
 import psycopg
 
+import asyncio
 from governance.bootstrap import bootstrap_genesis, get_config
-bootstrap_genesis()
 
 from governance.cache_contract import (
     read_fresh_snapshot,
@@ -402,7 +402,14 @@ class CustomStrategyWorker:
                 time.sleep(2)
 
 
+async def run():
+    """Async wrapper for supervisor. Runs CustomStrategyWorker in a thread."""
+    worker = CustomStrategyWorker()
+    await asyncio.to_thread(worker.run)
+
+
 def main():
+    bootstrap_genesis()
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
