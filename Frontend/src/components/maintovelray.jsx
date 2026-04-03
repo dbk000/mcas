@@ -69,11 +69,11 @@ export default function MaintenanceOverlay() {
           margin: "0 0 36px", fontWeight: 400,
           letterSpacing: "0.01em", textAlign: "left",
         }}>
-          Uh oh! Our servers are experiencing higher demand than usual. During this time, the MCAS User Interface will be unavailable until completion of server upgrade to maintain integrity of service.
+          Our server upgrade and migration is complete, but at over half a million evaluations per hour we have a lot to test and verify to ensure everything is working as it should post-migration - hence the somewhat protracted process.
           <br /><br />
           Current subscribers can continue to access MCAS itself via the usual login link.
           <br /><br />
-          We expect the upgrade to be complete by 2 April, thank you for your patience.
+          We expect testing and verification to be complete by 6 April, midday UTC. Thank you for your patience.
         </p>
 
         <div style={{
@@ -88,7 +88,7 @@ export default function MaintenanceOverlay() {
             animation: "pulse 1.8s ease-in-out infinite", display: "inline-block",
           }} />
           <span style={{ fontSize: 10, letterSpacing: "0.25em", color: "rgba(100, 65, 10, 0.75)", textTransform: "uppercase" }}>
-            Server upgrade in progress{dots}
+            Testing and verification in progress{dots}
           </span>
         </div>
 
