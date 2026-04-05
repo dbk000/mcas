@@ -1,7 +1,7 @@
 import {
   HeroPills, HeroHeadline, HeroCopy, ProofBadges, HeroCTAs, Disclaimer,
   MetricsGrid, MetricsTicker, PerformanceStrip, GlassBoxReplay, EvidenceCards,
-  WinnersPreview, HeroMetric,
+  WinnersPreview, HeroMetric, PricingSection,
 } from './shared'
 import useLandingData from './useLandingData'
 
@@ -27,6 +27,8 @@ export default function LayoutMagazine() {
       <EvidenceCards proofPack={proofPack} />
 
       <WinnersPreview previewStrategies={previewStrategies} tier={tier} />
+
+      <PricingSection tier={tier} />
 
       {/* Sticky CTA bar at bottom of viewport */}
       <div className="sticky bottom-0 z-30 border-t border-terminal-800 bg-terminal-950/95 px-4 py-3 backdrop-blur-sm">

@@ -217,7 +217,36 @@ function StaticGlassBoxReplay({ proofPack }) {
   )
 }
 
-// ── Heartbeat: JSON stream — direct DOM, no React render loop ────────────
+// ── Heartbeat: live feed ticker with human-readable event lines ────────────
+
+const STAGE_LABELS = {
+  ING: 'Ingesting',
+  PER: 'Persisting',
+  IND: 'Computing indicators',
+  SIG: 'Evaluating signals',
+}
+
+function formatRow(row) {
+  const ts = row.ts ? row.ts.toLocaleTimeString('en-GB', { hour12: false }) : ''
+
+  if (row.isEmit && row.isSealed) {
+    const hash = row.traceHash ? row.traceHash.slice(0, 12) : ''
+    return `${ts}  ${row._raw?.symbol || 'signal'} — opportunity detected — ${row.passCount} gates passed — sealed \u2713 — ${hash}`
+  }
+
+  if (row.isActivity) {
+    const stage = STAGE_LABELS[row.phase?.code] || row.phase?.code || 'Processing'
+    const parts = [ts, ' ', stage]
+    if (row.barCount > 0) parts.push(` — ${row.barCount} bars`)
+    if (row.indCount > 0) parts.push(` — ${row.indCount} indicators`)
+    if (row.signals > 0) parts.push(` — ${row.signals} signal${row.signals > 1 ? 's' : ''}`)
+    if (row.latMs) parts.push(` — ${row.latMs}ms`)
+    if (row.failCount > 0 && row.passCount === 0) parts.push(' — no signal')
+    return parts.join('')
+  }
+
+  return `${ts}  ${row.phase?.code || '???'} — evaluated`
+}
 
 function C({ c, children }) {
   return <span style={{ color: c }}>{children}</span>
@@ -229,23 +258,18 @@ function HeartbeatFeed({ rows, stats, isLive }) {
   const timerRef = useRef(null)
   const seenRef = useRef(new Set())
 
-  // On each poll: stringify new rows, push to queue, calculate feed rate
   useEffect(() => {
     for (const row of rows) {
       if (seenRef.current.has(row.id)) continue
       seenRef.current.add(row.id)
-      const text = JSON.stringify(row._raw || { ts: row.ts?.getTime() / 1000, phase: row.phase?.code })
-      queueRef.current.push(text)
+      queueRef.current.push(formatRow(row))
     }
-    // Prevent seen set from growing forever
     if (seenRef.current.size > 500) {
       const arr = [...seenRef.current]
       seenRef.current = new Set(arr.slice(-200))
     }
   }, [rows])
 
-  // Single timer: feeds one line per tick, adapts speed to queue depth
-  // Goal: spread lines evenly across the ~12s poll interval so it never stops
   useEffect(() => {
     const tick = () => {
       const pre = preRef.current
@@ -254,12 +278,10 @@ function HeartbeatFeed({ rows, stats, isLive }) {
       const line = queueRef.current.shift()
       if (line) {
         pre.appendChild(document.createTextNode(line + '\n'))
-        // Trim DOM — keep last 300 text nodes
         while (pre.childNodes.length > 300) pre.removeChild(pre.firstChild)
         pre.scrollTop = pre.scrollHeight
       }
 
-      // Adaptive interval: spread remaining queue across ~11s (leave 1s buffer)
       const pending = queueRef.current.length
       const ms = pending > 0 ? Math.max(40, Math.floor(15500 / pending)) : 200
       timerRef.current = setTimeout(tick, ms)
@@ -270,22 +292,22 @@ function HeartbeatFeed({ rows, stats, isLive }) {
   }, [])
 
   return (
-    <div className="flex flex-col overflow-hidden bg-[#111113] px-4 py-3.5" style={{ height: 'calc(100vh - 200px)', minHeight: '400px' }}>
-      {/* Head — no pulsing dot, brighter wider title */}
+    <div className="flex flex-col overflow-hidden rounded-3xl border border-terminal-800 bg-[#111113] px-4 py-3.5" style={{ height: 'min(50vh, 400px)', minHeight: '240px' }}>
       <div className="mb-1.5 flex items-center gap-2">
-        <span className="font-mono text-[11px] uppercase tracking-[3px] text-[#999]">Glass Box Trace Stream</span>
+        {isLive && <span className="size-2 animate-pulse rounded-full bg-emerald-400" />}
+        <span className="font-mono text-[11px] uppercase tracking-[3px] text-[#999]">
+          {isLive ? 'Live Pipeline Activity' : 'Pipeline Activity'}
+        </span>
         {stats && (
           <span className="ml-auto font-mono text-[10px] text-[#444]">{stats.sealedCount.toLocaleString()} sealed</span>
         )}
       </div>
 
-      {/* Terminal: raw JSON, hard cutoff, no fade, fills to bottom */}
       <pre
         ref={preRef}
-        className="m-0 flex-1 overflow-hidden whitespace-pre-wrap break-all text-[10px] leading-[16px] text-[#888]"
+        className="m-0 flex-1 overflow-hidden whitespace-pre-wrap break-all font-mono text-[11px] leading-[18px] text-[#888]"
       />
 
-      {/* Stats bar — flush at bottom */}
       {stats && (
         <div className="mt-2 border-t border-white/[0.06] pt-2 font-mono text-[10px] text-[#555]">
           evals/h <C c="#888">{stats.evalsPerH.toLocaleString()}</C>
@@ -323,6 +345,108 @@ export function EvidenceCards({ proofPack }) {
         </Card>
       ))}
     </div>
+  )
+}
+
+// --- Pricing cards (landing page) ---
+export function PricingSection({ tier }) {
+  const TIERS = [
+    {
+      id: 'free',
+      name: 'Free',
+      price: '\u20AC0',
+      period: '',
+      features: [
+        'Expired opportunities archive',
+        'Curated winners feed',
+        'Glass Box proof strips',
+        'Market heatmap & derivatives',
+      ],
+      cta: '/settings',
+      ctaLabel: 'Connect Backend',
+      highlight: false,
+    },
+    {
+      id: 'subscribed',
+      name: 'Subscribed',
+      price: '\u20AC0',
+      period: 'sign up free',
+      features: [
+        'Everything in Free',
+        '10 simulation runs / month',
+        'Partial strategy config visibility',
+        'Dashboard with live market data',
+      ],
+      cta: '/settings',
+      ctaLabel: 'Sign Up Free',
+      highlight: false,
+    },
+    {
+      id: 'pro',
+      name: 'Pro',
+      price: '\u20AC50',
+      period: '/ month',
+      features: [
+        'Everything in Subscribed',
+        'Live opportunities as they fire',
+        'Full Glass Box audit trail',
+        'Survey mode (cortical training)',
+        'Strategy builder with full CRUD',
+        'Paper trading & operator controls',
+        'Unlimited simulation runs',
+      ],
+      cta: '/pricing',
+      ctaLabel: 'See Pro Plans',
+      highlight: true,
+    },
+  ]
+
+  return (
+    <section className="space-y-4">
+      <div>
+        <p className="text-[10px] uppercase tracking-[0.22em] text-terminal-500">Plans</p>
+        <h2 className="mt-1 text-xl font-semibold text-terminal-100 sm:text-2xl">Three tiers. Proof at every level.</h2>
+      </div>
+      <div className="grid gap-4 lg:grid-cols-3">
+        {TIERS.map((t) => (
+          <div
+            key={t.id}
+            className={`flex flex-col rounded-3xl border p-5 ${
+              t.highlight
+                ? 'border-amber-500/40 bg-gradient-to-b from-amber-500/10 to-terminal-900/90'
+                : 'border-terminal-800 bg-terminal-900/85'
+            }`}
+          >
+            <div className="flex items-baseline justify-between gap-2">
+              <h3 className="text-lg font-semibold text-terminal-100">{t.name}</h3>
+              <div className="text-right">
+                <span className="text-2xl font-semibold text-terminal-100">{t.price}</span>
+                {t.period && <span className="ml-1 text-xs text-terminal-500">{t.period}</span>}
+              </div>
+            </div>
+            <ul className="mt-4 flex-1 space-y-2">
+              {t.features.map((f) => (
+                <li key={f} className="flex items-start gap-2 text-sm text-terminal-300">
+                  <span className="mt-0.5 text-emerald-400">&#x2713;</span>
+                  {f}
+                </li>
+              ))}
+            </ul>
+            <Link
+              to={t.cta}
+              className={`btn btn-sm mt-5 ${t.highlight ? 'btn-primary' : 'btn-secondary'}`}
+              onClick={() => trackCtaClick(ANALYTICS_EVENTS.LANDING_CTA_CLICK, {
+                surface: 'landing', placement: `pricing_${t.id}`, sourceStatus: 'placeholder',
+                ctaId: `landing-pricing-${t.id}`, ctaLabel: t.ctaLabel, href: t.cta, tier,
+              })}
+            >
+              {t.ctaLabel}
+              {t.highlight && <ArrowRight className="size-4" />}
+            </Link>
+          </div>
+        ))}
+      </div>
+    </section>
   )
 }
 

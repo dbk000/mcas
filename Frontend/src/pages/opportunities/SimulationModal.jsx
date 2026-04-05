@@ -1,10 +1,12 @@
 import {
+  ArrowRight,
   ChevronDown,
   ChevronRight,
   PlayCircle,
   Plus,
   X,
 } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { FeedbackOnset } from '../../components/FeedbackOnset'
 import {
   Badge,
@@ -17,6 +19,7 @@ import {
   Select,
 } from '../../components/ui'
 import MultiSelect from '../../components/MultiSelect'
+import { useSubscription } from '../../context/SubscriptionContext'
 
 const timeframeOptions = [
   { value: '1m', label: '1m' },
@@ -47,6 +50,9 @@ export default function SimulationModal({
   setIncludeDateInput,
   setupOptions,
 }) {
+  const { isPaid, simRunsUsed, simRunsLimit, simRunsResetAt } = useSubscription()
+  const simBudgetExhausted = !isPaid && simRunsUsed >= simRunsLimit
+
   const addDate = (field, value, clearValue) => {
     if (value && !simConfig[field].includes(value)) {
       setSimConfig({
@@ -74,6 +80,22 @@ export default function SimulationModal({
           <p className="text-sm text-terminal-400">
             Walk through OHLCV data for each expired opportunity to see what would have happened.
           </p>
+
+          {!isPaid && (
+            <div className={`rounded-xl border p-3 text-sm ${simBudgetExhausted ? 'border-red-500/30 bg-red-500/10 text-red-200' : 'border-amber-500/20 bg-amber-500/10 text-amber-200'}`}>
+              {simBudgetExhausted ? (
+                <div className="space-y-2">
+                  <p>Simulation budget exhausted ({simRunsUsed}/{simRunsLimit} runs used this month).</p>
+                  {simRunsResetAt && <p className="text-xs text-terminal-400">Resets {new Date(simRunsResetAt).toLocaleDateString()}</p>}
+                  <Link to="/pricing" className="inline-flex items-center gap-1 text-xs font-semibold text-amber-300 hover:text-amber-200">
+                    Upgrade for unlimited runs <ArrowRight className="size-3" />
+                  </Link>
+                </div>
+              ) : (
+                <p>{simRunsLimit - simRunsUsed} simulation run{simRunsLimit - simRunsUsed !== 1 ? 's' : ''} remaining this month ({simRunsUsed}/{simRunsLimit} used)</p>
+              )}
+            </div>
+          )}
 
           <div className="space-y-3">
             <div>
@@ -282,9 +304,9 @@ export default function SimulationModal({
               Cancel
             </button>
             <FeedbackOnset onClick={onSimulate} latencyLabel="StartSim">
-              <button className="btn btn-primary w-full" disabled={simulating}>
+              <button className="btn btn-primary w-full" disabled={simulating || simBudgetExhausted}>
                 <PlayCircle className="size-4" />
-                {simulating ? 'Starting...' : 'Start Simulation'}
+                {simulating ? 'Starting...' : simBudgetExhausted ? 'Budget Exhausted' : 'Start Simulation'}
               </button>
             </FeedbackOnset>
           </div>
