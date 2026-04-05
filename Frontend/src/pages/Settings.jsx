@@ -66,7 +66,7 @@ export default function Settings() {
     testConnection,
     isConnected,
   } = useApi()
-  const { tier, isPaid, activatedAt } = useSubscription()
+  const { tier, isPaid, currentPeriodEnd } = useSubscription()
   const origin = searchParams.get('from') || 'settings'
   const returnTo = sanitizeReturnTo(searchParams.get('returnTo'), { fallback: '/app' })
   const { data: onboardingFlow } = usePublicJson('/curation/onboarding-flow.v1.json')
@@ -181,7 +181,7 @@ export default function Settings() {
                   <p className="text-sm text-terminal-300">
                     {onboardingFlow?.trust_copy?.backend_step || 'Connect the backend through a server-backed session before entering /app.'}
                   </p>
-                  {activatedAt && <div className="text-xs text-emerald-200">Activated {new Date(activatedAt).toLocaleString()}</div>}
+                  {currentPeriodEnd && <div className="text-xs text-emerald-200">Active until {new Date(currentPeriodEnd).toLocaleString()}</div>}
                 </CardContent>
               </Card>
               <Card className="border-white/10 bg-white/[0.04]">

@@ -425,7 +425,7 @@ export default function StrategyBuilder() {
   // Toggle pause
   const togglePause = async (strategy) => {
     try {
-      await request('/v1/strategies/' + strategy.id, {
+      await request('/v1/user-strategies/' + strategy.id, {
         method: 'PUT',
         body: { auto_paused: !strategy.auto_paused },
       })
@@ -442,7 +442,7 @@ export default function StrategyBuilder() {
   // Delete strategy
   const deleteStrategy = async (strategy) => {
     try {
-      await request('/v1/strategies/' + strategy.id, { method: 'DELETE' })
+      await request('/v1/user-strategies/' + strategy.id, { method: 'DELETE' })
       addToast({ type: 'success', message: `Strategy "${strategy.name}" deleted` })
       loadData()
     } catch (err) {

@@ -8,3 +8,4 @@ alembic
 SQLAlchemy
 python-json-logger
 numpy
+stripe

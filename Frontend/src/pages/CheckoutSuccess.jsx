@@ -18,7 +18,7 @@ export default function CheckoutSuccess() {
 
   const [searchParams] = useSearchParams()
   const { config, session } = useApi()
-  const { setPaid } = useSubscription()
+  const { refreshSubscription } = useSubscription()
   const { data: onboarding } = usePublicJson('/curation/onboarding-flow.v1.json')
   const [storedReturnTo] = useState(() => readPendingReturnTo())
 
@@ -37,14 +37,14 @@ export default function CheckoutSuccess() {
   }, [config.baseUrl, resolvedReturnTo, session.auth, session.hasSession])
 
   useEffect(() => {
-    setPaid(new Date().toISOString())
+    refreshSubscription()
     emitAnalyticsEvent(FRONTEND_ANALYTICS_EVENTS.checkoutSuccessLanded, {
       surface: 'checkout_success',
       placement: 'page_load',
       source_status: 'placeholder',
     })
     clearPendingReturnTo()
-  }, [setPaid])
+  }, [refreshSubscription])
 
   return (
     <div className="space-y-8">

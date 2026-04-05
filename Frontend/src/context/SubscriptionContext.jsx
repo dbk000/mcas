@@ -1,126 +1,126 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
-import { STORAGE_KEYS } from '../config/storageKeys'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
+import { useApi } from './ApiContext'
+import { getLogger } from '../utils/logger'
 
+const log = getLogger('subscription')
 const SubscriptionContext = createContext(null)
 
-function normalizeStoredTier(rawTier) {
-  return rawTier === 'paid' || rawTier === 'free' ? rawTier : 'free'
+const POLL_INTERVAL_MS = 60_000 // 60s — also refreshes on window focus
+
+function createInitialSubscription() {
+  return {
+    hasSubscription: false,
+    status: 'none',
+    plan: null,
+    currentPeriodEnd: null,
+    cancelAtPeriodEnd: false,
+    simRunsUsed: 0,
+    simRunsLimit: 10,
+    simRunsResetAt: null,
+    loading: true,
+    error: null,
+  }
 }
 
-function getStorage() {
-  if (typeof window === 'undefined') {
-    return null
+function normalizeSubscription(payload = {}) {
+  return {
+    hasSubscription: Boolean(payload.has_subscription),
+    status: payload.status || 'none',
+    plan: payload.plan || null,
+    currentPeriodEnd: payload.current_period_end || null,
+    cancelAtPeriodEnd: Boolean(payload.cancel_at_period_end),
+    simRunsUsed: payload.sim_runs_used ?? 0,
+    simRunsLimit: payload.sim_runs_limit ?? 10,
+    simRunsResetAt: payload.sim_runs_reset_at || null,
+    loading: false,
+    error: null,
   }
-
-  return window.localStorage
-}
-
-function writeStoredTier(storage, tier, activatedAt) {
-  storage.setItem(STORAGE_KEYS.ACCESS_TIER, tier)
-  storage.removeItem(STORAGE_KEYS.LEGACY_TIER)
-
-  if (tier === 'paid' && activatedAt) {
-    storage.setItem(STORAGE_KEYS.ACCESS_ACTIVATED_AT, activatedAt)
-  } else {
-    storage.removeItem(STORAGE_KEYS.ACCESS_ACTIVATED_AT)
-  }
-
-  storage.removeItem(STORAGE_KEYS.LEGACY_TIER_ACTIVATED_AT)
-}
-
-function readStoredTier() {
-  const storage = getStorage()
-  if (!storage) {
-    return { tier: 'free', activatedAt: null }
-  }
-
-  const rawTier = storage.getItem(STORAGE_KEYS.ACCESS_TIER) ?? storage.getItem(STORAGE_KEYS.LEGACY_TIER)
-  const tier = normalizeStoredTier(rawTier)
-  const rawActivatedAt = storage.getItem(STORAGE_KEYS.ACCESS_ACTIVATED_AT)
-    ?? storage.getItem(STORAGE_KEYS.LEGACY_TIER_ACTIVATED_AT)
-  const activatedAt = tier === 'paid' ? rawActivatedAt : null
-
-  if (
-    storage.getItem(STORAGE_KEYS.ACCESS_TIER) !== tier ||
-    storage.getItem(STORAGE_KEYS.LEGACY_TIER) !== null ||
-    storage.getItem(STORAGE_KEYS.LEGACY_TIER_ACTIVATED_AT) !== null ||
-    (tier !== 'paid' && storage.getItem(STORAGE_KEYS.ACCESS_ACTIVATED_AT) !== null)
-  ) {
-    writeStoredTier(storage, tier, activatedAt)
-  }
-
-  return { tier, activatedAt }
 }
 
 export function SubscriptionProvider({ children }) {
-  const [{ tier, activatedAt }, setState] = useState(() => readStoredTier())
+  const { get, session, isConnected } = useApi()
+  const [subscription, setSubscription] = useState(createInitialSubscription)
+  const intervalRef = useRef(null)
+  const abortRef = useRef(null)
 
-  const persist = useCallback((nextTier, nextActivatedAt = null) => {
-    const normalizedTier = normalizeStoredTier(nextTier)
-    const normalizedActivatedAt = normalizedTier === 'paid'
-      ? (nextActivatedAt || new Date().toISOString())
-      : null
-
-    const storage = getStorage()
-    if (storage) {
-      writeStoredTier(storage, normalizedTier, normalizedActivatedAt)
+  const fetchStatus = useCallback(async (silent = false) => {
+    if (!isConnected) {
+      setSubscription((prev) => ({ ...prev, loading: false }))
+      return
     }
 
-    setState({ tier: normalizedTier, activatedAt: normalizedActivatedAt })
-  }, [])
+    abortRef.current?.abort()
+    const controller = new AbortController()
+    abortRef.current = controller
 
-  // Browser-local activation only. This does not assert a server entitlement.
-  const setPaid = useCallback((isoTs = new Date().toISOString()) => {
-    persist('paid', isoTs)
-  }, [persist])
-
-  const setFree = useCallback(() => {
-    persist('free')
-  }, [persist])
-
-  const clearTier = useCallback(() => {
-    const storage = getStorage()
-    if (storage) {
-      storage.removeItem(STORAGE_KEYS.ACCESS_TIER)
-      storage.removeItem(STORAGE_KEYS.ACCESS_ACTIVATED_AT)
-      storage.removeItem(STORAGE_KEYS.LEGACY_TIER)
-      storage.removeItem(STORAGE_KEYS.LEGACY_TIER_ACTIVATED_AT)
+    try {
+      const data = await get('/v1/stripe/subscription-status', {}, { signal: controller.signal })
+      if (!controller.signal.aborted) {
+        setSubscription(normalizeSubscription(data))
+      }
+    } catch (err) {
+      if (controller.signal.aborted) return
+      if (!silent) {
+        log.warn('Subscription status fetch failed', {
+          event: 'subscription_fetch_error',
+          error_message: err?.message,
+        })
+      }
+      setSubscription((prev) => ({
+        ...prev,
+        loading: false,
+        error: err?.message || 'Failed to fetch subscription status',
+      }))
     }
+  }, [get, isConnected])
 
-    setState({ tier: 'free', activatedAt: null })
-  }, [])
-
+  // Fetch on mount and when session becomes connected
   useEffect(() => {
-    function handleStorage(event) {
-      if (
-        event.key === null ||
-        event.key === STORAGE_KEYS.ACCESS_TIER ||
-        event.key === STORAGE_KEYS.ACCESS_ACTIVATED_AT ||
-        event.key === STORAGE_KEYS.LEGACY_TIER ||
-        event.key === STORAGE_KEYS.LEGACY_TIER_ACTIVATED_AT
-      ) {
-        setState(readStoredTier())
+    if (session?.hasSession && isConnected) {
+      fetchStatus(true)
+    } else {
+      setSubscription({ ...createInitialSubscription(), loading: false })
+    }
+  }, [session?.hasSession, isConnected, fetchStatus])
+
+  // Poll every 60s
+  useEffect(() => {
+    if (!session?.hasSession || !isConnected) return
+
+    intervalRef.current = setInterval(() => fetchStatus(true), POLL_INTERVAL_MS)
+    return () => clearInterval(intervalRef.current)
+  }, [session?.hasSession, isConnected, fetchStatus])
+
+  // Refresh on window focus (handles pay-in-another-tab)
+  useEffect(() => {
+    function handleFocus() {
+      if (session?.hasSession && isConnected) {
+        fetchStatus(true)
       }
     }
 
-    window.addEventListener('storage', handleStorage)
-    return () => window.removeEventListener('storage', handleStorage)
-  }, [])
+    window.addEventListener('focus', handleFocus)
+    return () => window.removeEventListener('focus', handleFocus)
+  }, [session?.hasSession, isConnected, fetchStatus])
 
-  const hasLocalActivation = tier === 'paid'
+  // Cleanup abort controller
+  useEffect(() => () => abortRef.current?.abort(), [])
+
+  const isPaid = subscription.status === 'active' || subscription.status === 'past_due'
+  const isFreeSubscribed = session?.hasSession && !isPaid
+  const tier = isPaid ? 'paid' : (session?.hasSession ? 'free_subscribed' : 'free_unsubscribed')
 
   const value = useMemo(() => ({
+    ...subscription,
     tier,
-    activatedAt,
-    isPaid: hasLocalActivation,
-    hasLocalActivation,
-    accessMode: 'ux_only',
-    entitlementSource: hasLocalActivation ? 'local_browser' : 'none',
-    hasServerBackedEntitlement: false,
-    setPaid,
-    setFree,
-    clearTier,
-  }), [activatedAt, clearTier, hasLocalActivation, setFree, setPaid, tier])
+    isPaid,
+    isFreeSubscribed,
+    hasLocalActivation: isPaid, // backwards compat
+    accessMode: isPaid ? 'server_backed' : 'ux_only',
+    entitlementSource: isPaid ? 'stripe' : (session?.hasSession ? 'session_only' : 'none'),
+    hasServerBackedEntitlement: isPaid,
+    refreshSubscription: fetchStatus,
+  }), [subscription, tier, isPaid, isFreeSubscribed, session?.hasSession, fetchStatus])
 
   return (
     <SubscriptionContext.Provider value={value}>

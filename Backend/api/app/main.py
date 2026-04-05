@@ -1555,3 +1555,6 @@ app.include_router(strategies_router, prefix="/v1", dependencies=[Depends(requir
 
 from api.app.routers.market_intel import router as market_intel_router
 app.include_router(market_intel_router, prefix="/v1", dependencies=[Depends(require_api_key)])
+
+from api.app.routers.stripe_router import router as stripe_router
+app.include_router(stripe_router, prefix="/v1", dependencies=[])  # auth handled per-endpoint

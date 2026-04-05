@@ -5,6 +5,7 @@ import { useApi } from './context/ApiContext'
 import { getLogger, rotateCorrelationId } from './utils/logger'
 import Layout from './components/Layout'
 import MarketingLayout from './components/MarketingLayout'
+import AuthRoute from './components/AuthRoute'
 import PaidRoute from './components/PaidRoute'
 import DevHUD from './components/DevHUD'
 
@@ -72,47 +73,6 @@ function RouteLogger() {
   return null
 }
 
-function ProtectedRoute({ children }) {
-  const { config, session, sessionReady } = useApi()
-
-  const settingsParams = new URLSearchParams({
-    from: 'protected-route',
-    returnTo: `${window.location.pathname}${window.location.search}`,
-  })
-
-  if (!config.baseUrl) {
-    log.info('Auth redirect', { event: 'auth_redirect', from: window.location.pathname })
-    return <Navigate to={`/settings?${settingsParams.toString()}`} replace />
-  }
-
-  if (!sessionReady) {
-    return (
-      <div className="m-6 flex min-h-[42vh] flex-col items-center justify-center gap-3 rounded-lg border border-terminal-700/80 bg-terminal-900/60 px-6 py-10 text-center">
-        <div className="size-8 animate-spin rounded-full border-2 border-terminal-600 border-t-amber-400" />
-        <div className="space-y-1">
-          <p className="font-mono text-sm font-semibold uppercase tracking-[0.18em] text-terminal-100">
-            Restoring session
-          </p>
-          <p className="text-sm text-terminal-400">
-            Checking the backend bootstrap before the app shell loads.
-          </p>
-        </div>
-      </div>
-    )
-  }
-
-  if (!session.hasSession || session.auth !== 'ok') {
-    log.info('Session redirect', {
-      event: 'session_redirect',
-      from: window.location.pathname,
-      auth: session.auth,
-    })
-    return <Navigate to={`/settings?${settingsParams.toString()}`} replace />
-  }
-
-  return children
-}
-
 function PublicLayoutRoute() {
   return (
     <MarketingLayout>
@@ -148,15 +108,33 @@ function RouteFamilyBoundary({ title, detail, appShell = false }) {
   )
 }
 
-function AppShell() {
+/**
+ * AuthShell — requires session (free subscribed + paid).
+ * Pages here: Dashboard, Opportunities (expired), Markets, Heatmap, etc.
+ */
+function AuthShell() {
   return (
-    <PaidRoute>
-      <ProtectedRoute>
+    <AuthRoute>
+      <Layout>
+        <Outlet />
+      </Layout>
+    </AuthRoute>
+  )
+}
+
+/**
+ * PaidShell — requires active subscription (paid only).
+ * Pages here: ControlPlane, PaperTrading, OpportunitySurvey, etc.
+ */
+function PaidShell() {
+  return (
+    <AuthRoute>
+      <PaidRoute>
         <Layout>
           <Outlet />
         </Layout>
-      </ProtectedRoute>
-    </PaidRoute>
+      </PaidRoute>
+    </AuthRoute>
   )
 }
 
@@ -235,6 +213,7 @@ export default function App() {
         <DevHUD />
         <RouteLogger />
         <Routes>
+          {/* Public routes — no auth required */}
           <Route element={<PublicLayoutRoute />}>
             <Route
               element={(
@@ -254,7 +233,8 @@ export default function App() {
             </Route>
           </Route>
 
-          <Route path="/app" element={<AppShell />}>
+          {/* Auth routes — requires session (free subscribed + paid) */}
+          <Route path="/app" element={<AuthShell />}>
             <Route
               element={(
                 <RouteFamilyBoundary
@@ -278,7 +258,6 @@ export default function App() {
               )}
             >
               <Route path="opportunities" element={<Opportunities />} />
-              <Route path="opportunities/survey" element={<OpportunitySurvey />} />
               <Route path="opportunities/:id" element={<OpportunityDetail />} />
             </Route>
             <Route
@@ -311,17 +290,32 @@ export default function App() {
               element={(
                 <RouteFamilyBoundary
                   appShell
+                  title="Loading analytics"
+                  detail="Preparing analytics tools."
+                />
+              )}
+            >
+              <Route path="analytics/correlations" element={<CorrelationAnalysis />} />
+              <Route path="heatmap" element={<Heatmap />} />
+              <Route path="derivatives" element={<DerivativesDashboard />} />
+              <Route path="pipeline" element={<Pipeline />} />
+            </Route>
+          </Route>
+
+          {/* Paid routes — requires active subscription */}
+          <Route path="/app" element={<PaidShell />}>
+            <Route
+              element={(
+                <RouteFamilyBoundary
+                  appShell
                   title="Loading operator surface"
-                  detail="Fetching advanced analysis and control tools."
+                  detail="Fetching advanced operator controls."
                 />
               )}
             >
               <Route path="control" element={<ControlPlane />} />
               <Route path="paper" element={<PaperTrading />} />
-              <Route path="analytics/correlations" element={<CorrelationAnalysis />} />
-              <Route path="pipeline" element={<Pipeline />} />
-              <Route path="heatmap" element={<Heatmap />} />
-              <Route path="derivatives" element={<DerivativesDashboard />} />
+              <Route path="opportunities/survey" element={<OpportunitySurvey />} />
             </Route>
           </Route>
 

@@ -2,7 +2,6 @@ import { Link, useLocation } from 'react-router-dom'
 import { ArrowRight, LockKeyhole, Radar, ShieldCheck, TimerReset } from 'lucide-react'
 import { useSubscription } from '../context/SubscriptionContext'
 import { FRONTEND_ANALYTICS_EVENTS, emitCtaEvent } from '../utils/analytics'
-import { buildUpgradeHref } from '../utils/returnTo'
 
 function PaywallButton({ href, label, placement, variant = 'primary', tier, children }) {
   const classes = variant === 'primary'
@@ -32,18 +31,28 @@ function PaywallButton({ href, label, placement, variant = 'primary', tier, chil
 export default function PaidRoute({ children }) {
   const location = useLocation()
   const {
-    isPaid: hasLocalActivation,
+    isPaid,
     tier,
     accessMode,
     entitlementSource,
+    loading,
   } = useSubscription()
 
-  if (hasLocalActivation) {
+  // While loading subscription status, show spinner
+  if (loading) {
+    return (
+      <div className="flex min-h-[42vh] items-center justify-center">
+        <div className="size-8 animate-spin rounded-full border-2 border-terminal-600 border-t-amber-400" />
+      </div>
+    )
+  }
+
+  if (isPaid) {
     return children
   }
 
   const returnTo = `${location.pathname}${location.search}${location.hash}`
-  const upgradeHref = buildUpgradeHref(returnTo)
+  const pricingHref = `/pricing?returnTo=${encodeURIComponent(returnTo)}`
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-terminal-900 text-terminal-100">
@@ -53,16 +62,15 @@ export default function PaidRoute({ children }) {
             <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-amber-300 via-amber-500 to-red-400" />
             <div className="inline-flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-amber-200">
               <LockKeyhole className="size-3" />
-              Paid Operator Surface
+              Pro Feature
             </div>
 
             <h1 className="mt-4 max-w-2xl text-xl font-semibold tracking-tight text-terminal-100 sm:text-4xl">
-              This route stays behind a browser-local Pro preview gate.
+              Unlock the full MCAS operator surface.
             </h1>
             <p className="mt-2 max-w-2xl text-xs leading-5 text-terminal-300 sm:text-base">
-              The public side shows curated historical proof. The operator side unlocks live strategy ranking,
-              Glass Box state, timing windows, and honest PF surfaces inside the app shell after local activation.
-              Until a backend entitlement exists, this gate separates UX states only.
+              Live strategy ranking, Glass Box audit trails, survey mode, full simulation access,
+              and operator controls require an active MCAS Pro subscription.
             </p>
 
             <div className="mt-4 grid gap-2 sm:grid-cols-3">
@@ -84,8 +92,8 @@ export default function PaidRoute({ children }) {
             </div>
 
             <div className="mt-6 flex flex-col gap-2 sm:flex-row">
-              <PaywallButton href={upgradeHref} label="Upgrade to Pro" placement="hero_primary" tier={tier}>
-                Upgrade To Pro
+              <PaywallButton href={pricingHref} label="See MCAS Pro Plans" placement="hero_primary" tier={tier}>
+                See MCAS Pro Plans
                 <ArrowRight className="size-4" />
               </PaywallButton>
               <PaywallButton href="/winners" label="Review Free Winners" placement="hero_secondary" variant="secondary" tier={tier}>
@@ -94,10 +102,10 @@ export default function PaidRoute({ children }) {
             </div>
 
             <div className="mt-6 rounded-xl border border-terminal-700 bg-terminal-900/80 p-3 text-[11px] text-terminal-400">
-              <div className="font-semibold text-terminal-200">Trust note</div>
+              <div className="font-semibold text-terminal-200">Entitlement</div>
               <p className="mt-1">
-                This is a {accessMode.replace('_', ' ')} gate only. Current source: {entitlementSource.replace('_', ' ')}.
-                Secure entitlement enforcement is intentionally out of scope in the current front-end-only implementation.
+                Access mode: {accessMode.replace(/_/g, ' ')}. Source: {entitlementSource.replace(/_/g, ' ')}.
+                Tier: {tier.replace(/_/g, ' ')}.
               </p>
             </div>
           </section>
@@ -107,8 +115,7 @@ export default function PaidRoute({ children }) {
               <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-terminal-500">Locked From Here</div>
               <div className="mt-2 text-lg font-semibold text-terminal-100">{location.pathname}</div>
               <p className="mt-1 text-xs leading-5 text-terminal-400">
-                Activate Pro locally, then connect your backend in Settings. After that, `/app/*` routes will resolve
-                through the app shell instead of this gate.
+                Subscribe to MCAS Pro to unlock live opportunities, operator controls, and full simulation access.
               </p>
             </div>
 
@@ -117,6 +124,8 @@ export default function PaidRoute({ children }) {
                 'Live strategy dashboard with ranked cards',
                 'Opportunity detail with Glass Box badge',
                 'Run detail with Avg Daily PF',
+                'Full simulation access',
+                'Strategy builder with CRUD',
               ].map((item) => (
                 <div key={item} className="rounded-xl border border-terminal-700 bg-terminal-900/70 px-3 py-2 text-[11px] text-terminal-300">
                   {item}
@@ -125,7 +134,7 @@ export default function PaidRoute({ children }) {
             </div>
 
             <div className="mt-auto space-y-2 pt-4">
-              <PaywallButton href={upgradeHref} label="Unlock operator access" placement="sidebar_primary" tier={tier}>
+              <PaywallButton href={pricingHref} label="Unlock operator access" placement="sidebar_primary" tier={tier}>
                 Unlock Operator Access
                 <ArrowRight className="size-4" />
               </PaywallButton>

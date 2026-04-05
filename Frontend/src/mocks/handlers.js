@@ -1,7 +1,4 @@
 import { http, HttpResponse } from 'msw'
-import strategyDashboardFixture from './fixtures/strategy-dashboard-demo.v1.json'
-import metricsDemoFixture from './fixtures/metrics-demo.v1.json'
-import glassBoxCasesFixture from './fixtures/glass-box-cases.v1.json'
 
 // Helper to wrap data in standard envelope (Canon §1.5)
 const envelope = (data, compute_ms = 5) => ({
@@ -116,38 +113,6 @@ const authoredOverrides = [
       checked_at: new Date().toISOString(),
       frontend_config: MOCK_FRONTEND_CONFIG,
     }))
-  }),
-
-  http.get('*/v1/analytics/dashboard', ({ request }) => {
-    const state = request.headers.get('X-Fixture-State') || 'curated'
-    if (state === 'degraded') {
-      return HttpResponse.json(envelope({
-        leaderboard: [],
-        alerts_tape: [],
-        market_state: { regime: 'System Degraded', breadth_score: 0 }
-      }))
-    }
-    if (state === 'premium') {
-      return HttpResponse.json(envelope({
-        ...strategyDashboardFixture,
-        leaderboard: strategyDashboardFixture.leaderboard.map(l => ({ ...l, premium: true }))
-      }))
-    }
-    return HttpResponse.json(envelope(strategyDashboardFixture))
-  }),
-
-  http.get('*/v1/analytics/metrics', ({ request }) => {
-    const state = request.headers.get('X-Fixture-State') || 'curated'
-    if (state === 'degraded') return HttpResponse.json(envelope({ trades: [], summary: {} }))
-    return HttpResponse.json(envelope(metricsDemoFixture))
-  }),
-
-  http.get('*/v1/runs/trace/:id', ({ params, request }) => {
-    const { id } = params
-    const state = request.headers.get('X-Fixture-State') || 'curated'
-    if (state === 'degraded') return new HttpResponse(null, { status: 404 })
-    const trace = glassBoxCasesFixture.find(c => c.id === id) || glassBoxCasesFixture[0]
-    return HttpResponse.json(envelope(trace))
   }),
 
   http.get('*/v1/control/data/availability', () => {
