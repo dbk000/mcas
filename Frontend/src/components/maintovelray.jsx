@@ -3,7 +3,7 @@ const LOGO = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQIAAAFACAYAAABX33I3
 
 
 // Toggle: set to true to re-enable the maintenance overlay on production
-const MAINTENANCE_ENABLED = false;
+const MAINTENANCE_ENABLED = true;
 
 export default function MaintenanceOverlay() {
   if (!MAINTENANCE_ENABLED) return null;
