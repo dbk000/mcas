@@ -262,8 +262,8 @@ export default function Layout({ children }) {
       })
       addToast(
         connectionStatus.auth === 'unauthorized'
-          ? 'Backend session expired. Reconnect in Settings.'
-          : 'Backend session required. Reconnect in Settings.',
+          ? 'Session expired. Reconnect in Settings.'
+          : 'Session required. Reconnect in Settings.',
         'error'
       )
       navigate('/settings', { replace: true })

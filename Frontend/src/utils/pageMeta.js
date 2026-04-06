@@ -31,13 +31,13 @@ const PAGE_META = {
   },
   upgrade: {
     title: 'Upgrade To MCAS Pro',
-    description: 'Activate the paid operator view, then connect your MCAS backend to unlock live strategy-ranked surfaces.',
+    description: 'Subscribe to MCAS Pro, then connect to your server to unlock live strategy-ranked surfaces.',
     image: '/social/og-pricing.png',
     path: '/upgrade',
   },
   checkoutSuccess: {
     title: 'MCAS Pro Activated',
-    description: 'Your browser is activated locally. The next step is connecting your backend and opening the strategy dashboard.',
+    description: 'Payment confirmed. Connect to your MCAS server and open the strategy dashboard.',
     image: '/social/og-default.png',
     path: '/checkout/success',
   },
@@ -48,8 +48,8 @@ const PAGE_META = {
     path: '/checkout/cancel',
   },
   settings: {
-    title: 'MCAS Settings | Connect Your Backend',
-    description: 'Configure the MCAS API base URL and establish a server-backed backend session after local activation.',
+    title: 'MCAS Settings | Connect Your Server',
+    description: 'Configure the MCAS server URL and establish a session.',
     image: '/social/og-default.png',
     path: '/settings',
   },

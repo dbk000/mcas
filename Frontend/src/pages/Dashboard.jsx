@@ -55,7 +55,7 @@ export default function Dashboard() {
           <AlertCircle className="size-5 shrink-0 text-amber-400" />
           <div className="flex-1">
             <p className="text-sm text-amber-200">
-              Not connected to backend. Please configure your connection in{' '}
+              Not connected to server. Please configure your connection in{' '}
               <Link to="/settings" className="underline hover:text-amber-100">Settings</Link>.
             </p>
           </div>
@@ -108,7 +108,7 @@ function SystemStatusPanel() {
       </CardHeader>
       <CardContent className="space-y-3">
         <StatusRow 
-          label="Backend Health" 
+          label="Server Health" 
           status={connectionStatus.health}
           statusLabel={connectionStatus.health === 'healthy' ? 'Healthy' : connectionStatus.health === 'unhealthy' ? 'Unhealthy' : 'Unknown'}
         />

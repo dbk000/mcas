@@ -330,7 +330,7 @@ export function SessionProvider({ children }) {
       setSession(nextSession)
 
       if (!silent) {
-        addToast('Backend session established', 'success')
+        addToast('Server session established', 'success')
       }
 
       log.info('Session established', {
@@ -398,7 +398,7 @@ export function SessionProvider({ children }) {
     setSession(createInitialSessionState())
 
     if (!silent) {
-      addToast('Backend session cleared', 'success')
+      addToast('Server session cleared', 'success')
     }
   }, [addToast, client])
 

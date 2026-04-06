@@ -81,7 +81,7 @@ export default function PipelineCanvasPanels({
 
       <Panel position="top-center">
         <div className="max-w-md rounded-lg border border-terminal-600 bg-terminal-800/90 px-3 py-2 text-[10px] leading-4 text-terminal-400 backdrop-blur">
-          Pipeline access now follows the existing app-shell route gate and backend settings. The old browser password prompt was removed because it was not real security.
+          Pipeline access follows the app route gate and server settings. Authentication is handled via your session.
         </div>
       </Panel>
 

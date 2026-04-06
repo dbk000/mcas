@@ -24,7 +24,7 @@ const log = getLogger('settings')
 
 function getStatusCopy(connectionStatus) {
   if (connectionStatus.health === 'unhealthy') {
-    return 'Backend is unhealthy'
+    return 'Server is unhealthy'
   }
 
   if (connectionStatus.auth === 'unauthorized') {
@@ -32,7 +32,7 @@ function getStatusCopy(connectionStatus) {
   }
 
   if (connectionStatus.auth === 'missing') {
-    return 'No backend session'
+    return 'No active session'
   }
 
   if (connectionStatus.health === 'error') {
@@ -77,8 +77,8 @@ export default function Settings() {
   const [disconnecting, setDisconnecting] = useState(false)
 
   usePageMeta({
-    title: 'MCAS Settings | Configure Backend Session',
-    description: 'Configure the MCAS backend URL and establish a server-backed session after local Pro activation.',
+    title: 'MCAS Settings | Connect Your Server',
+    description: 'Configure the MCAS server URL and establish a session.',
     image: '/social/og-default.png',
     url: '/settings',
   })
@@ -147,13 +147,13 @@ export default function Settings() {
                   </div>
                   <div>
                     <h1 className="text-3xl font-semibold text-white">Settings</h1>
-                    <p className="text-sm text-terminal-300">Establish a server-backed backend session without the app sidebar shell.</p>
+                    <p className="text-sm text-terminal-300">Connect to your MCAS server to establish a session.</p>
                   </div>
                 </div>
                 <p className="mt-4 max-w-3xl text-sm leading-6 text-terminal-300">
                   {isPaid
-                    ? 'Local Pro activation is already set in this browser. Connect the backend once to unlock the paid app routes.'
-                    : 'Settings stays public so you can preconfigure the backend before activation or finish backend onboarding after checkout.'}
+                    ? 'Pro is active on this browser. Connect to the server once to unlock the paid app routes.'
+                    : 'Settings stays public so you can preconfigure the server connection before activation or finish onboarding after checkout.'}
                 </p>
               </div>
 
@@ -177,9 +177,9 @@ export default function Settings() {
               </Card>
               <Card className="border-white/10 bg-white/[0.04]">
                 <CardContent className="space-y-2 p-5">
-                  <div className="text-xs uppercase tracking-[0.18em] text-terminal-400">Backend step</div>
+                  <div className="text-xs uppercase tracking-[0.18em] text-terminal-400">Connection</div>
                   <p className="text-sm text-terminal-300">
-                    {onboardingFlow?.trust_copy?.backend_step || 'Connect the backend through a server-backed session before entering /app.'}
+                    {onboardingFlow?.trust_copy?.backend_step || 'Connect to the server to establish a session before entering /app.'}
                   </p>
                   {currentPeriodEnd && <div className="text-xs text-emerald-200">Active until {new Date(currentPeriodEnd).toLocaleString()}</div>}
                 </CardContent>
@@ -188,7 +188,7 @@ export default function Settings() {
                 <CardContent className="space-y-2 p-5">
                   <div className="text-xs uppercase tracking-[0.18em] text-terminal-400">App routes</div>
                   <div className="text-sm text-terminal-300">
-                    `/app/*` now depends on a server-backed backend session. Local Pro is still a UX gate, not a secure entitlement.
+                    `/app/*` requires a server session. Pro status is verified via your subscription.
                   </div>
                   <Link to="/pricing" className="text-sm text-amber-300 hover:text-amber-200">Review pricing</Link>
                 </CardContent>
@@ -201,7 +201,7 @@ export default function Settings() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Server className="size-4" />
-              Backend Session
+              Server Connection
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -217,7 +217,7 @@ export default function Settings() {
                 className="w-full"
               />
               <p className="mt-1 text-xs text-terminal-500">
-                The backend origin used for session bootstrap, health checks, telemetry, and API calls.
+                The server URL used for session, health checks, and API calls.
               </p>
             </div>
 
@@ -233,7 +233,7 @@ export default function Settings() {
                   type="password"
                   value={apiKey}
                   onChange={(event) => setApiKey(event.target.value)}
-                  placeholder="Enter your API key once to establish a backend session"
+                  placeholder="Enter your API key once to establish a session"
                   autoComplete="off"
                   autoCapitalize="off"
                   autoCorrect="off"
@@ -244,12 +244,12 @@ export default function Settings() {
                 />
               </div>
               <p className="mt-1 text-xs text-terminal-500">
-                The browser submits the key once to create an HttpOnly backend session. It is not persisted in frontend config.
+                The browser submits the key once to create an HttpOnly session. It is not stored locally.
               </p>
             </div>
 
             <div className="rounded-lg border border-terminal-700 bg-terminal-900/70 px-3 py-2 text-xs text-terminal-400">
-              Save persists only the base URL. Connect creates a server-backed session on the selected backend.
+              Save persists only the base URL. Connect creates a session on the selected server.
             </div>
 
             <div className="flex flex-col gap-3 pt-2 sm:flex-row">
@@ -266,7 +266,7 @@ export default function Settings() {
                 ) : (
                   <>
                     <Wifi className="size-4" />
-                    Connect Backend
+                    Connect Server
                   </>
                 )}
               </button>
@@ -299,7 +299,7 @@ export default function Settings() {
             ) : connectionStatus.lastChecked ? (
               <div className="space-y-4">
                 <div className="flex items-center justify-between border-b border-terminal-600 py-2">
-                  <span className="text-terminal-300">Backend Health</span>
+                  <span className="text-terminal-300">Server Health</span>
                   <StatusIndicator
                     status={connectionStatus.health}
                     labels={{ healthy: 'Healthy', unhealthy: 'Unhealthy', error: 'Error', null: 'Unknown' }}
@@ -368,7 +368,7 @@ export default function Settings() {
               </div>
             ) : (
               <div className="py-8 text-center text-terminal-400">
-                Save a base URL or establish a backend session to populate diagnostics.
+                Save a base URL or establish a server session to populate diagnostics.
               </div>
             )}
           </CardContent>
