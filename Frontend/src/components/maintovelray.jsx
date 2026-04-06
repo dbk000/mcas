@@ -3,6 +3,10 @@ const LOGO = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQIAAAFACAYAAABX33I3
 
 
 export default function MaintenanceOverlay() {
+  // Skip on dev / IP-based hosts — only show on production domains
+  const h = typeof window !== 'undefined' ? window.location.hostname : '';
+  if (h === 'localhost' || /^\d+\.\d+\.\d+\.\d+$/.test(h)) return null;
+
   const [visible, setVisible] = useState(false);
   const [dots, setDots] = useState("");
 

@@ -6,8 +6,11 @@ Handles checkout sessions, webhook events, subscription status,
 and billing portal sessions. Stripe keys are external credentials
 read via os.getenv() — not governed by TypedConfigRegistry.
 
-Webhook endpoint is unauthenticated (signature-verified by Stripe).
-All other endpoints require a valid session.
+Auth model:
+- create-checkout-session: NO auth required (visitor clicks "Subscribe")
+- webhook: NO auth (Stripe signature-verified)
+- subscription-status: session required (authenticated user checks their tier)
+- create-portal-session: session required
 """
 
 import hashlib
@@ -89,30 +92,6 @@ def _get_api_key_hash() -> str:
     return _hash_api_key(api_key)
 
 
-def _find_or_create_customer(api_key_hash: str) -> dict:
-    """Find or create a customers row. Returns {id, stripe_customer_id, email}."""
-    with _pool_get_conn() as conn:
-        with conn.cursor() as cur:
-            cur.execute(
-                "SELECT id, stripe_customer_id, email FROM customers WHERE api_key_hash = %s",
-                (api_key_hash,),
-            )
-            row = cur.fetchone()
-            if row:
-                return {"id": row[0], "stripe_customer_id": row[1], "email": row[2]}
-
-            cur.execute(
-                """INSERT INTO customers (api_key_hash)
-                   VALUES (%s)
-                   ON CONFLICT (api_key_hash) DO UPDATE SET updated_at = NOW()
-                   RETURNING id, stripe_customer_id, email""",
-                (api_key_hash,),
-            )
-            conn.commit()
-            row = cur.fetchone()
-            return {"id": row[0], "stripe_customer_id": row[1], "email": row[2]}
-
-
 def _plan_from_price_id(price_id: str | None) -> str | None:
     prices = _get_price_ids()
     if price_id == prices["monthly"]:
@@ -134,9 +113,8 @@ class CheckoutRequest(BaseModel):
 
 @router.post("/create-checkout-session")
 async def create_checkout_session(payload: CheckoutRequest, request: Request):
-    """Create a Stripe Checkout Session for subscription purchase."""
+    """Create a Stripe Checkout Session. NO auth required — anyone can pay."""
     t0 = time.time()
-    _require_session(request)
     stripe.api_key = _get_stripe_key()
 
     # Resolve price_id: explicit from request, or fall back to monthly env var
@@ -146,33 +124,39 @@ async def create_checkout_session(payload: CheckoutRequest, request: Request):
     if not price_id:
         raise HTTPException(status_code=400, detail="No price_id provided and STRIPE_PRICE_MONTHLY not configured")
 
-    api_key_hash = _get_api_key_hash()
-    customer = _find_or_create_customer(api_key_hash)
+    # If the user has a session, try to find/create a linked customer.
+    # Otherwise, let Stripe create a new customer during checkout.
+    stripe_customer_id = None
+    token = request.cookies.get(SESSION_COOKIE_NAME)
+    if has_valid_session(token):
+        try:
+            api_key_hash = _get_api_key_hash()
+            with _pool_get_conn() as conn:
+                with conn.cursor() as cur:
+                    cur.execute(
+                        "SELECT stripe_customer_id FROM customers WHERE api_key_hash = %s",
+                        (api_key_hash,),
+                    )
+                    row = cur.fetchone()
+                    if row and row[0]:
+                        stripe_customer_id = row[0]
+        except Exception:
+            pass  # No big deal — checkout will work without a pre-linked customer
 
-    # Find or create Stripe Customer
-    stripe_customer_id = customer["stripe_customer_id"]
-    if not stripe_customer_id:
-        stripe_cust = stripe.Customer.create(
-            metadata={"mcas_customer_id": str(customer["id"])},
-        )
-        stripe_customer_id = stripe_cust.id
+    checkout_params = {
+        "mode": "subscription",
+        "line_items": [{"price": price_id, "quantity": 1}],
+        "success_url": payload.success_url,
+        "cancel_url": payload.cancel_url,
+    }
 
-        with _pool_get_conn() as conn:
-            with conn.cursor() as cur:
-                cur.execute(
-                    "UPDATE customers SET stripe_customer_id = %s, updated_at = NOW() WHERE id = %s",
-                    (stripe_customer_id, customer["id"]),
-                )
-                conn.commit()
+    if stripe_customer_id:
+        checkout_params["customer"] = stripe_customer_id
+    else:
+        # Let Stripe collect email — we'll link the customer later via webhook
+        checkout_params["customer_creation"] = "always"
 
-    checkout_session = stripe.checkout.Session.create(
-        customer=stripe_customer_id,
-        mode="subscription",
-        line_items=[{"price": price_id, "quantity": 1}],
-        success_url=payload.success_url,
-        cancel_url=payload.cancel_url,
-    )
-
+    checkout_session = stripe.checkout.Session.create(**checkout_params)
     return envelope({"checkout_url": checkout_session.url}, t0)
 
 
@@ -223,7 +207,12 @@ async def stripe_webhook(request: Request):
 
 @router.get("/subscription-status")
 async def subscription_status(request: Request):
-    """Get the current user's subscription status."""
+    """Get the current user's subscription status. Requires session.
+
+    Linkage: If no customer exists for this api_key_hash, attempt to claim
+    an unclaimed customer by matching the Stripe customer's email. This handles
+    the "pay first, connect backend later" flow.
+    """
     t0 = time.time()
     _require_session(request)
 
@@ -231,6 +220,7 @@ async def subscription_status(request: Request):
 
     with _pool_get_conn() as conn:
         with conn.cursor() as cur:
+            # Try direct lookup by api_key_hash
             cur.execute(
                 """SELECT s.status, s.stripe_price_id, s.current_period_end,
                           s.cancel_at_period_end, c.sim_runs_used, c.sim_runs_reset_at
@@ -243,6 +233,33 @@ async def subscription_status(request: Request):
                 (api_key_hash,),
             )
             row = cur.fetchone()
+
+            # If not found, try to claim an unclaimed customer (paid but no api_key_hash yet)
+            if not row:
+                cur.execute(
+                    """SELECT c.id, c.email, s.status, s.stripe_price_id,
+                              s.current_period_end, s.cancel_at_period_end,
+                              c.sim_runs_used, c.sim_runs_reset_at
+                       FROM customers c
+                       JOIN subscriptions s ON s.customer_id = c.id
+                       WHERE c.api_key_hash IS NULL
+                         AND c.email IS NOT NULL
+                         AND s.status IN ('active', 'past_due')
+                       ORDER BY s.current_period_end DESC
+                       LIMIT 1""",
+                )
+                unclaimed = cur.fetchone()
+
+                if unclaimed:
+                    cust_id = unclaimed[0]
+                    # Claim this customer by setting the api_key_hash
+                    cur.execute(
+                        "UPDATE customers SET api_key_hash = %s, updated_at = NOW() WHERE id = %s",
+                        (api_key_hash, cust_id),
+                    )
+                    conn.commit()
+                    logger.info("Claimed unclaimed customer id=%s for api_key_hash=%s", cust_id, api_key_hash[:8])
+                    row = unclaimed[2:]  # status, price_id, period_end, cancel_at, sim_used, sim_reset
 
     if not row:
         return envelope({
@@ -303,7 +320,11 @@ async def create_portal_session(request: Request):
 # ---------------------------------------------------------------------------
 
 def _handle_checkout_completed(session_obj):
-    """checkout.session.completed — create/update subscription."""
+    """checkout.session.completed — find or create customer, create subscription.
+
+    For unauthenticated checkouts, creates a customer with email but no api_key_hash.
+    The api_key_hash is set later when the user authenticates (subscription-status claim).
+    """
     stripe_customer_id = session_obj.get("customer")
     subscription_id = session_obj.get("subscription")
     customer_email = session_obj.get("customer_details", {}).get("email")
@@ -316,26 +337,31 @@ def _handle_checkout_completed(session_obj):
 
     with _pool_get_conn() as conn:
         with conn.cursor() as cur:
-            # Update customer email if we got one
-            if customer_email and stripe_customer_id:
-                cur.execute(
-                    """UPDATE customers SET email = %s, updated_at = NOW()
-                       WHERE stripe_customer_id = %s""",
-                    (customer_email, stripe_customer_id),
-                )
-
-            # Find internal customer_id
+            # Find existing customer by stripe_customer_id
             cur.execute(
                 "SELECT id FROM customers WHERE stripe_customer_id = %s",
                 (stripe_customer_id,),
             )
             cust_row = cur.fetchone()
-            if not cust_row:
-                logger.warning("No customer found for stripe_customer_id=%s", stripe_customer_id)
-                conn.commit()
-                return
 
-            customer_id = cust_row[0]
+            if cust_row:
+                customer_id = cust_row[0]
+                # Update email if we got one
+                if customer_email:
+                    cur.execute(
+                        "UPDATE customers SET email = %s, updated_at = NOW() WHERE id = %s",
+                        (customer_email, customer_id),
+                    )
+            else:
+                # Create new customer (unauthenticated checkout — no api_key_hash yet)
+                cur.execute(
+                    """INSERT INTO customers (stripe_customer_id, email)
+                       VALUES (%s, %s)
+                       RETURNING id""",
+                    (stripe_customer_id, customer_email),
+                )
+                customer_id = cur.fetchone()[0]
+                logger.info("Created unclaimed customer id=%s email=%s", customer_id, customer_email)
 
             # Fetch subscription details from Stripe
             sub = stripe.Subscription.retrieve(subscription_id)

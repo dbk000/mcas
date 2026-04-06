@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { ArrowRight, CheckCircle2 } from 'lucide-react'
+import { ArrowRight, CheckCircle2, Settings as SettingsIcon } from 'lucide-react'
 import { useApi } from '../context/ApiContext'
 import { useSubscription } from '../context/SubscriptionContext'
 import { FRONTEND_ANALYTICS_EVENTS, emitAnalyticsEvent } from '../utils/analytics'
@@ -18,15 +18,17 @@ export default function CheckoutSuccess() {
 
   const [searchParams] = useSearchParams()
   const { config, session } = useApi()
-  const { refreshSubscription } = useSubscription()
+  const { refreshSubscription, isPaid } = useSubscription()
   const { data: onboarding } = usePublicJson('/curation/onboarding-flow.v1.json')
   const [storedReturnTo] = useState(() => readPendingReturnTo())
 
   const queryReturnTo = sanitizeReturnTo(searchParams.get('returnTo'))
   const resolvedReturnTo = queryReturnTo || storedReturnTo || ''
 
+  const isAuthenticated = config.baseUrl && session.hasSession && session.auth === 'ok'
+
   const nextHref = useMemo(() => {
-    if (!config.baseUrl || !session.hasSession || session.auth !== 'ok') {
+    if (!isAuthenticated) {
       const nextParams = new URLSearchParams({ from: 'checkout-success' })
       if (resolvedReturnTo) {
         nextParams.set('returnTo', resolvedReturnTo)
@@ -34,40 +36,88 @@ export default function CheckoutSuccess() {
       return `/settings?${nextParams.toString()}`
     }
     return resolvedReturnTo || DEFAULT_RETURN_TO
-  }, [config.baseUrl, resolvedReturnTo, session.auth, session.hasSession])
+  }, [isAuthenticated, resolvedReturnTo])
 
   useEffect(() => {
-    refreshSubscription()
+    // If already authenticated, refresh subscription to claim it
+    if (isAuthenticated) {
+      refreshSubscription()
+    }
     emitAnalyticsEvent(FRONTEND_ANALYTICS_EVENTS.checkoutSuccessLanded, {
       surface: 'checkout_success',
       placement: 'page_load',
-      source_status: 'placeholder',
+      source_status: 'live',
     })
     clearPendingReturnTo()
-  }, [refreshSubscription])
+  }, [isAuthenticated, refreshSubscription])
 
   return (
     <div className="space-y-8">
       <section className="rounded-[2rem] border border-emerald-500/30 bg-emerald-500/10 p-6 shadow-2xl shadow-black/20 sm:p-8">
         <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-terminal-900/70 px-3 py-1 text-xs uppercase tracking-[0.22em] text-emerald-200">
           <CheckCircle2 className="size-3.5" />
-          Local Activation Complete
+          Payment Confirmed
         </div>
-        <h1 className="mt-5 text-4xl font-semibold tracking-tight text-terminal-100 sm:text-5xl">This browser is now marked as Pro.</h1>
+        <h1 className="mt-5 text-4xl font-semibold tracking-tight text-terminal-100 sm:text-5xl">
+          {isAuthenticated && isPaid
+            ? 'You\'re all set. Welcome to Pro.'
+            : 'Payment received. One step left.'}
+        </h1>
         <p className="mt-4 max-w-3xl text-base leading-7 text-terminal-300">
-          Query parameters are not treated as secure payment proof in this release. This page only activates the local UX tier,
-          sanitizes any requested return path, and points you to the next onboarding step.
+          {isAuthenticated && isPaid ? (
+            'Your subscription is active and linked to your backend. All Pro features are now unlocked.'
+          ) : isAuthenticated ? (
+            'Your payment was successful. Your subscription will be linked momentarily.'
+          ) : (
+            'Your payment was successful. Now connect your MCAS backend in Settings to activate your Pro subscription. Your API key will automatically link to the subscription you just purchased.'
+          )}
         </p>
         <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-          <Link to={nextHref} className="btn btn-primary btn-sm">
-            Continue
-            <ArrowRight className="size-4" />
-          </Link>
+          {isAuthenticated && isPaid ? (
+            <Link to={resolvedReturnTo || '/app'} className="btn btn-primary btn-sm">
+              Open App
+              <ArrowRight className="size-4" />
+            </Link>
+          ) : (
+            <Link to={nextHref} className="btn btn-primary btn-sm">
+              <SettingsIcon className="size-4" />
+              {isAuthenticated ? 'Continue' : 'Connect Your Backend'}
+            </Link>
+          )}
           <Link to="/app" className="btn btn-secondary btn-sm">
             Open /app
           </Link>
         </div>
       </section>
+
+      {!isAuthenticated && (
+        <section className="rounded-[2rem] border border-amber-500/20 bg-amber-500/5 p-6 sm:p-8">
+          <div className="text-xs font-semibold uppercase tracking-[0.22em] text-terminal-500">How To Activate</div>
+          <div className="mt-5 grid gap-4 lg:grid-cols-3">
+            <div className="rounded-2xl border border-terminal-700 bg-terminal-900/80 p-4">
+              <div className="text-2xl font-semibold text-amber-300">1</div>
+              <h3 className="mt-2 text-sm font-semibold text-terminal-100">Go to Settings</h3>
+              <p className="mt-1 text-xs leading-5 text-terminal-400">
+                Click the button above or navigate to /settings.
+              </p>
+            </div>
+            <div className="rounded-2xl border border-terminal-700 bg-terminal-900/80 p-4">
+              <div className="text-2xl font-semibold text-amber-300">2</div>
+              <h3 className="mt-2 text-sm font-semibold text-terminal-100">Enter your API key</h3>
+              <p className="mt-1 text-xs leading-5 text-terminal-400">
+                The backend URL and API key connect you to the MCAS engine. Your subscription will be automatically linked.
+              </p>
+            </div>
+            <div className="rounded-2xl border border-terminal-700 bg-terminal-900/80 p-4">
+              <div className="text-2xl font-semibold text-amber-300">3</div>
+              <h3 className="mt-2 text-sm font-semibold text-terminal-100">Start using Pro</h3>
+              <p className="mt-1 text-xs leading-5 text-terminal-400">
+                Live opportunities, full simulation access, Glass Box audit trails, and operator controls — all unlocked.
+              </p>
+            </div>
+          </div>
+        </section>
+      )}
 
       <section className="grid gap-4 lg:grid-cols-4">
         {(onboarding?.steps || []).map((step) => (
@@ -78,23 +128,6 @@ export default function CheckoutSuccess() {
           </div>
         ))}
       </section>
-
-      {onboarding?.trust_copy && (
-        <section className="rounded-[2rem] border border-terminal-700 bg-terminal-800/60 p-6 sm:p-8">
-          <div className="text-xs font-semibold uppercase tracking-[0.22em] text-terminal-500">Why The Flow Looks Like This</div>
-          <div className="mt-5 grid gap-4 lg:grid-cols-3">
-            <div className="rounded-2xl border border-terminal-700 bg-terminal-900/80 p-4 text-sm leading-6 text-terminal-300">
-              {onboarding.trust_copy.activation_scope}
-            </div>
-            <div className="rounded-2xl border border-terminal-700 bg-terminal-900/80 p-4 text-sm leading-6 text-terminal-300">
-              {onboarding.trust_copy.payment_proof}
-            </div>
-            <div className="rounded-2xl border border-terminal-700 bg-terminal-900/80 p-4 text-sm leading-6 text-terminal-300">
-              {onboarding.trust_copy.backend_step}
-            </div>
-          </div>
-        </section>
-      )}
     </div>
   )
 }

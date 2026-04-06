@@ -11,7 +11,7 @@ export default function Upgrade() {
   usePageMeta('upgrade')
 
   const [searchParams] = useSearchParams()
-  const { post, isConnected } = useApi()
+  const { post, config } = useApi()
   const { isPaid } = useSubscription()
   const { data: onboarding } = usePublicJson('/curation/onboarding-flow.v1.json')
   const { data: pricingData } = usePublicJson('/curation/pricing-matrix.v1.json')
@@ -31,10 +31,11 @@ export default function Upgrade() {
     setCheckoutLoading(true)
 
     try {
+      const origin = window.location.origin
       const data = await post('/v1/stripe/create-checkout-session', {
         price_id: searchParams.get('price') || undefined,
-        success_url: `${window.location.origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${window.location.origin}/checkout/cancel`,
+        success_url: `${origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${origin}/checkout/cancel`,
       })
 
       if (data?.checkout_url) {
@@ -48,8 +49,6 @@ export default function Upgrade() {
       setCheckoutLoading(false)
     }
   }
-
-  const canCheckout = isConnected && !isPaid && !checkoutLoading
 
   return (
     <div className="space-y-8 lg:space-y-10" data-operator-surface>
@@ -73,7 +72,7 @@ export default function Upgrade() {
         <div className="mt-6 flex flex-col gap-3 sm:flex-row">
           <button
             type="button"
-            disabled={!canCheckout}
+            disabled={isPaid || checkoutLoading || !config.baseUrl}
             onClick={handleCheckout}
             className="btn btn-primary btn-sm disabled:cursor-not-allowed disabled:opacity-60"
           >
@@ -98,16 +97,16 @@ export default function Upgrade() {
         {checkoutError && (
           <p className="mt-4 text-sm text-red-400">{checkoutError}</p>
         )}
-        {!isConnected && !isPaid && (
+        {!config.baseUrl && !isPaid && (
           <p className="mt-4 text-sm text-terminal-400">
-            Connect to the backend in <Link to="/settings" className="text-amber-300 hover:text-amber-200">Settings</Link> first to enable checkout.
+            Enter a backend URL in <Link to="/settings" className="text-amber-300 hover:text-amber-200">Settings</Link> to enable checkout.
           </p>
         )}
       </section>
 
       {proPlan && (
         <section className="rounded-[2rem] border border-terminal-700 bg-terminal-800/60 p-6 sm:p-8">
-          <div className="text-xs font-semibold uppercase tracking-[0.22em] text-terminal-500">Value Continuity</div>
+          <div className="text-xs font-semibold uppercase tracking-[0.22em] text-terminal-500">What You Get</div>
           <h2 className="mt-2 text-2xl font-semibold text-terminal-100">{proPlan.label} • {proPlan.price_label}</h2>
           <p className="mt-3 text-sm leading-6 text-terminal-400">{proPlan.tagline}</p>
         </section>
@@ -125,7 +124,7 @@ export default function Upgrade() {
 
       {onboarding?.trust_copy && (
         <section className="rounded-[2rem] border border-terminal-700 bg-terminal-800/60 p-6 sm:p-8">
-          <div className="text-xs font-semibold uppercase tracking-[0.22em] text-terminal-500">Trust Copy</div>
+          <div className="text-xs font-semibold uppercase tracking-[0.22em] text-terminal-500">How It Works</div>
           <div className="mt-5 grid gap-4 lg:grid-cols-3">
             <div className="rounded-2xl border border-terminal-700 bg-terminal-900/80 p-4 text-sm leading-6 text-terminal-300">
               {onboarding.trust_copy.activation_scope}
@@ -143,9 +142,9 @@ export default function Upgrade() {
       <section className="rounded-[2rem] border border-terminal-700 bg-gradient-to-r from-terminal-800 via-terminal-800 to-amber-900/20 p-6 sm:p-8">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <div className="text-xs font-semibold uppercase tracking-[0.22em] text-terminal-500">Need Help?</div>
+            <div className="text-xs font-semibold uppercase tracking-[0.22em] text-terminal-500">After Checkout</div>
             <h2 className="mt-2 text-2xl font-semibold text-terminal-100">
-              {isPaid ? 'You\'re subscribed. Head to the app.' : 'Connect your backend first, then subscribe.'}
+              {isPaid ? 'You\'re subscribed. Head to the app.' : 'After payment, connect your backend in Settings to activate.'}
             </h2>
           </div>
           <Link to={isPaid ? '/app' : '/settings'} className="btn btn-secondary btn-sm">
