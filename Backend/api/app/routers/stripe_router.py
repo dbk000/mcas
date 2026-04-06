@@ -127,7 +127,7 @@ def _plan_from_price_id(price_id: str | None) -> str | None:
 # ---------------------------------------------------------------------------
 
 class CheckoutRequest(BaseModel):
-    price_id: str
+    price_id: str | None = None
     success_url: str = "https://mcasui.com/checkout/success?session_id={CHECKOUT_SESSION_ID}"
     cancel_url: str = "https://mcasui.com/checkout/cancel"
 
@@ -138,6 +138,13 @@ async def create_checkout_session(payload: CheckoutRequest, request: Request):
     t0 = time.time()
     _require_session(request)
     stripe.api_key = _get_stripe_key()
+
+    # Resolve price_id: explicit from request, or fall back to monthly env var
+    price_id = payload.price_id
+    if not price_id:
+        price_id = _get_price_ids().get("monthly")
+    if not price_id:
+        raise HTTPException(status_code=400, detail="No price_id provided and STRIPE_PRICE_MONTHLY not configured")
 
     api_key_hash = _get_api_key_hash()
     customer = _find_or_create_customer(api_key_hash)
@@ -161,7 +168,7 @@ async def create_checkout_session(payload: CheckoutRequest, request: Request):
     checkout_session = stripe.checkout.Session.create(
         customer=stripe_customer_id,
         mode="subscription",
-        line_items=[{"price": payload.price_id, "quantity": 1}],
+        line_items=[{"price": price_id, "quantity": 1}],
         success_url=payload.success_url,
         cancel_url=payload.cancel_url,
     )

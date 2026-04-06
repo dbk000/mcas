@@ -1,75 +1,106 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { ArrowRight, ExternalLink, ShieldCheck } from 'lucide-react'
+import { ArrowRight, ExternalLink, Loader2, ShieldCheck } from 'lucide-react'
+import { useApi } from '../context/ApiContext'
 import { useSubscription } from '../context/SubscriptionContext'
 import { usePageMeta } from '../utils/pageMeta'
 import { usePublicJson } from '../utils/publicJson'
 import { sanitizeReturnTo, storePendingReturnTo } from '../utils/returnTo'
-import { FeedbackOnset } from '../components/FeedbackOnset'
 
 export default function Upgrade() {
   usePageMeta('upgrade')
 
   const [searchParams] = useSearchParams()
+  const { post, isConnected } = useApi()
   const { isPaid } = useSubscription()
   const { data: onboarding } = usePublicJson('/curation/onboarding-flow.v1.json')
   const { data: pricingData } = usePublicJson('/curation/pricing-matrix.v1.json')
+  const [checkoutLoading, setCheckoutLoading] = useState(false)
+  const [checkoutError, setCheckoutError] = useState(null)
 
   const rawReturnTo = searchParams.get('returnTo')
   const returnTo = useMemo(() => sanitizeReturnTo(rawReturnTo), [rawReturnTo])
-  const paymentUrl = import.meta.env.VITE_STRIPE_PAYMENT_URL
   const proPlan = useMemo(
     () => (pricingData?.plans || []).find((plan) => plan.id === 'pro'),
     [pricingData],
   )
 
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
     storePendingReturnTo(returnTo)
+    setCheckoutError(null)
+    setCheckoutLoading(true)
 
-    if (paymentUrl) {
-      window.location.assign(paymentUrl)
+    try {
+      const data = await post('/v1/stripe/create-checkout-session', {
+        price_id: searchParams.get('price') || undefined,
+        success_url: `${window.location.origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${window.location.origin}/checkout/cancel`,
+      })
+
+      if (data?.checkout_url) {
+        window.location.assign(data.checkout_url)
+      } else {
+        setCheckoutError('No checkout URL returned. Please try again.')
+        setCheckoutLoading(false)
+      }
+    } catch (err) {
+      setCheckoutError(err?.message || 'Failed to start checkout. Please try again.')
+      setCheckoutLoading(false)
     }
   }
+
+  const canCheckout = isConnected && !isPaid && !checkoutLoading
 
   return (
     <div className="space-y-8 lg:space-y-10" data-operator-surface>
       <section className="rounded-[2rem] border border-terminal-700 bg-terminal-800/70 p-6 shadow-2xl shadow-black/20 sm:p-8">
         <div className="inline-flex items-center gap-2 rounded-full border border-terminal-700 bg-terminal-900/80 px-3 py-1 text-xs uppercase tracking-[0.22em] text-terminal-400">
           <ShieldCheck className="size-3.5 text-emerald-300" />
-          Authored preview set
+          Secure Checkout
         </div>
-        <h1 className="mt-5 text-4xl font-semibold tracking-tight text-terminal-100 sm:text-5xl">Activate Pro, then connect your backend.</h1>
+        <h1 className="mt-5 text-4xl font-semibold tracking-tight text-terminal-100 sm:text-5xl">
+          Unlock the full MCAS operator surface.
+        </h1>
         <p className="mt-4 max-w-3xl text-base leading-7 text-terminal-300">
-          The upgrade flow is front-end-only in this release. Checkout success only marks this browser as Pro locally.
-          Backend connection is a second step after checkout, and secure entitlement enforcement is still out of scope.
+          Subscribe to MCAS Pro for live opportunities, Glass Box audit trails, unlimited simulations,
+          paper trading, and full operator controls. Billed securely via Stripe.
         </p>
         {returnTo && (
           <div className="mt-4 rounded-2xl border border-amber-500/25 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
-            After activation, MCAS will try to send you back to <span className="font-mono">{returnTo}</span>.
+            After checkout you'll be returned to <span className="font-mono">{returnTo}</span>.
           </div>
         )}
         <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-          <FeedbackOnset 
-            onClick={handleCheckout} 
-            latencyLabel="Upgrade"
+          <button
+            type="button"
+            disabled={!canCheckout}
+            onClick={handleCheckout}
+            className="btn btn-primary btn-sm disabled:cursor-not-allowed disabled:opacity-60"
           >
-            <button
-              type="button"
-              disabled={!paymentUrl || isPaid}
-              className="btn btn-primary btn-sm disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {isPaid ? 'Already Activated Locally' : 'Open Hosted Checkout'}
-              <ExternalLink className="size-4" />
-            </button>
-          </FeedbackOnset>
+            {checkoutLoading ? (
+              <>
+                <Loader2 className="size-4 animate-spin" />
+                Redirecting to Stripe...
+              </>
+            ) : isPaid ? (
+              'Already Subscribed'
+            ) : (
+              <>
+                Subscribe to Pro
+                <ExternalLink className="size-4" />
+              </>
+            )}
+          </button>
           <Link to="/pricing" className="btn btn-secondary btn-sm">
             Back To Pricing
           </Link>
         </div>
-        {!paymentUrl && (
+        {checkoutError && (
+          <p className="mt-4 text-sm text-red-400">{checkoutError}</p>
+        )}
+        {!isConnected && !isPaid && (
           <p className="mt-4 text-sm text-terminal-400">
-            No hosted checkout URL is configured in <code className="text-amber-300">VITE_STRIPE_PAYMENT_URL</code>.
-            Leave the CTA disabled and direct the user to support until the payment link exists.
+            Connect to the backend in <Link to="/settings" className="text-amber-300 hover:text-amber-200">Settings</Link> first to enable checkout.
           </p>
         )}
       </section>
@@ -112,11 +143,13 @@ export default function Upgrade() {
       <section className="rounded-[2rem] border border-terminal-700 bg-gradient-to-r from-terminal-800 via-terminal-800 to-amber-900/20 p-6 sm:p-8">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <div className="text-xs font-semibold uppercase tracking-[0.22em] text-terminal-500">Next Step</div>
-            <h2 className="mt-2 text-2xl font-semibold text-terminal-100">Activate locally, then go to Settings and point the UI at your backend.</h2>
+            <div className="text-xs font-semibold uppercase tracking-[0.22em] text-terminal-500">Need Help?</div>
+            <h2 className="mt-2 text-2xl font-semibold text-terminal-100">
+              {isPaid ? 'You\'re subscribed. Head to the app.' : 'Connect your backend first, then subscribe.'}
+            </h2>
           </div>
-          <Link to="/settings" className="btn btn-secondary btn-sm">
-            Open Settings
+          <Link to={isPaid ? '/app' : '/settings'} className="btn btn-secondary btn-sm">
+            {isPaid ? 'Open App' : 'Open Settings'}
             <ArrowRight className="size-4" />
           </Link>
         </div>
