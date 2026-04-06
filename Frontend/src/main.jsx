@@ -43,13 +43,15 @@ async function enableMocking() {
     return
   }
 
-  // Skip MSW when testing against real backend (?nomock in URL or localStorage flag)
+  // MSW off by default in dev — enable with ?mock in URL
   const params = new URLSearchParams(window.location.search)
-  if (params.has('nomock')) {
-    localStorage.setItem('mcas_nomock', '1')
+  if (params.has('mock')) {
+    localStorage.setItem('mcas_mock', '1')
   }
-  if (localStorage.getItem('mcas_nomock') === '1') {
-    console.log('[MSW] Disabled — real backend mode (clear with localStorage.removeItem("mcas_nomock"))')
+  if (params.has('nomock')) {
+    localStorage.removeItem('mcas_mock')
+  }
+  if (localStorage.getItem('mcas_mock') !== '1') {
     return
   }
 

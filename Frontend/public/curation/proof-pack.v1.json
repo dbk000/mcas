@@ -16,8 +16,7 @@
       "id": "auditable_data_flow",
       "label": "Data flow",
       "value": "Auditable",
-      "subtext": "verified signal lineage",
-      "link": "/lineage"
+      "subtext": "verified signal lineage"
     },
     {
       "id": "daily_pf_range",
@@ -33,7 +32,7 @@
     }
   ],
   "glass_box_walkthrough": {
-    "title": "Real Glass Box Replay — S9",
+    "title": "Real Glass Box Replay \u2014 S9",
     "setup_id": "S9",
     "symbol": "ONEUSDT",
     "timeframe": "1h",
@@ -99,7 +98,7 @@
       "id": "operator_surface",
       "eyebrow": "Built for operators",
       "headline": "A live workstation, not a marketing dashboard.",
-      "body": "Dense data, ranked tables, real-time state — designed for people who trade, not people who browse. Every pixel earns its place."
+      "body": "Dense data, ranked tables, real-time state \u2014 designed for people who trade, not people who browse. Every pixel earns its place."
     }
   ]
 }

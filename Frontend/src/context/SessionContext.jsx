@@ -420,15 +420,41 @@ export function SessionProvider({ children }) {
       return
     }
 
-    if (hasBootstrappedRef.current || session.checking) {
+    if (hasBootstrappedRef.current) {
       return
     }
 
     hasBootstrappedRef.current = true
-    void refreshSession({ silent: true })
-  }, [config.baseUrl, refreshSession, session.checking])
+    console.log('[SESSION] Bootstrap effect firing, baseUrl=' + configRef.current.baseUrl)
 
-  const sessionReady = !config.baseUrl || Boolean(session.lastChecked) || session.auth === 'error'
+    // No abort controller — bootstrap MUST complete even under StrictMode
+    // double-fire. The hasBootstrappedRef guard prevents duplicate calls.
+    client.getBootstrap({ configOverride: configRef.current })
+      .then((payload) => {
+        console.log('[SESSION] Bootstrap resolved: has_session=' + payload.has_session + ' auth=' + payload.auth)
+        setFrontendConfig(payload.frontend_config)
+        setSession(normalizeBootstrap(payload))
+      })
+      .catch((err) => {
+        const normalized = normalizeRequestError(err)
+        console.log('[SESSION] Bootstrap FAILED: ' + normalized.message + ' status=' + normalized.status + ' isAbort=' + normalized.isAbort)
+        if (normalized.isAbort) return
+        log.warn('Bootstrap failed', { event: 'bootstrap_error', error: normalized.message })
+        setSession({
+          ...createInitialSessionState(),
+          checking: false,
+          auth: 'error',
+          lastChecked: new Date().toISOString(),
+          error: normalized,
+        })
+      })
+  }, [config.baseUrl, client])
+
+  // sessionReady: false while bootstrap hasn't completed yet.
+  // If baseUrl is set, we MUST wait for bootstrap to resolve before deciding.
+  // On first render, session is initial state (lastChecked=null, auth=null).
+  // AuthRoute must NOT redirect during this window.
+  const sessionReady = !config.baseUrl || Boolean(session.lastChecked) || session.auth === 'error' || session.auth === 'unauthorized'
 
   const value = useMemo(() => ({
     config,

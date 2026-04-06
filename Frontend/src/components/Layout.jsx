@@ -221,14 +221,11 @@ function Header({ onOpenNavigation, isMobile }) {
             </button>
           )}
           <div>
-            <div className="text-xs uppercase tracking-[0.22em] text-terminal-500">App Shell</div>
-            <div className="text-sm font-medium text-terminal-100">{location.pathname.replace('/app', '') || '/app'}</div>
+            <div className="text-sm font-medium text-terminal-100">{location.pathname.replace('/app', '') || 'Dashboard'}</div>
           </div>
         </div>
 
-        <div className="hidden text-xs text-terminal-500 sm:block">
-          `/settings` stays public. `/app/*` stays inside the operator shell.
-        </div>
+        <div className="hidden text-xs text-terminal-500 sm:block" />
       </div>
     </header>
   )

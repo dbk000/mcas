@@ -34,6 +34,21 @@ export default function AuthRoute({ children }) {
     )
   }
 
+  // Don't redirect if auth hasn't been determined yet (bootstrap pending)
+  if (session.auth === null) {
+    return (
+      <div className="m-6 flex min-h-[42vh] flex-col items-center justify-center gap-3 rounded-lg border border-terminal-700/80 bg-terminal-900/60 px-6 py-10 text-center">
+        <div className="size-8 animate-spin rounded-full border-2 border-terminal-600 border-t-amber-400" />
+        <div className="space-y-1">
+          <p className="font-mono text-sm font-semibold uppercase tracking-[0.18em] text-terminal-100">
+            Restoring session
+          </p>
+          <p className="text-sm text-terminal-400">Connecting to MCAS...</p>
+        </div>
+      </div>
+    )
+  }
+
   if (!session.hasSession || session.auth !== 'ok') {
     return <Navigate to={`/settings?${settingsParams.toString()}`} replace />
   }
