@@ -27,7 +27,7 @@ export default function AuthRoute({ children }) {
             Restoring session
           </p>
           <p className="text-sm text-terminal-400">
-            Checking the backend bootstrap before the app shell loads.
+            Connecting to MCAS...
           </p>
         </div>
       </div>

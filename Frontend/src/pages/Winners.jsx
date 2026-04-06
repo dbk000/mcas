@@ -7,8 +7,8 @@ import { usePublicJson } from '../utils/publicJson'
 
 function sourceLabel(sourceStatus) {
   if (sourceStatus === 'live') return 'Live feed'
-  if (sourceStatus === 'degraded') return 'Live feed temporarily unavailable, showing authored preview set'
-  return 'Authored preview set'
+  if (sourceStatus === 'degraded') return 'Showing curated archive'
+  return 'Curated archive'
 }
 
 function isValidWinner(item) {
@@ -45,10 +45,10 @@ export default function Winners() {
   if (!loading && strategies.length === 0) {
     return (
       <div className="rounded-[2rem] border border-terminal-700 bg-terminal-800/70 p-8 text-center">
-        <div className="text-xs font-semibold uppercase tracking-[0.22em] text-terminal-500">Curated Unavailable</div>
+        <div className="text-xs font-semibold uppercase tracking-[0.22em] text-terminal-500">Winners Archive</div>
         <h1 className="mt-3 text-3xl font-semibold text-terminal-100">The winners archive is temporarily unavailable.</h1>
         <p className="mt-3 text-sm text-terminal-400">
-          The free surface stays curated by design. Review pricing or continue into the upgrade flow while the preview set reloads.
+          Check back soon, or explore pricing to unlock live opportunities.
         </p>
         <div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row">
           <Link
@@ -80,12 +80,12 @@ export default function Winners() {
               <ShieldCheck className="size-3.5 text-emerald-300" />
               {sourceLabel(sourceStatus)}
             </div>
-            <h1 className="mt-5 text-4xl font-semibold tracking-tight text-terminal-100 sm:text-5xl">Curated winners by strategy, regime, and timing quality.</h1>
+            <h1 className="mt-5 text-4xl font-semibold tracking-tight text-terminal-100 sm:text-5xl">Verified winners — ranked by strategy and market conditions.</h1>
             <p className="mt-4 max-w-3xl text-base leading-7 text-terminal-300">
-              These are curated historical examples, not the live paid operator surface. The free tier proves edge and methodology without exposing exact live execution detail.
+              Historical examples of trades MCAS identified before they moved. Subscribe to Pro for live signals.
             </p>
             <p className="mt-3 text-sm text-terminal-500">
-              Not financial advice. Historical examples are curated for proof continuity. Paid routes unlock live opportunity timing and Glass Box state.
+              Not financial advice. Historical examples are selected for quality. Pro subscribers get live opportunities with full audit trails.
             </p>
           </div>
           <div className="flex flex-col gap-3 sm:flex-row">
@@ -94,7 +94,7 @@ export default function Winners() {
               className="btn btn-primary btn-sm"
               onClick={() => emitWinnerClick({ href: '/upgrade', label: 'Unlock Live Routes', placement: 'hero_primary', tier, sourceStatus })}
             >
-              Unlock Live Routes
+              Get Live Signals
               <ArrowRight className="size-4" />
             </Link>
             <Link
@@ -102,7 +102,7 @@ export default function Winners() {
               className="btn btn-secondary btn-sm"
               onClick={() => emitWinnerClick({ href: '/pricing', label: 'Compare Plans', placement: 'hero_secondary', tier, sourceStatus })}
             >
-              Compare Plans
+              See Pricing
             </Link>
           </div>
         </div>
@@ -140,7 +140,7 @@ export default function Winners() {
                   sourceStatus,
                 })}
               >
-                Unlock {strategy.setup_id}
+                Unlock this strategy
               </Link>
             </div>
 
@@ -201,7 +201,7 @@ export default function Winners() {
                         sourceStatus,
                       })}
                     >
-                      Unlock Live Timing
+                      Get Live Signals
                       <ArrowRight className="size-4" />
                     </Link>
                   </div>

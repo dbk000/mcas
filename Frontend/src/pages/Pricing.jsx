@@ -7,8 +7,8 @@ import { usePublicJson } from '../utils/publicJson'
 
 function sourceLabel(sourceStatus) {
   if (sourceStatus === 'live') return 'Live feed'
-  if (sourceStatus === 'degraded') return 'Live feed temporarily unavailable, showing authored preview set'
-  return 'Authored preview set'
+  if (sourceStatus === 'degraded') return 'Showing cached pricing'
+  return 'Pricing'
 }
 
 function emitPricingClick({ href, label, placement, tier, sourceStatus }) {
@@ -41,11 +41,10 @@ export default function Pricing() {
       <section className="rounded-[2rem] border border-terminal-700 bg-terminal-800/70 p-6 shadow-2xl shadow-black/20 sm:p-8">
         <div className="text-xs font-semibold uppercase tracking-[0.22em] text-terminal-500">{sourceLabel(sourceStatus)}</div>
         <h1 className="mt-4 max-w-4xl text-4xl font-semibold tracking-tight text-terminal-100 sm:text-5xl">
-          Sell actionability, timing fidelity, and metric honesty instead of a vague feature list.
+          One plan. Full access. Proof of every decision.
         </h1>
         <p className="mt-4 max-w-3xl text-base leading-7 text-terminal-300">
-          The free tier validates the proof story with curated examples. Pro unlocks the live operator surfaces, Glass Box visibility,
-          and the backend connection workflow that powers `/app/*`.
+          Explore verified historical winners for free. Subscribe to Pro for live signals, full audit trails, and complete platform access.
         </p>
         <div className="mt-6 flex flex-col gap-3 sm:flex-row">
           <Link
@@ -73,7 +72,7 @@ export default function Pricing() {
             .sort((a, b) => (a.priority_rank || 999) - (b.priority_rank || 999))
             .map((item) => (
               <div key={item.id} className="rounded-[1.75rem] border border-terminal-700 bg-terminal-800/60 p-6">
-                <div className="text-xs font-semibold uppercase tracking-[0.22em] text-terminal-500">Value Stack</div>
+                <div className="text-xs font-semibold uppercase tracking-[0.22em] text-terminal-500">What you get</div>
                 <h2 className="mt-3 text-xl font-semibold text-terminal-100">{item.headline}</h2>
                 <p className="mt-3 text-sm leading-6 text-terminal-400">{item.body}</p>
               </div>
@@ -123,8 +122,8 @@ export default function Pricing() {
       <section className="rounded-[2rem] border border-terminal-700 bg-terminal-800/60 p-6 sm:p-8">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <div className="text-xs font-semibold uppercase tracking-[0.22em] text-terminal-500">Comparison Matrix</div>
-            <h2 className="mt-2 text-2xl font-semibold text-terminal-100">Free stays proof-first. Pro stays action-first.</h2>
+            <div className="text-xs font-semibold uppercase tracking-[0.22em] text-terminal-500">Feature comparison</div>
+            <h2 className="mt-2 text-2xl font-semibold text-terminal-100">Free vs Pro — what's included</h2>
           </div>
           <Link
             to="/upgrade"
@@ -159,8 +158,8 @@ export default function Pricing() {
       </section>
 
       <section className="rounded-[2rem] border border-terminal-700 bg-terminal-800/60 p-6 sm:p-8">
-        <div className="text-xs font-semibold uppercase tracking-[0.22em] text-terminal-500">Honest Metrics Copy</div>
-        <h2 className="mt-2 text-2xl font-semibold text-terminal-100">Aggregate PF keeps context. Avg Daily PF keeps you honest.</h2>
+        <div className="text-xs font-semibold uppercase tracking-[0.22em] text-terminal-500">How we measure performance</div>
+        <h2 className="mt-2 text-2xl font-semibold text-terminal-100">Two numbers, not one. We show both the headline figure and the stricter daily average.</h2>
         <div className="mt-5 grid gap-4 sm:grid-cols-2">
           <div className="rounded-2xl border border-terminal-700 bg-terminal-900/80 p-4">
             <div className="text-xs uppercase tracking-[0.18em] text-terminal-500">Aggregate PF</div>
@@ -172,7 +171,7 @@ export default function Pricing() {
           </div>
         </div>
         <p className="mt-4 text-sm leading-6 text-terminal-400">
-          {honestPf?.method_note || 'Finite daily PF values are averaged. Fully profitable zero-loss days are tracked separately and excluded from the finite average.'}
+          {honestPf?.method_note || 'Days with no losses are excluded from the daily average to prevent flattering statistics.'}
         </p>
       </section>
 

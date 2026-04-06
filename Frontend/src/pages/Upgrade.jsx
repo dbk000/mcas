@@ -58,11 +58,11 @@ export default function Upgrade() {
           Secure Checkout
         </div>
         <h1 className="mt-5 text-4xl font-semibold tracking-tight text-terminal-100 sm:text-5xl">
-          Unlock the full MCAS operator surface.
+          Unlock MCAS Pro
         </h1>
         <p className="mt-4 max-w-3xl text-base leading-7 text-terminal-300">
-          Subscribe to MCAS Pro for live opportunities, Glass Box audit trails, unlimited simulations,
-          paper trading, and full operator controls. Billed securely via Stripe.
+          Subscribe to MCAS Pro for live signals, verified audit trails, unlimited simulations,
+          and paper trading. Billed securely via Stripe.
         </p>
         {returnTo && (
           <div className="mt-4 rounded-2xl border border-amber-500/25 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
@@ -96,11 +96,6 @@ export default function Upgrade() {
         </div>
         {checkoutError && (
           <p className="mt-4 text-sm text-red-400">{checkoutError}</p>
-        )}
-        {!config.baseUrl && !isPaid && (
-          <p className="mt-4 text-sm text-terminal-400">
-            Enter a backend URL in <Link to="/settings" className="text-amber-300 hover:text-amber-200">Settings</Link> to enable checkout.
-          </p>
         )}
       </section>
 
@@ -144,7 +139,7 @@ export default function Upgrade() {
           <div>
             <div className="text-xs font-semibold uppercase tracking-[0.22em] text-terminal-500">After Checkout</div>
             <h2 className="mt-2 text-2xl font-semibold text-terminal-100">
-              {isPaid ? 'You\'re subscribed. Head to the app.' : 'After payment, connect your backend in Settings to activate.'}
+              {isPaid ? 'You\'re subscribed. Head to the app.' : 'After payment, connect your MCAS account in Settings to activate.'}
             </h2>
           </div>
           <Link to={isPaid ? '/app' : '/settings'} className="btn btn-secondary btn-sm">

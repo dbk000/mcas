@@ -7,7 +7,7 @@ export default function useLandingData() {
   const { data: winnersPack } = usePublicJson('/curation/winners.v1.json')
 
   const primaryHref = isPaid ? '/app/strategies' : '/pricing?returnTo=%2Fapp%2Fstrategies'
-  const primaryLabel = isPaid ? 'Open strategy dashboard' : 'See Pro Plans'
+  const primaryLabel = isPaid ? 'View live example' : 'Subscribe to Pro'
   const previewStrategies = (winnersPack?.strategies || []).slice(0, 2)
   const ready = Boolean(proofPack && winnersPack)
 

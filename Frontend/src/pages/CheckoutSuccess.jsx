@@ -65,11 +65,11 @@ export default function CheckoutSuccess() {
         </h1>
         <p className="mt-4 max-w-3xl text-base leading-7 text-terminal-300">
           {isAuthenticated && isPaid ? (
-            'Your subscription is active and linked to your backend. All Pro features are now unlocked.'
+            'Your subscription is active. All Pro features are now unlocked.'
           ) : isAuthenticated ? (
             'Your payment was successful. Your subscription will be linked momentarily.'
           ) : (
-            'Your payment was successful. Now connect your MCAS backend in Settings to activate your Pro subscription. Your API key will automatically link to the subscription you just purchased.'
+            'Your payment was successful. Go to Settings to connect your account and activate Pro.'
           )}
         </p>
         <div className="mt-6 flex flex-col gap-3 sm:flex-row">
@@ -81,11 +81,11 @@ export default function CheckoutSuccess() {
           ) : (
             <Link to={nextHref} className="btn btn-primary btn-sm">
               <SettingsIcon className="size-4" />
-              {isAuthenticated ? 'Continue' : 'Connect Your Backend'}
+              {isAuthenticated ? 'Continue' : 'Connect Your Account'}
             </Link>
           )}
           <Link to="/app" className="btn btn-secondary btn-sm">
-            Open /app
+            Open Dashboard
           </Link>
         </div>
       </section>
@@ -98,21 +98,21 @@ export default function CheckoutSuccess() {
               <div className="text-2xl font-semibold text-amber-300">1</div>
               <h3 className="mt-2 text-sm font-semibold text-terminal-100">Go to Settings</h3>
               <p className="mt-1 text-xs leading-5 text-terminal-400">
-                Click the button above or navigate to /settings.
+                Click the button above to get started.
               </p>
             </div>
             <div className="rounded-2xl border border-terminal-700 bg-terminal-900/80 p-4">
               <div className="text-2xl font-semibold text-amber-300">2</div>
-              <h3 className="mt-2 text-sm font-semibold text-terminal-100">Enter your API key</h3>
+              <h3 className="mt-2 text-sm font-semibold text-terminal-100">Connect your account</h3>
               <p className="mt-1 text-xs leading-5 text-terminal-400">
-                The backend URL and API key connect you to the MCAS engine. Your subscription will be automatically linked.
+                Enter your connection details to activate Pro features.
               </p>
             </div>
             <div className="rounded-2xl border border-terminal-700 bg-terminal-900/80 p-4">
               <div className="text-2xl font-semibold text-amber-300">3</div>
               <h3 className="mt-2 text-sm font-semibold text-terminal-100">Start using Pro</h3>
               <p className="mt-1 text-xs leading-5 text-terminal-400">
-                Live opportunities, full simulation access, Glass Box audit trails, and operator controls — all unlocked.
+                Live signals, unlimited simulations, verified audit trails, and full platform access — all unlocked.
               </p>
             </div>
           </div>

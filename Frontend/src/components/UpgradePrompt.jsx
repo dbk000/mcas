@@ -17,13 +17,13 @@ export default function UpgradePrompt({ feature = 'This feature' }) {
         {feature} requires MCAS Pro
       </h3>
       <p className="mt-2 text-sm text-terminal-400">
-        Upgrade to unlock live opportunities, full simulation access, and operator controls.
+        Upgrade to unlock live signals, unlimited simulations, and full platform access.
       </p>
       <Link
         to={pricingHref}
         className="btn btn-primary btn-sm mt-4 inline-flex items-center gap-2"
       >
-        See MCAS Pro Plans
+        See MCAS Pro
         <ArrowRight className="size-4" />
       </Link>
     </div>

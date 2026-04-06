@@ -33,8 +33,6 @@ export default function PaidRoute({ children }) {
   const {
     isPaid,
     tier,
-    accessMode,
-    entitlementSource,
     loading,
   } = useSubscription()
 
@@ -66,34 +64,34 @@ export default function PaidRoute({ children }) {
             </div>
 
             <h1 className="mt-4 max-w-2xl text-xl font-semibold tracking-tight text-terminal-100 sm:text-4xl">
-              Unlock the full MCAS operator surface.
+              Unlock MCAS Pro
             </h1>
             <p className="mt-2 max-w-2xl text-xs leading-5 text-terminal-300 sm:text-base">
-              Live strategy ranking, Glass Box audit trails, survey mode, full simulation access,
-              and operator controls require an active MCAS Pro subscription.
+              Live signals, verified audit trails, survey mode, and unlimited simulations
+              require an active MCAS Pro subscription.
             </p>
 
             <div className="mt-4 grid gap-2 sm:grid-cols-3">
               <div className="rounded-xl border border-terminal-700 bg-terminal-900/70 p-3">
                 <ShieldCheck className="size-4 text-emerald-300" />
                 <div className="mt-2 text-xs font-semibold text-terminal-100">Glass Box visibility</div>
-                <p className="mt-1 text-[10px] leading-4 text-terminal-400">See whether timing stayed verified, violated, unknown, or not attached.</p>
+                <p className="mt-1 text-[10px] leading-4 text-terminal-400">See proof that every signal was sealed before the market moved.</p>
               </div>
               <div className="rounded-xl border border-terminal-700 bg-terminal-900/70 p-3">
                 <Radar className="size-4 text-amber-300" />
-                <div className="mt-2 text-xs font-semibold text-terminal-100">Live strategy ladder</div>
-                <p className="mt-1 text-[10px] leading-4 text-terminal-400">Rank active setups by urgency, freshness, and verified opportunity count.</p>
+                <div className="mt-2 text-xs font-semibold text-terminal-100">Live signal ranking</div>
+                <p className="mt-1 text-[10px] leading-4 text-terminal-400">See which strategies are finding opportunities right now.</p>
               </div>
               <div className="rounded-xl border border-terminal-700 bg-terminal-900/70 p-3">
                 <TimerReset className="size-4 text-sky-300" />
                 <div className="mt-2 text-xs font-semibold text-terminal-100">Honest metrics</div>
-                <p className="mt-1 text-[10px] leading-4 text-terminal-400">Pair aggregate PF with Avg Daily PF so flattering totals do not hide inconsistency.</p>
+                <p className="mt-1 text-[10px] leading-4 text-terminal-400">Two performance numbers instead of one — so you see the real picture.</p>
               </div>
             </div>
 
             <div className="mt-6 flex flex-col gap-2 sm:flex-row">
-              <PaywallButton href={pricingHref} label="See MCAS Pro Plans" placement="hero_primary" tier={tier}>
-                See MCAS Pro Plans
+              <PaywallButton href={pricingHref} label="See MCAS Pro" placement="hero_primary" tier={tier}>
+                See MCAS Pro
                 <ArrowRight className="size-4" />
               </PaywallButton>
               <PaywallButton href="/winners" label="Review Free Winners" placement="hero_secondary" variant="secondary" tier={tier}>
@@ -101,21 +99,14 @@ export default function PaidRoute({ children }) {
               </PaywallButton>
             </div>
 
-            <div className="mt-6 rounded-xl border border-terminal-700 bg-terminal-900/80 p-3 text-[11px] text-terminal-400">
-              <div className="font-semibold text-terminal-200">Entitlement</div>
-              <p className="mt-1">
-                Access mode: {accessMode.replace(/_/g, ' ')}. Source: {entitlementSource.replace(/_/g, ' ')}.
-                Tier: {tier.replace(/_/g, ' ')}.
-              </p>
-            </div>
           </section>
 
           <aside className="flex flex-col gap-4 rounded-3xl border border-terminal-700 bg-terminal-800/60 p-4 sm:p-8">
             <div>
-              <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-terminal-500">Locked From Here</div>
-              <div className="mt-2 text-lg font-semibold text-terminal-100">{location.pathname}</div>
+              <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-terminal-500">This page requires Pro</div>
+              <div className="mt-2 text-lg font-semibold text-terminal-100">Pro subscription required</div>
               <p className="mt-1 text-xs leading-5 text-terminal-400">
-                Subscribe to MCAS Pro to unlock live opportunities, operator controls, and full simulation access.
+                Subscribe to MCAS Pro to unlock live signals, full simulations, and advanced features.
               </p>
             </div>
 
@@ -123,9 +114,9 @@ export default function PaidRoute({ children }) {
               {[
                 'Live strategy dashboard with ranked cards',
                 'Opportunity detail with Glass Box badge',
-                'Run detail with Avg Daily PF',
+                'Run detail with honest performance metrics',
                 'Full simulation access',
-                'Strategy builder with CRUD',
+                'Full strategy builder',
               ].map((item) => (
                 <div key={item} className="rounded-xl border border-terminal-700 bg-terminal-900/70 px-3 py-2 text-[11px] text-terminal-300">
                   {item}
@@ -134,12 +125,12 @@ export default function PaidRoute({ children }) {
             </div>
 
             <div className="mt-auto space-y-2 pt-4">
-              <PaywallButton href={pricingHref} label="Unlock operator access" placement="sidebar_primary" tier={tier}>
-                Unlock Operator Access
+              <PaywallButton href={pricingHref} label="Unlock Pro" placement="sidebar_primary" tier={tier}>
+                Unlock Pro
                 <ArrowRight className="size-4" />
               </PaywallButton>
               <PaywallButton href="/pricing" label="See pricing" placement="sidebar_pricing" variant="secondary" tier={tier}>
-                Compare Plans
+                See Pricing
               </PaywallButton>
             </div>
           </aside>

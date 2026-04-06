@@ -23,7 +23,7 @@ export function HeroPills() {
 export function HeroHeadline({ className = '' }) {
   return (
     <h1 className={`text-xl font-semibold leading-tight text-terminal-100 sm:text-4xl lg:text-6xl ${className}`}>
-      Comprehensive realtime intelligence that shows the flattering number, the stricter number, and the timing integrity behind both.
+      Algorithmic trading intelligence that proves every decision it makes.
     </h1>
   )
 }
@@ -32,7 +32,7 @@ export function HeroHeadline({ className = '' }) {
 export function HeroCopy() {
   return (
     <p className="max-w-3xl text-[13px] leading-5 text-terminal-300 sm:text-lg">
-      MCAS splits the public archive from the paid operator app. Free pages show ranked historical winners and verified proof strips. Pro unlocks live strategy ladders, Glass Box causality, and action-window context inside the app shell.
+      See how MCAS finds profitable trades before they happen — with cryptographic proof of every decision. Free users explore verified winners. Pro subscribers get live signals and full audit trails.
     </p>
   )
 }
@@ -48,7 +48,7 @@ export function ProofBadges({ proofPack }) {
         </div>
         <div className="inline-flex items-center gap-1.5 rounded-full bg-terminal-800 px-2.5 py-1 text-[9px] text-terminal-300">
           <TimerReset className="size-3 text-amber-300" />
-          {proofPack?.honest_pf_demo?.days_excluded_infinite_profitable ?? 0} perfect days excluded from average
+          {proofPack?.honest_pf_demo?.days_excluded_infinite_profitable ?? 0} excluded outlier days for honest metrics
         </div>
       </div>
     </div>
@@ -100,7 +100,7 @@ export function HeroCTAs({ primaryHref, primaryLabel, isPaid, tier }) {
 export function Disclaimer() {
   return (
     <p className="text-[10px] leading-4 text-terminal-500 sm:text-xs">
-      Not financial advice. Public pages show selected historical examples. Live app functionality remains access-limited and depends on local Pro activation plus your API configuration.
+      Not financial advice. Public pages show selected historical examples. Live features require an active MCAS Pro subscription.
     </p>
   )
 }
@@ -363,18 +363,18 @@ export function PricingSection({ tier }) {
         'Market heatmap & derivatives',
       ],
       cta: '/settings',
-      ctaLabel: 'Connect Backend',
+      ctaLabel: 'Browse Free',
       highlight: false,
     },
     {
       id: 'subscribed',
-      name: 'Subscribed',
+      name: 'Starter',
       price: '\u20AC0',
       period: 'sign up free',
       features: [
         'Everything in Free',
         '10 simulation runs / month',
-        'Partial strategy config visibility',
+        'View strategy configurations',
         'Dashboard with live market data',
       ],
       cta: '/settings',
@@ -387,16 +387,16 @@ export function PricingSection({ tier }) {
       price: '\u20AC50',
       period: '/ month',
       features: [
-        'Everything in Subscribed',
+        'Everything in Starter',
         'Live opportunities as they fire',
         'Full Glass Box audit trail',
-        'Survey mode (cortical training)',
-        'Strategy builder with full CRUD',
+        'Survey mode \u2014 train your pattern recognition',
+        'Full strategy builder',
         'Paper trading & operator controls',
         'Unlimited simulation runs',
       ],
       cta: '/pricing',
-      ctaLabel: 'See Pro Plans',
+      ctaLabel: 'Subscribe to Pro',
       highlight: true,
     },
   ]
@@ -456,8 +456,8 @@ export function WinnersPreview({ previewStrategies, tier }) {
     <section className="space-y-4">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-[10px] uppercase tracking-[0.22em] text-terminal-500">Preview continuity</p>
-          <h2 className="mt-1 text-xl font-semibold text-terminal-100 sm:text-2xl">Ranked winners stay strategy-native and dense.</h2>
+          <p className="text-[10px] uppercase tracking-[0.22em] text-terminal-500">Verified winners</p>
+          <h2 className="mt-1 text-xl font-semibold text-terminal-100 sm:text-2xl">Recent profitable trades — verified before they moved.</h2>
         </div>
         <Link
           to="/winners"
