@@ -1,7 +1,7 @@
 {
   "version": "v1",
-  "generated_at": "2026-03-17",
-  "as_of_ts": "2026-03-17T00:20:00Z",
+  "generated_at": "2026-04-06",
+  "as_of_ts": "2026-04-06T23:53:38.315373+00:00",
   "source": "production",
   "source_status": "live",
   "ui_intent": "Public proof surfaces for landing, pricing, and trust-building panels",
@@ -9,7 +9,7 @@
     {
       "id": "strategies_tracked",
       "label": "Strategies tracked",
-      "value": "14",
+      "value": "6",
       "subtext": "crypto strategies active in last 30 days"
     },
     {
@@ -21,7 +21,7 @@
     {
       "id": "daily_pf_range",
       "label": "Avg daily PF range",
-      "value": "0.2 to 4.8",
+      "value": "0.1 to 4.8",
       "subtext": "across live strategies"
     },
     {
@@ -32,54 +32,53 @@
     }
   ],
   "glass_box_walkthrough": {
-    "title": "Real Glass Box Replay \u2014 S9",
-    "setup_id": "S9",
-    "symbol": "ONEUSDT",
+    "title": "Real Glass Box Replay \u2014 D1",
+    "setup_id": "D1",
+    "symbol": "SKYUSDT",
     "timeframe": "1h",
-    "direction": "SHORT",
-    "decision_ts": "2026-03-17T00:05:06Z",
+    "direction": "LONG",
+    "decision_ts": "2026-04-06T14:01:58.634684+00:00",
     "causality_status": "VERIFIED",
     "headline": "Every decision shows what the model saw, when it saw it, and whether the timing was clean.",
     "timeline": [
       {
         "phase": "ingest",
         "state": "verified",
-        "ts": "2026-03-17T00:05:06Z",
+        "ts": "2026-04-06T14:01:58.634684+00:00",
         "detail": "Market data snapshot ingested before evaluation boundary."
       },
       {
-        "phase": "gate_breadth",
+        "phase": "gate_0",
         "state": "passed",
-        "ts": "2026-03-17T00:05:06Z",
-        "detail": "breadth: actual=0.848 vs threshold=0.3"
+        "ts": "2026-04-06T14:01:58.634684+00:00",
+        "detail": "gate: actual=None vs threshold=0.75"
       },
       {
-        "phase": "gate_top_decile",
+        "phase": "gate_1",
         "state": "passed",
-        "ts": "2026-03-17T00:05:06Z",
-        "detail": "top_decile: rank=10 vs decile_size=32"
+        "ts": "2026-04-06T14:01:58.634684+00:00",
+        "detail": "gate: actual=None vs threshold=0.05"
       },
       {
-        "phase": "gate_ret_4h_positive",
+        "phase": "gate_2",
         "state": "passed",
-        "ts": "2026-03-17T00:05:06Z",
-        "detail": "ret_4h_positive: actual=0.023 vs threshold=0.0"
+        "ts": "2026-04-06T14:01:58.634684+00:00",
+        "detail": "gate: actual=None vs threshold=2.0"
       },
       {
         "phase": "decision_emit",
         "state": "verified",
-        "ts": "2026-03-17T00:05:06Z",
-        "detail": "Signal sealed with trace_hash f9b0991a8de9..."
+        "ts": "2026-04-06T14:01:58.634684+00:00",
+        "detail": "Signal sealed with trace_hash 1cdb32ec97ff..."
       }
     ]
   },
   "honest_pf_demo": {
     "headline": "Aggregate PF can flatter. Avg Daily PF shows whether edge repeats day after day.",
-    "aggregate_pf": 0.88,
-    "avg_daily_pf": 1.34,
-    "days_counted": 21,
-    "days_excluded_infinite_profitable": 0,
-    "method_note": "Finite daily PF values are averaged. Fully profitable zero-loss days are reported separately and excluded from the finite mean."
+    "aggregate_pf": 0.64,
+    "avg_daily_pf": 2.45,
+    "days_counted": 5,
+    "method_note": "Daily profit factor is capped at 10.0 for days with no losing trades. All days are included in the average."
   },
   "evidence_blocks": [
     {
