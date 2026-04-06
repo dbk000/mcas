@@ -63,16 +63,15 @@ def query_pf_stats(cur) -> dict:
                 day,
                 gross_profit,
                 gross_loss,
-                CASE WHEN gross_loss > 0 THEN gross_profit / gross_loss ELSE NULL END AS pf
+                CASE WHEN gross_loss > 0 THEN LEAST(gross_profit / gross_loss, 10.0) ELSE 10.0 END AS pf
             FROM daily
             WHERE gross_profit > 0 OR gross_loss > 0
         )
         SELECT
             SUM(gross_profit) AS total_profit,
             SUM(gross_loss) AS total_loss,
-            AVG(pf) FILTER (WHERE pf IS NOT NULL) AS avg_daily_pf,
-            COUNT(*) FILTER (WHERE pf IS NOT NULL) AS days_counted,
-            COUNT(*) FILTER (WHERE gross_loss = 0 AND gross_profit > 0) AS days_excluded_infinite
+            AVG(pf) AS avg_daily_pf,
+            COUNT(*) AS days_counted
         FROM daily_pf
     """)
     row = cur.fetchone()
@@ -81,17 +80,15 @@ def query_pf_stats(cur) -> dict:
             "aggregate_pf": None,
             "avg_daily_pf": None,
             "days_counted": 0,
-            "days_excluded_infinite_profitable": 0,
         }
 
-    total_profit, total_loss, avg_daily_pf, days_counted, days_excluded = row
+    total_profit, total_loss, avg_daily_pf, days_counted = row
     agg_pf = float(total_profit / total_loss) if total_loss and total_loss > 0 else None
 
     return {
         "aggregate_pf": round(agg_pf, 2) if agg_pf else None,
         "avg_daily_pf": round(float(avg_daily_pf), 2) if avg_daily_pf else None,
         "days_counted": int(days_counted) if days_counted else 0,
-        "days_excluded_infinite_profitable": int(days_excluded) if days_excluded else 0,
     }
 
 
@@ -172,10 +169,10 @@ def query_daily_pf_range(cur) -> str:
         strategy_avg AS (
             SELECT
                 setup_id,
-                AVG(CASE WHEN gl > 0 THEN gp / gl ELSE NULL END) AS avg_daily_pf
+                AVG(CASE WHEN gl > 0 THEN LEAST(gp / gl, 10.0) ELSE 10.0 END) AS avg_daily_pf
             FROM daily
+            WHERE gp > 0 OR gl > 0
             GROUP BY setup_id
-            HAVING AVG(CASE WHEN gl > 0 THEN gp / gl ELSE NULL END) IS NOT NULL
         )
         SELECT MIN(avg_daily_pf), MAX(avg_daily_pf) FROM strategy_avg
     """)
@@ -236,7 +233,6 @@ def main():
                 "label": "Data flow",
                 "value": "Auditable",
                 "subtext": "verified signal lineage",
-                "link": "/lineage",
             },
             {
                 "id": "daily_pf_range",
@@ -257,8 +253,7 @@ def main():
             "aggregate_pf": pf_stats["aggregate_pf"],
             "avg_daily_pf": pf_stats["avg_daily_pf"],
             "days_counted": pf_stats["days_counted"],
-            "days_excluded_infinite_profitable": pf_stats["days_excluded_infinite_profitable"],
-            "method_note": "Finite daily PF values are averaged. Fully profitable zero-loss days are reported separately and excluded from the finite mean.",
+            "method_note": "Daily profit factor is capped at 10.0 for days with no losing trades. All days are included in the average.",
         },
         "evidence_blocks": existing.get("evidence_blocks", [
             {

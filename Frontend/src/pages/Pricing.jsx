@@ -171,7 +171,7 @@ export default function Pricing() {
           </div>
         </div>
         <p className="mt-4 text-sm leading-6 text-terminal-400">
-          {honestPf?.method_note || 'Days with no losses are excluded from the daily average to prevent flattering statistics.'}
+          {honestPf?.method_note || 'Daily profit factor is capped at 10.0 for days with no losing trades. All days are included in the average.'}
         </p>
       </section>
 

@@ -48,7 +48,7 @@ export function ProofBadges({ proofPack }) {
         </div>
         <div className="inline-flex items-center gap-1.5 rounded-full bg-terminal-800 px-2.5 py-1 text-[9px] text-terminal-300">
           <TimerReset className="size-3 text-amber-300" />
-          {proofPack?.honest_pf_demo?.days_excluded_infinite_profitable ?? 0} excluded outlier days for honest metrics
+          All days included — PF capped at 10.0
         </div>
       </div>
     </div>
