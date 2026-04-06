@@ -152,9 +152,8 @@ async def create_checkout_session(payload: CheckoutRequest, request: Request):
 
     if stripe_customer_id:
         checkout_params["customer"] = stripe_customer_id
-    else:
-        # Let Stripe collect email — we'll link the customer later via webhook
-        checkout_params["customer_creation"] = "always"
+    # In subscription mode, Stripe always creates a customer if none provided.
+    # Email is collected on the Stripe Checkout page automatically.
 
     checkout_session = stripe.checkout.Session.create(**checkout_params)
     return envelope({"checkout_url": checkout_session.url}, t0)
