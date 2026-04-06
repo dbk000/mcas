@@ -53,8 +53,12 @@ export default defineConfig(({ mode }) => ({
     proxy: {
       '/v1': {
         target: 'http://localhost:8002',
-        changeOrigin: true
-      }
+        changeOrigin: true,
+      },
+      '/health': {
+        target: 'http://localhost:8002',
+        changeOrigin: true,
+      },
     }
   },
   build: {

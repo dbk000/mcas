@@ -43,6 +43,16 @@ async function enableMocking() {
     return
   }
 
+  // Skip MSW when testing against real backend (?nomock in URL or localStorage flag)
+  const params = new URLSearchParams(window.location.search)
+  if (params.has('nomock')) {
+    localStorage.setItem('mcas_nomock', '1')
+  }
+  if (localStorage.getItem('mcas_nomock') === '1') {
+    console.log('[MSW] Disabled — real backend mode (clear with localStorage.removeItem("mcas_nomock"))')
+    return
+  }
+
   const { startWorker } = await import('./mocks/browser')
   return startWorker()
 }

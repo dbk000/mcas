@@ -122,20 +122,9 @@ function AuthShell() {
   )
 }
 
-/**
- * PaidShell — requires active subscription (paid only).
- * Pages here: ControlPlane, PaperTrading, OpportunitySurvey, etc.
- */
-function PaidShell() {
-  return (
-    <AuthRoute>
-      <PaidRoute>
-        <Layout>
-          <Outlet />
-        </Layout>
-      </PaidRoute>
-    </AuthRoute>
-  )
+/** PaidPage — inline wrapper for routes that require paid subscription */
+function PaidPage({ children }) {
+  return <PaidRoute>{children}</PaidRoute>
 }
 
 class ErrorBoundary extends React.Component {
@@ -300,10 +289,6 @@ export default function App() {
               <Route path="derivatives" element={<DerivativesDashboard />} />
               <Route path="pipeline" element={<Pipeline />} />
             </Route>
-          </Route>
-
-          {/* Paid routes — requires active subscription */}
-          <Route path="/app" element={<PaidShell />}>
             <Route
               element={(
                 <RouteFamilyBoundary
@@ -313,9 +298,9 @@ export default function App() {
                 />
               )}
             >
-              <Route path="control" element={<ControlPlane />} />
-              <Route path="paper" element={<PaperTrading />} />
-              <Route path="opportunities/survey" element={<OpportunitySurvey />} />
+              <Route path="control" element={<PaidPage><ControlPlane /></PaidPage>} />
+              <Route path="paper" element={<PaidPage><PaperTrading /></PaidPage>} />
+              <Route path="opportunities/survey" element={<PaidPage><OpportunitySurvey /></PaidPage>} />
             </Route>
           </Route>
 
