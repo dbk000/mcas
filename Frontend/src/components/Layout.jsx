@@ -20,8 +20,9 @@ import {
   Wifi,
   WifiOff,
   X,
-  Zap,
+  Wand2,
 } from 'lucide-react'
+import McasLogo from './McasLogo'
 import { useApi } from '../context/ApiContext'
 import { useToast } from '../context/ToastContext'
 import { getLogger } from '../utils/logger'
@@ -54,7 +55,7 @@ const navSections = [
     defaultExpanded: false,
     items: [
       { name: 'Correlations', href: '/app/analytics/correlations', icon: GitBranch },
-      { name: 'Strategy Builder', href: '/app/strategies/builder', icon: Zap },
+      { name: 'Strategy Builder', href: '/app/strategies/builder', icon: Wand2 },
     ],
   },
   {
@@ -332,9 +333,7 @@ export default function Layout({ children }) {
       >
         <div className={`flex h-16 items-center border-b border-terminal-600 ${collapsed ? 'justify-center px-2' : 'justify-between px-4 md:px-6'}`}>
           <div className="flex items-center gap-3 overflow-hidden">
-            <div className="flex size-8 shrink-0 items-center justify-center rounded bg-gradient-to-br from-amber-500 to-amber-700">
-              <Zap className="size-5 text-white" />
-            </div>
+            <McasLogo className="size-8 shrink-0 text-terminal-100" />
             {!collapsed && (
               <div className="min-w-0">
                 <h1 className="font-bold tracking-tight text-terminal-100">MCAS</h1>
