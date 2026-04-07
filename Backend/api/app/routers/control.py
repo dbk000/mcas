@@ -162,21 +162,21 @@ def create_scan_run(req: ScanRequest):
                                   execution_json, created_at)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
             """, (
-                run_id, "SCAN", "QUEUED", name, req.notes, fingerprint,
+                run_id, "SCAN", "PENDING", name, req.notes, fingerprint,
                 "1.0.0", universe_json, strategy_json, execution_json, now,
             ))
 
             cur.execute("""
                 INSERT INTO run_queue (run_id, status, priority, created_at)
                 VALUES (%s, %s, %s, %s);
-            """, (run_id, "QUEUED", 5, now))
+            """, (run_id, "PENDING", 5, now))
         conn.commit()
 
     r.publish("run_queue", json.dumps({"run_id": run_id, "run_type": "SCAN"}))
 
     return envelope({
         "run_id": run_id,
-        "status": "QUEUED",
+        "status": "PENDING",
         "name": name,
         "fingerprint": fingerprint,
         "symbols_count": len(symbols),
@@ -214,21 +214,21 @@ def create_backtest_run(req: BacktestRequest):
                                   execution_json, created_at)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
             """, (
-                run_id, "BACKTEST", "QUEUED", name, req.notes, fingerprint,
+                run_id, "BACKTEST", "PENDING", name, req.notes, fingerprint,
                 "1.0.0", universe_json, strategy_json, execution_json, now,
             ))
 
             cur.execute("""
                 INSERT INTO run_queue (run_id, status, priority, created_at)
                 VALUES (%s, %s, %s, %s);
-            """, (run_id, "QUEUED", 5, now))
+            """, (run_id, "PENDING", 5, now))
         conn.commit()
 
     r.publish("run_queue", json.dumps({"run_id": run_id, "run_type": "BACKTEST"}))
 
     return envelope({
         "run_id": run_id,
-        "status": "QUEUED",
+        "status": "PENDING",
         "name": name,
         "fingerprint": fingerprint,
         "symbols_count": len(symbols),
@@ -272,21 +272,21 @@ def create_simulation_run(req: SimulationRequest):
                                   created_at)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
             """, (
-                run_id, "SIMULATION", "QUEUED", name, req.notes, fingerprint,
+                run_id, "SIMULATION", "PENDING", name, req.notes, fingerprint,
                 "1.0.0", strategy_json, execution_json, now,
             ))
 
             cur.execute("""
                 INSERT INTO run_queue (run_id, status, priority, created_at)
                 VALUES (%s, %s, %s, %s);
-            """, (run_id, "QUEUED", 5, now))
+            """, (run_id, "PENDING", 5, now))
         conn.commit()
 
     r.publish("run_queue", json.dumps({"run_id": run_id, "run_type": "SIMULATION"}))
 
     return envelope({
         "run_id": run_id,
-        "status": "QUEUED",
+        "status": "PENDING",
         "name": name,
         "fingerprint": fingerprint,
     }, t0)
@@ -403,7 +403,7 @@ def cancel_run(run_id: str):
             if not row:
                 raise HTTPException(status_code=404, detail="Run not found")
 
-            if row[0] not in ("QUEUED", "RUNNING"):
+            if row[0] not in ("PENDING", "RUNNING"):
                 raise HTTPException(
                     status_code=400,
                     detail=f"Cannot cancel run with status '{row[0]}'"
