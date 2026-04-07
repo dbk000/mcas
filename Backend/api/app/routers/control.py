@@ -167,9 +167,9 @@ def create_scan_run(req: ScanRequest):
             ))
 
             cur.execute("""
-                INSERT INTO run_queue (run_id, status, priority, created_at)
-                VALUES (%s, %s, %s, %s);
-            """, (run_id, "PENDING", 5, now))
+                INSERT INTO run_queue (id, run_id, status, priority, queued_at)
+                VALUES (gen_random_uuid(), %s, %s, %s, %s);
+            """, (run_id, "QUEUED", 5, now))
         conn.commit()
 
     r.publish("run_queue", json.dumps({"run_id": run_id, "run_type": "SCAN"}))
@@ -219,9 +219,9 @@ def create_backtest_run(req: BacktestRequest):
             ))
 
             cur.execute("""
-                INSERT INTO run_queue (run_id, status, priority, created_at)
-                VALUES (%s, %s, %s, %s);
-            """, (run_id, "PENDING", 5, now))
+                INSERT INTO run_queue (id, run_id, status, priority, queued_at)
+                VALUES (gen_random_uuid(), %s, %s, %s, %s);
+            """, (run_id, "QUEUED", 5, now))
         conn.commit()
 
     r.publish("run_queue", json.dumps({"run_id": run_id, "run_type": "BACKTEST"}))
@@ -277,9 +277,9 @@ def create_simulation_run(req: SimulationRequest):
             ))
 
             cur.execute("""
-                INSERT INTO run_queue (run_id, status, priority, created_at)
-                VALUES (%s, %s, %s, %s);
-            """, (run_id, "PENDING", 5, now))
+                INSERT INTO run_queue (id, run_id, status, priority, queued_at)
+                VALUES (gen_random_uuid(), %s, %s, %s, %s);
+            """, (run_id, "QUEUED", 5, now))
         conn.commit()
 
     r.publish("run_queue", json.dumps({"run_id": run_id, "run_type": "SIMULATION"}))
