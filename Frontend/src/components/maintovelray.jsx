@@ -82,7 +82,7 @@ export default function MaintenanceOverlay() {
           <br /><br />
           Current subscribers can continue to access MCAS itself via the usual login link.
           <br /><br />
-          We expect testing and verification to be complete by 7 April, 07:00 UTC. Thank you for your patience.
+          We expect testing and verification to be complete by 7 April, 07:59 UTC. Thank you for your patience.
         </p>
 
         <div style={{
