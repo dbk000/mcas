@@ -55,6 +55,12 @@ from governance.runs.models import (
 )
 from core_logic.execution import ExecutionConfig, realistic_config
 from core_logic.exit_checker import ExitConfig, check_exit_simple
+from governance.telemetry import (
+    build_entry_telemetry_blob,
+    compute_exit_snapshot,
+    finalize_lifetime,
+    update_mae_mfe_in_telemetry,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -352,6 +358,35 @@ class PaperTradingEngine:
                     or 72
                 )
 
+                # === Telemetry blob (schema v1) =====================================
+                # Build the full telemetry blob at open time. Signal/regime
+                # context + entry snapshot populated now; lifetime section
+                # initialized for bar-by-bar MAE/MFE tracking; microstructure
+                # and post_exit remain None (follow-up).
+                submit_ts_ms = int(now.timestamp() * 1000)
+                fill_ts_ms = submit_ts_ms  # paper trading — no broker latency
+                try:
+                    telemetry_blob = build_entry_telemetry_blob(
+                        signal=signal,
+                        run_id=run_id,
+                        conn=conn,
+                        fill_price=entry_price,
+                        fill_price_with_slippage=entry_with_slip,
+                        submit_ts_ms=submit_ts_ms,
+                        fill_ts_ms=fill_ts_ms,
+                        position_size=position_size,
+                        r_value_slip=r_value_slip,
+                        entry_ts=now,
+                    )
+                    telemetry_json = json.dumps(telemetry_blob, default=str)
+                except Exception as e:
+                    logger.warning(
+                        "Failed to build entry telemetry for %s: %s — "
+                        "position will still be opened without telemetry",
+                        symbol, e,
+                    )
+                    telemetry_json = None
+
                 cur.execute("""
                     INSERT INTO paper_positions (
                         id, run_id, symbol, timeframe, side, setup_id,
@@ -361,7 +396,8 @@ class PaperTradingEngine:
                         position_size, notional_value, risk_amount,
                         current_price, high_water_mark, fees_paid,
                         trace_json,
-                        half_r_touched, max_bars, r_value_slip, exit_config_json
+                        half_r_touched, max_bars, r_value_slip, exit_config_json,
+                        telemetry_json
                     ) VALUES (
                         %s, %s, %s, %s, %s, %s,
                         %s, %s, %s,
@@ -370,7 +406,8 @@ class PaperTradingEngine:
                         %s, %s, %s,
                         %s, %s, %s,
                         %s,
-                        %s, %s, %s, %s
+                        %s, %s, %s, %s,
+                        %s
                     );
                 """, (
                     position_id, run_id, symbol, signal.get("timeframe", "1h"), side, setup_id,
@@ -381,6 +418,7 @@ class PaperTradingEngine:
                     entry_price, entry_with_slip, entry_fee,
                     json.dumps(trace_dict),
                     False, max_bars_native, r_value_slip, exit_config_json,
+                    telemetry_json,
                 ))
                 
                 # Update account exposure and increment trades_today
@@ -446,6 +484,7 @@ class PaperTradingEngine:
         with self._conn() as conn:
             with conn.cursor() as cur:
                 # Pull all open positions including split-exit state columns
+                # and the telemetry blob for MAE/MFE tracking.
                 cur.execute("""
                     SELECT id, symbol, side, stop_price, tp1_price, tp2_price,
                            entry_price_with_slippage, position_size, r_value,
@@ -455,7 +494,8 @@ class PaperTradingEngine:
                            tp1_taken,
                            tp1_leg_exit_price, tp1_leg_exit_with_slip,
                            tp1_leg_close_size, tp1_leg_realized_gross,
-                           tp1_leg_realized_fees, tp1_leg_exit_ts
+                           tp1_leg_realized_fees, tp1_leg_exit_ts,
+                           telemetry_json
                     FROM paper_positions
                     WHERE run_id = %s AND status = 'OPEN';
                 """, (run_id,))
@@ -471,6 +511,7 @@ class PaperTradingEngine:
                         tp1_leg_exit_price, tp1_leg_exit_with_slip,
                         tp1_leg_close_size, tp1_leg_realized_gross,
                         tp1_leg_realized_fees, tp1_leg_exit_ts,
+                        telemetry_db,
                     ) = pos
 
                     if symbol not in price_data:
@@ -482,12 +523,34 @@ class PaperTradingEngine:
                     low = candle.get("low", 0)
                     close = candle.get("close", 0)
 
+                    # telemetry_db arrives as a dict from psycopg's jsonb adapter
+                    # (or None for legacy rows that predate the telemetry migration).
+                    telemetry = telemetry_db if isinstance(telemetry_db, dict) else None
+
                     bar = {
                         "open": bar_open,
                         "high": high,
                         "low": low,
                         "close": close,
                     }
+
+                    # --- Telemetry: MAE/MFE/HWM/time-in-profit on this bar ---
+                    # bar_idx inside the telemetry frame is the position's current
+                    # bars_held (0 at entry bar, 1 next hour, etc.). The update
+                    # happens BEFORE the exit check so the bar that triggers the
+                    # exit also contributes to MAE/MFE stats.
+                    if telemetry is not None:
+                        try:
+                            telemetry = update_mae_mfe_in_telemetry(
+                                telemetry=telemetry,
+                                bar=bar,
+                                bar_ts=candle.get("bar_start_ts") or datetime.now(timezone.utc),
+                                bar_idx=int(bars_held or 0),
+                            )
+                        except Exception as e:
+                            logger.warning(
+                                "telemetry update failed for %s: %s", pos_id, e,
+                            )
 
                     # Reconstruct the sealed ExitConfig (or fall back for
                     # legacy positions that predate the migration).
@@ -551,6 +614,11 @@ class PaperTradingEngine:
                         # account's current_exposure stays accurate.
                         notional_freed = notional * 0.5
 
+                        # Persist the bar's MAE/MFE update into telemetry
+                        tp1_telemetry_json = (
+                            json.dumps(telemetry, default=str)
+                            if telemetry is not None else None
+                        )
                         cur.execute("""
                             UPDATE paper_positions
                             SET position_size = %s,
@@ -569,6 +637,7 @@ class PaperTradingEngine:
                                 half_r_touched = %s,
                                 fees_paid = fees_paid + %s,
                                 bars_held = bars_held + 1,
+                                telemetry_json = %s,
                                 updated_at = %s
                             WHERE id = %s;
                         """, (
@@ -578,6 +647,7 @@ class PaperTradingEngine:
                             leg_close_size, leg_pnl_gross, leg_fee, now,
                             close, new_hwm, bool(new_half_r),
                             leg_fee,
+                            tp1_telemetry_json,
                             now, pos_id,
                         ))
 
@@ -669,6 +739,35 @@ class PaperTradingEngine:
                         # matches simulator reporting convention.
                         r_multiple = gross_pnl / risk if risk and risk > 0 else 0
 
+                        # Finalize telemetry with exit snapshot + lifetime totals
+                        final_telemetry_json: Optional[str] = None
+                        if telemetry is not None:
+                            try:
+                                telemetry = dict(telemetry)
+                                telemetry["exit_snapshot"] = compute_exit_snapshot(
+                                    exit_price=final_exit_price,
+                                    exit_price_with_slippage=final_exit_with_slip,
+                                    exit_reason=final_exit_reason,
+                                    stop_price=stop,
+                                    tp1_price=tp1_leg_exit_price,
+                                    tp2_price=tp2,
+                                    exit_ts=now,
+                                    side=side,
+                                    bar_open=bar_open,
+                                )
+                                telemetry = finalize_lifetime(
+                                    telemetry=telemetry,
+                                    exit_ts=now,
+                                    bars_held=int(bars_held or 0),
+                                    exit_reason=final_exit_reason,
+                                )
+                                final_telemetry_json = json.dumps(telemetry, default=str)
+                            except Exception as e:
+                                logger.warning(
+                                    "final telemetry build failed for %s: %s",
+                                    pos_id, e,
+                                )
+
                         # Store the CURRENT bars_held (the iteration that triggered
                         # the exit) — do NOT increment. Matches opportunity_simulator,
                         # which reports result.bars_held = elapsed_strategy_bars at
@@ -686,12 +785,15 @@ class PaperTradingEngine:
                                 r_multiple = %s,
                                 high_water_mark = %s,
                                 half_r_touched = %s,
+                                telemetry_json = COALESCE(%s::jsonb, telemetry_json),
                                 updated_at = %s
                             WHERE id = %s;
                         """, (
                             close, now, final_exit_price, final_exit_with_slip,
                             final_exit_reason, realized_pnl, total_fees, r_multiple,
-                            new_hwm, bool(new_half_r), now, pos_id,
+                            new_hwm, bool(new_half_r),
+                            final_telemetry_json,
+                            now, pos_id,
                         ))
 
                         win = 1 if realized_pnl > 0 else 0
@@ -756,10 +858,14 @@ class PaperTradingEngine:
                         })
 
                     else:
-                        # No exit — advance bars, refresh HWM / half_r state
+                        # No exit — advance bars, refresh HWM / half_r state,
+                        # persist the bar's MAE/MFE update into telemetry.
                         unrealized = ((close - entry) * size if side == "long"
                                       else (entry - close) * size)
-
+                        noexit_telemetry_json = (
+                            json.dumps(telemetry, default=str)
+                            if telemetry is not None else None
+                        )
                         cur.execute("""
                             UPDATE paper_positions
                             SET current_price = %s,
@@ -767,9 +873,13 @@ class PaperTradingEngine:
                                 high_water_mark = %s,
                                 half_r_touched = %s,
                                 bars_held = bars_held + 1,
+                                telemetry_json = COALESCE(%s::jsonb, telemetry_json),
                                 updated_at = %s
                             WHERE id = %s;
-                        """, (close, unrealized, new_hwm, bool(new_half_r), now, pos_id))
+                        """, (
+                            close, unrealized, new_hwm, bool(new_half_r),
+                            noexit_telemetry_json, now, pos_id,
+                        ))
 
             conn.commit()
 
