@@ -7,9 +7,11 @@ Forward test on live data with simulated execution.
 > "This is where confidence is earned."
 
 Paper trading:
-1. Uses the same engine as backtest/live
+1. Uses `core_logic.exit_checker.check_exit_simple` — the SAME canonical exit
+   engine as the backtest simulator (`opportunity_simulator`). Paper trades
+   are bit-for-bit reconcilable with simulated trades on the same OHLCV.
 2. Feeds live data
-3. Simulates execution with realistic models
+3. Simulates execution with realistic slippage/fee models
 4. Tracks virtual positions and PnL
 5. Validates that signals fire when expected
 
@@ -18,6 +20,8 @@ Key features:
 - Idempotent operations (no double entries)
 - Full audit trail
 - Explicit execution models
+- Per-position sealed ExitConfig snapshot (from bootstrap's
+  setup_exit_configs registry) so exit parameters are frozen at open time
 
 Paper trading is NOT:
 - A demo account (those have their own issues)
@@ -34,8 +38,8 @@ import time
 import json
 import uuid
 import logging
+from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone, date
-from dataclasses import dataclass, field
 from typing import Optional
 from enum import Enum
 from contextlib import contextmanager
@@ -50,6 +54,7 @@ from governance.runs.models import (
     TradeTrace, ExitReason,
 )
 from core_logic.execution import ExecutionConfig, realistic_config
+from core_logic.exit_checker import ExitConfig, check_exit_simple
 
 logger = logging.getLogger(__name__)
 
@@ -99,6 +104,33 @@ class PaperTradingEngine:
         """Get database connection from the pool."""
         with _pool_get_conn() as conn:
             yield conn
+
+    # -------------------------------------------------------------------------
+    # Canonical exit config resolution
+    # -------------------------------------------------------------------------
+    def _resolve_exit_config(self, setup_id: str) -> ExitConfig:
+        """Return the canonical per-setup ExitConfig from the frozen registry.
+
+        Falls back to the default ExitConfig if the registry is unavailable
+        or the setup is not registered (e.g. legacy tests running outside of
+        the governed bootstrap). Logs a warning on fallback.
+        """
+        try:
+            from governance.bootstrap import get_stop_policy
+            stop_reg = get_stop_policy()
+            setup_exit_configs = stop_reg.setup_exit_configs
+            cfg = setup_exit_configs.get(setup_id)
+            if cfg is not None:
+                return cfg
+            logger.warning(
+                "No setup_exit_configs entry for %s — using default ExitConfig", setup_id,
+            )
+        except Exception as e:  # pragma: no cover — defensive fallback
+            logger.warning(
+                "Exit config resolution failed for %s (%s) — using default ExitConfig",
+                setup_id, e,
+            )
+        return ExitConfig()
     
     # =========================================================================
     # Run Lifecycle
@@ -280,25 +312,46 @@ class PaperTradingEngine:
                 # Create position
                 position_id = str(uuid.uuid4())
                 now = datetime.now(timezone.utc)
-                
+
                 # Get setup-specific exit parameters from signal payload
                 payload = signal.get("payload", {})
                 state = payload.get("state", {})
-                
+
                 trace = TradeTrace(
                     conditions_met=payload.get("conditions_met", {}),
                     entry_reason=f"{signal.get('setup_id', 'UNKNOWN')}_TRIGGER",
                     indicator_values=payload.get("indicator_values", {}),
                     score_components=payload.get("score_components", {}),
                 )
-                
+
                 # Add exit parameters to trace for PositionMonitor
                 trace_dict = trace.to_dict()
                 trace_dict["box_high"] = state.get("box_high")
                 trace_dict["box_low"] = state.get("box_low")
                 trace_dict["fail_fast_bars"] = state.get("fail_fast_bars", 3)
                 trace_dict["time_stop_bars"] = state.get("time_stop_bars", signal.get("time_stop_bars", 4))
-                
+
+                # === Canonical exit checker state (Phase 2) ==========================
+                # Seal the per-setup ExitConfig snapshot at open time so trail/fail-fast
+                # settings cannot drift if bootstrap is later re-populated. Pull from
+                # the frozen registry — this is the sole source of truth.
+                setup_id = signal.get("setup_id", "")
+                exit_cfg = self._resolve_exit_config(setup_id)
+                exit_config_json = json.dumps(asdict(exit_cfg), sort_keys=True)
+
+                # r_value for exit-checker math must use entry WITH slippage — the
+                # sim does the same. The r_value passed in the signal payload is a
+                # pre-slippage estimate and can diverge from reality by a few bps.
+                r_value_slip = abs(entry_with_slip - signal.get("stop_price", 0.0))
+
+                # Time-stop in native-timeframe bars. S9 = 48, D1 = 72, etc.
+                max_bars_native = int(
+                    state.get("time_stop_bars")
+                    or signal.get("time_stop_bars")
+                    or trace_dict.get("time_stop_bars")
+                    or 72
+                )
+
                 cur.execute("""
                     INSERT INTO paper_positions (
                         id, run_id, symbol, timeframe, side, setup_id,
@@ -307,7 +360,8 @@ class PaperTradingEngine:
                         stop_price, tp1_price, tp2_price, r_value,
                         position_size, notional_value, risk_amount,
                         current_price, high_water_mark, fees_paid,
-                        trace_json
+                        trace_json,
+                        half_r_touched, max_bars, r_value_slip, exit_config_json
                     ) VALUES (
                         %s, %s, %s, %s, %s, %s,
                         %s, %s, %s,
@@ -315,16 +369,18 @@ class PaperTradingEngine:
                         %s, %s, %s, %s,
                         %s, %s, %s,
                         %s, %s, %s,
-                        %s
+                        %s,
+                        %s, %s, %s, %s
                     );
                 """, (
-                    position_id, run_id, symbol, signal.get("timeframe", "1h"), side, signal.get("setup_id", ""),
+                    position_id, run_id, symbol, signal.get("timeframe", "1h"), side, setup_id,
                     "OPEN", now, entry_price,
                     now, entry_price, entry_with_slip,
                     signal.get("stop_price", 0), signal.get("tp1_price"), signal.get("tp2_price"), r_value,
                     position_size, notional_value, risk_amount,
-                    entry_price, entry_price, entry_fee,
+                    entry_price, entry_with_slip, entry_fee,
                     json.dumps(trace_dict),
+                    False, max_bars_native, r_value_slip, exit_config_json,
                 ))
                 
                 # Update account exposure and increment trades_today
@@ -363,68 +419,260 @@ class PaperTradingEngine:
     
     def update_positions(self, run_id: str, price_data: dict[str, dict]) -> list[str]:
         """
-        Update all open positions with current prices.
-        
+        Update all open positions with current prices using the canonical
+        exit checker (core_logic.exit_checker.check_exit_simple) plus the
+        split-exit orchestration that opportunity_simulator implements.
+
+        Exit semantics (matches opportunity_simulator.simulate exactly):
+          - On TP1 AND tp2_price is set AND !tp1_taken: partially close 50%,
+            move stop to breakeven, clear tp1_price, mark tp1_taken=TRUE.
+            Position STAYS OPEN on the runner.
+          - On runner-leg exit (TP2, STOP_LOSS, TIME_STOP, TRAIL_STOP, FAIL_FAST):
+            close the remaining position. If tp1_taken, exit_reason is reported
+            as 'TP1+<runner_reason>' with a weighted-average exit price.
+
         Args:
             run_id: Paper trading run ID
-            price_data: Dict of {symbol: {high, low, close}}
-        
+            price_data: Dict of {symbol: {open, high, low, close}}
+                Note: `open` is REQUIRED for gap-through handling. Older callers
+                that pass only {high, low, close} will get `bar_open` == close
+                which degrades gap-through fidelity but does not crash.
+
         Returns:
-            List of position IDs that were closed
+            List of position IDs that were FULLY closed on this tick.
         """
-        closed_positions = []
-        
+        closed_positions: list[str] = []
+
         with self._conn() as conn:
             with conn.cursor() as cur:
-                # Get all open positions
+                # Pull all open positions including split-exit state columns
                 cur.execute("""
                     SELECT id, symbol, side, stop_price, tp1_price, tp2_price,
                            entry_price_with_slippage, position_size, r_value,
-                           risk_amount, notional_value, fees_paid, high_water_mark
+                           risk_amount, notional_value, fees_paid,
+                           high_water_mark, bars_held,
+                           half_r_touched, max_bars, r_value_slip, exit_config_json,
+                           tp1_taken,
+                           tp1_leg_exit_price, tp1_leg_exit_with_slip,
+                           tp1_leg_close_size, tp1_leg_realized_gross,
+                           tp1_leg_realized_fees, tp1_leg_exit_ts
                     FROM paper_positions
                     WHERE run_id = %s AND status = 'OPEN';
                 """, (run_id,))
                 positions = cur.fetchall()
-                
+
                 for pos in positions:
-                    pos_id, symbol, side, stop, tp1, tp2, entry, size, r_val, risk, notional, fees, hwm = pos
-                    
+                    (
+                        pos_id, symbol, side, stop, tp1, tp2,
+                        entry, size, r_val, risk, notional, fees,
+                        hwm, bars_held,
+                        half_r_touched, max_bars, r_value_slip, exit_config_json,
+                        tp1_taken,
+                        tp1_leg_exit_price, tp1_leg_exit_with_slip,
+                        tp1_leg_close_size, tp1_leg_realized_gross,
+                        tp1_leg_realized_fees, tp1_leg_exit_ts,
+                    ) = pos
+
                     if symbol not in price_data:
                         continue
-                    
+
                     candle = price_data[symbol]
+                    bar_open = candle.get("open", candle.get("close", 0))
                     high = candle.get("high", 0)
                     low = candle.get("low", 0)
                     close = candle.get("close", 0)
-                    
-                    # Update high water mark
-                    new_hwm = max(hwm or entry, high if side == "long" else entry)
-                    if side == "short":
-                        new_hwm = min(hwm or entry, low)
-                    
-                    # Check exit conditions
-                    exit_reason, exit_price = self._check_exit(
-                        side, stop, tp1, tp2, high, low, close
+
+                    bar = {
+                        "open": bar_open,
+                        "high": high,
+                        "low": low,
+                        "close": close,
+                    }
+
+                    # Reconstruct the sealed ExitConfig (or fall back for
+                    # legacy positions that predate the migration).
+                    if exit_config_json:
+                        try:
+                            exit_cfg = ExitConfig(**json.loads(exit_config_json))
+                        except Exception as e:
+                            logger.warning(
+                                "Invalid exit_config_json for %s (%s) — using default",
+                                pos_id, e,
+                            )
+                            exit_cfg = ExitConfig()
+                    else:
+                        exit_cfg = self._resolve_exit_config(
+                            self._fetch_setup_id(cur, pos_id)
+                        )
+
+                    r_for_exit = r_value_slip
+                    if r_for_exit is None or r_for_exit <= 0:
+                        r_for_exit = abs(entry - (stop or 0.0))
+
+                    exit_result, new_hwm, new_half_r = check_exit_simple(
+                        side=side,
+                        bar=bar,
+                        entry_price=entry,
+                        stop_price=stop,
+                        tp1_price=tp1,
+                        tp2_price=tp2,
+                        r_value=r_for_exit,
+                        bars_held=bars_held or 0,
+                        max_bars=max_bars if max_bars is not None else 72,
+                        high_water_mark=hwm,
+                        half_r_touched=bool(half_r_touched),
+                        config=exit_cfg,
+                        is_entry_bar=((bars_held or 0) == 0),
                     )
-                    
+
                     now = datetime.now(timezone.utc)
-                    
-                    if exit_reason:
-                        # Close the position
-                        exit_with_slip = self._apply_exit_slippage(exit_price, side)
-                        exit_fee = self._calculate_fee(size * exit_with_slip, is_maker=False)
-                        total_fees = fees + exit_fee
-                        
-                        # Calculate PnL
+
+                    # ─────────────────────────────────────────────────────────
+                    # CASE 1 — TP1 partial close (split-exit first leg)
+                    # ─────────────────────────────────────────────────────────
+                    if (
+                        exit_result is not None
+                        and exit_result[0] == "TP1"
+                        and tp2 is not None
+                        and not tp1_taken
+                    ):
+                        _, leg_price = exit_result
+                        leg_price_with_slip = self._apply_exit_slippage(leg_price, side)
+                        leg_close_size = size * 0.5
                         if side == "long":
-                            pnl = (exit_with_slip - entry) * size
+                            leg_pnl_gross = (leg_price_with_slip - entry) * leg_close_size
                         else:
-                            pnl = (entry - exit_with_slip) * size
-                        
-                        realized_pnl = pnl - total_fees
-                        r_multiple = pnl / risk if risk > 0 else 0
-                        
-                        # Update position
+                            leg_pnl_gross = (entry - leg_price_with_slip) * leg_close_size
+                        leg_fee = self._calculate_fee(leg_close_size * leg_price_with_slip, is_maker=False)
+
+                        remaining_size = size - leg_close_size
+
+                        # Reduce notional exposure by the fraction closed so the
+                        # account's current_exposure stays accurate.
+                        notional_freed = notional * 0.5
+
+                        cur.execute("""
+                            UPDATE paper_positions
+                            SET position_size = %s,
+                                notional_value = notional_value - %s,
+                                stop_price = %s,
+                                tp1_price = NULL,
+                                tp1_taken = TRUE,
+                                tp1_leg_exit_price = %s,
+                                tp1_leg_exit_with_slip = %s,
+                                tp1_leg_close_size = %s,
+                                tp1_leg_realized_gross = %s,
+                                tp1_leg_realized_fees = %s,
+                                tp1_leg_exit_ts = %s,
+                                current_price = %s,
+                                high_water_mark = %s,
+                                half_r_touched = %s,
+                                fees_paid = fees_paid + %s,
+                                bars_held = bars_held + 1,
+                                updated_at = %s
+                            WHERE id = %s;
+                        """, (
+                            remaining_size, notional_freed,
+                            entry,  # stop -> breakeven
+                            leg_price, leg_price_with_slip,
+                            leg_close_size, leg_pnl_gross, leg_fee, now,
+                            close, new_hwm, bool(new_half_r),
+                            leg_fee,
+                            now, pos_id,
+                        ))
+
+                        # Book the TP1 leg PnL into account; keep position open
+                        cur.execute("""
+                            UPDATE paper_accounts
+                            SET current_capital = current_capital + %s,
+                                current_exposure = current_exposure - %s,
+                                total_fees = total_fees + %s,
+                                updated_at = %s
+                            WHERE run_id = %s;
+                        """, (
+                            leg_pnl_gross - leg_fee,
+                            notional_freed,
+                            leg_fee,
+                            now, run_id,
+                        ))
+
+                        logger.info("Paper position TP1 partial", extra={
+                            "event": "position_tp1_partial",
+                            "position_id": pos_id,
+                            "symbol": symbol,
+                            "leg_exit_price": round(leg_price_with_slip, 6),
+                            "leg_close_size": round(leg_close_size, 6),
+                            "leg_pnl_gross": round(leg_pnl_gross, 2),
+                            "remaining_size": round(remaining_size, 6),
+                            "stop_moved_to_breakeven": round(entry, 6),
+                        })
+                        continue  # Next position — this one stays OPEN
+
+                    # ─────────────────────────────────────────────────────────
+                    # CASE 2 — Final close (full close or runner close)
+                    # ─────────────────────────────────────────────────────────
+                    if exit_result is not None:
+                        runner_reason, runner_price = exit_result
+                        # Slippage rules (mirroring opportunity_simulator):
+                        #   - STOP_LOSS at the exact stop_price (no gap-through):
+                        #     limit order, NO slippage applied.
+                        #   - STOP_LOSS with gap-through (runner_price != stop):
+                        #     market sweep, apply directional slippage.
+                        #   - Every other exit reason (TP1/TP2/TRAIL/TIME/FAIL_FAST):
+                        #     market exit, apply directional slippage.
+                        # (Note: for the TP1-partial path above, TP1 is always slipped —
+                        # that's correct too since TP1 is a market exit.)
+                        if runner_reason == "STOP_LOSS" and stop is not None and runner_price == stop:
+                            runner_price_with_slip = runner_price
+                        else:
+                            runner_price_with_slip = self._apply_exit_slippage(runner_price, side)
+
+                        if side == "long":
+                            runner_gross = (runner_price_with_slip - entry) * size
+                        else:
+                            runner_gross = (entry - runner_price_with_slip) * size
+                        runner_fee = self._calculate_fee(size * runner_price_with_slip, is_maker=False)
+
+                        if tp1_taken:
+                            # Combine legs into a weighted-average exit price
+                            original_size = (tp1_leg_close_size or 0.0) + size
+                            if original_size > 0:
+                                weighted_exit_price = (
+                                    (tp1_leg_exit_price or 0.0) * (tp1_leg_close_size or 0.0)
+                                    + runner_price * size
+                                ) / original_size
+                                weighted_exit_with_slip = (
+                                    (tp1_leg_exit_with_slip or 0.0) * (tp1_leg_close_size or 0.0)
+                                    + runner_price_with_slip * size
+                                ) / original_size
+                            else:
+                                weighted_exit_price = runner_price
+                                weighted_exit_with_slip = runner_price_with_slip
+
+                            final_exit_reason = f"TP1+{runner_reason}"
+                            final_exit_price = weighted_exit_price
+                            final_exit_with_slip = weighted_exit_with_slip
+                            gross_pnl = (tp1_leg_realized_gross or 0.0) + runner_gross
+                        else:
+                            final_exit_reason = runner_reason
+                            final_exit_price = runner_price
+                            final_exit_with_slip = runner_price_with_slip
+                            gross_pnl = runner_gross
+
+                        # total_fees reflects ALL fees — entry, TP1 exit (if any), runner exit.
+                        # `fees` already includes entry + tp1_leg fee (stored in paper_positions
+                        # after the TP1 partial path ran). Add the runner exit fee.
+                        total_fees = fees + runner_fee
+                        # realized_pnl = gross PnL minus ALL fees (matches sim's pnl_net).
+                        realized_pnl = gross_pnl - total_fees
+                        # r_multiple is computed on gross PnL (no fees) / risk budget —
+                        # matches simulator reporting convention.
+                        r_multiple = gross_pnl / risk if risk and risk > 0 else 0
+
+                        # Store the CURRENT bars_held (the iteration that triggered
+                        # the exit) — do NOT increment. Matches opportunity_simulator,
+                        # which reports result.bars_held = elapsed_strategy_bars at
+                        # the exit bar, not bars_held + 1.
                         cur.execute("""
                             UPDATE paper_positions
                             SET status = 'CLOSED',
@@ -437,19 +685,29 @@ class PaperTradingEngine:
                                 fees_paid = %s,
                                 r_multiple = %s,
                                 high_water_mark = %s,
-                                bars_held = bars_held + 1,
+                                half_r_touched = %s,
                                 updated_at = %s
                             WHERE id = %s;
                         """, (
-                            close, now, exit_price, exit_with_slip,
-                            exit_reason, realized_pnl, total_fees, r_multiple,
-                            new_hwm, now, pos_id,
+                            close, now, final_exit_price, final_exit_with_slip,
+                            final_exit_reason, realized_pnl, total_fees, r_multiple,
+                            new_hwm, bool(new_half_r), now, pos_id,
                         ))
-                        
-                        # Update account
+
                         win = 1 if realized_pnl > 0 else 0
                         loss = 1 if realized_pnl <= 0 else 0
-                        
+
+                        # Delta to current_capital at final close.
+                        # For split trades, the TP1 partial already added
+                        # (tp1_leg_realized_gross - tp1_leg_realized_fees)
+                        # to capital. For non-split, nothing was added yet.
+                        # The net delta that makes total capital change = realized_pnl:
+                        already_added = (
+                            (tp1_leg_realized_gross or 0.0) - (tp1_leg_realized_fees or 0.0)
+                            if tp1_taken else 0.0
+                        )
+                        capital_delta = realized_pnl - already_added
+
                         cur.execute("""
                             UPDATE paper_accounts
                             SET current_capital = current_capital + %s,
@@ -463,13 +721,13 @@ class PaperTradingEngine:
                                 updated_at = %s
                             WHERE run_id = %s;
                         """, (
-                            realized_pnl, notional,
+                            capital_delta,
+                            notional,
                             win, loss,
-                            realized_pnl, total_fees, realized_pnl,
+                            capital_delta, runner_fee, capital_delta,
                             now, run_id,
                         ))
-                        
-                        # Update peak/drawdown
+
                         cur.execute("""
                             UPDATE paper_accounts
                             SET peak_capital = GREATEST(peak_capital, current_capital),
@@ -479,72 +737,52 @@ class PaperTradingEngine:
                                 )
                             WHERE run_id = %s;
                         """, (run_id,))
-                        
+
                         closed_positions.append(pos_id)
-                        
+
                         logger.info("Paper position closed", extra={
                             "event": "position_closed",
                             "position_id": pos_id,
                             "symbol": symbol,
                             "side": side,
-                            "exit_reason": exit_reason,
-                            "exit_price": round(exit_with_slip, 6),
+                            "exit_reason": final_exit_reason,
+                            "exit_price": round(final_exit_with_slip, 6),
                             "entry_price": round(entry, 6),
                             "realized_pnl": round(realized_pnl, 2),
                             "gross_pnl": round(gross_pnl, 2),
                             "total_fees": round(total_fees, 4),
                             "r_multiple": round(r_multiple, 2),
+                            "tp1_taken": bool(tp1_taken),
                         })
-                    
+
                     else:
-                        # Just update current price and bars held
+                        # No exit — advance bars, refresh HWM / half_r state
                         unrealized = ((close - entry) * size if side == "long"
                                       else (entry - close) * size)
-                        
+
                         cur.execute("""
                             UPDATE paper_positions
                             SET current_price = %s,
                                 unrealized_pnl = %s,
                                 high_water_mark = %s,
+                                half_r_touched = %s,
                                 bars_held = bars_held + 1,
                                 updated_at = %s
                             WHERE id = %s;
-                        """, (close, unrealized, new_hwm, now, pos_id))
-            
+                        """, (close, unrealized, new_hwm, bool(new_half_r), now, pos_id))
+
             conn.commit()
-        
+
         # Check daily loss limit
         self._check_daily_loss_limit(run_id)
-        
+
         return closed_positions
-    
-    def _check_exit(
-        self,
-        side: str,
-        stop: float,
-        tp1: Optional[float],
-        tp2: Optional[float],
-        high: float,
-        low: float,
-        close: float,
-    ) -> tuple[Optional[str], float]:
-        """Check if any exit conditions are met."""
-        if side == "long":
-            if low <= stop:
-                return "STOP_LOSS", stop
-            if tp1 and high >= tp1:
-                return "TP1", tp1
-            if tp2 and high >= tp2:
-                return "TP2", tp2
-        else:  # short
-            if high >= stop:
-                return "STOP_LOSS", stop
-            if tp1 and low <= tp1:
-                return "TP1", tp1
-            if tp2 and low <= tp2:
-                return "TP2", tp2
-        
-        return None, 0
+
+    def _fetch_setup_id(self, cur, pos_id: str) -> str:
+        """Read back setup_id for a legacy row missing exit_config_json."""
+        cur.execute("SELECT setup_id FROM paper_positions WHERE id = %s;", (pos_id,))
+        row = cur.fetchone()
+        return row[0] if row else ""
     
     def _check_daily_loss_limit(self, run_id: str):
         """Check if daily loss limit has been hit."""
@@ -590,17 +828,23 @@ class PaperTradingEngine:
     # =========================================================================
     
     def _apply_entry_slippage(self, price: float, side: str) -> float:
-        """Apply slippage to entry price."""
-        slip_bps = self.execution_config.slippage.entry_bps
-        slip = price * (slip_bps / 10000)
+        """Apply slippage to entry price via the polymorphic SlippageModel.
+
+        Works with FixedBpsSlippage, TimeframeScaledSlippage, and any other
+        SlippageModel subclass — they all implement `.calculate()`.
+        """
+        slip = self.execution_config.slippage.calculate(
+            price=price, side=side, is_entry=True,
+        )
         if side == "long":
             return price + slip
         return price - slip
-    
+
     def _apply_exit_slippage(self, price: float, side: str) -> float:
-        """Apply slippage to exit price."""
-        slip_bps = self.execution_config.slippage.exit_bps
-        slip = price * (slip_bps / 10000)
+        """Apply slippage to exit price via the polymorphic SlippageModel."""
+        slip = self.execution_config.slippage.calculate(
+            price=price, side=side, is_entry=False,
+        )
         if side == "long":
             return price - slip
         return price + slip

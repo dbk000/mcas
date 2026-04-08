@@ -1,0 +1,171 @@
+Parameter/Config,D1,U1,D2,S9,S10
+=== UNIVERSE & VOLUME FILTERS ===,,,,,
+MIN_VOLUME_USD,75000,75000,—,—,—
+MAX_VOLUME_USD,3000000,3000000,—,—,—
+MAX_MIN_NOTIONAL,—,100,—,—,—
+HYPE_REL_VOL_CAP,—,20.0,—,—,—
+HYPE_RANGE_CAP,—,0.50,—,—,—
+MAJOR_SYMBOLS (excluded),"BTCUSDT,ETHUSDT,BNBUSDT,SOLUSDT,XRPUSDT,DOGEUSDT,ADAUSDT,AVAXUSDT,DOTUSDT,LINKUSDT,MATICUSDT,LTCUSDT,TRXUSDT,ATOMUSDT","BTCUSDT,ETHUSDT,BNBUSDT,SOLUSDT,XRPUSDT,DOGEUSDT,ADAUSDT,AVAXUSDT,DOTUSDT,LINKUSDT,MATICUSDT,LTCUSDT,TRXUSDT,ATOMUSDT",—,—,—
+STABLECOIN_BASES,"USDT,USDC,BUSD,DAI,TUSD,USDP,FDUSD,PYUSD","USDT,USDC,BUSD,DAI,TUSD,USDP,FDUSD,PYUSD",—,—,"USDCUSDT,FDUSDUSDT,TUSDUSDT,BUSDUSDT,DAIUSDT,USDPUSDT,USTCUSDT,EURUSDT,GBPUSDT,USD1USDT,XUSDUSDT"
+WRAPPED_PATTERNS,"WBTC,WETH,WBNB","WBTC,WETH,WBNB",—,—,—
+LEVERAGE_PATTERNS,"UP,DOWN,BULL,BEAR,3L,3S","UP,DOWN,BULL,BEAR,3L,3S",—,—,—
+=== DORMANCY / COMPRESSION DETECTION ===,,,,,
+DORMANCY_RANGE_THRESHOLD,0.010,—,—,—,—
+DORMANCY_THRESHOLD,0.75,—,—,—,—
+BB_WIDTH_COMPRESS,0.05,—,—,—,—
+DORMANCY_REQUIRE_NEG_VOLUME_Z,FALSE,—,—,—,—
+DORMANCY_LOOKBACK,48,—,—,—,—
+ACCUM_DIVERGENCE_MIN,0.0,—,—,—,—
+REQUIRE_ACCUM_DIVERGENCE_GATE,FALSE,—,—,—,—
+TRIGGER_REQUIRE_DORMANCY,TRUE,—,—,—,—
+TRIGGER_REQUIRE_COMPRESSION,TRUE,—,—,—,—
+COMPRESSION_BOX_LOOKBACK,—,48,—,—,—
+=== ENTRY GATES (HARD) ===,,,,,
+VOLUME_Z_SPIKE,2.0,—,—,—,—
+RVOL_MIN,3.0,—,—,—,2.0
+REL_VOL_IGNITION_MIN,—,3.0,—,—,—
+VOL_Z_MIN,—,1.5,—,—,—
+VOLUME_Z_1D_MIN,—,4.0,—,—,—
+BB_WIDTH_MIN_5M,—,0.07,—,—,—
+BB_WIDTH_MIN_15M,—,0.10,—,—,—
+IGNITION_SCORE_THRESHOLD,—,0.40,—,—,—
+BREAKOUT_ACCEPTANCE_BARS,—,2,—,—,—
+GATE_WINDOW_BARS,—,48,—,—,—
+GATE_TIMEFRAME,—,5m,—,—,—
+TRADABILITY_IMPROVEMENT_FACTOR,—,0.85,—,—,—
+PARTICIPATION_GROWTH_FACTOR,—,1.2,—,—,—
+RANGE_PCT_THRESHOLD,—,0.10,—,—,—
+SPREAD_WIDENING_THRESHOLD,—,1.2,—,—,—
+MIN_CONFIRMATIONS,—,1,—,—,—
+EXPRESS_LANE,—,TRUE,—,—,—
+entry_threshold,—,—,0.25,—,—
+mania_gate_pct,—,—,40.0,—,—
+liquidity_gate_usd,—,—,1000000,—,—
+RET_LOOKBACK (hours),—,—,—,4,—
+PERCENTILE (top decile),—,—,—,10,—
+BREADTH_THRESHOLD,—,—,—,0.3,—
+MIN_RET_4H,—,—,—,0.05,—
+FLAT_TOP_LOOKBACK,—,—,—,—,7
+FLAT_TOP_TOLERANCE_ATR,—,—,—,—,0.3
+FLAT_TOP_MIN_TOUCHES,—,—,—,—,2
+SMA20_PROXIMITY_ATR,—,—,—,—,2.5
+above_sma200 (hard gate),—,—,—,—,TRUE
+macd_crossover_bull (hard gate),—,—,—,—,TRUE
+=== FEAR & GREED / DXY REGIME GATING ===,,,,,
+FNG_GATE_ENABLED,—,—,—,TRUE,—
+FNG_MAX_VALUE,—,—,—,50,—
+fng_soft_gate,—,—,log_only,—,—
+DXY_REGIME_ENABLED,TRUE,TRUE,—,—,TRUE
+=== SOCIAL SIGNALS ===,,,,,
+SOCIAL_SILENCE_LOOKBACK_HOURS,24,—,—,—,—
+SOCIAL_SILENCE_MAX_MENTIONS,3,—,—,—,—
+SOCIAL_SILENCE_LOOKBACK_DAYS,30,—,—,—,—
+SOCIAL_SILENCE_FILTER,—,FALSE,—,—,—
+=== ON-CHAIN ===,,,,,
+ONCHAIN_GATE_ENABLED,FALSE,—,—,—,—
+ONCHAIN_NETFLOW_LOOKBACK_HOURS,48,—,—,—,—
+=== DERIVATIVES ===,,,,,
+funding_gate_enabled,—,—,FALSE,—,—
+conflict_gate_enabled,—,—,FALSE,—,—
+=== BTC CORRELATION ===,,,,,
+BTC_BETA_WINDOW,20,—,—,—,—
+=== SCORING WEIGHTS ===,,,,,
+W_DORMANCY,0.20,—,—,—,—
+W_VOL_Z,0.25,0.25,—,—,—
+W_ACCUM_DIV,0.15,—,—,—,—
+W_BB_EXPANSION,0.15,—,—,—,—
+W_RVOL,0.05,—,—,—,—
+W_BTC_ADJ_RET,0.10,—,—,—,—
+W_SOCIAL_SILENCE,0.10,—,—,—,—
+W_ONCHAIN_FLOW,0.0,—,—,—,—
+W_VOL_Z_MAX_6,—,0.15,—,—,—
+W_VOL_SLOPE,—,0.10,—,—,—
+W_BB_COMPRESS,—,0.0,—,—,—
+W_RANGE_PCT,—,0.10,—,—,—
+W_RETURN_12,—,0.10,—,—,—
+W_CLV,—,0.05,—,—,—
+W_BODY_RATIO,—,0.04,—,—,—
+W_VOL_Z_FLOOR,—,0.06,—,—,—
+W_UNIVERSE_TEMP,—,0.15,—,—,—
+W_TRADABILITY (embryo),—,0.25,—,—,—
+W_PARTICIPATION (embryo),—,0.30,—,—,—
+W_COMPRESSION (embryo),—,0.30,—,—,—
+W_TRAP_RISK (embryo),—,0.15,—,—,—
+REVERSION_PC_4H,—,-0.0065,—,—,—
+REVERSION_PC_1H,—,-0.0048,—,—,—
+REVERSION_BB_POS,—,0.258,—,—,—
+REVERSION_SCORE_WEIGHT,—,0.05,—,—,—
+S9 score: magnitude weight,—,—,—,0.50,—
+S9 score: breadth weight,—,—,—,0.25,—
+S9 score: rank weight,—,—,—,0.25,—
+S10 score: macd_strength weight,—,—,—,—,0.30
+S10 score: vol_score weight,—,—,—,—,0.25
+S10 score: flat_top_score weight,—,—,—,—,0.25
+S10 score: trend_score weight,—,—,—,—,0.20
+=== EXIT CONFIGURATION ===,,,,,
+STOP_PCT,0.015 (1.5%),—,0.15 (15%),—,—
+STOP_ATR_MULT,—,—,—,—,1.2
+STOP_ATR_BUFFER,—,1.0,—,—,—
+STOP_RANGE_MULT,—,3.0,—,—,—
+MIN_STOP_PCT,—,0.005 (0.5%),—,—,—
+S9 protective stop,—,—,—,close × 1.10 (10%),—
+TP1_PCT / TP1_R,0.10 (10%),1.0R,—,close × 0.95 (5%),1.5R
+TP2_PCT / TP2_R,0.20 (20%),2.0R,—,close × 0.90 (10%),2.0R
+TIME_STOP_BARS_1H,72,4,—,48,—
+TIME_STOP_BARS_15M,—,8,—,—,—
+TIME_STOP_BARS_5M,—,12,—,—,—
+TIME_STOP_BARS (S10),—,—,—,—,12
+time_stop_hours,—,—,72,—,—
+COOLDOWN_BARS_1H,24,—,—,—,—
+HOLD_BARS,—,—,—,48,—
+=== EXIT CHECKER (per-setup registered in governance/bootstrap.py:setup_exit_configs) ===,,,,,
+# NOTE: Values in each column reflect the setup's ACTUAL registered ExitConfig in,,,,,
+# governance/bootstrap.py:setup_exit_configs. Rows are NOT shared defaults —,,,,,
+# each setup has its own registered config. S9 uses a looser profile (fail-fast and trailing disabled).,,,,,
+stop_fill_through,FALSE,FALSE,—,FALSE,FALSE
+target_fill_through,FALSE,FALSE,—,FALSE,FALSE
+fail_fast_bars,0,0,—,0,2
+fail_fast_threshold,0.0,0.0,—,0.0,0.003
+trail_breakeven_r,0,0,—,0,0
+trail_activation_r,999.0,999.0,—,999.0,999.0
+trail_distance_r,0.5,0.5,—,0.5,0.5
+intrabar_policy,STOP_FIRST,STOP_FIRST,—,STOP_FIRST,STOP_FIRST
+one_event_per_bar,TRUE,TRUE,—,TRUE,TRUE
+min_r_preservation (vectorized),0.5,0.5,—,0.5,0.5
+=== EMBRYO / STATE MACHINE ===,,,,,
+MAX_EMBRYO_ACTIVE,—,200,—,—,—
+T_ACTIVE_MAX_HOURS,—,336 (14d),—,—,—
+BASELINE_WINDOWS,—,"7d/2016, 3d/864, 1d/288, 288_bars, 48_bars",—,—,—
+BOOTSTRAP_WARMUP_MULTIPLIER,1.5,—,—,—,—
+=== D2 CLUSTER DETECTION ===,,,,,
+CLUSTER_WINDOW_HOURS,—,—,4,—,—
+MIN_ALERTS_PER_CLUSTER,—,—,3,—,—
+max_watch_hours,—,—,48,—,—
+candle_interval,—,—,1m,—,—
+poll_interval_s,—,—,60,—,—
+cluster_poll_s,—,—,30,—,—
+max_concurrent,—,—,3,—,—
+risk_per_trade_pct,—,—,2.0,—,—
+account_size_usd,—,—,10000,—,—
+effective_risk_pct,—,—,18.76,—,—
+=== WORKER / CAPACITY / MULTIPLIERS ===,,,,,
+SCORE_MULT,1.0,1.0,—,1.0,1.0
+CAPACITY_THRESHOLD_USD,1000000,1000000,—,1000000,1000000
+SIGNAL_TOP_N_DAILY,10 (all),10 (all),—,10 (all),10 (all)
+SIGNAL_TOP_N_DAILY_PER_SETUP,50,50,—,50,50
+max_concurrent,—,—,3,15,—
+symbol_whitelist_path,—,—,—,binance_perp_symbols.txt,—
+=== EXECUTION COST MODEL ===,,,,,
+Slippage (4h),3 bps,3 bps,—,3 bps,3 bps
+Slippage (1h),5 bps,5 bps,—,5 bps,5 bps
+Slippage (15m),10 bps,10 bps,—,10 bps,10 bps
+Slippage (5m),15 bps,15 bps,—,15 bps,15 bps
+Fee (taker),4 bps,4 bps,—,4 bps,4 bps
+Fee (maker),2 bps,2 bps,—,2 bps,2 bps
+COST_BPS (S9 specific),—,—,—,18,—
+=== DATA FRESHNESS ===,,,,,
+STALENESS_MULTIPLIER,2.5 (all),2.5 (all),2.5 (all),2.5 (all),2.5 (all)
+SIGNAL_MAX_AGE_S,3600 (all),3600 (all),3600 (all),3600 (all),3600 (all)
+RING_BUFFER_SIZE,600 (all),600 (all),600 (all),600 (all),600 (all)
+=== ACTIVE TIMEFRAMES ===,,,,,
+Timeframe affinity,1h,5m/15m/1h,1m,1h,5m

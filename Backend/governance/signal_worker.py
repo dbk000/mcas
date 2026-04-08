@@ -1885,38 +1885,76 @@ class SignalWorker(LineageEnforcer):
             logger.error(f"S9 cross-sectional evaluation failed: {e}", exc_info=True)
 
     def _evaluate_s9_cross_sectional(self):
-        """Cross-sectional S9: short top-decile by ret_4h when breadth > 0.3."""
+        """Cross-sectional S9: short top-decile by ret_4h when breadth > 0.3.
+
+        Canonical universe: Binance USDT-M perp-eligible symbols only.
+        The whitelist is loaded at bootstrap from S9TypedConfig.SYMBOL_WHITELIST_PATH
+        and registered as a sorted tuple under ConfigRegistry.s9_symbol_whitelist.
+        An empty tuple = no restriction (non-canonical — bootstrap logs a warning).
+        """
         all_symbols = get_universe(self.r)
         if not all_symbols:
             return
+
+        # Perp-only universe gate (Phase 0 — perp rerank canon).
+        # Cache the frozenset on self to avoid rebuilding every scan; the
+        # underlying tuple in the frozen registry never changes.
+        if not hasattr(self, "_s9_whitelist_set"):
+            wl_tuple = get_config().s9_symbol_whitelist
+            self._s9_whitelist_set = frozenset(wl_tuple)
+        s9_whitelist = self._s9_whitelist_set
+        if s9_whitelist:
+            pre_count = len(all_symbols)
+            all_symbols = [s for s in all_symbols if s.upper() in s9_whitelist]
+            self._diag["s9_whitelist_filtered"] = (
+                self._diag.get("s9_whitelist_filtered", 0) + (pre_count - len(all_symbols))
+            )
 
         symbol_data = {}
         for symbol in all_symbols:
             if self._is_symbol_excluded(symbol):
                 continue
             candles = get_candles_as_ohlcv(self.r, symbol, "1h")
-            if not candles or len(candles) < 25:
+            # Minimum requirement: 5 bars for ret_4h. ret_24h is OPTIONAL so
+            # new listings with <25h history can still participate in ranking.
+            # This matches regenerate_opportunities.run_s9 (Phase 5 parity canon).
+            if not candles or len(candles) < 5:
                 continue
             close_now = candles[-1].close
             close_4h = candles[-5].close if len(candles) >= 5 else None
-            close_24h = candles[-25].close if len(candles) >= 25 else None
-            if (close_now and close_now > 0 and close_4h and close_4h > 0
-                    and close_24h and close_24h > 0):
-                ret_4h = close_now / close_4h - 1
-                ret_24h = close_now / close_24h - 1
-                symbol_data[symbol] = (ret_4h, ret_24h, close_now)
+            if not (close_now and close_now > 0 and close_4h and close_4h > 0):
+                continue
+            # Use (close_now - close_prev) / close_prev (not close_now/close_4h - 1)
+            # to match regenerate_opportunities.run_s9 bit-for-bit. The two are
+            # mathematically equivalent but differ by 1 ULP in float, which
+            # swaps ranks on ties (Phase 5 parity canon).
+            ret_4h = (close_now - close_4h) / close_4h
+            ret_24h = None
+            if len(candles) >= 25:
+                close_24h = candles[-25].close
+                if close_24h and close_24h > 0:
+                    ret_24h = (close_now - close_24h) / close_24h
+            symbol_data[symbol] = (ret_4h, ret_24h, close_now)
 
         if len(symbol_data) < 20:
             logger.debug("S9: only %d symbols, need >= 20", len(symbol_data))
             return
 
-        n_positive = sum(1 for _, (_, r24, _) in symbol_data.items() if r24 > 0)
-        breadth = n_positive / len(symbol_data)
+        # Breadth is computed over the SUBSET of symbols that have a valid
+        # ret_24h — new listings without 24h history don't vote on breadth but
+        # can still be ranked. Matches regenerate_opportunities.run_s9.
+        symbols_with_24h = [(s, d) for s, d in symbol_data.items() if d[1] is not None]
+        if not symbols_with_24h:
+            logger.debug("S9: no symbols with 24h history for breadth calc")
+            return
+        n_positive = sum(1 for _, (_, r24, _) in symbols_with_24h if r24 > 0)
+        breadth = n_positive / len(symbols_with_24h)
 
         s9_cfg = get_config().S9
-        if breadth <= s9_cfg.BREADTH_THRESHOLD:
+        # Strict less-than matches regen path (Phase 5 parity canon).
+        if breadth < s9_cfg.BREADTH_THRESHOLD:
             self._diag["s9_breadth_fail"] += 1
-            logger.info("S9: breadth=%.3f <= %.1f, no signals",
+            logger.info("S9: breadth=%.3f < %.1f, no signals",
                         breadth, s9_cfg.BREADTH_THRESHOLD)
             self._reeval_s9_edge(breadth, set(), symbol_data, s9_cfg, None)
             return
@@ -1991,9 +2029,12 @@ class SignalWorker(LineageEnforcer):
         }
 
         for rank, (symbol, (ret_4h, ret_24h, close)) in enumerate(top_decile):
+            # ret_24h may be None for new listings without 24h history —
+            # default to 0.0 for build_signal (matches regen path).
+            ret_24h_val = ret_24h if ret_24h is not None else 0.0
             signal = S9Evaluator.build_signal(
                 symbol=symbol, close=close,
-                ret_4h=ret_4h, ret_24h=ret_24h,
+                ret_4h=ret_4h, ret_24h=ret_24h_val,
                 breadth=breadth, rank=rank,
                 universe_size=len(symbol_data),
                 decile_size=decile_n, state=state,

@@ -10,6 +10,7 @@ COPY governance /backend/governance
 COPY indicators /backend/indicators
 COPY scripts /backend/scripts
 COPY computers /backend/computers
+COPY config /backend/config
 
 ENV PYTHONPATH=/backend:/backend/scripts
 

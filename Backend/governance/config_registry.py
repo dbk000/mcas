@@ -158,6 +158,15 @@ class S9TypedConfig:
     # FnG regime gate (moved from WorkerTypedConfig)
     FNG_GATE_ENABLED: bool = True
     FNG_MAX_VALUE: int = 50
+    # Canonical concurrency cap — perp rerank Phase 0 (s9_perp_rerank_findings.md)
+    # produced daily PF 3.738 at cap=15 on the perp-only universe. This is the
+    # single source of truth; paper/live ExecutionConfig.max_positions must match.
+    MAX_CONCURRENT: int = 15
+    # Canonical symbol universe — Binance USDT-M perpetual-eligible symbols.
+    # Loaded by bootstrap and applied by signal_worker._evaluate_s9_cross_sectional
+    # and regenerate_opportunities.run_s9. Path is resolved relative to /backend
+    # inside the container (COPY'd by Dockerfile.computers) or repo root on host.
+    SYMBOL_WHITELIST_PATH: str = "/backend/config/s9_symbol_whitelist.txt"
 
 
 @dataclass

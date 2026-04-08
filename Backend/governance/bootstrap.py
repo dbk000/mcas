@@ -263,7 +263,7 @@ def _populate_config(reg: ConfigRegistry) -> None:
         GATE_TIMEFRAME=os.getenv("U1_GATE_TIMEFRAME", "5m"),
         GATE_WINDOW_BARS=int(os.getenv("U1_GATE_WINDOW_BARS", "48")),
     ))
-    reg._register("S9", S9TypedConfig(
+    s9_cfg = S9TypedConfig(
         RET_LOOKBACK=int(os.getenv("S9_RET_LOOKBACK", "4")),
         HOLD_BARS=int(os.getenv("S9_HOLD_BARS", "48")),
         PERCENTILE=int(os.getenv("S9_PERCENTILE", "10")),
@@ -272,7 +272,56 @@ def _populate_config(reg: ConfigRegistry) -> None:
         MIN_RET_4H=float(os.getenv("S9_MIN_RET_4H", "0.05")),
         FNG_GATE_ENABLED=os.getenv("S9_FNG_GATE_ENABLED", "true").lower() == "true",
         FNG_MAX_VALUE=int(os.getenv("S9_FNG_MAX_VALUE", "50")),
-    ))
+        MAX_CONCURRENT=int(os.getenv("S9_MAX_CONCURRENT", "15")),
+        SYMBOL_WHITELIST_PATH=os.getenv(
+            "S9_SYMBOL_WHITELIST_PATH",
+            "/backend/config/s9_symbol_whitelist.txt",
+        ),
+    )
+    reg._register("S9", s9_cfg)
+
+    # Load S9 symbol whitelist (perp-only universe). Stored as a sorted tuple
+    # so the registry seal is deterministic across processes (frozenset/set
+    # ordering is non-deterministic under hash randomization). Consumers
+    # convert to frozenset at read time for O(1) membership. Fail-open: if
+    # the file is missing, register an empty tuple — signal_worker treats
+    # this as "no restriction" (full universe) and logs a warning.
+    s9_whitelist_sorted: tuple = ()
+    wl_path = s9_cfg.SYMBOL_WHITELIST_PATH
+    candidate_paths = [wl_path]
+    if not os.path.isabs(wl_path):
+        candidate_paths.append(os.path.abspath(wl_path))
+    else:
+        host_fallback = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+            "binance_perp_symbols.txt",
+        )
+        candidate_paths.append(host_fallback)
+    for path in candidate_paths:
+        if os.path.isfile(path):
+            try:
+                with open(path, "r") as f:
+                    s9_whitelist_sorted = tuple(sorted({
+                        line.strip().upper() for line in f if line.strip()
+                    }))
+                print(
+                    f"[BOOTSTRAP] S9 symbol whitelist loaded: {len(s9_whitelist_sorted)} symbols from {path}",
+                    file=sys.stderr,
+                )
+                break
+            except Exception as e:
+                print(
+                    f"[BOOTSTRAP] WARNING: failed to read S9 whitelist at {path}: {e}",
+                    file=sys.stderr,
+                )
+    if not s9_whitelist_sorted:
+        print(
+            f"[BOOTSTRAP] WARNING: S9 symbol whitelist empty (searched {candidate_paths}) — "
+            "signal_worker will use full universe (non-canonical)",
+            file=sys.stderr,
+        )
+    reg._register("s9_symbol_whitelist", s9_whitelist_sorted)
+
     reg._register("S10", S10TypedConfig())
 
     # --- Indicator config ---

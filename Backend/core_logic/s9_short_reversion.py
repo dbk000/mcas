@@ -136,7 +136,10 @@ class S9Evaluator(SetupBase):
             typical_win_rate=0.65,
             typical_r_multiple=1.5,
             min_bars_required=25,  # Need 24 bars for breadth + 1 current
-            max_concurrent=50,     # Cross-sectional: many simultaneous positions
+            # Canon: S9TypedConfig.MAX_CONCURRENT = 15 (perp-rerank Phase 0,
+            # daily PF 3.738 at cap=15 on the perp-only universe). Must match
+            # ExecutionConfig.max_positions for any run containing S9 signals.
+            max_concurrent=15,
             liquidity_tiers=[
                 LiquidityTier(name="futures_eligible", min_24h_volume_usd=5_000_000,
                               max_position_pct=2.5),
