@@ -1887,54 +1887,152 @@ class SignalWorker(LineageEnforcer):
     def _evaluate_s9_cross_sectional(self):
         """Cross-sectional S9: short top-decile by ret_4h when breadth > 0.3.
 
-        Canonical universe: Binance USDT-M perp-eligible symbols only.
-        The whitelist is loaded at bootstrap from S9TypedConfig.SYMBOL_WHITELIST_PATH
-        and registered as a sorted tuple under ConfigRegistry.s9_symbol_whitelist.
-        An empty tuple = no restriction (non-canonical — bootstrap logs a warning).
-        """
-        all_symbols = get_universe(self.r)
-        if not all_symbols:
-            return
+        Scan universe is the FULL perp whitelist (Binance USDT-M perp-eligible
+        symbols), sourced from Postgres 1h OHLCV — NOT the Redis monitored
+        universe. S9 is cross-sectional and only needs 1h closes to compute a
+        4h return + rank; it has no dependency on the real-time indicator
+        stream that gates the monitored universe (which exists for D1/U1 that
+        need continuous 1s→1h aggregation).
 
-        # Perp-only universe gate (Phase 0 — perp rerank canon).
+        Decoupling from ``get_universe(self.r)`` aligns the live scan with
+        ``regenerate_opportunities.run_s9`` (which reads Postgres directly) so
+        live and backtest see the same universe — removing the 80+ symbol gap
+        the volume-filtered monitored universe was introducing.
+
+        Canonical whitelist is loaded at bootstrap from
+        S9TypedConfig.SYMBOL_WHITELIST_PATH and registered as a sorted tuple
+        under ConfigRegistry.s9_symbol_whitelist. An empty tuple = no
+        restriction (non-canonical — bootstrap logs a warning).
+        """
         # Cache the frozenset on self to avoid rebuilding every scan; the
         # underlying tuple in the frozen registry never changes.
         if not hasattr(self, "_s9_whitelist_set"):
             wl_tuple = get_config().s9_symbol_whitelist
             self._s9_whitelist_set = frozenset(wl_tuple)
         s9_whitelist = self._s9_whitelist_set
-        if s9_whitelist:
-            pre_count = len(all_symbols)
-            all_symbols = [s for s in all_symbols if s.upper() in s9_whitelist]
-            self._diag["s9_whitelist_filtered"] = (
-                self._diag.get("s9_whitelist_filtered", 0) + (pre_count - len(all_symbols))
-            )
 
-        symbol_data = {}
-        for symbol in all_symbols:
+        # Build the scan universe. Canonical path: whitelist as-is. Legacy
+        # fallback: if the whitelist is empty (bootstrap warning), fall back
+        # to the Redis monitored universe so we don't lose signal production.
+        if s9_whitelist:
+            scan_symbols = sorted(s9_whitelist)
+        else:
+            logger.warning(
+                "S9: whitelist empty at scan time — falling back to Redis "
+                "monitored universe (non-canonical)"
+            )
+            scan_symbols = list(get_universe(self.r) or [])
+
+        if not scan_symbols:
+            return
+
+        # The signal bar is the most recently-closed 1h bar in UTC — NOT the
+        # current (forming) hour. At 21:05 UTC the signal bar is 20:00. All
+        # symbols must have a close at this exact bar_start_ts to participate;
+        # symbols whose most-recent final bar is older are dropped. This
+        # mirrors regenerate_opportunities.run_s9's per-bar evaluation loop.
+        MS_PER_HOUR = 3_600_000
+        now_ms = int(time.time() * 1000)
+        signal_bar_start_ms = (now_ms // MS_PER_HOUR) * MS_PER_HOUR - MS_PER_HOUR
+        prev_4h_ms = signal_bar_start_ms - 4 * MS_PER_HOUR
+        prev_24h_ms = signal_bar_start_ms - 24 * MS_PER_HOUR
+
+        # Fetch 1h OHLCV for the full scan universe from Postgres in ONE
+        # batched query. We need 25 hours back from the signal bar: the
+        # signal bar for close_now, [-4h] for ret_4h, [-24h] for ret_24h.
+        # Buffer to 30 hours to tolerate minor ingestor lag.
+        from datetime import timedelta as _td
+        fetch_start_dt = datetime.fromtimestamp(
+            (signal_bar_start_ms / 1000) - 30 * 3600, tz=timezone.utc,
+        )
+        signal_bar_end_dt = datetime.fromtimestamp(
+            signal_bar_start_ms / 1000, tz=timezone.utc,
+        ) + _td(seconds=1)  # inclusive upper bound on the signal bar
+
+        symbol_data: dict[str, tuple] = {}
+        postgres_scanned = 0
+        missing_signal_bar = 0
+        try:
+            with _pool_get_conn() as conn:
+                with conn.cursor() as cur:
+                    cur.execute(
+                        """
+                        SELECT symbol, bar_start_ts, close
+                        FROM (
+                            SELECT DISTINCT ON (symbol, bar_start_ts)
+                                   symbol, bar_start_ts, close
+                            FROM ohlcv
+                            WHERE timeframe = '1h'
+                              AND symbol = ANY(%s)
+                              AND bar_start_ts >= %s
+                              AND bar_start_ts <= %s
+                              AND is_final = TRUE
+                            ORDER BY symbol, bar_start_ts,
+                                     CASE source
+                                         WHEN 'ws' THEN 0
+                                         WHEN 'binance' THEN 1
+                                         ELSE 2
+                                     END
+                        ) x
+                        ORDER BY symbol, bar_start_ts ASC;
+                        """,
+                        (scan_symbols, fetch_start_dt, signal_bar_end_dt),
+                    )
+                    rows = cur.fetchall()
+        except Exception as e:
+            logger.error("S9: Postgres OHLCV fetch failed: %s", e, exc_info=True)
+            self._diag["s9_postgres_error"] = self._diag.get("s9_postgres_error", 0) + 1
+            return
+
+        # Group rows by symbol → ts_ms → close lookup.
+        per_symbol_lookup: dict[str, dict[int, float]] = {}
+        for sym, ts, close in rows:
+            ts_ms = int(ts.timestamp() * 1000)
+            per_symbol_lookup.setdefault(sym, {})[ts_ms] = float(close)
+
+        # Compute ret_4h / ret_24h against the REFERENCE SIGNAL BAR
+        # (not per-symbol latest). Matches regenerate_opportunities.run_s9:
+        #   returns_4h[sym] = (close_signal - close_prev_4h) / close_prev_4h
+        # where close_prev_4h is the bar exactly 4h before the signal bar.
+        for symbol, lookup in per_symbol_lookup.items():
             if self._is_symbol_excluded(symbol):
                 continue
-            candles = get_candles_as_ohlcv(self.r, symbol, "1h")
-            # Minimum requirement: 5 bars for ret_4h. ret_24h is OPTIONAL so
-            # new listings with <25h history can still participate in ranking.
-            # This matches regenerate_opportunities.run_s9 (Phase 5 parity canon).
-            if not candles or len(candles) < 5:
+            close_now = lookup.get(signal_bar_start_ms)
+            if close_now is None or close_now <= 0:
+                # Symbol has no close at the reference signal bar — ingestor
+                # may be lagging for this symbol, or it's a new listing with
+                # history only starting after the signal bar. Drop it.
+                missing_signal_bar += 1
                 continue
-            close_now = candles[-1].close
-            close_4h = candles[-5].close if len(candles) >= 5 else None
-            if not (close_now and close_now > 0 and close_4h and close_4h > 0):
+            prev_4h = lookup.get(prev_4h_ms)
+            if prev_4h is None or prev_4h <= 0:
                 continue
-            # Use (close_now - close_prev) / close_prev (not close_now/close_4h - 1)
-            # to match regenerate_opportunities.run_s9 bit-for-bit. The two are
-            # mathematically equivalent but differ by 1 ULP in float, which
-            # swaps ranks on ties (Phase 5 parity canon).
-            ret_4h = (close_now - close_4h) / close_4h
+            ret_4h = (close_now - prev_4h) / prev_4h
+
             ret_24h = None
-            if len(candles) >= 25:
-                close_24h = candles[-25].close
-                if close_24h and close_24h > 0:
-                    ret_24h = (close_now - close_24h) / close_24h
+            prev_24h = lookup.get(prev_24h_ms)
+            if prev_24h is not None and prev_24h > 0:
+                ret_24h = (close_now - prev_24h) / prev_24h
+
             symbol_data[symbol] = (ret_4h, ret_24h, close_now)
+            postgres_scanned += 1
+
+        # Record scan-size diagnostic so drift is visible in logs.
+        self._diag["s9_scan_size"] = postgres_scanned
+        self._diag["s9_whitelist_requested"] = len(scan_symbols)
+        self._diag["s9_whitelist_filtered"] = (
+            self._diag.get("s9_whitelist_filtered", 0)
+            + max(0, len(scan_symbols) - postgres_scanned)
+        )
+        self._diag["s9_missing_signal_bar"] = missing_signal_bar
+        signal_bar_iso = datetime.fromtimestamp(
+            signal_bar_start_ms / 1000, tz=timezone.utc,
+        ).isoformat()
+        logger.info(
+            "S9 scan universe: %d/%d whitelist symbols ranked "
+            "(signal_bar=%s, missing=%d, Postgres-backed)",
+            postgres_scanned, len(scan_symbols), signal_bar_iso, missing_signal_bar,
+        )
 
         if len(symbol_data) < 20:
             logger.debug("S9: only %d symbols, need >= 20", len(symbol_data))
@@ -1998,12 +2096,19 @@ class SignalWorker(LineageEnforcer):
             top_decile_count=decile_n,
         )
 
-        hour_start_ms = int(time.time() // 3600) * 3600 * 1000
+        # Signal bar = the bar whose close triggered the decision (e.g.,
+        # 20:00 at 21:05 scan time). Matches regenerate_opportunities.run_s9,
+        # which writes opportunities.created_ts = signal bar start_ts.
+        #
+        # Microstructure tape is fetched from 1 second after the signal bar
+        # CLOSE (= 1 second into the entry bar / current hour). That captures
+        # the first few minutes of post-signal price action for the entry.
+        entry_bar_start_ms = signal_bar_start_ms + MS_PER_HOUR
         top_symbols = [sym for sym, _ in top_decile]
         micro_data = {}
         try:
             kline_batch = fetch_1s_klines_batch(
-                top_symbols, hour_start_ms + 1000, limit=300, max_workers=8,
+                top_symbols, entry_bar_start_ms + 1000, limit=300, max_workers=8,
             )
             for sym, klines in kline_batch.items():
                 close_price = symbol_data[sym][2]
@@ -2013,11 +2118,11 @@ class SignalWorker(LineageEnforcer):
         except Exception as e:
             logger.warning("S9: 1s kline fetch failed, proceeding without: %s", e)
 
-        bar_start_ts = str(hour_start_ms)
+        bar_start_ts = str(signal_bar_start_ms)
         count = 0
 
         eval_hour_iso = datetime.fromtimestamp(
-            hour_start_ms / 1000, tz=timezone.utc
+            signal_bar_start_ms / 1000, tz=timezone.utc
         ).isoformat()
         s9_cross_ctx = {
             "universe_size": len(symbol_data),
@@ -2098,8 +2203,9 @@ class SignalWorker(LineageEnforcer):
                 "fng_classification": fng.get("classification"),
             }
 
+            # action_by_ts: signal bar + HOLD_BARS + 1 = 49 hours from signal bar
             payload["action_by_ts"] = (
-                datetime.fromtimestamp(hour_start_ms / 1000, tz=timezone.utc)
+                datetime.fromtimestamp(signal_bar_start_ms / 1000, tz=timezone.utc)
                 + timedelta(hours=49)
             ).isoformat()
 
@@ -2116,17 +2222,25 @@ class SignalWorker(LineageEnforcer):
             # --- TRACE (mandatory) ---
             trace_dict = None
             trace = TraceContext(strategy="S9", symbol=symbol, timeframe="1h")
-            sym_candles = get_candles_as_ohlcv(self.r, symbol, "1h")
-            if sym_candles and len(sym_candles) >= 5:
-                trace.record_candle_window(
-                    first_ts=sym_candles[-5].timestamp,
-                    last_ts=sym_candles[-1].timestamp,
-                    bar_count=5, timeframe="1h",
-                )
+            # Record the 5-bar candle window used for ret_4h. Source this
+            # from the per-symbol Postgres lookup we already built (not
+            # Redis) so the trace stays consistent for the 80+ symbols
+            # in the whitelist but outside the Redis monitored universe.
+            sym_lookup = per_symbol_lookup.get(symbol) or {}
+            if sym_lookup:
+                first_5_ts_ms = signal_bar_start_ms - 4 * MS_PER_HOUR
+                if first_5_ts_ms in sym_lookup and signal_bar_start_ms in sym_lookup:
+                    trace.record_candle_window(
+                        first_ts=str(first_5_ts_ms),
+                        last_ts=str(signal_bar_start_ms),
+                        bar_count=5, timeframe="1h",
+                    )
             if micro_ctx:
+                # Microstructure tape is the first 300 seconds of the entry
+                # bar (= 1 second after the signal bar close).
                 trace.record_candle_window(
-                    first_ts=str(hour_start_ms + 1000),
-                    last_ts=str(hour_start_ms + 300000),
+                    first_ts=str(entry_bar_start_ms + 1000),
+                    last_ts=str(entry_bar_start_ms + 300000),
                     bar_count=micro_ctx.n_klines,
                     timeframe="1s", note="microstructure tape",
                 )
