@@ -243,7 +243,8 @@ class SignalWorker(LineageEnforcer):
         self.s9_evaluator = S9Evaluator()
         self.last_reconcile = 0.0
         self.last_prune = 0.0
-        self._s9_last_evaluated_hour = 0  # Unix hour for S9 dedup
+        self._s9_last_evaluated_hour = 0  # legacy, unused after bar-advance gate
+        self._s9_last_scanned_bar_ms = 0  # ms epoch of the last signal bar we scanned
         self._s9_last_position_check = 0.0  # Position monitor timestamp
         # Per-worker consumer group: each worker instance gets ALL messages
         # and filters by partition locally. Fixes the shared-group bug where
@@ -1865,20 +1866,52 @@ class SignalWorker(LineageEnforcer):
     # ------------------------------------------------------------------
 
     def _maybe_evaluate_s9(self):
+        """Data-driven S9 scan trigger.
+
+        Evaluates whenever the most-recently-finalized 1h bar in Postgres
+        advances past the last bar we scanned. This makes the worker:
+          - recover automatically from ingestor lag (retries every tick)
+          - re-scan after restart within the same hour
+          - never scan twice on the same bar (short-circuits cheaply)
+        The scan, ranking, gating, and emission logic inside
+        _evaluate_s9_cross_sectional are untouched.
+        """
         if _worker_index() != 0:
             return
 
-        now = time.time()
-        current_hour = int(now // 3600)
-
-        if current_hour == self._s9_last_evaluated_hour:
+        # Cheap single-row pre-check: is there a new final 1h bar we haven't
+        # scanned yet? BTCUSDT is the reference symbol — it's always in the
+        # whitelist and always tracked, so its latest final bar is a reliable
+        # proxy for "S9 data is ready at bar X".
+        try:
+            with _pool_get_conn() as conn:
+                with conn.cursor() as cur:
+                    cur.execute(
+                        """
+                        SELECT MAX(bar_start_ts)
+                        FROM ohlcv
+                        WHERE symbol = 'BTCUSDT'
+                          AND timeframe = '1h'
+                          AND is_final = TRUE
+                          AND bar_start_ts >= NOW() - INTERVAL '3 hours';
+                        """
+                    )
+                    row = cur.fetchone()
+        except Exception as e:
+            logger.warning("S9: bar-advance pre-check failed: %s", e)
             return
 
-        seconds_into_hour = now - (current_hour * 3600)
-        if seconds_into_hour < 300:
+        if not row or row[0] is None:
+            return
+        latest_bar_ms = int(row[0].timestamp() * 1000)
+
+        if latest_bar_ms <= self._s9_last_scanned_bar_ms:
+            # Already scanned this bar — no new data, nothing to do.
             return
 
-        self._s9_last_evaluated_hour = current_hour
+        # New bar available — mark first, then scan. Marking first avoids a
+        # re-entry loop if _evaluate_s9_cross_sectional raises.
+        self._s9_last_scanned_bar_ms = latest_bar_ms
         try:
             self._evaluate_s9_cross_sectional()
         except Exception as e:
