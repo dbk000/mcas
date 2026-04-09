@@ -447,23 +447,31 @@ class PositionMonitor:
     
     def _check_positions(self, conn):
         """Check all open positions against current prices.
-        
+
         Exit conditions checked:
         1. STOP_LOSS - Price hits stop level
         2. TP1/TP2 - Price hits take-profit levels
         3. FAIL_FAST - Price re-enters breakout zone within N bars (S1 only)
         4. TIME_STOP - Position held too long without progress (T_dead)
         5. TRAILING_STOP - Price retraces from high water mark
+
+        EXCLUSIONS (by setup_id):
+        - 'S9': handled exclusively by governance.paper_trading.update_positions
+          via the canonical check_exit_simple path (including split-exit logic
+          and telemetry capture). Having two engines close S9 positions races
+          and produces inconsistent state — tp1_taken set but exit_reason not
+          prefixed "TP1+", bars_held incremented in a tight loop, telemetry
+          never populated. See 2026-04-09 debug session notes.
         """
         with conn.cursor() as cur:
-            # Get all open positions with additional fields for exit checks
             cur.execute("""
                 SELECT id, run_id, symbol, side, entry_price_with_slippage,
                        stop_price, tp1_price, tp2_price, r_value, risk_amount,
                        position_size, notional_value, fees_paid, high_water_mark,
                        setup_id, bars_held, entry_ts, trace_json
                 FROM paper_positions
-                WHERE status = 'OPEN';
+                WHERE status = 'OPEN'
+                  AND setup_id NOT IN ('S9');
             """)
             positions = cur.fetchall()
         

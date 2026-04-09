@@ -295,17 +295,36 @@ class PaperTradingEngine:
                     logger.debug(f"Max positions reached ({open_count}), skipping {symbol}")
                     return None
                 
-                # Calculate position size
+                # Calculate position size from the ABSOLUTE stop distance, not
+                # the signal payload's `r_value` field. Some strategies (S9)
+                # store `r_value` as a reward/risk RATIO (= reward_distance /
+                # stop_distance = 0.5) rather than an absolute price distance,
+                # which made the old `risk_amount / r_value` formula produce
+                # a position_size in "raw units" (e.g. 1000) completely
+                # unrelated to notional USD, massively under-sizing low-priced
+                # symbols. Computing stop_distance from the entry and stop
+                # fields is setup-agnostic and matches the simulator's
+                # `risk_per_unit = actual_r_value * position_size` semantics.
                 risk_pct = self.execution_config.max_risk_per_trade_pct / 100
                 risk_amount = current_capital * risk_pct
-                r_value = signal.get("r_value", 0)
-                
-                if r_value <= 0:
-                    logger.warning(f"Invalid R value for {symbol}: {r_value}")
-                    return None
-                
+
                 entry_price = signal.get("entry_price", 0)
-                position_size = risk_amount / r_value
+                stop_price_raw = signal.get("stop_price", 0)
+                stop_distance = abs(entry_price - stop_price_raw)
+
+                if entry_price <= 0 or stop_distance <= 0:
+                    logger.warning(
+                        f"Invalid price levels for {symbol}: "
+                        f"entry={entry_price} stop={stop_price_raw}"
+                    )
+                    return None
+
+                # r_value stored on the row is kept as the absolute stop
+                # distance so downstream readers (including update_positions)
+                # see a consistent quantity. The payload's ratio-form r_value
+                # is discarded.
+                r_value = stop_distance
+                position_size = risk_amount / stop_distance
                 notional_value = position_size * entry_price
                 
                 # Apply entry slippage

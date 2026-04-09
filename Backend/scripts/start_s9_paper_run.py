@@ -68,9 +68,16 @@ DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://trading:trading@127.0.0.1
 # --- S9 canonical execution config -------------------------------------------
 # Phase 0 (perp rerank): daily PF 3.738 at cap=15 on perp-only universe.
 S9_MAX_CONCURRENT = 15
-S9_INITIAL_CAPITAL = 20_000.0      # $20k → 1.5× headroom on 15 × $1000 exposure
-S9_POSITION_SIZE_USD = 1_000.0     # Matches opportunity_simulator.SimulationConfig
-S9_MAX_RISK_PER_TRADE_PCT = 2.5    # from S9 metadata.sizing_caps
+S9_INITIAL_CAPITAL = 20_000.0      # $20k working capital
+S9_POSITION_SIZE_USD = 100.0       # $100 notional per trade (2026-04-09 user set)
+# S9 canonical stop distance is 10% of entry (hardcoded in
+# core_logic.s9_short_reversion.S9Evaluator.build_signal). To produce a
+# $100 notional with the risk-based sizing in paper_trading.process_signal
+# (position_size = risk_amount / stop_distance), we need
+#   risk_amount = S9_POSITION_SIZE_USD * 0.10 = $10
+# which is 0.05% of $20k initial capital:
+S9_MAX_RISK_PER_TRADE_PCT = (S9_POSITION_SIZE_USD * 0.10) / S9_INITIAL_CAPITAL * 100
+# → 0.05  (yields $10 risk → $100 notional at S9's 10% stop)
 
 
 def build_s9_execution_config() -> ExecutionConfig:
@@ -78,18 +85,20 @@ def build_s9_execution_config() -> ExecutionConfig:
 
     Starts from `realistic_config(timeframe='1h')` and overrides:
       - max_positions = 15 (canon)
-      - max_risk_per_trade_pct = 2.5 (S9 metadata)
-    Everything else (slippage profile, fee model, max_daily_loss_pct) stays
-    at the realistic default.
+      - max_risk_per_trade_pct derived from $100 notional target
+
+    NOTE: we use dataclasses.replace() NOT asdict() round-trip — asdict
+    would flatten the nested SlippageModel/FeeModel instances to dicts,
+    and ExecutionConfig(**dict) would then store dicts in those slots,
+    causing `self.execution_config.slippage.calculate(...)` to crash in
+    PaperTradingEngine. Same bug pattern as s9_paper_reconcile.py.
     """
-    base = realistic_config(timeframe="1h")
-    base_dict = asdict(base)
-    base_dict.update({
-        "max_positions": S9_MAX_CONCURRENT,
-        "max_risk_per_trade_pct": S9_MAX_RISK_PER_TRADE_PCT,
-    })
-    # Filter out any keys realistic_config wouldn't accept back via dataclass rebuild
-    return ExecutionConfig(**base_dict)
+    from dataclasses import replace
+    return replace(
+        realistic_config(timeframe="1h"),
+        max_positions=S9_MAX_CONCURRENT,
+        max_risk_per_trade_pct=S9_MAX_RISK_PER_TRADE_PCT,
+    )
 
 
 # -----------------------------------------------------------------------------
@@ -252,10 +261,37 @@ def fetch_new_s9_signals(conn, run_id: str, since: datetime) -> list[dict]:
     return signals
 
 
-def fetch_latest_1h_prices(conn, symbols: list[str]) -> dict[str, dict]:
-    """Fetch the most recent final 1h bar for each symbol."""
-    if not symbols:
+def fetch_latest_final_bar_ms(conn) -> int:
+    """Return the most recently-finalized 1h bar (in ms epoch) using BTCUSDT
+    as the reference symbol. BTCUSDT is always tracked by the ingestor and
+    is in the S9 whitelist — its latest final bar is the canonical "live
+    signal bar". Returns 0 if no bar is available."""
+    with conn.cursor() as cur:
+        cur.execute("""
+            SELECT MAX(bar_start_ts)
+            FROM ohlcv
+            WHERE symbol = 'BTCUSDT'
+              AND timeframe = '1h'
+              AND is_final = TRUE
+              AND bar_start_ts >= NOW() - INTERVAL '3 hours';
+        """)
+        row = cur.fetchone()
+    if not row or row[0] is None:
+        return 0
+    return int(row[0].timestamp() * 1000)
+
+
+def fetch_bars_at_ts(conn, symbols: list[str], bar_ts_ms: int) -> dict[str, dict]:
+    """Fetch each symbol's 1h bar AT the specific reference timestamp.
+
+    Returns a dict keyed by symbol. Symbols missing the reference bar are
+    dropped from the result — their positions simply skip this update tick
+    and will be re-checked on the next bar-advance.
+    """
+    if not symbols or bar_ts_ms <= 0:
         return {}
+    from datetime import datetime, timezone
+    bar_dt = datetime.fromtimestamp(bar_ts_ms / 1000, tz=timezone.utc)
     with conn.cursor() as cur:
         cur.execute("""
             SELECT DISTINCT ON (symbol)
@@ -263,9 +299,11 @@ def fetch_latest_1h_prices(conn, symbols: list[str]) -> dict[str, dict]:
             FROM ohlcv
             WHERE symbol = ANY(%s)
               AND timeframe = '1h'
+              AND bar_start_ts = %s
               AND is_final = TRUE
-            ORDER BY symbol, bar_start_ts DESC;
-        """, (symbols,))
+            ORDER BY symbol,
+                     CASE source WHEN 'ws' THEN 0 WHEN 'binance' THEN 1 ELSE 2 END;
+        """, (symbols, bar_dt))
         return {
             row[0]: {
                 "open": float(row[1]),
@@ -295,11 +333,28 @@ def _install_signal_handlers():
 
 
 def run_loop(run_id: str, engine: PaperTradingEngine):
-    """Simple polling loop: process new S9 signals, update open positions once
-    per hour (60s after the top of the hour)."""
+    """S9 paper trading loop.
+
+    Two data-driven cadences, both polled every 15s:
+
+      1) Signal pickup — any time a new S9 opportunity appears in the DB
+         with created_ts > last-seen, hand it to engine.process_signal.
+      2) Position update — any time a new 1h bar becomes final in Postgres
+         (tracked via a bar-advance gate on BTCUSDT), call update_positions
+         with THAT bar's OHLC for every open symbol.
+
+    The bar-advance gate replaces the old wall-clock hour gate so we:
+      - never scan the same bar twice (short-circuits cheaply)
+      - always act on a newly-available bar the instant it's finalized
+      - automatically recover from restarts/lag — first tick after
+        startup will see a new bar and run update_positions immediately
+
+    S9 positions are exclusively handled by this path. governance.price_feed's
+    PositionMonitor excludes setup_id='S9' to prevent racing.
+    """
     _install_signal_handlers()
 
-    last_update_hour = -1
+    last_processed_bar_ms = 0
     since = datetime.now(timezone.utc) - timedelta(hours=2)
 
     logger.info("S9 paper loop started (run_id=%s)", run_id)
@@ -323,26 +378,27 @@ def run_loop(run_id: str, engine: PaperTradingEngine):
                             logger.error("process_signal failed for %s: %s", sig["symbol"], e)
                     since = max((s["created_ts"] for s in new_sigs), default=since)
 
-                # 2) Update positions once per hour, 60s past the top
-                now = datetime.now(timezone.utc)
-                seconds_into_hour = now.minute * 60 + now.second
-                current_hour = int(now.timestamp() // 3600)
-                if seconds_into_hour >= 60 and current_hour != last_update_hour:
+                # 2) Update positions on bar-advance (data-driven gate).
+                latest_bar_ms = fetch_latest_final_bar_ms(conn)
+                if latest_bar_ms > last_processed_bar_ms:
                     open_syms = [
                         p["symbol"] for p in engine.get_open_positions(run_id)
                     ]
                     if open_syms:
-                        prices = fetch_latest_1h_prices(conn, open_syms)
+                        prices = fetch_bars_at_ts(conn, open_syms, latest_bar_ms)
                         if prices:
                             closed = engine.update_positions(run_id, prices)
-                            if closed:
-                                logger.info("Closed %d paper positions this tick", len(closed))
-                    last_update_hour = current_hour
+                            logger.info(
+                                "S9 update_positions at bar %s: %d open, %d closed",
+                                datetime.fromtimestamp(latest_bar_ms / 1000, tz=timezone.utc).isoformat(),
+                                len(open_syms), len(closed),
+                            )
+                    last_processed_bar_ms = latest_bar_ms
 
         except Exception as e:
             logger.error("Loop iteration failed: %s", e, exc_info=True)
 
-        time.sleep(30)
+        time.sleep(15)
 
     logger.info("S9 paper loop exiting")
 
