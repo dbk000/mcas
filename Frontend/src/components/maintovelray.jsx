@@ -78,7 +78,7 @@ export default function MaintenanceOverlay() {
           margin: "0 0 36px", fontWeight: 400,
           letterSpacing: "0.01em", textAlign: "left",
         }}>
-          Planned maintenance - back tomorrow
+          Cognitive overhead of maintaining UI exceeds value of trading undistracted. Closed to future subscribers. 
           <br /><br />
           Current subscribers can continue to access MCAS itself via the usual login link.
           <br /><br />
