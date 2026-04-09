@@ -5,20 +5,28 @@
 -- is_final=TRUE at ~H:06 every hour (see rest_ingestor_is_final_fix_plan.md).
 -- This migration:
 --   1. Installs an IMMUTABLE helper tf_seconds(tf) for timeframe → seconds
---   2. UPDATEs any existing forming-bar rows to is_final=FALSE so the
---      VALIDATE step below doesn't explode
+--   2. UPDATEs any existing forming-bar rows to is_final=FALSE
 --   3. Adds CHECK constraint ohlcv_is_final_canon (NOT VALID + VALIDATE)
 --      that makes the bug structurally impossible going forward
 --
--- Idempotent. Safe to re-run — the function uses CREATE OR REPLACE and
--- the constraint is guarded by IF NOT EXISTS logic via the DO block.
+-- Structure: split into 3 phases across separate transactions so that the
+-- initial UPDATE commits before we take the table lock for constraint
+-- validation. Packing UPDATE + ADD CONSTRAINT + VALIDATE into one
+-- transaction races with concurrent writers (backfill_recent_gaps,
+-- _ingest_known_ohlcv) that insert forming-bar rows between the UPDATE and
+-- the VALIDATE — those new rows are NOT covered by the pre-committed UPDATE
+-- and cause VALIDATE to fail. Phase 3 takes LOCK TABLE ... IN SHARE ROW
+-- EXCLUSIVE MODE for its brief window so writers are frozen during the
+-- add-and-validate critical section.
+--
+-- Idempotent. Safe to re-run. Each phase independently.
 
+-- ---------------------------------------------------------------------------
+-- Phase 1 — Install the tf_seconds helper.
+-- ---------------------------------------------------------------------------
 BEGIN;
 SELECT pg_advisory_lock(20260409001);
 
--- ---------------------------------------------------------------------------
--- 1) Timeframe → seconds lookup (IMMUTABLE so the CHECK can reference it)
--- ---------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION tf_seconds(tf TEXT) RETURNS INTEGER AS $$
   SELECT CASE tf
     WHEN '1m'  THEN 60
@@ -32,27 +40,41 @@ CREATE OR REPLACE FUNCTION tf_seconds(tf TEXT) RETURNS INTEGER AS $$
   END
 $$ LANGUAGE SQL IMMUTABLE;
 
+SELECT pg_advisory_unlock(20260409001);
+COMMIT;
+
 -- ---------------------------------------------------------------------------
--- 2) Clean up currently-wrong rows BEFORE we VALIDATE
+-- Phase 2 — Bulk clean-up of currently-wrong rows (separate txn so the
+-- fix commits before we take the table lock for Phase 3).
 -- ---------------------------------------------------------------------------
--- Any row that currently claims is_final=TRUE but whose bar end time is in
--- the future is a Canon §8 violation. Flip it to is_final=FALSE. The WS
--- persister (which correctly writes the ws-sourced closed bar at bar close)
--- will continue to write its own row for the same (symbol, timeframe,
--- bar_start_ts) under source='ws' via ON CONFLICT DO NOTHING semantics.
+BEGIN;
+UPDATE ohlcv
+SET is_final = FALSE
+WHERE is_final = TRUE
+  AND tf_seconds(timeframe) IS NOT NULL
+  AND bar_start_ts + (tf_seconds(timeframe) || ' seconds')::interval > NOW();
+COMMIT;
+
+-- ---------------------------------------------------------------------------
+-- Phase 3 — Add + validate the CHECK constraint with a brief table lock.
+--
+-- SHARE ROW EXCLUSIVE blocks all writes (INSERT/UPDATE/DELETE) but still
+-- allows concurrent SELECTs. We hold it only for the few statements below
+-- so the ingestor/backfill-worker pause is short.
+-- ---------------------------------------------------------------------------
+BEGIN;
+SELECT pg_advisory_lock(20260409001);
+
+LOCK TABLE ohlcv IN SHARE ROW EXCLUSIVE MODE;
+
+-- Sweep any stragglers that arrived between Phase 2 and the table lock.
 UPDATE ohlcv
 SET is_final = FALSE
 WHERE is_final = TRUE
   AND tf_seconds(timeframe) IS NOT NULL
   AND bar_start_ts + (tf_seconds(timeframe) || ' seconds')::interval > NOW();
 
--- ---------------------------------------------------------------------------
--- 3) CHECK constraint: is_final=TRUE ⇒ bar end time is in the past
--- ---------------------------------------------------------------------------
--- NOT VALID first so the ADD is instant and doesn't block. Rows with
--- is_final=FALSE are always allowed. Rows with an unknown timeframe
--- (tf_seconds returns NULL) are also allowed — we don't want this
--- constraint to break future timeframes we haven't added yet.
+-- Add the constraint. NOT VALID = instant metadata-only change.
 DO $$
 BEGIN
     IF NOT EXISTS (
@@ -69,8 +91,8 @@ BEGIN
     END IF;
 END $$;
 
--- VALIDATE scans the table but doesn't block concurrent reads/writes.
--- Safe to run even on the 102GB prod table.
+-- Now validate. With the table lock held, no concurrent writer can insert a
+-- forming-bar row between this and COMMIT.
 ALTER TABLE ohlcv VALIDATE CONSTRAINT ohlcv_is_final_canon;
 
 COMMENT ON CONSTRAINT ohlcv_is_final_canon ON ohlcv IS
