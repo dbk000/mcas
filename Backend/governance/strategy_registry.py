@@ -88,6 +88,7 @@ def register_all_strategies(worker=None):
     from core_logic.d1_dormancy_ignition import D1Evaluator
     from core_logic.s10_macd_scalp import S10Evaluator
     from core_logic.s9_short_reversion import S9Evaluator
+    from core_logic.s11_macd_long_reversion import S11Evaluator
 
     config = get_config()
     worker_config = config.Worker
@@ -142,4 +143,18 @@ def register_all_strategies(worker=None):
         dispatch_mode="cross_sectional",
         version="S9_v1.0",
         label="Short Reversion v1.0",
+    ))
+
+    # S11 Strategy — MACD Long Reversion on 1h
+    s11_eval = S11Evaluator()
+    RuntimeDispatchTable.register("S11", StrategyHandler(
+        evaluator=s11_eval,
+        compute_state=lambda snap, history, prev_state, **kwargs: s11_eval.compute_state(snap),
+        evaluate_trigger=lambda snap, state, sym, tf, **kwargs: s11_eval.evaluate_trigger(snap, state, sym, tf),
+        score_multiplier=worker_config.S11_SCORE_MULT,
+        timeframe_affinity=["1h"],
+        worker_evaluate=worker._evaluate_s11 if worker else None,
+        version="S11_v1.0",
+        label="MACD Long Reversion v1.0",
+        traceable=True,
     ))

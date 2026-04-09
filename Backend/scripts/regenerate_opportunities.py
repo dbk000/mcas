@@ -93,6 +93,7 @@ from core_logic.d1_dormancy_ignition import D1Config, D1Evaluator, D1State, is_d
 from core_logic.u1_unicorn_ignition import U1Config, U1Evaluator, U1State
 from core_logic.s9_short_reversion import S9Evaluator, S9State
 from core_logic.s10_macd_scalp import S10Evaluator, S10State
+from core_logic.s11_macd_long_reversion import S11Evaluator, S11State
 from core_logic.d2_fade_the_casino import (
     D2Config, cluster_from_alerts, check_gates, evaluate_cluster, get_pre_pump_price,
 )
@@ -120,6 +121,7 @@ WARMUP_DAYS = {
     "U1": 10,    # BASELINE_WINDOWS max 7d + gate windows
     "S9": 2,     # 24h breadth + 4h return lookback
     "S10": 2,    # FeatureFactory needs 201 bars of 5m = ~17h, round up to 2 days
+    "S11": 12,   # SMA200 on 1h = ~8.4 days, round up to 12 (same as D1)
     "D2": 3,     # Pre-pump price needs 1h bar before cluster
 }
 
@@ -128,6 +130,7 @@ STRATEGY_TF = {
     "U1": "5m",
     "S9": "1h",
     "S10": "5m",
+    "S11": "1h",
     "D2": "1h",
 }
 
@@ -136,6 +139,7 @@ SETUP_VERSIONS = {
     "U1": "U1_v4.0_frozen_20260407",
     "S9": "S9_v1.0_frozen_20260407",
     "S10": "S10_v1.0_frozen_20260407",
+    "S11": "S11_v1.0_locked_20260409",
     "D2": "D2_v1.0_frozen_20260407",
 }
 
@@ -628,8 +632,87 @@ def _worker_s10(symbol: str) -> list[dict]:
     return opps
 
 
+def _worker_s11(symbol: str) -> list[dict]:
+    """Walk S11 MACD Long Reversion evaluator over 1h bars for one symbol.
+
+    Identical semantics to the live signal_worker._evaluate_s11 path:
+    local MACD(3,10,16) from close series, SMA50/SMA200/ATR from the
+    FeatureFactory snapshot, bullish histogram crossover + filter gates,
+    stop=5.0xATR, time_stop=24 bars. Runs in Pool worker.
+    """
+    raw_bars = _OHLCV_DATA.get((symbol, "1h"))
+    if not raw_bars or len(raw_bars) < 201:
+        return []
+
+    candles = _make_ohlcv_objects(raw_bars)
+    evaluator = S11Evaluator()
+    ff = FeatureFactory()
+    opps = []
+
+    start_ms = int(_START_TS.timestamp() * 1000)
+    end_ms = int(_END_TS.timestamp() * 1000)
+
+    for i in range(201, len(candles)):
+        bar_ts_ms = candles[i].timestamp
+        if bar_ts_ms < start_ms:
+            continue
+        if bar_ts_ms > end_ms:
+            break
+
+        window = candles[max(0, i - 250):i + 1]
+        if len(window) < 201:
+            continue
+
+        try:
+            snapshot = ff.compute(window)
+        except Exception:
+            continue
+
+        state = evaluator.compute_state(snapshot)
+        signal = evaluator.evaluate_trigger(snapshot, state, symbol, "1h")
+
+        if signal:
+            bar_dt = datetime.fromtimestamp(bar_ts_ms / 1000, tz=timezone.utc)
+            opps.append({
+                "created_ts": bar_dt,
+                "symbol": symbol,
+                "timeframe": "1h",
+                "setup_id": "S11",
+                "decision": "SIGNAL",
+                "score": signal.setup_score,
+                "reason": "S11 MACD long reversion (deep-oversold pullback)",
+                "payload": {
+                    "entry_price": signal.entry_price,
+                    "stop_price": signal.stop_price,
+                    # S11 carries None for TPs — preserved through JSON as null
+                    "tp1_price": signal.tp1_price,
+                    "tp2_price": signal.tp2_price,
+                    "r_value": signal.r_value,
+                    "direction": "long",
+                    "time_stop_bars": signal.time_stop_bars,
+                    "score_components": signal.score_components,
+                    "macd_fast_n": evaluator.MACD_FAST,
+                    "macd_slow_n": evaluator.MACD_SLOW,
+                    "macd_signal_n": evaluator.MACD_SIGNAL,
+                    "macd_line": signal.macd_line,
+                    "macd_signal": signal.macd_signal,
+                    "macd_histogram": signal.macd_histogram,
+                    "macd_prev_histogram": signal.macd_prev_histogram,
+                    "sma_50": signal.sma_50,
+                    "sma_200": signal.sma_200,
+                    "close_vs_sma50_atr": signal.close_vs_sma50_atr,
+                    "close_vs_sma200_atr": signal.close_vs_sma200_atr,
+                    "atr_at_signal": signal.atr_at_signal,
+                },
+                "setup_version": SETUP_VERSIONS["S11"],
+                "batch_id": _ARGS["batch_id"],
+            })
+
+    return opps
+
+
 def run_per_symbol(setup_id: str, args):
-    """Run per-symbol parallel mode for D1, U1, or S10."""
+    """Run per-symbol parallel mode for D1, U1, S10, or S11."""
     global _OHLCV_DATA, _BTC_TS_SORTED, _BTC_RETURNS_BY_TS
     global _SOCIAL_DAILY, _VOL_Z_1D, _ARGS, _START_TS, _END_TS
 
@@ -664,7 +747,12 @@ def run_per_symbol(setup_id: str, args):
         _VOL_Z_1D = load_volume_z_1d(args.start_date)
 
     # Select worker function
-    worker_fn = {"D1": _worker_d1, "U1": _worker_u1, "S10": _worker_s10}[setup_id]
+    worker_fn = {
+        "D1": _worker_d1,
+        "U1": _worker_u1,
+        "S10": _worker_s10,
+        "S11": _worker_s11,
+    }[setup_id]
 
     # Sort symbols heaviest-first (most bars → longest compute)
     symbols = sorted(raw_data.keys(), key=lambda s: len(raw_data[s]), reverse=True)
@@ -1093,7 +1181,7 @@ def main():
     )
 
     setup_ids = [s.strip().upper() for s in args.setup_ids.split(",")]
-    valid_ids = {"D1", "D2", "U1", "S9", "S10"}
+    valid_ids = {"D1", "D2", "U1", "S9", "S10", "S11"}
     invalid = set(setup_ids) - valid_ids
     if invalid:
         logger.error("Invalid setup IDs: %s (valid: %s)", invalid, valid_ids)
@@ -1117,7 +1205,7 @@ def main():
     for setup_id in setup_ids:
         logger.info("\n>>> Starting %s <<<", setup_id)
 
-        if setup_id in ("D1", "U1", "S10"):
+        if setup_id in ("D1", "U1", "S10", "S11"):
             count = run_per_symbol(setup_id, args)
         elif setup_id == "S9":
             count = run_s9(args)

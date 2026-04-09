@@ -200,6 +200,7 @@ class WorkerTypedConfig:
     U1_SCORE_MULT: float = 1.0
     S9_SCORE_MULT: float = 1.0
     S10_SCORE_MULT: float = 1.0
+    S11_SCORE_MULT: float = 1.0
     D1_SCORE_MULT: float = 1.0
     CONFIG_POLL_INTERVAL_S: float = 10.0
     BINANCE_TICKER_URL: str = ""
@@ -222,7 +223,7 @@ class WorkerTypedConfig:
     SERVICE_NAME: str = "unknown"
     ENGINE_VERSION: str = "1.0.0"
     KNOWN_UNIVERSE_SIZE: int = 1024
-    SETUP_IDS: str = "S9,U1,D1"
+    SETUP_IDS: str = "S9,U1,D1,S11"
     SCAN_INTERVAL_SECONDS: int = 300
     USE_DYNAMIC_SYMBOLS: bool = False
     ENABLE_PERIODIC_SCANS: bool = True

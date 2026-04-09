@@ -44,6 +44,7 @@ import numpy as np
 from indicators.indicators import IndicatorSnapshot, FeatureFactory, OHLCV
 from core_logic.s9_short_reversion import S9Evaluator, S9Signal, S9State
 from core_logic.s10_macd_scalp import S10Evaluator, S10Signal
+from core_logic.s11_macd_long_reversion import S11Evaluator, S11Signal, S11State
 from core_logic.u1_unicorn_ignition import U1Evaluator, U1State, U1Phase, U1Config, load_funding_rates
 from core_logic.d1_dormancy_ignition import D1Evaluator, D1State, D1Phase, D1Config, is_d1_excluded, get_social_mentions_count, get_social_silence_count, get_exchange_netflow
 from governance.setup_base import Direction
@@ -258,6 +259,7 @@ class SignalWorker(LineageEnforcer):
         self._excluded_symbols_cache: set[str] = set()
         self._excluded_symbols_cache_ts: float = 0.0
         self.s10_evaluator = S10Evaluator()
+        self.s11_evaluator = S11Evaluator()
         self.d1_evaluator = D1Evaluator()
         self._d1_prev_states: dict[str, D1State] = {}  # keyed by "symbol:tf"
         # LiveConfig: poll meta.config_version for hot-reload
@@ -271,7 +273,7 @@ class SignalWorker(LineageEnforcer):
         self._diag = {
             "evaluated": 0, "snapshot_fail": 0, "candle_fail": 0,
             "symbol_quality_excluded": 0,
-            "s10_signal": 0, "d1_signal": 0,
+            "s10_signal": 0, "s11_signal": 0, "d1_signal": 0,
             "s9_signal": 0, "s9_breadth_fail": 0,
             "s9_fng_gated": 0, "s9_fng_unavailable": 0, "s9_magnitude_filtered": 0,
             "congestion_dropped": 0,
@@ -642,7 +644,12 @@ class SignalWorker(LineageEnforcer):
             snap = self._last_activity_snapshot
             gates_ok = self._diag["evaluated"] - self._diag["snapshot_fail"] - self._diag["candle_fail"] - self._diag["symbol_quality_excluded"]
             gates_fail = self._diag["snapshot_fail"] + self._diag["candle_fail"] + self._diag["symbol_quality_excluded"]
-            total_signals = self._diag["s10_signal"] + self._diag["d1_signal"] + self._diag["s9_signal"]
+            total_signals = (
+                self._diag["s10_signal"]
+                + self._diag["s11_signal"]
+                + self._diag["d1_signal"]
+                + self._diag["s9_signal"]
+            )
 
             event = {
                 "ts": now,
@@ -994,6 +1001,153 @@ class SignalWorker(LineageEnforcer):
             )
         except Exception as e:
             logger.debug("S10 eval error %s:%s: %s", symbol, tf, e)
+
+    def _evaluate_s11(self, symbol: str, tf: str, snapshot, bar_start_ts: str):
+        """Run S11 MACD Long Reversion evaluator on 1h bars.
+
+        Gates (locked config, do not modify without re-running holdout):
+          - Fast MACD(3,10,16) bullish histogram crossover on closed bar
+          - close_vs_sma50_atr  < -3.10 (≥3.1 ATR below SMA50)
+          - close_vs_sma200_atr < -0.05 (below SMA200 — non-uptrend regime)
+
+        Exit: stop = entry - 5.0*ATR, time_stop = 24 bars, no TPs.
+        """
+        try:
+            state = self.s11_evaluator.compute_state(snapshot)
+            # Edge re-evaluation for any active S11 opp on this symbol/tf
+            self._reeval_s11_edge(symbol, tf, state)
+            sig = self.s11_evaluator.evaluate_trigger(snapshot, state, symbol, tf)
+            if sig is None:
+                return
+
+            self._diag["s11_signal"] += 1
+
+            calib_mult = strategy_get_multiplier("S11")
+            calibrated_score = min(sig.setup_score * calib_mult, 1.0)
+
+            dxy_mult = get_dxy_multiplier(self.r)
+            calibrated_score = min(calibrated_score * dxy_mult, 1.0)
+
+            adjusted_score = self._capacity_adjusted_score(symbol, calibrated_score)
+
+            if not self._try_emit_signal(symbol, tf, "S11", adjusted_score):
+                return
+
+            payload = {
+                "setup_id": "S11",
+                "setup_name": self._get_setup_label("S11"),
+                "symbol": symbol,
+                "timeframe": tf,
+                "direction": sig.direction.value,
+                "setup_score": adjusted_score,
+                "raw_score": sig.setup_score,
+                "entry_price": sig.entry_price,
+                "stop_price": sig.stop_price,
+                # S11 has no TPs — explicit None → JSON null; exit_checker
+                # treats None as "not armed". The simulator, run_executor,
+                # and paper worker all respect this.
+                "tp1_price": sig.tp1_price,
+                "tp2_price": sig.tp2_price,
+                "r_value": sig.r_value,
+                "time_stop_bars": sig.time_stop_bars,
+                "bar_start_ts": bar_start_ts or "",
+                "as_of_ts": time.time(),
+                "why_items": sig.explain.why_items if sig.explain else [],
+                "macd_fast_n": self.s11_evaluator.MACD_FAST,
+                "macd_slow_n": self.s11_evaluator.MACD_SLOW,
+                "macd_signal_n": self.s11_evaluator.MACD_SIGNAL,
+                "macd_line": sig.macd_line,
+                "macd_signal": sig.macd_signal,
+                "macd_histogram": sig.macd_histogram,
+                "macd_prev_histogram": sig.macd_prev_histogram,
+                "sma_50": sig.sma_50,
+                "sma_200": sig.sma_200,
+                "close_vs_sma50_atr": sig.close_vs_sma50_atr,
+                "close_vs_sma200_atr": sig.close_vs_sma200_atr,
+                "atr_at_signal": sig.atr_at_signal,
+                "score_components": sig.score_components,
+            }
+
+            # --- TRACE (mandatory — S11 is traceable) ---
+            trace_dict = None
+            trace = TraceContext(strategy="S11", symbol=symbol, timeframe=tf)
+            if snapshot.ohlcv:
+                trace.record_candle_window(
+                    first_ts=snapshot.ohlcv[0].timestamp,
+                    last_ts=snapshot.ohlcv[-1].timestamp,
+                    bar_count=len(snapshot.ohlcv),
+                    timeframe=tf,
+                )
+            trace.record_indicator_params({
+                "macd_fast": self.s11_evaluator.MACD_FAST,
+                "macd_slow": self.s11_evaluator.MACD_SLOW,
+                "macd_signal": self.s11_evaluator.MACD_SIGNAL,
+                "n_atr": 14,
+            })
+            trace.record_indicators_bulk({
+                "macd_line": state.macd_line,
+                "macd_signal": state.macd_signal,
+                "macd_histogram": state.macd_histogram,
+                "macd_prev_histogram": state.macd_prev_histogram,
+                "sma_50": state.sma_50,
+                "sma_200": state.sma_200,
+                "atr": state.atr,
+                "close": state.close,
+            })
+            trace.record_state({
+                "macd_crossover_bull": state.macd_crossover_bull,
+                "close_vs_sma50_atr": state.close_vs_sma50_atr,
+                "close_vs_sma200_atr": state.close_vs_sma200_atr,
+                "sma50_filter_passed": state.sma50_filter_passed,
+                "sma200_filter_passed": state.sma200_filter_passed,
+                "entry_valid": state.entry_valid,
+            }, is_hydrated=False)
+            trace.record_gate(
+                "macd_crossover_bull",
+                state.macd_crossover_bull, True, "==", state.macd_crossover_bull,
+            )
+            trace.record_gate(
+                "close_vs_sma50_atr",
+                state.close_vs_sma50_atr,
+                self.s11_evaluator.SMA50_FILTER_THRESHOLD, "<",
+                state.sma50_filter_passed,
+            )
+            trace.record_gate(
+                "close_vs_sma200_atr",
+                state.close_vs_sma200_atr,
+                self.s11_evaluator.SMA200_FILTER_THRESHOLD, "<",
+                state.sma200_filter_passed,
+            )
+            trace.record_score(
+                sig.score_components, sig.setup_score,
+                calib_mult, calibrated_score, promotion_threshold=0.0,
+            )
+            trace.record_config({
+                "MACD_FAST": self.s11_evaluator.MACD_FAST,
+                "MACD_SLOW": self.s11_evaluator.MACD_SLOW,
+                "MACD_SIGNAL": self.s11_evaluator.MACD_SIGNAL,
+                "SMA50_FILTER_THRESHOLD": self.s11_evaluator.SMA50_FILTER_THRESHOLD,
+                "SMA200_FILTER_THRESHOLD": self.s11_evaluator.SMA200_FILTER_THRESHOLD,
+                "STOP_ATR_MULT": self.s11_evaluator.STOP_ATR_MULT,
+                "TIME_STOP_BARS": self.s11_evaluator.TIME_STOP_BARS,
+            })
+            setup_version = self._get_setup_version("S11")
+            trace_dict = trace.seal(setup_version)
+
+            store_signal(self.r, symbol, tf, "S11", payload,
+                         adjusted_score, bar_start_ts or "")
+            reason = "; ".join(sig.explain.why_items) if sig.explain else None
+            self._persist_signal_to_pg(symbol, tf, "S11", adjusted_score,
+                                       reason, payload, trace_json=trace_dict)
+
+            logger.info(
+                "Signal: S11 LONG %s:%s score=%.3f (adj=%.3f) "
+                "macd_hist=%.6f cs50=%.2f cs200=%.2f",
+                symbol, tf, calibrated_score, adjusted_score,
+                sig.macd_histogram, sig.close_vs_sma50_atr, sig.close_vs_sma200_atr,
+            )
+        except Exception as e:
+            logger.debug("S11 eval error %s:%s: %s", symbol, tf, e)
 
     def _evaluate_d1(self, symbol: str, tf: str, snapshot, bar_start_ts: str):
         """Run D1 Dormancy-to-Ignition evaluator on 1h bars (microcap universe)."""
@@ -1822,6 +1976,32 @@ class SignalWorker(LineageEnforcer):
                 return
 
             # Edge intact
+            self._bump_opp_alive(opp_id)
+            return
+
+    def _reeval_s11_edge(self, symbol: str, tf: str, state: S11State):
+        """Re-evaluate edge for active S11 opp on this symbol/tf.
+
+        Per plan §9: the minimal edge check for a MACD-crossover reversion
+        strategy is 'is the MACD histogram still positive?'. If it's flipped
+        back negative, the reversion thesis is invalidated and the opp should
+        expire. Actual trade exits (stop, time_stop) are handled by the
+        paper/live position layer, not here.
+        """
+        active_opps = self._get_active_opps("S11")
+        for opp in active_opps:
+            if opp["symbol"] != symbol or opp["timeframe"] != tf:
+                continue
+
+            opp_id = opp["id"]
+
+            if state.macd_histogram is not None and state.macd_histogram <= 0:
+                self._expire_opp_edge_gone(
+                    opp_id, f"macd_hist_flipped_negative_{state.macd_histogram:.6f}",
+                )
+                return
+
+            # Edge intact — keep alive
             self._bump_opp_alive(opp_id)
             return
 

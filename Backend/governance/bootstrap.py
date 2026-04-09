@@ -417,6 +417,11 @@ def _populate_strategies(reg: StrategyRegistry) -> None:
             "timeframe_affinity": ["5m"], "dispatch_mode": "per_symbol",
             "traceable": True,
         },
+        "S11": {
+            "label": "S11 (MACD Long Reversion)", "type": "crypto", "status": "active",
+            "timeframe_affinity": ["1h"], "dispatch_mode": "per_symbol",
+            "traceable": True,
+        },
         "U1": {
             "label": "U1 (Unicorn)", "type": "crypto", "status": "active",
             "timeframe_affinity": ["5m"], "dispatch_mode": "per_symbol",
@@ -465,7 +470,7 @@ def _populate_stop_policies(reg: StopPolicyRegistry) -> None:
     # Derive setup IDs from the strategy catalog (which is already populated
     # but not yet frozen at this point — we use the hardcoded catalog directly).
     _SETUP_IDS = sorted([
-        "S1", "S2", "S6", "S9", "S10", "U1", "D1", "D2", "PM",
+        "S1", "S2", "S6", "S9", "S10", "S11", "U1", "D1", "D2", "PM",
         "EQFP", "EQ_TSMOM", "EQ_XSMOM", "EQ_REV1A", "EQ_REV1B",
         "EQ_VPD", "EQ_ATC", "EQ_NVDA_MACRO",
     ])
@@ -494,6 +499,12 @@ def _populate_stop_policies(reg: StopPolicyRegistry) -> None:
         ),
         "S10": ExitConfig(
             fail_fast_bars=2, fail_fast_threshold=0.003,
+            trail_breakeven_r=0, trail_activation_r=999.0, trail_distance_r=0.5,
+        ),
+        "S11": ExitConfig(
+            # S11 is stop-or-time-stop only (validated wide-stop reversion).
+            # No fail-fast, no trail, no TPs (payload carries tp1/tp2=None).
+            fail_fast_bars=0, fail_fast_threshold=0.0,
             trail_breakeven_r=0, trail_activation_r=999.0, trail_distance_r=0.5,
         ),
         "U1": ExitConfig(
@@ -669,6 +680,20 @@ def sync_config_hashes():
 
     # S10 — no typed config params, use empty dict for now
     hashes["S10"] = _config_hash({})
+
+    # S11 — locked parameters are evaluator class constants (no typed config
+    # registry entry yet), so hash the locked values directly. Any future
+    # hot-reload of S11 thresholds must update this dict in lockstep.
+    from core_logic.s11_macd_long_reversion import S11Evaluator as _S11Ev
+    hashes["S11"] = _config_hash({
+        "MACD_FAST": _S11Ev.MACD_FAST,
+        "MACD_SLOW": _S11Ev.MACD_SLOW,
+        "MACD_SIGNAL": _S11Ev.MACD_SIGNAL,
+        "SMA50_FILTER_THRESHOLD": _S11Ev.SMA50_FILTER_THRESHOLD,
+        "SMA200_FILTER_THRESHOLD": _S11Ev.SMA200_FILTER_THRESHOLD,
+        "STOP_ATR_MULT": _S11Ev.STOP_ATR_MULT,
+        "TIME_STOP_BARS": _S11Ev.TIME_STOP_BARS,
+    })
 
     # Write to DB
     db_url = cfg.Worker.DATABASE_URL
