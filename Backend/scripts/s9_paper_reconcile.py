@@ -304,12 +304,15 @@ def walk_paper_trade(engine: PaperTradingEngine, run_id: str, symbol: str,
         return {}
 
     for bar in bars:
+        # Pass bar_start_ts so update_positions can compute bars_held from
+        # historical elapsed time (bar_ts - entry_ts), not wall-clock now().
         price_data = {
             symbol: {
                 "open": bar["open"],
                 "high": bar["high"],
                 "low": bar["low"],
                 "close": bar["close"],
+                "bar_start_ts": bar["ts"],
             }
         }
         closed = engine.update_positions(run_id, price_data)

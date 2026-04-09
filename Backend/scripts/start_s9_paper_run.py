@@ -261,6 +261,65 @@ def fetch_new_s9_signals(conn, run_id: str, since: datetime) -> list[dict]:
     return signals
 
 
+def fetch_live_prices_from_redis(symbols: list[str], max_age_s: float = 30.0) -> dict[str, dict]:
+    """Poll the ingestor's ``price:{symbol}`` hashes for live-tick prices.
+
+    The ingestor writes to ``price:{symbol}`` on EVERY Binance WS tick
+    (~1/sec for every monitored symbol). The hash contains the latest
+    close and a wall-clock timestamp. We fetch those and construct a
+    point-price "bar" (open=high=low=close=current_price) for each
+    symbol — which is the correct LIVE-TRADING exit semantic: exit
+    when the current market price crosses the level, not based on some
+    reconstructed intrabar high/low.
+
+    Symbols whose hash is stale (age > max_age_s) or missing are
+    dropped — positions on those symbols skip this tick and retry on
+    the next poll (or fall through to the hourly bar-advance path).
+    """
+    if not symbols:
+        return {}
+    try:
+        from governance.persistence import RedisClient
+    except Exception as e:
+        logger.warning("RedisClient import failed: %s", e)
+        return {}
+    r = RedisClient.get_client()
+    now = datetime.now(timezone.utc)
+    now_ts = now.timestamp()
+    out: dict[str, dict] = {}
+    for sym in symbols:
+        try:
+            h = r.hgetall(f"price:{sym}")
+        except Exception:
+            continue
+        if not h:
+            continue
+        # psycopg's redis client returns str-keyed dicts (decode_responses=True)
+        price_str = h.get("price") if isinstance(h.get("price"), str) else h.get(b"price", b"").decode() if h.get(b"price") else None
+        ts_str = h.get("timestamp") if isinstance(h.get("timestamp"), str) else h.get(b"timestamp", b"0").decode() if h.get(b"timestamp") else None
+        if not price_str or ts_str is None:
+            continue
+        try:
+            price = float(price_str)
+            ts = float(ts_str)
+        except (TypeError, ValueError):
+            continue
+        if price <= 0:
+            continue
+        age = now_ts - ts
+        if age > max_age_s:
+            continue
+        bar_dt = datetime.fromtimestamp(ts, tz=timezone.utc)
+        out[sym] = {
+            "open": price,
+            "high": price,
+            "low": price,
+            "close": price,
+            "bar_start_ts": bar_dt,
+        }
+    return out
+
+
 def fetch_latest_final_bar_ms(conn) -> int:
     """Return the most recently-finalized 1h bar (in ms epoch) using BTCUSDT
     as the reference symbol. BTCUSDT is always tracked by the ingestor and
@@ -335,22 +394,32 @@ def _install_signal_handlers():
 def run_loop(run_id: str, engine: PaperTradingEngine):
     """S9 paper trading loop.
 
-    Two data-driven cadences, both polled every 15s:
+    Three data-driven cadences, all evaluated per loop tick (every 3 seconds):
 
       1) Signal pickup — any time a new S9 opportunity appears in the DB
          with created_ts > last-seen, hand it to engine.process_signal.
-      2) Position update — any time a new 1h bar becomes final in Postgres
-         (tracked via a bar-advance gate on BTCUSDT), call update_positions
-         with THAT bar's OHLC for every open symbol.
 
-    The bar-advance gate replaces the old wall-clock hour gate so we:
-      - never scan the same bar twice (short-circuits cheaply)
-      - always act on a newly-available bar the instant it's finalized
-      - automatically recover from restarts/lag — first tick after
-        startup will see a new bar and run update_positions immediately
+      2) FAST live-price exit check (every tick) — poll the ingestor's
+         price:{symbol} hash for every open position, run update_positions
+         with a point-price "bar" (open=high=low=close=current_price).
+         This is the correct live-trading semantic: exit the instant the
+         market price crosses a stop/TP level, not at the next 1h bar close.
+         Latency is bounded at ~3 seconds (polling interval) which is the
+         closest equivalent to real broker fills for paper trading.
 
-    S9 positions are exclusively handled by this path. governance.price_feed's
-    PositionMonitor excludes setup_id='S9' to prevent racing.
+      3) SLOW 1h bar-advance fallback — for any open position on a symbol
+         NOT in the monitored universe (no price:{symbol} hash), fall back
+         to running update_positions against the most-recently-finalized
+         1h bar from Postgres. This catches exits on symbols the ingestor
+         isn't streaming in real-time (edge cases only).
+
+    bars_held is derived from wall-clock (now - entry_ts) / strategy_tf_seconds
+    in update_positions itself, so the time_stop at 48 "bars" fires 48
+    wall-clock hours after entry regardless of how frequently this loop
+    polls.
+
+    S9 positions are exclusively handled by this path. PositionMonitor in
+    governance.price_feed excludes setup_id='S9' to prevent racing.
     """
     _install_signal_handlers()
 
@@ -359,6 +428,7 @@ def run_loop(run_id: str, engine: PaperTradingEngine):
 
     logger.info("S9 paper loop started (run_id=%s)", run_id)
 
+    tick_count = 0
     while not _SHUTDOWN:
         try:
             with psycopg.connect(DATABASE_URL) as conn:
@@ -378,27 +448,57 @@ def run_loop(run_id: str, engine: PaperTradingEngine):
                             logger.error("process_signal failed for %s: %s", sig["symbol"], e)
                     since = max((s["created_ts"] for s in new_sigs), default=since)
 
-                # 2) Update positions on bar-advance (data-driven gate).
-                latest_bar_ms = fetch_latest_final_bar_ms(conn)
-                if latest_bar_ms > last_processed_bar_ms:
-                    open_syms = [
-                        p["symbol"] for p in engine.get_open_positions(run_id)
+                # 2) FAST live-price exit check (every tick)
+                open_positions = engine.get_open_positions(run_id)
+                open_syms = [p["symbol"] for p in open_positions]
+                symbols_needing_fallback: list[str] = []
+
+                if open_syms:
+                    live_prices = fetch_live_prices_from_redis(open_syms)
+                    symbols_needing_fallback = [
+                        s for s in open_syms if s not in live_prices
                     ]
-                    if open_syms:
-                        prices = fetch_bars_at_ts(conn, open_syms, latest_bar_ms)
-                        if prices:
-                            closed = engine.update_positions(run_id, prices)
+                    if live_prices:
+                        closed_fast = engine.update_positions(run_id, live_prices)
+                        if closed_fast:
                             logger.info(
-                                "S9 update_positions at bar %s: %d open, %d closed",
-                                datetime.fromtimestamp(latest_bar_ms / 1000, tz=timezone.utc).isoformat(),
-                                len(open_syms), len(closed),
+                                "FAST tick closed %d positions on live prices",
+                                len(closed_fast),
                             )
-                    last_processed_bar_ms = latest_bar_ms
+
+                # 3) SLOW 1h bar-advance fallback — only for symbols not in
+                # the live-price map AND only when a new 1h bar has landed.
+                if symbols_needing_fallback:
+                    latest_bar_ms = fetch_latest_final_bar_ms(conn)
+                    if latest_bar_ms > last_processed_bar_ms:
+                        prices_1h = fetch_bars_at_ts(
+                            conn, symbols_needing_fallback, latest_bar_ms,
+                        )
+                        if prices_1h:
+                            closed_slow = engine.update_positions(run_id, prices_1h)
+                            if closed_slow:
+                                logger.info(
+                                    "SLOW tick closed %d positions on 1h bar %s",
+                                    len(closed_slow),
+                                    datetime.fromtimestamp(
+                                        latest_bar_ms / 1000, tz=timezone.utc,
+                                    ).isoformat(),
+                                )
+                        last_processed_bar_ms = latest_bar_ms
+
+                # Periodic heartbeat log: confirm loop is alive without
+                # spamming (every 20 ticks = ~60s at 3s interval).
+                tick_count += 1
+                if tick_count % 20 == 0 and open_syms:
+                    logger.info(
+                        "S9 paper loop heartbeat: %d open positions, tick=%d",
+                        len(open_syms), tick_count,
+                    )
 
         except Exception as e:
             logger.error("Loop iteration failed: %s", e, exc_info=True)
 
-        time.sleep(15)
+        time.sleep(3)
 
     logger.info("S9 paper loop exiting")
 

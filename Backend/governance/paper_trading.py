@@ -504,13 +504,26 @@ class PaperTradingEngine:
 
         Args:
             run_id: Paper trading run ID
-            price_data: Dict of {symbol: {open, high, low, close}}
+            price_data: Dict of {symbol: {open, high, low, close, [bar_start_ts]}}
                 Note: `open` is REQUIRED for gap-through handling. Older callers
                 that pass only {high, low, close} will get `bar_open` == close
                 which degrades gap-through fidelity but does not crash.
+                For live 1s-cadence ticks the caller can pass
+                {open=high=low=close=current_price} — check_exit_simple treats
+                this as a point-price exit check (the correct live-trading
+                semantic: exit when the current market price crosses a level).
 
         Returns:
             List of position IDs that were FULLY closed on this tick.
+
+        bars_held semantics:
+            Computed as FLOOR((bar_ts - entry_ts) / strategy_tf_seconds) where
+            strategy_tf_seconds = 3600 for S9. This makes the time stop fire
+            at 48 wall-clock hours after entry regardless of how frequently
+            update_positions is called (1s polling vs 1h polling). Previously
+            the code incremented bars_held by 1 per call, which conflated
+            "number of update_positions ticks" with "elapsed 1h periods" — a
+            1s-cadence poll would have fired time_stop in 48 seconds.
         """
         closed_positions: list[str] = []
 
@@ -528,7 +541,7 @@ class PaperTradingEngine:
                            tp1_leg_exit_price, tp1_leg_exit_with_slip,
                            tp1_leg_close_size, tp1_leg_realized_gross,
                            tp1_leg_realized_fees, tp1_leg_exit_ts,
-                           telemetry_json
+                           telemetry_json, entry_ts, timeframe
                     FROM paper_positions
                     WHERE run_id = %s AND status = 'OPEN';
                 """, (run_id,))
@@ -538,13 +551,13 @@ class PaperTradingEngine:
                     (
                         pos_id, symbol, side, stop, tp1, tp2,
                         entry, size, r_val, risk, notional, fees,
-                        hwm, bars_held,
+                        hwm, stored_bars_held,
                         half_r_touched, max_bars, r_value_slip, exit_config_json,
                         tp1_taken,
                         tp1_leg_exit_price, tp1_leg_exit_with_slip,
                         tp1_leg_close_size, tp1_leg_realized_gross,
                         tp1_leg_realized_fees, tp1_leg_exit_ts,
-                        telemetry_db,
+                        telemetry_db, entry_ts, pos_timeframe,
                     ) = pos
 
                     if symbol not in price_data:
@@ -555,6 +568,30 @@ class PaperTradingEngine:
                     high = candle.get("high", 0)
                     low = candle.get("low", 0)
                     close = candle.get("close", 0)
+
+                    # Compute bars_held from elapsed wall-clock time, NOT by
+                    # incrementing a counter. This is timeframe-agnostic and
+                    # works correctly for any polling cadence (1s, 1m, 1h).
+                    tf_seconds_map = {
+                        "1m": 60, "5m": 300, "15m": 900, "30m": 1800,
+                        "1h": 3600, "4h": 14400, "1d": 86400,
+                    }
+                    strategy_tf_seconds = tf_seconds_map.get(pos_timeframe or "1h", 3600)
+                    bar_ts_dt = candle.get("bar_start_ts")
+                    if isinstance(bar_ts_dt, str):
+                        try:
+                            bar_ts_dt = datetime.fromisoformat(bar_ts_dt.replace("Z", "+00:00"))
+                        except Exception:
+                            bar_ts_dt = None
+                    if not isinstance(bar_ts_dt, datetime):
+                        bar_ts_dt = datetime.now(timezone.utc)
+                    if bar_ts_dt.tzinfo is None:
+                        bar_ts_dt = bar_ts_dt.replace(tzinfo=timezone.utc)
+                    entry_ts_aware = entry_ts
+                    if isinstance(entry_ts_aware, datetime) and entry_ts_aware.tzinfo is None:
+                        entry_ts_aware = entry_ts_aware.replace(tzinfo=timezone.utc)
+                    elapsed_seconds = (bar_ts_dt - entry_ts_aware).total_seconds() if entry_ts_aware else 0.0
+                    bars_held = max(0, int(elapsed_seconds / strategy_tf_seconds))
 
                     # telemetry_db arrives as a dict from psycopg's jsonb adapter
                     # (or None for legacy rows that predate the telemetry migration).
@@ -613,12 +650,12 @@ class PaperTradingEngine:
                         tp1_price=tp1,
                         tp2_price=tp2,
                         r_value=r_for_exit,
-                        bars_held=bars_held or 0,
+                        bars_held=bars_held,
                         max_bars=max_bars if max_bars is not None else 72,
                         high_water_mark=hwm,
                         half_r_touched=bool(half_r_touched),
                         config=exit_cfg,
-                        is_entry_bar=((bars_held or 0) == 0),
+                        is_entry_bar=(bars_held == 0),
                     )
 
                     now = datetime.now(timezone.utc)
@@ -669,7 +706,7 @@ class PaperTradingEngine:
                                 high_water_mark = %s,
                                 half_r_touched = %s,
                                 fees_paid = fees_paid + %s,
-                                bars_held = bars_held + 1,
+                                bars_held = %s,
                                 telemetry_json = %s,
                                 updated_at = %s
                             WHERE id = %s;
@@ -680,6 +717,7 @@ class PaperTradingEngine:
                             leg_close_size, leg_pnl_gross, leg_fee, now,
                             close, new_hwm, bool(new_half_r),
                             leg_fee,
+                            bars_held,
                             tp1_telemetry_json,
                             now, pos_id,
                         ))
@@ -891,8 +929,8 @@ class PaperTradingEngine:
                         })
 
                     else:
-                        # No exit — advance bars, refresh HWM / half_r state,
-                        # persist the bar's MAE/MFE update into telemetry.
+                        # No exit — refresh current price, HWM, half_r,
+                        # bars_held (from elapsed wall-clock), and telemetry.
                         unrealized = ((close - entry) * size if side == "long"
                                       else (entry - close) * size)
                         noexit_telemetry_json = (
@@ -905,12 +943,13 @@ class PaperTradingEngine:
                                 unrealized_pnl = %s,
                                 high_water_mark = %s,
                                 half_r_touched = %s,
-                                bars_held = bars_held + 1,
+                                bars_held = %s,
                                 telemetry_json = COALESCE(%s::jsonb, telemetry_json),
                                 updated_at = %s
                             WHERE id = %s;
                         """, (
                             close, unrealized, new_hwm, bool(new_half_r),
+                            bars_held,
                             noexit_telemetry_json, now, pos_id,
                         ))
 
