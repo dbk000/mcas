@@ -337,6 +337,20 @@ class PaperTradingEngine:
                 # Create position
                 position_id = str(uuid.uuid4())
                 now = datetime.now(timezone.utc)
+                # signal_ts is the bar the signal fired on, NOT the wall-clock
+                # time of processing. Using now() broke the paper loop's
+                # dedup LEFT JOIN on (symbol, signal_ts) — every iteration
+                # re-fetched the same opportunity and re-opened the position
+                # once the prior one closed. Fall back to now() only if the
+                # caller didn't provide a created_ts (legacy callers).
+                signal_ts = signal.get("created_ts") or now
+                if isinstance(signal_ts, str):
+                    try:
+                        signal_ts = datetime.fromisoformat(signal_ts.replace("Z", "+00:00"))
+                    except Exception:
+                        signal_ts = now
+                if isinstance(signal_ts, datetime) and signal_ts.tzinfo is None:
+                    signal_ts = signal_ts.replace(tzinfo=timezone.utc)
 
                 # Get setup-specific exit parameters from signal payload
                 payload = signal.get("payload", {})
@@ -430,7 +444,7 @@ class PaperTradingEngine:
                     );
                 """, (
                     position_id, run_id, symbol, signal.get("timeframe", "1h"), side, setup_id,
-                    "OPEN", now, entry_price,
+                    "OPEN", signal_ts, entry_price,
                     now, entry_price, entry_with_slip,
                     signal.get("stop_price", 0), signal.get("tp1_price"), signal.get("tp2_price"), r_value,
                     position_size, notional_value, risk_amount,
