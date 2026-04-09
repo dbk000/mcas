@@ -19,7 +19,7 @@ from datetime import datetime, timezone, timedelta
 import requests
 import psycopg
 
-from governance.cache_contract import TF_SECONDS
+from governance.cache_contract import TF_SECONDS, is_bar_closed
 from governance.bootstrap import get_config
 
 logger = logging.getLogger("ohlcv_backfill")
@@ -222,6 +222,13 @@ def upsert_candles_batch(
     if not candles:
         return 0
 
+    # Canon §8 anti-lookahead: compute is_final per-row. A caller that passes
+    # end_ms=now() will include the still-forming bar; we must write it with
+    # is_final=FALSE rather than dropping it (some callers legitimately want
+    # the forming bar for real-time price updates). The CHECK constraint
+    # ohlcv_is_final_canon (migration 20260409) enforces this at the DB level.
+    now = datetime.now(timezone.utc)
+
     with psycopg.connect(db_url) as conn:
         with conn.cursor() as cur:
             cur.execute("""
@@ -234,6 +241,7 @@ def upsert_candles_batch(
                     low DOUBLE PRECISION,
                     close DOUBLE PRECISION,
                     volume DOUBLE PRECISION,
+                    is_final BOOLEAN,
                     source TEXT,
                     batch_id TEXT
                 ) ON COMMIT DROP;
@@ -245,17 +253,18 @@ def upsert_candles_batch(
                 ts = datetime.fromtimestamp(
                     c["bar_start_ts"] / 1000, tz=timezone.utc  # Binance ms epoch
                 )
+                final = is_bar_closed(ts, tf, reference_ts=now)
                 values.append((
                     symbol, tf, ts,
                     c["open"], c["high"], c["low"], c["close"], c["volume"],
-                    "binance", batch_id,
+                    final, "binance", batch_id,
                 ))
 
             cur.executemany("""
                 INSERT INTO _ohlcv_staging
                     (symbol, timeframe, bar_start_ts, open, high, low, close,
-                     volume, source, batch_id)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
+                     volume, is_final, source, batch_id)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
             """, values)
 
             cur.execute("""
@@ -263,7 +272,7 @@ def upsert_candles_batch(
                     (symbol, timeframe, bar_start_ts, open, high, low, close,
                      volume, is_final, source, batch_id, as_of_ts, ingested_at)
                 SELECT symbol, timeframe, bar_start_ts, open, high, low, close,
-                       volume, TRUE, source, batch_id, NOW(), NOW()
+                       volume, is_final, source, batch_id, NOW(), NOW()
                 FROM _ohlcv_staging
                 ON CONFLICT (symbol, timeframe, bar_start_ts, source) DO NOTHING;
             """)

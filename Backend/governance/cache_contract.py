@@ -21,6 +21,7 @@ import json
 import time
 import zlib
 import logging
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 logger = logging.getLogger(__name__)
@@ -50,6 +51,29 @@ TF_SECONDS = {
     "4h": 14400,
     "1d": 86400,
 }
+
+
+def is_bar_closed(
+    bar_start_ts: datetime,
+    tf: str,
+    reference_ts: Optional[datetime] = None,
+) -> bool:
+    """Return True iff the bar's end time has already passed at reference_ts.
+
+    Canonical closed-bar check — used by every REST write path to enforce the
+    Canon §8 anti-lookahead invariant (is_final=TRUE only on closed bars).
+
+    For a 1h bar starting at 11:00 UTC, the bar is closed only when
+    reference_ts >= 12:00 UTC. Edge case at the boundary (reference_ts exactly
+    equal to bar_end_ts): treated as closed — the first microsecond of the
+    following bar is safely after the previous bar's close.
+    """
+    if tf not in TF_SECONDS:
+        raise ValueError(f"Unknown timeframe: {tf}")
+    if reference_ts is None:
+        reference_ts = datetime.now(timezone.utc)
+    bar_end_ts = bar_start_ts + timedelta(seconds=TF_SECONDS[tf])
+    return bar_end_ts <= reference_ts
 
 
 # =============================================================================

@@ -32,7 +32,7 @@ from governance.cache_contract import (
     xadd_candle_closed, create_consumer_groups,
     candle_meta_key, b2s, b2f,
     WS_MAX_STREAMS_PER_CONN, TF_SECONDS, RING_BUFFER_SIZE,
-    symbol_partition,
+    symbol_partition, is_bar_closed,
     get_social_candidates, SOCIAL_CANDIDATES_KEY,
     PIPELINE_ACTIVITY_KEY, PIPELINE_ACTIVITY_MAX,
 )
@@ -888,16 +888,24 @@ class Ingestor:
             try:
                 candles = _fetch_klines_rest(symbol, "1h", limit=2)
                 if candles:
+                    now = dt.now(tz.utc)
                     rows = []
                     for c in candles:
                         ts = dt.fromtimestamp(c["bar_start_ts"] / 1000, tz=tz.utc)
+                        # Canon §8 anti-lookahead: skip forming bar entirely.
+                        # REST returns the current (still-forming) hour as the
+                        # last candle — writing it with is_final=TRUE would
+                        # violate ohlcv_is_final_canon (migration 20260409).
+                        if not is_bar_closed(ts, "1h", reference_ts=now):
+                            continue
                         rows.append((
                             symbol, "1h", ts,
                             c["open"], c["high"], c["low"], c["close"], c["volume"],
-                            dt.now(tz.utc), True, "binance",
+                            now, True, "binance",
                         ))
-                    with bars_lock:
-                        all_bars.extend(rows)
+                    if rows:
+                        with bars_lock:
+                            all_bars.extend(rows)
                 time.sleep(0.05)  # Rate limiting: ~20 req/s per worker
             except Exception as e:
                 logger.warning(f"Known OHLCV fetch failed for {symbol}: {e}")

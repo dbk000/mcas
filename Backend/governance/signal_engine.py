@@ -659,13 +659,13 @@ class SignalEngine:
                     and close_24h and close_24h > 0):
                 ret_4h = close_now / close_4h - 1
                 ret_24h = close_now / close_24h - 1
-                symbol_data[symbol] = (ret_4h, ret_24h, close_now)
+                symbol_data[symbol] = (ret_4h, ret_24h, close_now, candles[-1].timestamp)
 
         if len(symbol_data) < 20:
             return []
 
         # Compute market breadth
-        n_positive = sum(1 for _, (_, r24, _) in symbol_data.items() if r24 > 0)
+        n_positive = sum(1 for _, (_, r24, _, _) in symbol_data.items() if r24 > 0)
         breadth = n_positive / len(symbol_data)
 
         s9_cfg = get_config().S9
@@ -708,13 +708,14 @@ class SignalEngine:
         )
 
         signals = []
-        for rank, (symbol, (ret_4h, ret_24h, close)) in enumerate(top_decile):
+        for rank, (symbol, (ret_4h, ret_24h, close, bar_ts_ms)) in enumerate(top_decile):
             sig = S9Evaluator.build_signal(
                 symbol=symbol, close=close,
                 ret_4h=ret_4h, ret_24h=ret_24h,
                 breadth=breadth, rank=rank,
                 universe_size=len(symbol_data),
                 decile_size=decile_n, state=state,
+                bar_start_ts=str(bar_ts_ms),
             )
             signals.append(sig)
 
