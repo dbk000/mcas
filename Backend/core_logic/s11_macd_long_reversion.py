@@ -189,7 +189,7 @@ class S11Evaluator(SetupBase[S11State, S11Signal]):
             typical_win_rate=0.52,
             typical_r_multiple=1.2,
             min_bars_required=self.MIN_BARS_REQUIRED,
-            max_concurrent=3,
+            max_concurrent=15,
             liquidity_tiers=[
                 LiquidityTier(name="mega_cap",  min_24h_volume_usd=500_000_000, max_position_pct=3.0),
                 LiquidityTier(name="large_cap", min_24h_volume_usd=50_000_000,  max_position_pct=2.0),
@@ -317,9 +317,13 @@ class S11Evaluator(SetupBase[S11State, S11Signal]):
         if stop_distance <= 0 or stop_price <= 0:
             return None
 
-        # Fixed setup score — S11 is a binary filter with no per-signal grading
-        setup_score = 1.0
-        score_components = {"binary": 1.0}
+        # Score = depth of oversold (abs of close_vs_sma50_atr). Deeper
+        # oversold = higher score. Used for concurrency-cap ranking: when
+        # MAX_CONCURRENT positions are full, the deepest-oversold signals
+        # replace shallower ones.
+        depth = abs(state.close_vs_sma50_atr)
+        setup_score = depth
+        score_components = {"depth_sma50_atr": round(depth, 3)}
 
         why_items = [
             f"Fast MACD ({self.MACD_FAST},{self.MACD_SLOW},{self.MACD_SIGNAL}) "

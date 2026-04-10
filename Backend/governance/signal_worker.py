@@ -1134,6 +1134,17 @@ class SignalWorker(LineageEnforcer):
             setup_version = self._get_setup_version("S11")
             trace_dict = trace.seal(setup_version)
 
+            # --- S11 ranked concurrency gate ---
+            # Check cross-symbol concurrent cap. If cap full, replace
+            # weakest (shallowest depth) if this signal is deeper.
+            s11_max = self.s11_evaluator.metadata.max_concurrent
+            if not self._s11_concurrency_gate(symbol, tf, sig.setup_score, s11_max):
+                logger.debug(
+                    "S11 concurrency cap (%d): %s depth=%.2f rejected (shallower than active set)",
+                    s11_max, symbol, sig.setup_score,
+                )
+                return
+
             store_signal(self.r, symbol, tf, "S11", payload,
                          adjusted_score, bar_start_ts or "")
             reason = "; ".join(sig.explain.why_items) if sig.explain else None
@@ -1141,9 +1152,10 @@ class SignalWorker(LineageEnforcer):
                                        reason, payload, trace_json=trace_dict)
 
             logger.info(
-                "Signal: S11 LONG %s:%s score=%.3f (adj=%.3f) "
+                "Signal: S11 LONG %s:%s score=%.3f (adj=%.3f) depth=%.2f "
                 "macd_hist=%.6f cs50=%.2f cs200=%.2f",
                 symbol, tf, calibrated_score, adjusted_score,
+                sig.setup_score,
                 sig.macd_histogram, sig.close_vs_sma50_atr, sig.close_vs_sma200_atr,
             )
         except Exception as e:
@@ -1825,7 +1837,8 @@ class SignalWorker(LineageEnforcer):
             with _pool_get_conn() as conn:
                 with conn.cursor() as cur:
                     cur.execute("""
-                        SELECT id, symbol, timeframe, payload_json
+                        SELECT id, symbol, timeframe, payload_json,
+                               score, created_ts
                         FROM opportunities
                         WHERE status = 'active'
                           AND setup_id = %s
@@ -1837,6 +1850,8 @@ class SignalWorker(LineageEnforcer):
                             "symbol": row[1],
                             "timeframe": row[2],
                             "payload_json": row[3],
+                            "score": row[4],
+                            "created_ts": row[5],
                         })
         except Exception as e:
             logger.debug(f"Failed to fetch active opps for {setup_id}: {e}")
@@ -2004,6 +2019,45 @@ class SignalWorker(LineageEnforcer):
             # Edge intact — keep alive
             self._bump_opp_alive(opp_id)
             return
+
+    def _s11_concurrency_gate(self, symbol: str, tf: str,
+                               depth: float, max_concurrent: int) -> bool:
+        """Ranked concurrency gate for S11.
+
+        Returns True if the signal should be persisted (slot available or
+        the signal is deeper-oversold than the weakest active position).
+        If a replacement happens, the weakest active opp is expired first.
+
+        depth = abs(close_vs_sma50_atr) — higher = deeper oversold = better.
+        """
+        active_opps = self._get_active_opps("S11")
+        if len(active_opps) < max_concurrent:
+            return True  # slot available
+
+        # Find the weakest (shallowest) active opp by raw_score from payload.
+        # The DB 'score' column holds adjusted_score (post-calibration/DXY/capacity),
+        # not depth. raw_score in payload_json is the true abs(close_vs_sma50_atr).
+        weakest = None
+        weakest_score = float("inf")
+        for opp in active_opps:
+            try:
+                pj = json.loads(opp.get("payload_json") or "{}")
+                opp_score = float(pj.get("raw_score", 0))
+            except (json.JSONDecodeError, TypeError, ValueError):
+                opp_score = 0.0
+            if opp_score < weakest_score:
+                weakest_score = opp_score
+                weakest = opp
+
+        if depth > weakest_score and weakest is not None:
+            # Replace: expire weakest, accept new
+            self._expire_opp_edge_gone(
+                weakest["id"],
+                f"s11_replaced_by_deeper_{symbol}_depth_{depth:.2f}_vs_{weakest_score:.2f}",
+            )
+            return True
+
+        return False  # cap full and this signal isn't deeper
 
     def _reeval_u1_edge(self, symbol: str, tf: str, u1_state, snapshot=None):
         """Re-evaluate edge for active U1 opp on this symbol/tf."""
