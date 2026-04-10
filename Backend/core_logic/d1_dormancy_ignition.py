@@ -195,6 +195,7 @@ def is_d1_excluded(symbol: str) -> bool:
 _social_count_cache: dict[str, int] = {}       # symbol -> mention_count
 _social_count_cache_ts: dict[str, float] = {}  # symbol -> last query epoch
 _SOCIAL_COUNT_CACHE_TTL: float = 1800.0        # 30 minutes
+_social_count_last_evict: float = 0.0          # last eviction sweep epoch
 
 
 def get_social_mentions_count(
@@ -217,7 +218,17 @@ def get_social_mentions_count(
     if lookback_days is None:
         lookback_days = D1Config.SOCIAL_SILENCE_LOOKBACK_DAYS
 
+    global _social_count_last_evict
     now = _time.time()
+
+    # Periodic eviction of expired entries (every 2x TTL)
+    if now - _social_count_last_evict > _SOCIAL_COUNT_CACHE_TTL * 2:
+        expired = [k for k, ts in _social_count_cache_ts.items() if now - ts >= _SOCIAL_COUNT_CACHE_TTL]
+        for k in expired:
+            _social_count_cache.pop(k, None)
+            _social_count_cache_ts.pop(k, None)
+        _social_count_last_evict = now
+
     cache_key = symbol
     if cache_key in _social_count_cache and (now - _social_count_cache_ts.get(cache_key, 0)) < _SOCIAL_COUNT_CACHE_TTL:
         return _social_count_cache[cache_key]
@@ -257,6 +268,7 @@ def get_social_mentions_count(
 _social_silence_cache: dict[str, int] = {}       # symbol -> mention_count (24h window)
 _social_silence_cache_ts: dict[str, float] = {}   # symbol -> last query epoch
 _SOCIAL_SILENCE_CACHE_TTL: float = 600.0           # 10 minutes (shorter -- scoring-critical)
+_social_silence_last_evict: float = 0.0            # last eviction sweep epoch
 
 
 def get_social_silence_count(
@@ -279,7 +291,17 @@ def get_social_silence_count(
     if lookback_hours is None:
         lookback_hours = D1Config.SOCIAL_SILENCE_LOOKBACK_HOURS
 
+    global _social_silence_last_evict
     now = _time.time()
+
+    # Periodic eviction of expired entries (every 2x TTL)
+    if now - _social_silence_last_evict > _SOCIAL_SILENCE_CACHE_TTL * 2:
+        expired = [k for k, ts in _social_silence_cache_ts.items() if now - ts >= _SOCIAL_SILENCE_CACHE_TTL]
+        for k in expired:
+            _social_silence_cache.pop(k, None)
+            _social_silence_cache_ts.pop(k, None)
+        _social_silence_last_evict = now
+
     cache_key = symbol
     if cache_key in _social_silence_cache and (now - _social_silence_cache_ts.get(cache_key, 0)) < _SOCIAL_SILENCE_CACHE_TTL:
         return _social_silence_cache[cache_key]
@@ -321,6 +343,7 @@ def get_social_silence_count(
 _netflow_cache: dict[str, Optional[float]] = {}       # symbol -> sum_netflow
 _netflow_cache_ts: dict[str, float] = {}               # symbol -> last query epoch
 _NETFLOW_CACHE_TTL: float = 1800.0                     # 30 minutes
+_netflow_last_evict: float = 0.0                       # last eviction sweep epoch
 
 
 def get_exchange_netflow(
@@ -349,7 +372,17 @@ def get_exchange_netflow(
     if lookback_hours is None:
         lookback_hours = D1Config.ONCHAIN_NETFLOW_LOOKBACK_HOURS
 
+    global _netflow_last_evict
     now = _time.time()
+
+    # Periodic eviction of expired entries (every 2x TTL)
+    if now - _netflow_last_evict > _NETFLOW_CACHE_TTL * 2:
+        expired = [k for k, ts in _netflow_cache_ts.items() if now - ts >= _NETFLOW_CACHE_TTL]
+        for k in expired:
+            _netflow_cache.pop(k, None)
+            _netflow_cache_ts.pop(k, None)
+        _netflow_last_evict = now
+
     cache_key = symbol
     if cache_key in _netflow_cache and (now - _netflow_cache_ts.get(cache_key, 0)) < _NETFLOW_CACHE_TTL:
         return _netflow_cache[cache_key]

@@ -96,7 +96,7 @@ services:
       interval: 30s
       retries: 3
       start_period: 60s
-    mem_limit: 3g
+    mem_limit: 2g
     depends_on:
       - postgres
       - redis
@@ -118,7 +118,7 @@ services:
       interval: 30s
       retries: 3
       start_period: 60s
-    mem_limit: 12g
+    mem_limit: 6g
     depends_on:
       - postgres
       - redis
@@ -153,7 +153,7 @@ services:
       retries: 3
       start_period: 60s
     cpus: "2.0"
-    mem_limit: 12g
+    mem_limit: 6g
     depends_on:
       - postgres
       - redis

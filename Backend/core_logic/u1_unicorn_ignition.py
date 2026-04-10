@@ -115,6 +115,7 @@ def load_funding_rates(conn_factory) -> dict[str, float]:
 _social_cache: dict[str, bool] = {}       # symbol -> has_mentions (True = reject)
 _social_cache_ts: dict[str, float] = {}   # symbol -> last query epoch
 _SOCIAL_CACHE_TTL: float = 1800.0         # 30 minutes
+_social_cache_last_evict: float = 0.0     # last eviction sweep epoch
 
 
 def has_social_mentions_30d(symbol: str, conn_factory) -> bool:
@@ -129,7 +130,17 @@ def has_social_mentions_30d(symbol: str, conn_factory) -> bool:
     Gracefully returns False if the table does not exist or query fails.
     Results cached per-symbol for 30 minutes.
     """
+    global _social_cache_last_evict
     now = _time.time()
+
+    # Periodic eviction of expired entries (every 2x TTL)
+    if now - _social_cache_last_evict > _SOCIAL_CACHE_TTL * 2:
+        expired = [k for k, ts in _social_cache_ts.items() if now - ts >= _SOCIAL_CACHE_TTL]
+        for k in expired:
+            _social_cache.pop(k, None)
+            _social_cache_ts.pop(k, None)
+        _social_cache_last_evict = now
+
     if symbol in _social_cache and (now - _social_cache_ts.get(symbol, 0)) < _SOCIAL_CACHE_TTL:
         return _social_cache[symbol]
 

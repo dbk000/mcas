@@ -364,6 +364,17 @@ class ClusterDetector:
             if not self.recent_alerts[sym]:
                 del self.recent_alerts[sym]
 
+        # Prune emitted_clusters: only keep keys from the active alert window.
+        # Without this, the set grows unbounded over weeks/months.
+        active_keys = set()
+        for sym, alerts in self.recent_alerts.items():
+            for a in alerts:
+                active_keys.add(f"{sym}:{a['post_ts'].isoformat()}")
+        pruned = len(self.emitted_clusters) - len(self.emitted_clusters & active_keys)
+        if pruned > 0:
+            self.emitted_clusters &= active_keys
+            logger.debug("Pruned %d stale cluster keys, %d remaining", pruned, len(self.emitted_clusters))
+
         # Detect clusters
         new_clusters = []
         for sym, alerts in self.recent_alerts.items():
