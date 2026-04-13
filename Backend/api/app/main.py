@@ -1518,8 +1518,14 @@ app.include_router(unicorns_router, prefix="/v1", dependencies=[Depends(require_
 from api.app.routers.cc import router as cc_router
 app.include_router(cc_router, prefix="/v1", dependencies=[Depends(require_api_key)])
 
-from api.app.routers.emergency import router as emergency_router
+from api.app.routers.emergency import (
+    router as emergency_router,
+    regime_router as _phase_e_regime_router,
+    system_router as _phase_e_system_router,
+)
 app.include_router(emergency_router, prefix="/v1", dependencies=[Depends(require_api_key)])
+app.include_router(_phase_e_regime_router, prefix="/v1", dependencies=[Depends(require_api_key)])
+app.include_router(_phase_e_system_router, prefix="/v1", dependencies=[Depends(require_api_key)])
 
 try:
     from api.app.routers.analytics import router as analytics_router
