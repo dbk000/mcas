@@ -103,7 +103,7 @@ def _fetch_btc_4h_closes(pg_conn: Any, n_bars: int = 2) -> list[float]:
     Empty list if the rows are missing (e.g. ohlcv backfill stalled).
     """
     sql = (
-        "SELECT close_price FROM ohlcv "
+        "SELECT close FROM ohlcv "
         "WHERE symbol = %s AND timeframe = %s "
         "ORDER BY bar_start_ts DESC LIMIT %s"
     )
@@ -139,9 +139,9 @@ def _fetch_recent_text_window(
     total_seconds = (baseline_hours + lookback_hours) * 3600
     start_ts = now_ts - total_seconds
     sql = (
-        "SELECT EXTRACT(EPOCH FROM post_ts)::BIGINT, post_text "
+        "SELECT EXTRACT(EPOCH FROM post_ts)::BIGINT, content "
         "FROM social_posts "
-        "WHERE post_ts >= to_timestamp(%s) AND post_text IS NOT NULL"
+        "WHERE post_ts >= to_timestamp(%s) AND content IS NOT NULL"
     )
     out: list[tuple[int, str]] = []
     with pg_conn.cursor() as cur:
