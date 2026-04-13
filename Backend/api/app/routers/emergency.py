@@ -416,11 +416,6 @@ def system_set_cap(req: CapRequest):
     return envelope({"old": old, "new": new}, t0)
 
 
-@system_set_cap  # type: ignore[misc]
-def _noop() -> None:  # pragma: no cover — decorator anchor (unused)
-    return None
-
-
 @system_router.post("/set_notional")
 def system_set_notional(req: NotionalRequest):
     """Set notional per position + auto-scale max_daily_loss = 3x notional."""
