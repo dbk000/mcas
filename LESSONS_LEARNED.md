@@ -281,3 +281,21 @@ Two separate images coexisted:
 **Fix:** Add `mem_limit: 8g` to the `worker` service in `docker-compose.yml`. When a `run` container hits 8GB, Docker kills only that container's process (clean SIGKILL to the cgroup), not random production processes. The script crashes, but production stays up.
 
 **Rule:** Every service definition used for `docker compose run` scripts must have `mem_limit` set. Without it, one bad script can take down the entire server. The limit should be generous enough for legitimate workloads (8GB for worker) but constrained enough to prevent a single container from triggering the kernel OOM killer.
+
+---
+
+## 2026-04-11 — Binance `permissionSets` is not an authoritative access control list
+
+**What happened:** Queried Binance account info — got `permissions: ['TRD_GRP_039']`. Queried exchangeInfo for all 440 USDT spot trading symbols — none listed `TRD_GRP_039` in their `permissionSets` arrays. Built matching logic that cross-referenced account permissions against symbol permissionSets and concluded the account was jurisdiction-blocked from all spot trading (0 tradeable symbols). Reported this to the user, who pointed out they can obviously trade on Binance. A single `/api/v3/order/test` call on BTCUSDT confirmed all 440 symbols are tradeable.
+
+**Root cause:** The `permissionSets` field on exchangeInfo symbols looks like an exhaustive allowlist of which permission groups can trade each symbol. It isn't. `TRD_GRP_039` grants spot trading access despite never appearing in any symbol's permission sets. The actual authorization logic is server-side and not fully represented in the client-facing exchangeInfo response.
+
+**Key facts:**
+- Account `permissions` field contains `['TRD_GRP_039']` (newer group-based system)
+- Symbol `permissions` field is now empty `[]` (deprecated)
+- Symbol `permissionSets` is a list of lists containing groups like `['SPOT', 'MARGIN', 'TRD_GRP_004', ...]`
+- `TRD_GRP_039` appears in zero symbols' permissionSets, yet the account can trade all of them
+- The reliable tradeability check is: `canTrade == True` + `enableSpotAndMarginTrading == True` + symbol `status == 'TRADING'` + `isSpotTradingAllowed == True`
+- `/api/v3/order/test` (POST) validates the full order path server-side without executing
+
+**Rule:** Never determine Binance tradeability by matching account permissions against symbol permissionSets. Use the test order endpoint (`/api/v3/order/test`) as the authoritative check. More broadly: when an API returns a data structure that *looks like* it should govern access control, verify empirically with a test call before building logic on it. The cost of one test order call is near zero; the cost of a wrong conclusion ("you can't trade anything") is significant.
