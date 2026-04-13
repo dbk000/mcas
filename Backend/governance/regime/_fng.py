@@ -1,14 +1,6 @@
-"""
-Regime indicators — shared across workers.
-============================================
-
-Extracted from d2_paper_trader.py. Provides regime-level data (e.g. Fear & Greed
-Index) that multiple workers consume for gating decisions.
-
-This module lives in governance/ because it serves orchestration (gating in
-signal_worker, metadata in d2_paper_trader). The data itself is external
-(alternative.me API), cached at module level.
-"""
+"""Fear & Greed Index fetchers — relocated from governance/regime.py when the
+regime/ package was created. Imports preserved via regime/__init__.py
+re-export. Do not import from here directly; import from governance.regime."""
 
 import logging
 import time
@@ -16,10 +8,6 @@ import time
 import requests
 
 logger = logging.getLogger(__name__)
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Fear & Greed Index — synchronous, cached
-# ─────────────────────────────────────────────────────────────────────────────
 
 _FNG_CACHE: dict = {"value": None, "classification": None, "ts": 0.0}
 _FNG_CACHE_TTL_S = 3600  # 1 hour — FnG updates more often than daily
@@ -29,7 +17,6 @@ def fetch_fear_greed_index() -> dict:
     """Fetch current Fear & Greed Index (synchronous, cached 1h).
 
     Returns {"value": int 0-100, "classification": str} or empty dict on failure.
-    Fail-safe: returns empty dict on any error (caller decides policy).
     """
     now = time.time()
     if _FNG_CACHE["ts"] and (now - _FNG_CACHE["ts"]) < _FNG_CACHE_TTL_S:
@@ -58,10 +45,7 @@ def fetch_fear_greed_index() -> dict:
 
 
 async def fetch_fear_greed_index_async() -> dict:
-    """Async variant for use in d2_paper_trader and other asyncio services.
-
-    Same cache, same semantics. Uses aiohttp for non-blocking I/O.
-    """
+    """Async variant for use in d2_paper_trader and other asyncio services."""
     now = time.time()
     if _FNG_CACHE["ts"] and (now - _FNG_CACHE["ts"]) < _FNG_CACHE_TTL_S:
         return {"value": _FNG_CACHE["value"], "classification": _FNG_CACHE["classification"]}

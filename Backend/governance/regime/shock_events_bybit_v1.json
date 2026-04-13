@@ -1,0 +1,1725 @@
+{
+  "events": [
+    {
+      "btc_drawdown_pct": -0.02912102294665948,
+      "category_velocity_ratios": {
+        "GEOPOLITICAL": 0.2857142857142857,
+        "MONETARY": 0.14285714285714285,
+        "REGULATORY": 0.0,
+        "STRUCTURAL": 0.5714285714285714
+      },
+      "confirm_source": "price_only_low_velocity",
+      "duration_h": 4.0,
+      "end_ts": "2025-02-21T20:00:00+00:00",
+      "event_id": "bybit_ELE_20250221_16_UNK",
+      "evidence_link": null,
+      "severity": "ELEVATED",
+      "social_coverage_at_event": {
+        "lookback_hours": 28,
+        "n_posts": 1213,
+        "n_posts_in_event_window": 810,
+        "window_hours": 28
+      },
+      "start_ts": "2025-02-21T16:00:00+00:00",
+      "track": "bybit",
+      "trigger_category": "UNKNOWN"
+    },
+    {
+      "btc_drawdown_pct": -0.027614999695029493,
+      "category_velocity_ratios": {
+        "GEOPOLITICAL": 0.07142857142857142,
+        "MONETARY": 0.0,
+        "REGULATORY": 0.21428571428571427,
+        "STRUCTURAL": 0.42857142857142855
+      },
+      "confirm_source": "price_only_low_velocity",
+      "duration_h": 4.0,
+      "end_ts": "2025-02-25T00:00:00+00:00",
+      "event_id": "bybit_ELE_20250224_20_UNK",
+      "evidence_link": null,
+      "severity": "ELEVATED",
+      "social_coverage_at_event": {
+        "lookback_hours": 28,
+        "n_posts": 2823,
+        "n_posts_in_event_window": 708,
+        "window_hours": 28
+      },
+      "start_ts": "2025-02-24T20:00:00+00:00",
+      "track": "bybit",
+      "trigger_category": "UNKNOWN"
+    },
+    {
+      "btc_drawdown_pct": -0.04290571221433522,
+      "category_velocity_ratios": {
+        "GEOPOLITICAL": 0.14285714285714285,
+        "MONETARY": 0.14285714285714285,
+        "REGULATORY": 0.21428571428571427,
+        "STRUCTURAL": 0.14285714285714285
+      },
+      "confirm_source": "price_only_low_velocity",
+      "duration_h": 4.0,
+      "end_ts": "2025-02-25T08:00:00+00:00",
+      "event_id": "bybit_SHO_20250225_04_UNK",
+      "evidence_link": null,
+      "severity": "SHOCK",
+      "social_coverage_at_event": {
+        "lookback_hours": 28,
+        "n_posts": 3064,
+        "n_posts_in_event_window": 861,
+        "window_hours": 28
+      },
+      "start_ts": "2025-02-25T04:00:00+00:00",
+      "track": "bybit",
+      "trigger_category": "UNKNOWN"
+    },
+    {
+      "btc_drawdown_pct": -0.03572861714989305,
+      "category_velocity_ratios": {
+        "GEOPOLITICAL": 0.2857142857142857,
+        "MONETARY": 0.2857142857142857,
+        "REGULATORY": 0.14285714285714285,
+        "STRUCTURAL": 0.07142857142857142
+      },
+      "confirm_source": "price_only_low_velocity",
+      "duration_h": 4.0,
+      "end_ts": "2025-02-25T16:00:00+00:00",
+      "event_id": "bybit_ELE_20250225_12_UNK",
+      "evidence_link": null,
+      "severity": "ELEVATED",
+      "social_coverage_at_event": {
+        "lookback_hours": 28,
+        "n_posts": 3466,
+        "n_posts_in_event_window": 1091,
+        "window_hours": 28
+      },
+      "start_ts": "2025-02-25T12:00:00+00:00",
+      "track": "bybit",
+      "trigger_category": "UNKNOWN"
+    },
+    {
+      "btc_drawdown_pct": -0.04738662835413993,
+      "category_velocity_ratios": {
+        "GEOPOLITICAL": 0.14285714285714285,
+        "MONETARY": 0.14285714285714285,
+        "REGULATORY": 0.42857142857142855,
+        "STRUCTURAL": 0.14285714285714285
+      },
+      "confirm_source": "price_only_low_velocity",
+      "duration_h": 4.0,
+      "end_ts": "2025-02-26T20:00:00+00:00",
+      "event_id": "bybit_SHO_20250226_16_UNK",
+      "evidence_link": null,
+      "severity": "SHOCK",
+      "social_coverage_at_event": {
+        "lookback_hours": 28,
+        "n_posts": 4518,
+        "n_posts_in_event_window": 1052,
+        "window_hours": 28
+      },
+      "start_ts": "2025-02-26T16:00:00+00:00",
+      "track": "bybit",
+      "trigger_category": "UNKNOWN"
+    },
+    {
+      "btc_drawdown_pct": -0.06951503613919634,
+      "category_velocity_ratios": {
+        "GEOPOLITICAL": 0.25,
+        "MONETARY": 0.125,
+        "REGULATORY": 0.3125,
+        "STRUCTURAL": 0.125
+      },
+      "confirm_source": "price_only_low_velocity",
+      "duration_h": 8.0,
+      "end_ts": "2025-02-28T08:00:00+00:00",
+      "event_id": "bybit_SHO_20250228_00_UNK",
+      "evidence_link": null,
+      "severity": "SHOCK",
+      "social_coverage_at_event": {
+        "lookback_hours": 32,
+        "n_posts": 5508,
+        "n_posts_in_event_window": 924,
+        "window_hours": 32
+      },
+      "start_ts": "2025-02-28T00:00:00+00:00",
+      "track": "bybit",
+      "trigger_category": "UNKNOWN"
+    },
+    {
+      "btc_drawdown_pct": -0.07746970859065229,
+      "category_velocity_ratios": {
+        "GEOPOLITICAL": 0.1875,
+        "MONETARY": 0.25,
+        "REGULATORY": 0.375,
+        "STRUCTURAL": 0.25
+      },
+      "confirm_source": "price_only_low_velocity",
+      "duration_h": 8.0,
+      "end_ts": "2025-03-03T20:00:00+00:00",
+      "event_id": "bybit_SHO_20250303_12_UNK",
+      "evidence_link": null,
+      "severity": "SHOCK",
+      "social_coverage_at_event": {
+        "lookback_hours": 32,
+        "n_posts": 5755,
+        "n_posts_in_event_window": 1141,
+        "window_hours": 32
+      },
+      "start_ts": "2025-03-03T12:00:00+00:00",
+      "track": "bybit",
+      "trigger_category": "UNKNOWN"
+    },
+    {
+      "btc_drawdown_pct": -0.04356000264901865,
+      "category_velocity_ratios": {
+        "GEOPOLITICAL": 0.21428571428571427,
+        "MONETARY": 0.14285714285714285,
+        "REGULATORY": 0.2857142857142857,
+        "STRUCTURAL": 0.21428571428571427
+      },
+      "confirm_source": "price_only_low_velocity",
+      "duration_h": 4.0,
+      "end_ts": "2025-03-04T04:00:00+00:00",
+      "event_id": "bybit_ELE_20250304_00_UNK",
+      "evidence_link": null,
+      "severity": "ELEVATED",
+      "social_coverage_at_event": {
+        "lookback_hours": 28,
+        "n_posts": 5818,
+        "n_posts_in_event_window": 823,
+        "window_hours": 28
+      },
+      "start_ts": "2025-03-04T00:00:00+00:00",
+      "track": "bybit",
+      "trigger_category": "UNKNOWN"
+    },
+    {
+      "btc_drawdown_pct": -0.03286354684158425,
+      "category_velocity_ratios": {
+        "GEOPOLITICAL": 0.0,
+        "MONETARY": 0.0,
+        "REGULATORY": 0.21428571428571427,
+        "STRUCTURAL": 0.5714285714285714
+      },
+      "confirm_source": "price_only_low_velocity",
+      "duration_h": 4.0,
+      "end_ts": "2025-03-06T20:00:00+00:00",
+      "event_id": "bybit_ELE_20250306_16_UNK",
+      "evidence_link": null,
+      "severity": "ELEVATED",
+      "social_coverage_at_event": {
+        "lookback_hours": 28,
+        "n_posts": 4911,
+        "n_posts_in_event_window": 400,
+        "window_hours": 28
+      },
+      "start_ts": "2025-03-06T16:00:00+00:00",
+      "track": "bybit",
+      "trigger_category": "UNKNOWN"
+    },
+    {
+      "btc_drawdown_pct": -0.05854274829540445,
+      "category_velocity_ratios": {
+        "GEOPOLITICAL": 0.0,
+        "MONETARY": 0.0,
+        "REGULATORY": 0.35714285714285715,
+        "STRUCTURAL": 0.7142857142857143
+      },
+      "confirm_source": "price_only_low_velocity",
+      "duration_h": 4.0,
+      "end_ts": "2025-03-07T04:00:00+00:00",
+      "event_id": "bybit_SHO_20250307_00_UNK",
+      "evidence_link": null,
+      "severity": "SHOCK",
+      "social_coverage_at_event": {
+        "lookback_hours": 28,
+        "n_posts": 4713,
+        "n_posts_in_event_window": 505,
+        "window_hours": 28
+      },
+      "start_ts": "2025-03-07T00:00:00+00:00",
+      "track": "bybit",
+      "trigger_category": "UNKNOWN"
+    },
+    {
+      "btc_drawdown_pct": -0.02719831727532017,
+      "category_velocity_ratios": {
+        "GEOPOLITICAL": 0.14285714285714285,
+        "MONETARY": 0.21428571428571427,
+        "REGULATORY": 0.0,
+        "STRUCTURAL": 0.21428571428571427
+      },
+      "confirm_source": "price_only_low_velocity",
+      "duration_h": 4.0,
+      "end_ts": "2025-03-09T16:00:00+00:00",
+      "event_id": "bybit_ELE_20250309_12_UNK",
+      "evidence_link": null,
+      "severity": "ELEVATED",
+      "social_coverage_at_event": {
+        "lookback_hours": 28,
+        "n_posts": 3844,
+        "n_posts_in_event_window": 243,
+        "window_hours": 28
+      },
+      "start_ts": "2025-03-09T12:00:00+00:00",
+      "track": "bybit",
+      "trigger_category": "UNKNOWN"
+    },
+    {
+      "btc_drawdown_pct": -0.03195586299561743,
+      "category_velocity_ratios": {
+        "GEOPOLITICAL": 0.14285714285714285,
+        "MONETARY": 0.14285714285714285,
+        "REGULATORY": 0.0,
+        "STRUCTURAL": 0.07142857142857142
+      },
+      "confirm_source": "price_only_low_velocity",
+      "duration_h": 4.0,
+      "end_ts": "2025-03-10T00:00:00+00:00",
+      "event_id": "bybit_ELE_20250309_20_UNK",
+      "evidence_link": null,
+      "severity": "ELEVATED",
+      "social_coverage_at_event": {
+        "lookback_hours": 28,
+        "n_posts": 3832,
+        "n_posts_in_event_window": 250,
+        "window_hours": 28
+      },
+      "start_ts": "2025-03-09T20:00:00+00:00",
+      "track": "bybit",
+      "trigger_category": "UNKNOWN"
+    },
+    {
+      "btc_drawdown_pct": -0.07324651240697753,
+      "category_velocity_ratios": {
+        "GEOPOLITICAL": 0.1875,
+        "MONETARY": 0.125,
+        "REGULATORY": 0.0,
+        "STRUCTURAL": 0.0
+      },
+      "confirm_source": "price_only_low_velocity",
+      "duration_h": 8.0,
+      "end_ts": "2025-03-10T20:00:00+00:00",
+      "event_id": "bybit_SHO_20250310_12_UNK",
+      "evidence_link": null,
+      "severity": "SHOCK",
+      "social_coverage_at_event": {
+        "lookback_hours": 32,
+        "n_posts": 4234,
+        "n_posts_in_event_window": 694,
+        "window_hours": 32
+      },
+      "start_ts": "2025-03-10T12:00:00+00:00",
+      "track": "bybit",
+      "trigger_category": "UNKNOWN"
+    },
+    {
+      "btc_drawdown_pct": -0.03658847284017311,
+      "category_velocity_ratios": {
+        "GEOPOLITICAL": 0.0625,
+        "MONETARY": 0.25,
+        "REGULATORY": 0.375,
+        "STRUCTURAL": 0.125
+      },
+      "confirm_source": "price_only_low_velocity",
+      "duration_h": 8.0,
+      "end_ts": "2025-03-13T20:00:00+00:00",
+      "event_id": "bybit_ELE_20250313_12_UNK",
+      "evidence_link": null,
+      "severity": "ELEVATED",
+      "social_coverage_at_event": {
+        "lookback_hours": 32,
+        "n_posts": 3650,
+        "n_posts_in_event_window": 666,
+        "window_hours": 32
+      },
+      "start_ts": "2025-03-13T12:00:00+00:00",
+      "track": "bybit",
+      "trigger_category": "UNKNOWN"
+    },
+    {
+      "btc_drawdown_pct": -0.02245652156371909,
+      "category_velocity_ratios": {
+        "GEOPOLITICAL": 0.0,
+        "MONETARY": 0.0,
+        "REGULATORY": 0.0,
+        "STRUCTURAL": 0.14285714285714285
+      },
+      "confirm_source": "price_only_low_velocity",
+      "duration_h": 4.0,
+      "end_ts": "2025-03-16T12:00:00+00:00",
+      "event_id": "bybit_ELE_20250316_08_UNK",
+      "evidence_link": null,
+      "severity": "ELEVATED",
+      "social_coverage_at_event": {
+        "lookback_hours": 28,
+        "n_posts": 3272,
+        "n_posts_in_event_window": 209,
+        "window_hours": 28
+      },
+      "start_ts": "2025-03-16T08:00:00+00:00",
+      "track": "bybit",
+      "trigger_category": "UNKNOWN"
+    },
+    {
+      "btc_drawdown_pct": -0.052704475787232315,
+      "category_velocity_ratios": {
+        "GEOPOLITICAL": 0.07142857142857142,
+        "MONETARY": 0.21428571428571427,
+        "REGULATORY": 0.0,
+        "STRUCTURAL": 0.21428571428571427
+      },
+      "confirm_source": "price_only_low_velocity",
+      "duration_h": 4.0,
+      "end_ts": "2025-04-03T00:00:00+00:00",
+      "event_id": "bybit_SHO_20250402_20_UNK",
+      "evidence_link": null,
+      "severity": "SHOCK",
+      "social_coverage_at_event": {
+        "lookback_hours": 28,
+        "n_posts": 3620,
+        "n_posts_in_event_window": 632,
+        "window_hours": 28
+      },
+      "start_ts": "2025-04-02T20:00:00+00:00",
+      "track": "bybit",
+      "trigger_category": "UNKNOWN"
+    },
+    {
+      "btc_drawdown_pct": -0.06534993548024454,
+      "category_velocity_ratios": {
+        "GEOPOLITICAL": 0.1875,
+        "MONETARY": 0.1875,
+        "REGULATORY": 0.0625,
+        "STRUCTURAL": 0.375
+      },
+      "confirm_source": "price_only_low_velocity",
+      "duration_h": 8.0,
+      "end_ts": "2025-04-07T00:00:00+00:00",
+      "event_id": "bybit_SHO_20250406_16_UNK",
+      "evidence_link": null,
+      "severity": "SHOCK",
+      "social_coverage_at_event": {
+        "lookback_hours": 32,
+        "n_posts": 3334,
+        "n_posts_in_event_window": 340,
+        "window_hours": 32
+      },
+      "start_ts": "2025-04-06T16:00:00+00:00",
+      "track": "bybit",
+      "trigger_category": "UNKNOWN"
+    },
+    {
+      "btc_drawdown_pct": -0.04117696338474266,
+      "category_velocity_ratios": {
+        "GEOPOLITICAL": 0.21428571428571427,
+        "MONETARY": 0.2857142857142857,
+        "REGULATORY": 0.07142857142857142,
+        "STRUCTURAL": 0.5714285714285714
+      },
+      "confirm_source": "price_only_low_velocity",
+      "duration_h": 4.0,
+      "end_ts": "2025-04-07T08:00:00+00:00",
+      "event_id": "bybit_SHO_20250407_04_UNK",
+      "evidence_link": null,
+      "severity": "SHOCK",
+      "social_coverage_at_event": {
+        "lookback_hours": 28,
+        "n_posts": 3536,
+        "n_posts_in_event_window": 610,
+        "window_hours": 28
+      },
+      "start_ts": "2025-04-07T04:00:00+00:00",
+      "track": "bybit",
+      "trigger_category": "UNKNOWN"
+    },
+    {
+      "btc_drawdown_pct": -0.027559176992939704,
+      "category_velocity_ratios": {
+        "GEOPOLITICAL": 0.07142857142857142,
+        "MONETARY": 0.2857142857142857,
+        "REGULATORY": 0.07142857142857142,
+        "STRUCTURAL": 0.21428571428571427
+      },
+      "confirm_source": "price_only_low_velocity",
+      "duration_h": 4.0,
+      "end_ts": "2025-04-08T20:00:00+00:00",
+      "event_id": "bybit_ELE_20250408_16_UNK",
+      "evidence_link": null,
+      "severity": "ELEVATED",
+      "social_coverage_at_event": {
+        "lookback_hours": 28,
+        "n_posts": 3972,
+        "n_posts_in_event_window": 624,
+        "window_hours": 28
+      },
+      "start_ts": "2025-04-08T16:00:00+00:00",
+      "track": "bybit",
+      "trigger_category": "UNKNOWN"
+    },
+    {
+      "btc_drawdown_pct": -0.040008177620456525,
+      "category_velocity_ratios": {
+        "GEOPOLITICAL": 0.7142857142857143,
+        "MONETARY": 0.42857142857142855,
+        "REGULATORY": 0.5714285714285714,
+        "STRUCTURAL": 0.14285714285714285
+      },
+      "confirm_source": "price_only_low_velocity",
+      "duration_h": 4.0,
+      "end_ts": "2025-04-10T16:00:00+00:00",
+      "event_id": "bybit_SHO_20250410_12_UNK",
+      "evidence_link": null,
+      "severity": "SHOCK",
+      "social_coverage_at_event": {
+        "lookback_hours": 28,
+        "n_posts": 4161,
+        "n_posts_in_event_window": 635,
+        "window_hours": 28
+      },
+      "start_ts": "2025-04-10T12:00:00+00:00",
+      "track": "bybit",
+      "trigger_category": "UNKNOWN"
+    },
+    {
+      "btc_drawdown_pct": -0.027427648268843294,
+      "category_velocity_ratios": {
+        "GEOPOLITICAL": 0.0,
+        "MONETARY": 0.07142857142857142,
+        "REGULATORY": 0.0,
+        "STRUCTURAL": 0.07142857142857142
+      },
+      "confirm_source": "price_only_low_velocity",
+      "duration_h": 4.0,
+      "end_ts": "2025-05-19T04:00:00+00:00",
+      "event_id": "bybit_ELE_20250519_00_UNK",
+      "evidence_link": null,
+      "severity": "ELEVATED",
+      "social_coverage_at_event": {
+        "lookback_hours": 28,
+        "n_posts": 4242,
+        "n_posts_in_event_window": 467,
+        "window_hours": 28
+      },
+      "start_ts": "2025-05-19T00:00:00+00:00",
+      "track": "bybit",
+      "trigger_category": "UNKNOWN"
+    },
+    {
+      "btc_drawdown_pct": -0.028076419842480098,
+      "category_velocity_ratios": {
+        "GEOPOLITICAL": 0.0,
+        "MONETARY": 0.07142857142857142,
+        "REGULATORY": 0.0,
+        "STRUCTURAL": 0.07142857142857142
+      },
+      "confirm_source": "price_only_low_velocity",
+      "duration_h": 4.0,
+      "end_ts": "2025-06-05T20:00:00+00:00",
+      "event_id": "bybit_ELE_20250605_16_UNK",
+      "evidence_link": null,
+      "severity": "ELEVATED",
+      "social_coverage_at_event": {
+        "lookback_hours": 28,
+        "n_posts": 5291,
+        "n_posts_in_event_window": 770,
+        "window_hours": 28
+      },
+      "start_ts": "2025-06-05T16:00:00+00:00",
+      "track": "bybit",
+      "trigger_category": "UNKNOWN"
+    },
+    {
+      "btc_drawdown_pct": -0.03747468840605374,
+      "category_velocity_ratios": {
+        "GEOPOLITICAL": 0.42857142857142855,
+        "MONETARY": 0.0,
+        "REGULATORY": 0.0,
+        "STRUCTURAL": 0.14285714285714285
+      },
+      "confirm_source": "price_only_low_velocity",
+      "duration_h": 4.0,
+      "end_ts": "2025-06-22T16:00:00+00:00",
+      "event_id": "bybit_SHO_20250622_12_UNK",
+      "evidence_link": null,
+      "severity": "SHOCK",
+      "social_coverage_at_event": {
+        "lookback_hours": 28,
+        "n_posts": 3070,
+        "n_posts_in_event_window": 365,
+        "window_hours": 28
+      },
+      "start_ts": "2025-06-22T12:00:00+00:00",
+      "track": "bybit",
+      "trigger_category": "UNKNOWN"
+    },
+    {
+      "btc_drawdown_pct": -0.025042894270567082,
+      "category_velocity_ratios": {
+        "GEOPOLITICAL": 1.087912087912088,
+        "MONETARY": 1.4018691588785048,
+        "REGULATORY": 0.9217391304347826,
+        "STRUCTURAL": 0.28037383177570097
+      },
+      "confirm_source": "social+price",
+      "duration_h": 4.0,
+      "end_ts": "2025-07-15T04:00:00+00:00",
+      "event_id": "bybit_ELE_20250715_00_MON",
+      "evidence_link": null,
+      "severity": "ELEVATED",
+      "social_coverage_at_event": {
+        "lookback_hours": 28,
+        "n_posts": 9340,
+        "n_posts_in_event_window": 1842,
+        "window_hours": 28
+      },
+      "start_ts": "2025-07-15T00:00:00+00:00",
+      "track": "bybit",
+      "trigger_category": "MONETARY"
+    },
+    {
+      "btc_drawdown_pct": -0.025436072488492827,
+      "category_velocity_ratios": {
+        "GEOPOLITICAL": 1.186813186813187,
+        "MONETARY": 1.5697674418604652,
+        "REGULATORY": 1.1218130311614731,
+        "STRUCTURAL": 1.4285714285714286
+      },
+      "confirm_source": "social+price",
+      "duration_h": 4.0,
+      "end_ts": "2025-07-25T04:00:00+00:00",
+      "event_id": "bybit_ELE_20250725_00_MON",
+      "evidence_link": null,
+      "severity": "ELEVATED",
+      "social_coverage_at_event": {
+        "lookback_hours": 28,
+        "n_posts": 11090,
+        "n_posts_in_event_window": 1725,
+        "window_hours": 28
+      },
+      "start_ts": "2025-07-25T00:00:00+00:00",
+      "track": "bybit",
+      "trigger_category": "MONETARY"
+    },
+    {
+      "btc_drawdown_pct": -0.027430169921091957,
+      "category_velocity_ratios": {
+        "GEOPOLITICAL": 1.2413793103448276,
+        "MONETARY": 1.9420289855072461,
+        "REGULATORY": 0.8499999999999999,
+        "STRUCTURAL": 1.7857142857142858
+      },
+      "confirm_source": "social+price",
+      "duration_h": 4.0,
+      "end_ts": "2025-08-14T16:00:00+00:00",
+      "event_id": "bybit_ELE_20250814_12_MON",
+      "evidence_link": null,
+      "severity": "ELEVATED",
+      "social_coverage_at_event": {
+        "lookback_hours": 28,
+        "n_posts": 10184,
+        "n_posts_in_event_window": 1916,
+        "window_hours": 28
+      },
+      "start_ts": "2025-08-14T12:00:00+00:00",
+      "track": "bybit",
+      "trigger_category": "MONETARY"
+    },
+    {
+      "btc_drawdown_pct": -0.026359187673327997,
+      "category_velocity_ratios": {
+        "GEOPOLITICAL": 1.0714285714285714,
+        "MONETARY": 2.1016949152542375,
+        "REGULATORY": 0.9657534246575342,
+        "STRUCTURAL": 0.5
+      },
+      "confirm_source": "social+price",
+      "duration_h": 4.0,
+      "end_ts": "2025-10-07T16:00:00+00:00",
+      "event_id": "bybit_ELE_20251007_12_MON",
+      "evidence_link": null,
+      "severity": "ELEVATED",
+      "social_coverage_at_event": {
+        "lookback_hours": 28,
+        "n_posts": 8883,
+        "n_posts_in_event_window": 1546,
+        "window_hours": 28
+      },
+      "start_ts": "2025-10-07T12:00:00+00:00",
+      "track": "bybit",
+      "trigger_category": "MONETARY"
+    },
+    {
+      "btc_drawdown_pct": -0.16087057210116776,
+      "category_velocity_ratios": {
+        "GEOPOLITICAL": 4.444444444444445,
+        "MONETARY": 0.9514563106796117,
+        "REGULATORY": 1.7270341207349083,
+        "STRUCTURAL": 0.5555555555555556
+      },
+      "confirm_source": "social+price",
+      "duration_h": 12.0,
+      "end_ts": "2025-10-11T00:00:00+00:00",
+      "event_id": "bybit_SHO_20251010_12_GEO",
+      "evidence_link": null,
+      "severity": "SHOCK",
+      "social_coverage_at_event": {
+        "lookback_hours": 36,
+        "n_posts": 10805,
+        "n_posts_in_event_window": 2741,
+        "window_hours": 36
+      },
+      "start_ts": "2025-10-10T12:00:00+00:00",
+      "track": "bybit",
+      "trigger_category": "GEOPOLITICAL"
+    },
+    {
+      "btc_drawdown_pct": -0.027315090419867297,
+      "category_velocity_ratios": {
+        "GEOPOLITICAL": 0.7748344370860927,
+        "MONETARY": 1.469387755102041,
+        "REGULATORY": 1.379032258064516,
+        "STRUCTURAL": 1.8086124401913874
+      },
+      "confirm_source": "social+price",
+      "duration_h": 4.0,
+      "end_ts": "2025-10-16T16:00:00+00:00",
+      "event_id": "bybit_ELE_20251016_12_STR",
+      "evidence_link": null,
+      "severity": "ELEVATED",
+      "social_coverage_at_event": {
+        "lookback_hours": 28,
+        "n_posts": 11871,
+        "n_posts_in_event_window": 1793,
+        "window_hours": 28
+      },
+      "start_ts": "2025-10-16T12:00:00+00:00",
+      "track": "bybit",
+      "trigger_category": "STRUCTURAL"
+    },
+    {
+      "btc_drawdown_pct": -0.03329143185627276,
+      "category_velocity_ratios": {
+        "GEOPOLITICAL": 0.6666666666666666,
+        "MONETARY": 0.34782608695652173,
+        "REGULATORY": 0.9959514170040484,
+        "STRUCTURAL": 0.5217391304347826
+      },
+      "confirm_source": "price_only_low_velocity",
+      "duration_h": 4.0,
+      "end_ts": "2025-10-17T08:00:00+00:00",
+      "event_id": "bybit_SHO_20251017_04_UNK",
+      "evidence_link": null,
+      "severity": "SHOCK",
+      "social_coverage_at_event": {
+        "lookback_hours": 28,
+        "n_posts": 11492,
+        "n_posts_in_event_window": 1608,
+        "window_hours": 28
+      },
+      "start_ts": "2025-10-17T04:00:00+00:00",
+      "track": "bybit",
+      "trigger_category": "UNKNOWN"
+    },
+    {
+      "btc_drawdown_pct": -0.03340997468339484,
+      "category_velocity_ratios": {
+        "GEOPOLITICAL": 0.9,
+        "MONETARY": 0.5912408759124088,
+        "REGULATORY": 0.7924528301886793,
+        "STRUCTURAL": 0.4912280701754386
+      },
+      "confirm_source": "price_only_low_velocity",
+      "duration_h": 4.0,
+      "end_ts": "2025-10-22T00:00:00+00:00",
+      "event_id": "bybit_SHO_20251021_20_UNK",
+      "evidence_link": null,
+      "severity": "SHOCK",
+      "social_coverage_at_event": {
+        "lookback_hours": 28,
+        "n_posts": 9934,
+        "n_posts_in_event_window": 1616,
+        "window_hours": 28
+      },
+      "start_ts": "2025-10-21T20:00:00+00:00",
+      "track": "bybit",
+      "trigger_category": "UNKNOWN"
+    },
+    {
+      "btc_drawdown_pct": -0.023821456499091474,
+      "category_velocity_ratios": {
+        "GEOPOLITICAL": 0.2857142857142857,
+        "MONETARY": 0.2926829268292683,
+        "REGULATORY": 0.1891891891891892,
+        "STRUCTURAL": 0.16981132075471697
+      },
+      "confirm_source": "price_only_low_velocity",
+      "duration_h": 4.0,
+      "end_ts": "2025-11-03T04:00:00+00:00",
+      "event_id": "bybit_ELE_20251103_00_UNK",
+      "evidence_link": null,
+      "severity": "ELEVATED",
+      "social_coverage_at_event": {
+        "lookback_hours": 28,
+        "n_posts": 7438,
+        "n_posts_in_event_window": 516,
+        "window_hours": 28
+      },
+      "start_ts": "2025-11-03T00:00:00+00:00",
+      "track": "bybit",
+      "trigger_category": "UNKNOWN"
+    },
+    {
+      "btc_drawdown_pct": -0.02761126735380265,
+      "category_velocity_ratios": {
+        "GEOPOLITICAL": 1.1428571428571428,
+        "MONETARY": 0.7392550143266475,
+        "REGULATORY": 0.5806451612903225,
+        "STRUCTURAL": 1.0303030303030303
+      },
+      "confirm_source": "social+price",
+      "duration_h": 4.0,
+      "end_ts": "2025-11-04T08:00:00+00:00",
+      "event_id": "bybit_ELE_20251104_04_GEO",
+      "evidence_link": null,
+      "severity": "ELEVATED",
+      "social_coverage_at_event": {
+        "lookback_hours": 28,
+        "n_posts": 7795,
+        "n_posts_in_event_window": 1222,
+        "window_hours": 28
+      },
+      "start_ts": "2025-11-04T04:00:00+00:00",
+      "track": "bybit",
+      "trigger_category": "GEOPOLITICAL"
+    },
+    {
+      "btc_drawdown_pct": -0.03087570075915958,
+      "category_velocity_ratios": {
+        "GEOPOLITICAL": 1.1428571428571428,
+        "MONETARY": 0.8982035928143712,
+        "REGULATORY": 0.8207547169811322,
+        "STRUCTURAL": 2.5
+      },
+      "confirm_source": "social+price",
+      "duration_h": 4.0,
+      "end_ts": "2025-11-04T20:00:00+00:00",
+      "event_id": "bybit_ELE_20251104_16_STR",
+      "evidence_link": null,
+      "severity": "ELEVATED",
+      "social_coverage_at_event": {
+        "lookback_hours": 28,
+        "n_posts": 7913,
+        "n_posts_in_event_window": 1457,
+        "window_hours": 28
+      },
+      "start_ts": "2025-11-04T16:00:00+00:00",
+      "track": "bybit",
+      "trigger_category": "STRUCTURAL"
+    },
+    {
+      "btc_drawdown_pct": -0.029126221912357773,
+      "category_velocity_ratios": {
+        "GEOPOLITICAL": 1.4845360824742269,
+        "MONETARY": 0.9365853658536584,
+        "REGULATORY": 3.2085561497326203,
+        "STRUCTURAL": 0.7586206896551724
+      },
+      "confirm_source": "social+price",
+      "duration_h": 4.0,
+      "end_ts": "2025-11-12T16:00:00+00:00",
+      "event_id": "bybit_ELE_20251112_12_REG",
+      "evidence_link": null,
+      "severity": "ELEVATED",
+      "social_coverage_at_event": {
+        "lookback_hours": 28,
+        "n_posts": 8731,
+        "n_posts_in_event_window": 1645,
+        "window_hours": 28
+      },
+      "start_ts": "2025-11-12T12:00:00+00:00",
+      "track": "bybit",
+      "trigger_category": "REGULATORY"
+    },
+    {
+      "btc_drawdown_pct": -0.031911183216377134,
+      "category_velocity_ratios": {
+        "GEOPOLITICAL": 1.6822429906542056,
+        "MONETARY": 0.9886363636363636,
+        "REGULATORY": 1.7489878542510122,
+        "STRUCTURAL": 0.7142857142857143
+      },
+      "confirm_source": "social+price",
+      "duration_h": 4.0,
+      "end_ts": "2025-11-13T20:00:00+00:00",
+      "event_id": "bybit_ELE_20251113_16_REG",
+      "evidence_link": null,
+      "severity": "ELEVATED",
+      "social_coverage_at_event": {
+        "lookback_hours": 28,
+        "n_posts": 8692,
+        "n_posts_in_event_window": 1540,
+        "window_hours": 28
+      },
+      "start_ts": "2025-11-13T16:00:00+00:00",
+      "track": "bybit",
+      "trigger_category": "REGULATORY"
+    },
+    {
+      "btc_drawdown_pct": -0.03458141457007301,
+      "category_velocity_ratios": {
+        "GEOPOLITICAL": 1.4583333333333333,
+        "MONETARY": 1.34375,
+        "REGULATORY": 1.435546875,
+        "STRUCTURAL": 0.8125
+      },
+      "confirm_source": "social+price",
+      "duration_h": 8.0,
+      "end_ts": "2025-11-14T12:00:00+00:00",
+      "event_id": "bybit_ELE_20251114_04_GEO",
+      "evidence_link": null,
+      "severity": "ELEVATED",
+      "social_coverage_at_event": {
+        "lookback_hours": 32,
+        "n_posts": 8974,
+        "n_posts_in_event_window": 1776,
+        "window_hours": 32
+      },
+      "start_ts": "2025-11-14T04:00:00+00:00",
+      "track": "bybit",
+      "trigger_category": "GEOPOLITICAL"
+    },
+    {
+      "btc_drawdown_pct": -0.025241361533091786,
+      "category_velocity_ratios": {
+        "GEOPOLITICAL": 0.6,
+        "MONETARY": 2.323699421965318,
+        "REGULATORY": 0.3221476510067114,
+        "STRUCTURAL": 0.8571428571428571
+      },
+      "confirm_source": "social+price",
+      "duration_h": 4.0,
+      "end_ts": "2025-11-17T20:00:00+00:00",
+      "event_id": "bybit_ELE_20251117_16_MON",
+      "evidence_link": null,
+      "severity": "ELEVATED",
+      "social_coverage_at_event": {
+        "lookback_hours": 28,
+        "n_posts": 9086,
+        "n_posts_in_event_window": 1270,
+        "window_hours": 28
+      },
+      "start_ts": "2025-11-17T16:00:00+00:00",
+      "track": "bybit",
+      "trigger_category": "MONETARY"
+    },
+    {
+      "btc_drawdown_pct": -0.06345856810320448,
+      "category_velocity_ratios": {
+        "GEOPOLITICAL": 1.1723300970873785,
+        "MONETARY": 2.338862559241706,
+        "REGULATORY": 1.0078125,
+        "STRUCTURAL": 1.3125
+      },
+      "confirm_source": "social+price",
+      "duration_h": 8.0,
+      "end_ts": "2025-11-20T20:00:00+00:00",
+      "event_id": "bybit_SHO_20251120_12_MON",
+      "evidence_link": null,
+      "severity": "SHOCK",
+      "social_coverage_at_event": {
+        "lookback_hours": 32,
+        "n_posts": 9659,
+        "n_posts_in_event_window": 2129,
+        "window_hours": 32
+      },
+      "start_ts": "2025-11-20T12:00:00+00:00",
+      "track": "bybit",
+      "trigger_category": "MONETARY"
+    },
+    {
+      "btc_drawdown_pct": -0.048628231626306424,
+      "category_velocity_ratios": {
+        "GEOPOLITICAL": 1.3125,
+        "MONETARY": 1.6053719008264462,
+        "REGULATORY": 0.7676886792452831,
+        "STRUCTURAL": 1.0617977528089888
+      },
+      "confirm_source": "social+price",
+      "duration_h": 8.0,
+      "end_ts": "2025-11-21T12:00:00+00:00",
+      "event_id": "bybit_ELE_20251121_04_MON",
+      "evidence_link": null,
+      "severity": "ELEVATED",
+      "social_coverage_at_event": {
+        "lookback_hours": 32,
+        "n_posts": 9585,
+        "n_posts_in_event_window": 2079,
+        "window_hours": 32
+      },
+      "start_ts": "2025-11-21T04:00:00+00:00",
+      "track": "bybit",
+      "trigger_category": "MONETARY"
+    },
+    {
+      "btc_drawdown_pct": -0.04646292607348384,
+      "category_velocity_ratios": {
+        "GEOPOLITICAL": 0.7142857142857143,
+        "MONETARY": 0.45454545454545453,
+        "REGULATORY": 0.3979591836734694,
+        "STRUCTURAL": 0.9285714285714286
+      },
+      "confirm_source": "price_only_low_velocity",
+      "duration_h": 4.0,
+      "end_ts": "2025-12-01T04:00:00+00:00",
+      "event_id": "bybit_SHO_20251201_00_UNK",
+      "evidence_link": null,
+      "severity": "SHOCK",
+      "social_coverage_at_event": {
+        "lookback_hours": 28,
+        "n_posts": 6503,
+        "n_posts_in_event_window": 507,
+        "window_hours": 28
+      },
+      "start_ts": "2025-12-01T00:00:00+00:00",
+      "track": "bybit",
+      "trigger_category": "UNKNOWN"
+    },
+    {
+      "btc_drawdown_pct": -0.025620678605636722,
+      "category_velocity_ratios": {
+        "GEOPOLITICAL": 0.21428571428571427,
+        "MONETARY": 1.0601503759398496,
+        "REGULATORY": 1.3411764705882354,
+        "STRUCTURAL": 0.06
+      },
+      "confirm_source": "social+price",
+      "duration_h": 4.0,
+      "end_ts": "2025-12-08T16:00:00+00:00",
+      "event_id": "bybit_ELE_20251208_12_REG",
+      "evidence_link": null,
+      "severity": "ELEVATED",
+      "social_coverage_at_event": {
+        "lookback_hours": 28,
+        "n_posts": 6308,
+        "n_posts_in_event_window": 739,
+        "window_hours": 28
+      },
+      "start_ts": "2025-12-08T12:00:00+00:00",
+      "track": "bybit",
+      "trigger_category": "REGULATORY"
+    },
+    {
+      "btc_drawdown_pct": -0.028535884820112017,
+      "category_velocity_ratios": {
+        "GEOPOLITICAL": 0.6428571428571429,
+        "MONETARY": 1.7954545454545456,
+        "REGULATORY": 0.7665198237885463,
+        "STRUCTURAL": 0.7142857142857143
+      },
+      "confirm_source": "social+price",
+      "duration_h": 4.0,
+      "end_ts": "2025-12-11T04:00:00+00:00",
+      "event_id": "bybit_ELE_20251211_00_MON",
+      "evidence_link": null,
+      "severity": "ELEVATED",
+      "social_coverage_at_event": {
+        "lookback_hours": 28,
+        "n_posts": 6176,
+        "n_posts_in_event_window": 997,
+        "window_hours": 28
+      },
+      "start_ts": "2025-12-11T00:00:00+00:00",
+      "track": "bybit",
+      "trigger_category": "MONETARY"
+    },
+    {
+      "btc_drawdown_pct": -0.02854622017591994,
+      "category_velocity_ratios": {
+        "GEOPOLITICAL": 0.7142857142857143,
+        "MONETARY": 1.314487632508834,
+        "REGULATORY": 0.821917808219178,
+        "STRUCTURAL": 1.1428571428571428
+      },
+      "confirm_source": "social+price",
+      "duration_h": 4.0,
+      "end_ts": "2025-12-12T16:00:00+00:00",
+      "event_id": "bybit_ELE_20251212_12_MON",
+      "evidence_link": null,
+      "severity": "ELEVATED",
+      "social_coverage_at_event": {
+        "lookback_hours": 28,
+        "n_posts": 6083,
+        "n_posts_in_event_window": 1038,
+        "window_hours": 28
+      },
+      "start_ts": "2025-12-12T12:00:00+00:00",
+      "track": "bybit",
+      "trigger_category": "MONETARY"
+    },
+    {
+      "btc_drawdown_pct": -0.05014029250809448,
+      "category_velocity_ratios": {
+        "GEOPOLITICAL": 0.4375,
+        "MONETARY": 0.8546511627906976,
+        "REGULATORY": 0.4444444444444444,
+        "STRUCTURAL": 0.625
+      },
+      "confirm_source": "price_only_low_velocity",
+      "duration_h": 8.0,
+      "end_ts": "2025-12-15T20:00:00+00:00",
+      "event_id": "bybit_ELE_20251215_12_UNK",
+      "evidence_link": null,
+      "severity": "ELEVATED",
+      "social_coverage_at_event": {
+        "lookback_hours": 32,
+        "n_posts": 5874,
+        "n_posts_in_event_window": 898,
+        "window_hours": 32
+      },
+      "start_ts": "2025-12-15T12:00:00+00:00",
+      "track": "bybit",
+      "trigger_category": "UNKNOWN"
+    },
+    {
+      "btc_drawdown_pct": -0.04555387294856018,
+      "category_velocity_ratios": {
+        "GEOPOLITICAL": 0.7857142857142857,
+        "MONETARY": 0.8769230769230769,
+        "REGULATORY": 1.2700729927007302,
+        "STRUCTURAL": 0.5714285714285714
+      },
+      "confirm_source": "social+price",
+      "duration_h": 4.0,
+      "end_ts": "2025-12-18T20:00:00+00:00",
+      "event_id": "bybit_SHO_20251218_16_REG",
+      "evidence_link": null,
+      "severity": "SHOCK",
+      "social_coverage_at_event": {
+        "lookback_hours": 28,
+        "n_posts": 5788,
+        "n_posts_in_event_window": 895,
+        "window_hours": 28
+      },
+      "start_ts": "2025-12-18T16:00:00+00:00",
+      "track": "bybit",
+      "trigger_category": "REGULATORY"
+    },
+    {
+      "btc_drawdown_pct": -0.022875612420804013,
+      "category_velocity_ratios": {
+        "GEOPOLITICAL": 0.42857142857142855,
+        "MONETARY": 0.7636363636363637,
+        "REGULATORY": 0.5647058823529412,
+        "STRUCTURAL": 0.8571428571428571
+      },
+      "confirm_source": "price_only_low_velocity",
+      "duration_h": 4.0,
+      "end_ts": "2025-12-29T12:00:00+00:00",
+      "event_id": "bybit_ELE_20251229_08_UNK",
+      "evidence_link": null,
+      "severity": "ELEVATED",
+      "social_coverage_at_event": {
+        "lookback_hours": 28,
+        "n_posts": 4436,
+        "n_posts_in_event_window": 566,
+        "window_hours": 28
+      },
+      "start_ts": "2025-12-29T08:00:00+00:00",
+      "track": "bybit",
+      "trigger_category": "UNKNOWN"
+    },
+    {
+      "btc_drawdown_pct": -0.02545776260225101,
+      "category_velocity_ratios": {
+        "GEOPOLITICAL": 0.3973509933774834,
+        "MONETARY": 1.1428571428571428,
+        "REGULATORY": 0.37762237762237766,
+        "STRUCTURAL": 0.42857142857142855
+      },
+      "confirm_source": "social+price",
+      "duration_h": 4.0,
+      "end_ts": "2026-01-25T20:00:00+00:00",
+      "event_id": "bybit_ELE_20260125_16_MON",
+      "evidence_link": null,
+      "severity": "ELEVATED",
+      "social_coverage_at_event": {
+        "lookback_hours": 28,
+        "n_posts": 4648,
+        "n_posts_in_event_window": 436,
+        "window_hours": 28
+      },
+      "start_ts": "2026-01-25T16:00:00+00:00",
+      "track": "bybit",
+      "trigger_category": "MONETARY"
+    },
+    {
+      "btc_drawdown_pct": -0.05080646354721017,
+      "category_velocity_ratios": {
+        "GEOPOLITICAL": 0.7875,
+        "MONETARY": 1.878048780487805,
+        "REGULATORY": 0.7777777777777778,
+        "STRUCTURAL": 0.875
+      },
+      "confirm_source": "social+price",
+      "duration_h": 8.0,
+      "end_ts": "2026-01-29T20:00:00+00:00",
+      "event_id": "bybit_SHO_20260129_12_MON",
+      "evidence_link": null,
+      "severity": "SHOCK",
+      "social_coverage_at_event": {
+        "lookback_hours": 32,
+        "n_posts": 5132,
+        "n_posts_in_event_window": 1000,
+        "window_hours": 32
+      },
+      "start_ts": "2026-01-29T12:00:00+00:00",
+      "track": "bybit",
+      "trigger_category": "MONETARY"
+    },
+    {
+      "btc_drawdown_pct": -0.041726560233317965,
+      "category_velocity_ratios": {
+        "GEOPOLITICAL": 0.75,
+        "MONETARY": 1.4887218045112782,
+        "REGULATORY": 0.7727272727272727,
+        "STRUCTURAL": 0.7142857142857143
+      },
+      "confirm_source": "social+price",
+      "duration_h": 4.0,
+      "end_ts": "2026-01-30T04:00:00+00:00",
+      "event_id": "bybit_ELE_20260130_00_MON",
+      "evidence_link": null,
+      "severity": "ELEVATED",
+      "social_coverage_at_event": {
+        "lookback_hours": 28,
+        "n_posts": 4912,
+        "n_posts_in_event_window": 798,
+        "window_hours": 28
+      },
+      "start_ts": "2026-01-30T00:00:00+00:00",
+      "track": "bybit",
+      "trigger_category": "MONETARY"
+    },
+    {
+      "btc_drawdown_pct": -0.08793182365695021,
+      "category_velocity_ratios": {
+        "GEOPOLITICAL": 0.735981308411215,
+        "MONETARY": 1.1369426751592357,
+        "REGULATORY": 0.7620967741935484,
+        "STRUCTURAL": 1.3125
+      },
+      "confirm_source": "social+price",
+      "duration_h": 8.0,
+      "end_ts": "2026-01-31T20:00:00+00:00",
+      "event_id": "bybit_SHO_20260131_12_STR",
+      "evidence_link": null,
+      "severity": "SHOCK",
+      "social_coverage_at_event": {
+        "lookback_hours": 32,
+        "n_posts": 5057,
+        "n_posts_in_event_window": 948,
+        "window_hours": 32
+      },
+      "start_ts": "2026-01-31T12:00:00+00:00",
+      "track": "bybit",
+      "trigger_category": "STRUCTURAL"
+    },
+    {
+      "btc_drawdown_pct": -0.06638519547541974,
+      "category_velocity_ratios": {
+        "GEOPOLITICAL": 1.768421052631579,
+        "MONETARY": 1.2972972972972971,
+        "REGULATORY": 1.1538461538461537,
+        "STRUCTURAL": 0.8571428571428571
+      },
+      "confirm_source": "social+price",
+      "duration_h": 4.0,
+      "end_ts": "2026-02-03T20:00:00+00:00",
+      "event_id": "bybit_SHO_20260203_16_GEO",
+      "evidence_link": null,
+      "severity": "SHOCK",
+      "social_coverage_at_event": {
+        "lookback_hours": 28,
+        "n_posts": 5811,
+        "n_posts_in_event_window": 1114,
+        "window_hours": 28
+      },
+      "start_ts": "2026-02-03T16:00:00+00:00",
+      "track": "bybit",
+      "trigger_category": "GEOPOLITICAL"
+    },
+    {
+      "btc_drawdown_pct": -0.02924520421351732,
+      "category_velocity_ratios": {
+        "GEOPOLITICAL": 1.3186813186813189,
+        "MONETARY": 0.63,
+        "REGULATORY": 1.2692307692307692,
+        "STRUCTURAL": 1.2857142857142858
+      },
+      "confirm_source": "social+price",
+      "duration_h": 4.0,
+      "end_ts": "2026-02-04T16:00:00+00:00",
+      "event_id": "bybit_ELE_20260204_12_GEO",
+      "evidence_link": null,
+      "severity": "ELEVATED",
+      "social_coverage_at_event": {
+        "lookback_hours": 28,
+        "n_posts": 6097,
+        "n_posts_in_event_window": 1181,
+        "window_hours": 28
+      },
+      "start_ts": "2026-02-04T12:00:00+00:00",
+      "track": "bybit",
+      "trigger_category": "GEOPOLITICAL"
+    },
+    {
+      "btc_drawdown_pct": -0.02751352646447123,
+      "category_velocity_ratios": {
+        "GEOPOLITICAL": 0.7346938775510203,
+        "MONETARY": 0.4433497536945813,
+        "REGULATORY": 1.530612244897959,
+        "STRUCTURAL": 1.2142857142857142
+      },
+      "confirm_source": "social+price",
+      "duration_h": 4.0,
+      "end_ts": "2026-02-05T04:00:00+00:00",
+      "event_id": "bybit_ELE_20260205_00_REG",
+      "evidence_link": null,
+      "severity": "ELEVATED",
+      "social_coverage_at_event": {
+        "lookback_hours": 28,
+        "n_posts": 6280,
+        "n_posts_in_event_window": 1125,
+        "window_hours": 28
+      },
+      "start_ts": "2026-02-05T00:00:00+00:00",
+      "track": "bybit",
+      "trigger_category": "REGULATORY"
+    },
+    {
+      "btc_drawdown_pct": -0.1133893215640015,
+      "category_velocity_ratios": {
+        "GEOPOLITICAL": 1.3267973856209152,
+        "MONETARY": 1.1606217616580312,
+        "REGULATORY": 1.8300653594771243,
+        "STRUCTURAL": 1.5
+      },
+      "confirm_source": "social+price",
+      "duration_h": 12.0,
+      "end_ts": "2026-02-06T00:00:00+00:00",
+      "event_id": "bybit_SHO_20260205_12_REG",
+      "evidence_link": null,
+      "severity": "SHOCK",
+      "social_coverage_at_event": {
+        "lookback_hours": 36,
+        "n_posts": 7220,
+        "n_posts_in_event_window": 1984,
+        "window_hours": 36
+      },
+      "start_ts": "2026-02-05T12:00:00+00:00",
+      "track": "bybit",
+      "trigger_category": "REGULATORY"
+    },
+    {
+      "btc_drawdown_pct": -0.05102991455462077,
+      "category_velocity_ratios": {
+        "GEOPOLITICAL": 0.43636363636363634,
+        "MONETARY": 0.8527918781725888,
+        "REGULATORY": 1.35,
+        "STRUCTURAL": 1.25
+      },
+      "confirm_source": "social+price",
+      "duration_h": 4.0,
+      "end_ts": "2026-02-07T08:00:00+00:00",
+      "event_id": "bybit_SHO_20260207_04_REG",
+      "evidence_link": null,
+      "severity": "SHOCK",
+      "social_coverage_at_event": {
+        "lookback_hours": 28,
+        "n_posts": 7485,
+        "n_posts_in_event_window": 1153,
+        "window_hours": 28
+      },
+      "start_ts": "2026-02-07T04:00:00+00:00",
+      "track": "bybit",
+      "trigger_category": "REGULATORY"
+    },
+    {
+      "btc_drawdown_pct": -0.02842851988261146,
+      "category_velocity_ratios": {
+        "GEOPOLITICAL": 0.568421052631579,
+        "MONETARY": 0.7039106145251397,
+        "REGULATORY": 0.5581395348837208,
+        "STRUCTURAL": 0.5052631578947369
+      },
+      "confirm_source": "price_only_low_velocity",
+      "duration_h": 4.0,
+      "end_ts": "2026-02-09T12:00:00+00:00",
+      "event_id": "bybit_ELE_20260209_08_UNK",
+      "evidence_link": null,
+      "severity": "ELEVATED",
+      "social_coverage_at_event": {
+        "lookback_hours": 28,
+        "n_posts": 7068,
+        "n_posts_in_event_window": 597,
+        "window_hours": 28
+      },
+      "start_ts": "2026-02-09T08:00:00+00:00",
+      "track": "bybit",
+      "trigger_category": "UNKNOWN"
+    },
+    {
+      "btc_drawdown_pct": -0.03004018485809292,
+      "category_velocity_ratios": {
+        "GEOPOLITICAL": 0.5714285714285714,
+        "MONETARY": 1.6238532110091743,
+        "REGULATORY": 0.7868852459016393,
+        "STRUCTURAL": 0.5581395348837209
+      },
+      "confirm_source": "social+price",
+      "duration_h": 4.0,
+      "end_ts": "2026-02-12T20:00:00+00:00",
+      "event_id": "bybit_ELE_20260212_16_MON",
+      "evidence_link": null,
+      "severity": "ELEVATED",
+      "social_coverage_at_event": {
+        "lookback_hours": 28,
+        "n_posts": 7105,
+        "n_posts_in_event_window": 956,
+        "window_hours": 28
+      },
+      "start_ts": "2026-02-12T16:00:00+00:00",
+      "track": "bybit",
+      "trigger_category": "MONETARY"
+    },
+    {
+      "btc_drawdown_pct": -0.027439556684677062,
+      "category_velocity_ratios": {
+        "GEOPOLITICAL": 0.7142857142857143,
+        "MONETARY": 0.6387832699619772,
+        "REGULATORY": 0.9908256880733946,
+        "STRUCTURAL": 0.5
+      },
+      "confirm_source": "price_only_low_velocity",
+      "duration_h": 4.0,
+      "end_ts": "2026-02-16T20:00:00+00:00",
+      "event_id": "bybit_ELE_20260216_16_UNK",
+      "evidence_link": null,
+      "severity": "ELEVATED",
+      "social_coverage_at_event": {
+        "lookback_hours": 28,
+        "n_posts": 5354,
+        "n_posts_in_event_window": 644,
+        "window_hours": 28
+      },
+      "start_ts": "2026-02-16T16:00:00+00:00",
+      "track": "bybit",
+      "trigger_category": "UNKNOWN"
+    },
+    {
+      "btc_drawdown_pct": -0.0309608575578239,
+      "category_velocity_ratios": {
+        "GEOPOLITICAL": 0.42857142857142855,
+        "MONETARY": 0.0,
+        "REGULATORY": 0.07142857142857142,
+        "STRUCTURAL": 0.0
+      },
+      "confirm_source": "price_only_low_velocity",
+      "duration_h": 4.0,
+      "end_ts": "2026-02-23T08:00:00+00:00",
+      "event_id": "bybit_ELE_20260223_04_UNK",
+      "evidence_link": null,
+      "severity": "ELEVATED",
+      "social_coverage_at_event": {
+        "lookback_hours": 28,
+        "n_posts": 5597,
+        "n_posts_in_event_window": 1223,
+        "window_hours": 28
+      },
+      "start_ts": "2026-02-23T04:00:00+00:00",
+      "track": "bybit",
+      "trigger_category": "UNKNOWN"
+    },
+    {
+      "btc_drawdown_pct": -0.02344121743067397,
+      "category_velocity_ratios": {
+        "GEOPOLITICAL": 0.5,
+        "MONETARY": 0.07792207792207792,
+        "REGULATORY": 0.14285714285714285,
+        "STRUCTURAL": 0.07142857142857142
+      },
+      "confirm_source": "price_only_low_velocity",
+      "duration_h": 4.0,
+      "end_ts": "2026-02-24T00:00:00+00:00",
+      "event_id": "bybit_ELE_20260223_20_UNK",
+      "evidence_link": null,
+      "severity": "ELEVATED",
+      "social_coverage_at_event": {
+        "lookback_hours": 28,
+        "n_posts": 6084,
+        "n_posts_in_event_window": 1566,
+        "window_hours": 28
+      },
+      "start_ts": "2026-02-23T20:00:00+00:00",
+      "track": "bybit",
+      "trigger_category": "UNKNOWN"
+    },
+    {
+      "btc_drawdown_pct": -0.0313560896723798,
+      "category_velocity_ratios": {
+        "GEOPOLITICAL": 0.6428571428571429,
+        "MONETARY": 0.07999999999999999,
+        "REGULATORY": 0.14285714285714285,
+        "STRUCTURAL": 0.07142857142857142
+      },
+      "confirm_source": "price_only_low_velocity",
+      "duration_h": 4.0,
+      "end_ts": "2026-02-24T08:00:00+00:00",
+      "event_id": "bybit_ELE_20260224_04_UNK",
+      "evidence_link": null,
+      "severity": "ELEVATED",
+      "social_coverage_at_event": {
+        "lookback_hours": 28,
+        "n_posts": 6440,
+        "n_posts_in_event_window": 1303,
+        "window_hours": 28
+      },
+      "start_ts": "2026-02-24T04:00:00+00:00",
+      "track": "bybit",
+      "trigger_category": "UNKNOWN"
+    },
+    {
+      "btc_drawdown_pct": -0.028712065355236408,
+      "category_velocity_ratios": {
+        "GEOPOLITICAL": 0.07142857142857142,
+        "MONETARY": 0.35714285714285715,
+        "REGULATORY": 0.14285714285714285,
+        "STRUCTURAL": 0.2857142857142857
+      },
+      "confirm_source": "price_only_low_velocity",
+      "duration_h": 4.0,
+      "end_ts": "2026-02-27T16:00:00+00:00",
+      "event_id": "bybit_ELE_20260227_12_UNK",
+      "evidence_link": null,
+      "severity": "ELEVATED",
+      "social_coverage_at_event": {
+        "lookback_hours": 28,
+        "n_posts": 7822,
+        "n_posts_in_event_window": 1114,
+        "window_hours": 28
+      },
+      "start_ts": "2026-02-27T12:00:00+00:00",
+      "track": "bybit",
+      "trigger_category": "UNKNOWN"
+    },
+    {
+      "btc_drawdown_pct": -0.03393902299886225,
+      "category_velocity_ratios": {
+        "GEOPOLITICAL": 0.2857142857142857,
+        "MONETARY": 0.42857142857142855,
+        "REGULATORY": 0.14285714285714285,
+        "STRUCTURAL": 0.14285714285714285
+      },
+      "confirm_source": "price_only_low_velocity",
+      "duration_h": 4.0,
+      "end_ts": "2026-02-28T12:00:00+00:00",
+      "event_id": "bybit_ELE_20260228_08_UNK",
+      "evidence_link": null,
+      "severity": "ELEVATED",
+      "social_coverage_at_event": {
+        "lookback_hours": 28,
+        "n_posts": 8298,
+        "n_posts_in_event_window": 1336,
+        "window_hours": 28
+      },
+      "start_ts": "2026-02-28T08:00:00+00:00",
+      "track": "bybit",
+      "trigger_category": "UNKNOWN"
+    },
+    {
+      "btc_drawdown_pct": -0.025122995662624718,
+      "category_velocity_ratios": {
+        "GEOPOLITICAL": 0.42857142857142855,
+        "MONETARY": 0.07142857142857142,
+        "REGULATORY": 0.35714285714285715,
+        "STRUCTURAL": 0.14285714285714285
+      },
+      "confirm_source": "price_only_low_velocity",
+      "duration_h": 4.0,
+      "end_ts": "2026-03-06T20:00:00+00:00",
+      "event_id": "bybit_ELE_20260306_16_UNK",
+      "evidence_link": null,
+      "severity": "ELEVATED",
+      "social_coverage_at_event": {
+        "lookback_hours": 28,
+        "n_posts": 8220,
+        "n_posts_in_event_window": 1054,
+        "window_hours": 28
+      },
+      "start_ts": "2026-03-06T16:00:00+00:00",
+      "track": "bybit",
+      "trigger_category": "UNKNOWN"
+    },
+    {
+      "btc_drawdown_pct": -0.02163276245979596,
+      "category_velocity_ratios": {
+        "GEOPOLITICAL": 0.4787234042553191,
+        "MONETARY": 1.5714285714285714,
+        "REGULATORY": 0.2857142857142857,
+        "STRUCTURAL": 0.07142857142857142
+      },
+      "confirm_source": "social+price",
+      "duration_h": 4.0,
+      "end_ts": "2026-03-18T20:00:00+00:00",
+      "event_id": "bybit_ELE_20260318_16_MON",
+      "evidence_link": null,
+      "severity": "ELEVATED",
+      "social_coverage_at_event": {
+        "lookback_hours": 28,
+        "n_posts": 27809,
+        "n_posts_in_event_window": 6510,
+        "window_hours": 28
+      },
+      "start_ts": "2026-03-18T16:00:00+00:00",
+      "track": "bybit",
+      "trigger_category": "MONETARY"
+    },
+    {
+      "btc_drawdown_pct": -0.030697572130301644,
+      "category_velocity_ratios": {
+        "GEOPOLITICAL": 1.6393442622950822,
+        "MONETARY": 1.0,
+        "REGULATORY": 0.9285714285714286,
+        "STRUCTURAL": 0.6428571428571429
+      },
+      "confirm_source": "social+price",
+      "duration_h": 4.0,
+      "end_ts": "2026-03-22T04:00:00+00:00",
+      "event_id": "bybit_ELE_20260322_00_GEO",
+      "evidence_link": null,
+      "severity": "ELEVATED",
+      "social_coverage_at_event": {
+        "lookback_hours": 28,
+        "n_posts": 103502,
+        "n_posts_in_event_window": 33774,
+        "window_hours": 28
+      },
+      "start_ts": "2026-03-22T00:00:00+00:00",
+      "track": "bybit",
+      "trigger_category": "GEOPOLITICAL"
+    },
+    {
+      "btc_drawdown_pct": -0.03368111807795904,
+      "category_velocity_ratios": {
+        "GEOPOLITICAL": 0.09540636042402828,
+        "MONETARY": 0.13333333333333333,
+        "REGULATORY": 0.07142857142857142,
+        "STRUCTURAL": 0.0
+      },
+      "confirm_source": "price_only_low_velocity",
+      "duration_h": 4.0,
+      "end_ts": "2026-03-27T12:00:00+00:00",
+      "event_id": "bybit_ELE_20260327_08_UNK",
+      "evidence_link": null,
+      "severity": "ELEVATED",
+      "social_coverage_at_event": {
+        "lookback_hours": 28,
+        "n_posts": 151239,
+        "n_posts_in_event_window": 1202,
+        "window_hours": 28
+      },
+      "start_ts": "2026-03-27T08:00:00+00:00",
+      "track": "bybit",
+      "trigger_category": "UNKNOWN"
+    },
+    {
+      "btc_drawdown_pct": -0.02183541192719875,
+      "category_velocity_ratios": {
+        "GEOPOLITICAL": 1.9578947368421054,
+        "MONETARY": 0.8571428571428571,
+        "REGULATORY": 0.6428571428571429,
+        "STRUCTURAL": 0.7142857142857143
+      },
+      "confirm_source": "social+price",
+      "duration_h": 4.0,
+      "end_ts": "2026-04-02T08:00:00+00:00",
+      "event_id": "bybit_ELE_20260402_04_GEO",
+      "evidence_link": null,
+      "severity": "ELEVATED",
+      "social_coverage_at_event": {
+        "lookback_hours": 28,
+        "n_posts": 75742,
+        "n_posts_in_event_window": 17800,
+        "window_hours": 28
+      },
+      "start_ts": "2026-04-02T04:00:00+00:00",
+      "track": "bybit",
+      "trigger_category": "GEOPOLITICAL"
+    },
+    {
+      "btc_drawdown_pct": -0.022043239995044966,
+      "category_velocity_ratios": {
+        "GEOPOLITICAL": 0.6305084745762711,
+        "MONETARY": 0.8571428571428571,
+        "REGULATORY": 0.6428571428571429,
+        "STRUCTURAL": 0.10526315789473684
+      },
+      "confirm_source": "price_only_low_velocity",
+      "duration_h": 4.0,
+      "end_ts": "2026-04-12T08:00:00+00:00",
+      "event_id": "bybit_ELE_20260412_04_UNK",
+      "evidence_link": null,
+      "severity": "ELEVATED",
+      "social_coverage_at_event": {
+        "lookback_hours": 28,
+        "n_posts": 175402,
+        "n_posts_in_event_window": 19250,
+        "window_hours": 28
+      },
+      "start_ts": "2026-04-12T04:00:00+00:00",
+      "track": "bybit",
+      "trigger_category": "UNKNOWN"
+    }
+  ],
+  "meta": {
+    "generated_ts": "2026-04-12T21:19:00+00:00",
+    "n_confirmed": 31,
+    "n_elevated": 48,
+    "n_events": 70,
+    "n_price_only": 39,
+    "n_shock": 22,
+    "node_impact": {
+      "node": "A1-D2.phase1_labeller",
+      "notes": "BTC benchmark used for both tracks; track differentiation flows downstream via per-asset beta tables, not via track-specific events. social_coverage_at_event per event indicates whether trigger_category was assignable or degraded to UNKNOWN.",
+      "sensitivity": {
+        "contingency_applied": false,
+        "social_confirmation_pct": 44.285714285714285,
+        "threshold_elevated_rate": "48 ELEVATED events at 2.00%",
+        "threshold_shock_rate": "22 SHOCK events at 3.00%"
+      }
+    },
+    "ohlcv_window": {
+      "benchmark": "BTCUSDT (binance)",
+      "max_bar_ts": "2026-04-12T20:00:00+00:00",
+      "min_bar_ts": "2025-02-19T12:00:00+00:00",
+      "n_bars": 2505,
+      "timeframe": "4h"
+    },
+    "relabel": {
+      "n_confirmed_after": 31,
+      "n_events_changed": 6,
+      "n_events_total": 70,
+      "n_price_only_low_after": 39,
+      "n_price_only_zero_after": 0,
+      "parent_schema_version": "A1-D2.phase1.v1.0",
+      "reason": "re-run category assignment after telegram_backfill_whale (+10249 rows, 2026-02-20\u21922026-03-08)",
+      "relabel_schema_version": "A1-RELABEL.v1.0",
+      "relabel_ts": "2026-04-12T22:35:27+00:00"
+    },
+    "schema_version": "A1-D2.phase1.v1.0",
+    "threshold_contingency": null,
+    "threshold_elevated": 0.02,
+    "threshold_shock": 0.03,
+    "track": "bybit"
+  }
+}

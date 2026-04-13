@@ -9,6 +9,7 @@ BTC stale -> degrade gracefully (invariant #12).
 """
 
 import asyncio
+import os
 import sys
 import json
 import time
@@ -21,6 +22,22 @@ import psycopg
 
 from governance.persistence import PersistenceClient, RedisClient, get_governed_persistence
 from governance.kernel import LineageEnforcer
+from governance.regime.enforcer import Enforcer as _RegimeEnforcer
+from governance.selection.cap3_pipeline import (
+    Cap3Pipeline as _Cap3Pipeline,
+    Signal as _Cap3Signal,
+)
+
+# C-series variant registry (Phase B-STEP2). Parent → allowed variant
+# setup_ids. ``LIVE_VARIANT_SETUP_IDS`` gates which variants actually emit
+# (Monday go-live: C2M + C4M only; C2S deferred pending snapshot
+# enrichment; C2SH/C3M/C4ML null sprint results).
+C_SERIES_VARIANTS: dict[str, list[str]] = {
+    "C2": ["C2M", "C2S", "C2SH"],
+    "C3": ["C3M"],
+    "C4": ["C4M", "C4ML"],
+}
+LIVE_VARIANT_SETUP_IDS: set[str] = {"C2M", "C4M"}
 
 # db_pool: governed import — get_conn for direct Postgres access
 def _pool_get_conn():
@@ -47,6 +64,11 @@ from core_logic.s10_macd_scalp import S10Evaluator, S10Signal
 from core_logic.s11_macd_long_reversion import S11Evaluator, S11Signal, S11State
 from core_logic.u1_unicorn_ignition import U1Evaluator, U1State, U1Phase, U1Config, load_funding_rates
 from core_logic.d1_dormancy_ignition import D1Evaluator, D1State, D1Phase, D1Config, is_d1_excluded, get_social_mentions_count, get_social_silence_count, get_exchange_netflow
+from core_logic.c1_golden_cross import C1Evaluator
+from core_logic.c2_support_bounce import C2Evaluator
+from core_logic.c3_breakout import C3Evaluator
+from core_logic.c4_rsi_reversal import C4Evaluator
+from core_logic.c5_volume_scalp import C5Evaluator
 from governance.setup_base import Direction
 from core_logic.setup_base import SetupBase
 from governance.bootstrap import (
@@ -261,6 +283,11 @@ class SignalWorker(LineageEnforcer):
         self.s10_evaluator = S10Evaluator()
         self.s11_evaluator = S11Evaluator()
         self.d1_evaluator = D1Evaluator()
+        self.c1_evaluator = C1Evaluator()
+        self.c2_evaluator = C2Evaluator()
+        self.c3_evaluator = C3Evaluator()
+        self.c4_evaluator = C4Evaluator()
+        self.c5_evaluator = C5Evaluator()
         self._d1_prev_states: dict[str, D1State] = {}  # keyed by "symbol:tf"
         # LiveConfig: poll meta.config_version for hot-reload
         wcfg = _worker_cfg()
@@ -403,6 +430,85 @@ class SignalWorker(LineageEnforcer):
         # 24h volume cache: {symbol: volume_usd}, refreshed every 5 min
         self._volume_cache: dict[str, float] = {}
         self._volume_cache_ts: float = 0.0
+
+        # ── Regime Enforcer (Phase A — sprint plan §4.5) ─────────────────
+        # Shadow mode: logs rejects but still persists. Active mode: skips
+        # persist + downstream emission. Mode flipped by Phase C via env.
+        _beta_table_path = os.environ.get(
+            "ENFORCER_BETA_TABLE",
+            "/backend/governance/regime/asset_beta_table_binance_v1.json",
+        )
+        try:
+            self._enforcer = _RegimeEnforcer(
+                redis_client=self.r,
+                beta_table_path=_beta_table_path,
+            )
+            self._enforcer_mode = os.environ.get("ENFORCER_MODE", "shadow").lower()
+            logger.info(
+                "regime_enforcer initialized: mode=%s beta_table=%s",
+                self._enforcer_mode, _beta_table_path,
+            )
+        except Exception as _exc:
+            logger.warning(
+                "regime_enforcer disabled (init failed: %s) — signals will not be gated",
+                _exc,
+            )
+            self._enforcer = None
+            self._enforcer_mode = "shadow"
+
+        # ── Cap3Pipeline (Phase C wiring) ────────────────────────────────
+        # Four-gate selection pipeline (indicator_safe, social_safe,
+        # cluster_cap, regime_enforcer). Controlled by CAP3_PIPELINE_ENABLED.
+        # In shadow mode (env default), decisions are logged in trace_json
+        # but do not gate persistence. In active mode, REJECT/QUEUE verdicts
+        # short-circuit the persist call.
+        self._cap3_pipeline = None
+        self._cap3_mode = os.environ.get("CAP3_PIPELINE_MODE", "shadow").lower()
+        if os.environ.get("CAP3_PIPELINE_ENABLED", "true").lower() != "false":
+            try:
+                # Per-strategy composition modes — env-driven per Phase C spec.
+                per_strategy = {}
+                for sid in ("C2M", "C4M", "C2S", "C4ML"):
+                    mode = os.environ.get(f"CAP3_COMPOSITION_MODE_{sid}")
+                    if mode:
+                        per_strategy[sid] = mode
+
+                def _regime_state_source():
+                    try:
+                        val = self.r.get("regime_state")
+                        if val is None:
+                            return "NORMAL"
+                        if isinstance(val, bytes):
+                            val = val.decode("utf-8", errors="ignore")
+                        val = str(val).strip().upper()
+                        if val in ("NORMAL", "ELEVATED", "SHOCK"):
+                            return val
+                        return "NORMAL"
+                    except Exception:
+                        return "NORMAL"
+
+                # social_velocity_fn is intentionally None for Monday ship —
+                # honest-reporting permissive-pass per Cap3Pipeline docstring
+                # when DB-backed velocity is not yet wired. Revisit post-Week-1.
+                self._cap3_pipeline = _Cap3Pipeline(
+                    max_cap=int(os.environ.get("BINANCE_MAX_CONCURRENT", "3")),
+                    regime_state_source=_regime_state_source,
+                    social_velocity_fn=None,
+                    filter_composition_mode=os.environ.get(
+                        "CAP3_COMPOSITION_MODE", "top_dsr_only"
+                    ),
+                    per_strategy_mode=per_strategy or None,
+                )
+                logger.info(
+                    "cap3_pipeline initialized: mode=%s per_strategy=%s",
+                    self._cap3_mode, per_strategy,
+                )
+            except Exception as _exc:
+                logger.warning(
+                    "cap3_pipeline disabled (init failed: %s) — signals will bypass pipeline",
+                    _exc,
+                )
+                self._cap3_pipeline = None
 
     # ------------------------------------------------------------------
     # D1 Cold-Start Bootstrap
@@ -1161,6 +1267,217 @@ class SignalWorker(LineageEnforcer):
         except Exception as e:
             logger.debug("S11 eval error %s:%s: %s", symbol, tf, e)
 
+    # ── C1–C5 Classic Strategies ────────────────────────────────────────────
+
+    def _evaluate_c1(self, symbol: str, tf: str, snapshot, bar_start_ts: str):
+        """Run C1 Golden Cross evaluator on 4h bars."""
+        try:
+            state = self.c1_evaluator.compute_state(snapshot)
+            sig = self.c1_evaluator.evaluate_trigger(snapshot, state, symbol, tf)
+            if sig is None:
+                return
+            self._diag.setdefault("c1_signal", 0)
+            self._diag["c1_signal"] += 1
+            calib_mult = strategy_get_multiplier("C1")
+            calibrated_score = min(sig.setup_score * calib_mult, 1.0)
+            dxy_mult = get_dxy_multiplier(self.r)
+            calibrated_score = min(calibrated_score * dxy_mult, 1.0)
+            adjusted_score = self._capacity_adjusted_score(symbol, calibrated_score)
+            if not self._try_emit_signal(symbol, tf, "C1", adjusted_score):
+                return
+            payload = {
+                "setup_id": "C1", "setup_name": self._get_setup_label("C1"),
+                "symbol": symbol, "timeframe": tf,
+                "direction": sig.direction.value,
+                "setup_score": adjusted_score, "raw_score": sig.setup_score,
+                "entry_price": sig.entry_price, "stop_price": sig.stop_price,
+                "tp1_price": sig.tp1_price, "tp2_price": sig.tp2_price,
+                "r_value": sig.r_value, "time_stop_bars": sig.time_stop_bars,
+                "bar_start_ts": bar_start_ts or "", "as_of_ts": time.time(),
+                "why_items": sig.explain.why_items if sig.explain else [],
+                "sma50": sig.sma50, "sma200": sig.sma200,
+                "volume_z": sig.volume_z, "score_components": sig.score_components,
+            }
+            store_signal(self.r, symbol, tf, "C1", payload, adjusted_score, bar_start_ts or "")
+            reason = "; ".join(sig.explain.why_items) if sig.explain else None
+            self._persist_signal_to_pg(symbol, tf, "C1", adjusted_score, reason, payload)
+            logger.info("Signal: C1 LONG %s:%s score=%.3f sma50=%.4f sma200=%.4f", symbol, tf, adjusted_score, sig.sma50, sig.sma200)
+        except Exception as e:
+            logger.debug("C1 eval error %s:%s: %s", symbol, tf, e)
+
+    def _evaluate_c2(self, symbol: str, tf: str, snapshot, bar_start_ts: str):
+        """Run C2 Support Bounce evaluator on 1h bars.
+
+        Emits parent C2 plus each live variant in ``C_SERIES_VARIANTS["C2"]``
+        intersected with ``LIVE_VARIANT_SETUP_IDS`` (Phase B-STEP2). Each
+        variant is persisted as its own setup_id so Cap3Pipeline's
+        per-strategy filters can key on the variant. Monday live set: C2M.
+        """
+        try:
+            state = self.c2_evaluator.compute_state(snapshot)
+            sig = self.c2_evaluator.evaluate_trigger(snapshot, state, symbol, tf)
+            if sig is None:
+                return
+            self._diag.setdefault("c2_signal", 0)
+            self._diag["c2_signal"] += 1
+            calib_mult = strategy_get_multiplier("C2")
+            calibrated_score = min(sig.setup_score * calib_mult, 1.0)
+            dxy_mult = get_dxy_multiplier(self.r)
+            calibrated_score = min(calibrated_score * dxy_mult, 1.0)
+            adjusted_score = self._capacity_adjusted_score(symbol, calibrated_score)
+
+            # Parent C2 + variants (C2M live; C2S/C2SH deferred).
+            _variants = ["C2"] + [
+                v for v in C_SERIES_VARIANTS.get("C2", [])
+                if v in LIVE_VARIANT_SETUP_IDS
+            ]
+            for _sid in _variants:
+                if not self._try_emit_signal(symbol, tf, _sid, adjusted_score):
+                    continue
+                payload = {
+                    "setup_id": _sid, "setup_name": self._get_setup_label(_sid) if _sid == "C2" else _sid,
+                    "symbol": symbol, "timeframe": tf,
+                    "direction": sig.direction.value,
+                    "setup_score": adjusted_score, "raw_score": sig.setup_score,
+                    "entry_price": sig.entry_price, "stop_price": sig.stop_price,
+                    "tp1_price": sig.tp1_price, "tp2_price": sig.tp2_price,
+                    "r_value": sig.r_value, "time_stop_bars": sig.time_stop_bars,
+                    "bar_start_ts": bar_start_ts or "", "as_of_ts": time.time(),
+                    "why_items": sig.explain.why_items if sig.explain else [],
+                    "rsi": sig.rsi, "donchian_low": sig.donchian_low,
+                    "volume_z": sig.volume_z, "score_components": sig.score_components,
+                    "parent_setup_id": "C2",
+                }
+                store_signal(self.r, symbol, tf, _sid, payload, adjusted_score, bar_start_ts or "")
+                reason = "; ".join(sig.explain.why_items) if sig.explain else None
+                self._persist_signal_to_pg(symbol, tf, _sid, adjusted_score, reason, payload)
+                logger.info("Signal: %s LONG %s:%s score=%.3f rsi=%.1f",
+                            _sid, symbol, tf, adjusted_score, sig.rsi)
+        except Exception as e:
+            logger.debug("C2 eval error %s:%s: %s", symbol, tf, e)
+
+    def _evaluate_c3(self, symbol: str, tf: str, snapshot, bar_start_ts: str):
+        """Run C3 Breakout evaluator on 1h bars."""
+        try:
+            state = self.c3_evaluator.compute_state(snapshot)
+            sig = self.c3_evaluator.evaluate_trigger(snapshot, state, symbol, tf)
+            if sig is None:
+                return
+            self._diag.setdefault("c3_signal", 0)
+            self._diag["c3_signal"] += 1
+            calib_mult = strategy_get_multiplier("C3")
+            calibrated_score = min(sig.setup_score * calib_mult, 1.0)
+            dxy_mult = get_dxy_multiplier(self.r)
+            calibrated_score = min(calibrated_score * dxy_mult, 1.0)
+            adjusted_score = self._capacity_adjusted_score(symbol, calibrated_score)
+            if not self._try_emit_signal(symbol, tf, "C3", adjusted_score):
+                return
+            payload = {
+                "setup_id": "C3", "setup_name": self._get_setup_label("C3"),
+                "symbol": symbol, "timeframe": tf,
+                "direction": sig.direction.value,
+                "setup_score": adjusted_score, "raw_score": sig.setup_score,
+                "entry_price": sig.entry_price, "stop_price": sig.stop_price,
+                "tp1_price": sig.tp1_price, "tp2_price": sig.tp2_price,
+                "r_value": sig.r_value, "time_stop_bars": sig.time_stop_bars,
+                "bar_start_ts": bar_start_ts or "", "as_of_ts": time.time(),
+                "why_items": sig.explain.why_items if sig.explain else [],
+                "bb_width": sig.bb_width, "prev_resistance": sig.prev_resistance,
+                "volume_z": sig.volume_z, "score_components": sig.score_components,
+            }
+            store_signal(self.r, symbol, tf, "C3", payload, adjusted_score, bar_start_ts or "")
+            reason = "; ".join(sig.explain.why_items) if sig.explain else None
+            self._persist_signal_to_pg(symbol, tf, "C3", adjusted_score, reason, payload)
+            logger.info("Signal: C3 LONG %s:%s score=%.3f vol_z=%.1f", symbol, tf, adjusted_score, sig.volume_z)
+        except Exception as e:
+            logger.debug("C3 eval error %s:%s: %s", symbol, tf, e)
+
+    def _evaluate_c4(self, symbol: str, tf: str, snapshot, bar_start_ts: str):
+        """Run C4 RSI Reversal evaluator on 1h bars.
+
+        Emits parent C4 plus each live variant in ``C_SERIES_VARIANTS["C4"]``
+        intersected with ``LIVE_VARIANT_SETUP_IDS`` (Phase B-STEP2). Monday
+        live set: C4M. C4ML deferred (null sprint result).
+        """
+        try:
+            state = self.c4_evaluator.compute_state(snapshot)
+            sig = self.c4_evaluator.evaluate_trigger(snapshot, state, symbol, tf)
+            if sig is None:
+                return
+            self._diag.setdefault("c4_signal", 0)
+            self._diag["c4_signal"] += 1
+            calib_mult = strategy_get_multiplier("C4")
+            calibrated_score = min(sig.setup_score * calib_mult, 1.0)
+            dxy_mult = get_dxy_multiplier(self.r)
+            calibrated_score = min(calibrated_score * dxy_mult, 1.0)
+            adjusted_score = self._capacity_adjusted_score(symbol, calibrated_score)
+
+            _variants = ["C4"] + [
+                v for v in C_SERIES_VARIANTS.get("C4", [])
+                if v in LIVE_VARIANT_SETUP_IDS
+            ]
+            for _sid in _variants:
+                if not self._try_emit_signal(symbol, tf, _sid, adjusted_score):
+                    continue
+                payload = {
+                    "setup_id": _sid, "setup_name": self._get_setup_label(_sid) if _sid == "C4" else _sid,
+                    "symbol": symbol, "timeframe": tf,
+                    "direction": sig.direction.value,
+                    "setup_score": adjusted_score, "raw_score": sig.setup_score,
+                    "entry_price": sig.entry_price, "stop_price": sig.stop_price,
+                    "tp1_price": sig.tp1_price, "tp2_price": sig.tp2_price,
+                    "r_value": sig.r_value, "time_stop_bars": sig.time_stop_bars,
+                    "bar_start_ts": bar_start_ts or "", "as_of_ts": time.time(),
+                    "why_items": sig.explain.why_items if sig.explain else [],
+                    "rsi": sig.rsi, "bb_lb": sig.bb_lb,
+                    "volume_z": sig.volume_z, "score_components": sig.score_components,
+                    "parent_setup_id": "C4",
+                }
+                store_signal(self.r, symbol, tf, _sid, payload, adjusted_score, bar_start_ts or "")
+                reason = "; ".join(sig.explain.why_items) if sig.explain else None
+                self._persist_signal_to_pg(symbol, tf, _sid, adjusted_score, reason, payload)
+                logger.info("Signal: %s LONG %s:%s score=%.3f rsi=%.1f",
+                            _sid, symbol, tf, adjusted_score, sig.rsi)
+        except Exception as e:
+            logger.debug("C4 eval error %s:%s: %s", symbol, tf, e)
+
+    def _evaluate_c5(self, symbol: str, tf: str, snapshot, bar_start_ts: str):
+        """Run C5 Volume Scalp evaluator on 5m bars."""
+        try:
+            state = self.c5_evaluator.compute_state(snapshot)
+            sig = self.c5_evaluator.evaluate_trigger(snapshot, state, symbol, tf)
+            if sig is None:
+                return
+            self._diag.setdefault("c5_signal", 0)
+            self._diag["c5_signal"] += 1
+            calib_mult = strategy_get_multiplier("C5")
+            calibrated_score = min(sig.setup_score * calib_mult, 1.0)
+            dxy_mult = get_dxy_multiplier(self.r)
+            calibrated_score = min(calibrated_score * dxy_mult, 1.0)
+            adjusted_score = self._capacity_adjusted_score(symbol, calibrated_score)
+            if not self._try_emit_signal(symbol, tf, "C5", adjusted_score):
+                return
+            payload = {
+                "setup_id": "C5", "setup_name": self._get_setup_label("C5"),
+                "symbol": symbol, "timeframe": tf,
+                "direction": sig.direction.value,
+                "setup_score": adjusted_score, "raw_score": sig.setup_score,
+                "entry_price": sig.entry_price, "stop_price": sig.stop_price,
+                "tp1_price": sig.tp1_price, "tp2_price": sig.tp2_price,
+                "r_value": sig.r_value, "time_stop_bars": sig.time_stop_bars,
+                "bar_start_ts": bar_start_ts or "", "as_of_ts": time.time(),
+                "why_items": sig.explain.why_items if sig.explain else [],
+                "ema9": sig.ema9, "vwap": sig.vwap,
+                "volume_z": sig.volume_z, "rvol": sig.rvol,
+                "score_components": sig.score_components,
+            }
+            store_signal(self.r, symbol, tf, "C5", payload, adjusted_score, bar_start_ts or "")
+            reason = "; ".join(sig.explain.why_items) if sig.explain else None
+            self._persist_signal_to_pg(symbol, tf, "C5", adjusted_score, reason, payload)
+            logger.info("Signal: C5 LONG %s:%s score=%.3f vol_z=%.1f rvol=%.1f", symbol, tf, adjusted_score, sig.volume_z, sig.rvol)
+        except Exception as e:
+            logger.debug("C5 eval error %s:%s: %s", symbol, tf, e)
+
     def _evaluate_d1(self, symbol: str, tf: str, snapshot, bar_start_ts: str):
         """Run D1 Dormancy-to-Ignition evaluator on 1h bars (microcap universe)."""
         if is_d1_excluded(symbol):
@@ -1739,6 +2056,67 @@ class SignalWorker(LineageEnforcer):
     def _persist_signal_to_pg(self, symbol: str, tf: str, setup_id: str,
                                score: float, reason: str, payload: dict,
                                trace_json):
+        # Regime enforcer gate — sprint plan §4.5 minimum-viable.
+        # Shadow mode logs rejects; active mode short-circuits the persist.
+        if self._enforcer is not None:
+            _reject, _reason = self._enforcer.should_reject(
+                type("S", (), {"symbol": symbol, "setup_id": setup_id})()
+            )
+            if _reject:
+                logger.info(
+                    "regime_enforcer_reject",
+                    extra={
+                        "symbol": symbol, "setup_id": setup_id,
+                        "timeframe": tf, "reason": _reason,
+                        "mode": self._enforcer_mode,
+                    },
+                )
+                if self._enforcer_mode == "active":
+                    return  # skip persist; shadow mode: fall through
+
+        # Cap3Pipeline gate — Phase C wiring. Runs the four gates
+        # (indicator_safe/social_safe/cluster_cap/regime_enforcer) and
+        # records the decision in trace_json.cap3_decision. Active mode
+        # short-circuits persist on REJECT or QUEUE_CLUSTER_FULL.
+        _cap3_decision = None
+        if self._cap3_pipeline is not None:
+            try:
+                _sig = _Cap3Signal(
+                    opportunity_id=f"{symbol}:{tf}:{setup_id}:{int(time.time())}",
+                    setup_id=setup_id,
+                    symbol=symbol,
+                    created_ts=int(time.time()),
+                    payload=payload or {},
+                )
+                _decision = self._cap3_pipeline.evaluate(_sig, open_positions=[])
+                _cap3_decision = {
+                    "verdict": _decision.verdict,
+                    "gate_rejecting": _decision.gate_rejecting,
+                    "reject_reason": _decision.reject_reason,
+                    "cluster_id": _decision.cluster_id,
+                    "size_multiplier": _decision.size_multiplier,
+                }
+                if _decision.verdict != "ACCEPT":
+                    logger.info(
+                        "cap3_pipeline_reject",
+                        extra={
+                            "symbol": symbol, "setup_id": setup_id,
+                            "timeframe": tf,
+                            "verdict": _decision.verdict,
+                            "gate": _decision.gate_rejecting,
+                            "reason": _decision.reject_reason,
+                            "mode": self._cap3_mode,
+                        },
+                    )
+                    if self._cap3_mode == "active":
+                        return  # skip persist; shadow mode: fall through
+            except Exception as _exc:
+                logger.warning("cap3_pipeline evaluate failed: %s", _exc)
+        # Record the decision in trace_json audit field (even on ACCEPT).
+        if _cap3_decision is not None and isinstance(trace_json, dict):
+            trace_json = dict(trace_json)
+            trace_json["cap3_decision"] = _cap3_decision
+
         if not _database_url():
             return
         # Persistence gate: traceable strategies must have sealed trace

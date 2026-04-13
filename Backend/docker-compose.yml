@@ -182,6 +182,30 @@ services:
     networks:
       - backend
 
+  # Phase A — regime_detector (composite-trigger poller)
+  # Reuses the computers image (bundles governance/ + requirements). Always
+  # writes to Redis when the composite trigger fires; "shadow mode" is on
+  # the consumer side (signal_worker gate in computers container).
+  regime_detector:
+    build:
+      context: .
+      dockerfile: Dockerfile.computers
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      SERVICE_NAME: regime_detector
+      ENFORCER_BETA_TABLE: /backend/governance/regime/asset_beta_table_binance_v1.json
+      REGIME_DETECTOR_POLL_SECONDS: "300"
+    command: ["python", "-u", "-m", "governance.regime_detector"]
+    mem_limit: 256m
+    cpus: "0.5"
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - backend
+
 volumes:
   caddy_data:
   caddy_config:
