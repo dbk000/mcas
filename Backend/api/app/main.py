@@ -313,21 +313,23 @@ def get_stop_policy_template():
 @router.get("/markets")
 def list_markets():
     """List available symbols with metadata."""
-    from governance.bootstrap import quote_currency as _qc, major_symbols as _ms
+    from governance.bootstrap import data_quote_currency as _dqc, major_symbols as _ms
     t0 = time.time()
-    _quote = _qc()
+    _quote = _dqc()
     _tier1 = set(_ms())
     markets = []
     for symbol in DEFAULT_SYMBOLS:
-        # DEFAULT_SYMBOLS is the USDT fallback list — strip whichever
-        # known quote suffix the symbol actually carries so the response
-        # works for both USDT-fallback and registry-resolved universes.
+        # DEFAULT_SYMBOLS is USDT-denominated to match the data layer.
+        # Strip whichever known quote the symbol carries.
         if symbol.endswith(_quote):
             base = symbol[:-len(_quote)]
             reported_quote = _quote
         elif symbol.endswith("USDT"):
             base = symbol[:-4]
             reported_quote = "USDT"
+        elif symbol.endswith("USDC"):
+            base = symbol[:-4]
+            reported_quote = "USDC"
         else:
             base = symbol
             reported_quote = "?"

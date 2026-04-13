@@ -398,8 +398,8 @@ def _fetch_klines_rest(symbol: str, interval: str, limit: int = 500) -> list[dic
 
 def _fetch_top_symbols(n: int = 200) -> list[str]:
     """DEPRECATED: fallback only. Use _fetch_volume_map() for two-tier universe."""
-    from governance.bootstrap import quote_currency as _qc
-    _quote = _qc()
+    from governance.bootstrap import data_quote_currency as _dqc
+    _quote = _dqc()
     try:
         resp = requests.get(f"{BINANCE_BASE}/ticker/24hr", timeout=15)
         resp.raise_for_status()
@@ -420,16 +420,17 @@ def _fetch_top_symbols(n: int = 200) -> list[str]:
 
 def _fetch_volume_map() -> dict[str, float]:
     """Fetch 24h quote volume for all pairs quoted in the registry
-    ``QUOTE_CURRENCY`` from Binance.
+    ``DATA_QUOTE_CURRENCY`` from Binance.
 
-    Invariant: Known Universe is strictly single-quote so quoteVolume ≈ USD
-    (no cross-rate conversion needed).
+    Invariant: Known Universe is strictly single-quote (data layer) so
+    quoteVolume ≈ USD (no cross-rate conversion needed). Execution layer
+    translates at order time via ``_translate_to_quote``.
 
     Returns:
         {symbol: quoteVolume} for all qualifying pairs with volume > 0.
     """
-    from governance.bootstrap import quote_currency as _qc
-    _quote = _qc()
+    from governance.bootstrap import data_quote_currency as _dqc
+    _quote = _dqc()
     try:
         resp = requests.get(f"{BINANCE_BASE}/ticker/24hr", timeout=15)
         resp.raise_for_status()

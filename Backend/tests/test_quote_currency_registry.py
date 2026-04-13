@@ -1,13 +1,14 @@
-"""Unit tests for REFACTOR-2 quote-currency registry helpers.
+"""Unit tests for REFACTOR-2 quote-currency registry helpers (split
+into DATA + EXECUTION quotes, 2026-04-13).
 
 Covers:
-- ``quote_currency()`` surfaces the registry value
-- ``macro_reference_symbol()`` composes BTC + quote
-- ``quote_currency_filter_suffix()`` identity alias
-- ``major_symbols()`` derives MAJOR_BASES × QUOTE_CURRENCY
+- ``data_quote_currency()`` returns the data-layer quote (USDT default)
+- ``execution_quote_currency()`` returns the execution-layer quote (USDC)
+- ``quote_currency()`` deprecated alias still returns data-quote
+- ``macro_reference_symbol()`` composes BTC + DATA quote
+- ``major_symbols()`` derives MAJOR_BASES × DATA quote
 - Unbootstrapped access crashes loudly (sys.exit 78)
-- Override via env var propagates consistently
-- D1Config / U1Config class attrs are sync'd from Worker at bootstrap
+- D1Config / U1Config class attrs are sync'd from DATA quote at bootstrap
 """
 
 from __future__ import annotations
@@ -32,52 +33,83 @@ except ImportError:
 
 
 class _FakeWorker:
-    def __init__(self, quote: str):
-        self.QUOTE_CURRENCY = quote
+    def __init__(self, data: str = "USDT", execution: str = "USDC"):
+        self.DATA_QUOTE_CURRENCY = data
+        self.EXECUTION_QUOTE_CURRENCY = execution
 
 
 class _FakeRegistry:
-    def __init__(self, quote: str):
-        self.Worker = _FakeWorker(quote)
+    def __init__(self, data: str = "USDT", execution: str = "USDC"):
+        self.Worker = _FakeWorker(data=data, execution=execution)
 
 
 # ── Core helpers ───────────────────────────────────────────────────────
 
-def test_quote_currency_reads_from_registry():
-    with patch.object(bs, "get_config", return_value=_FakeRegistry("USDC")):
-        assert bs.quote_currency() == "USDC"
+def test_data_quote_currency_reads_from_registry():
+    with patch.object(bs, "get_config", return_value=_FakeRegistry(data="USDT")):
+        assert bs.data_quote_currency() == "USDT"
 
 
-def test_macro_reference_symbol_composition():
-    with patch.object(bs, "get_config", return_value=_FakeRegistry("USDC")):
-        assert bs.macro_reference_symbol() == "BTCUSDC"
-    with patch.object(bs, "get_config", return_value=_FakeRegistry("USDT")):
+def test_execution_quote_currency_reads_from_registry():
+    with patch.object(bs, "get_config",
+                      return_value=_FakeRegistry(execution="USDC")):
+        assert bs.execution_quote_currency() == "USDC"
+
+
+def test_data_and_execution_are_independent():
+    """Flipping one does not affect the other."""
+    with patch.object(bs, "get_config",
+                      return_value=_FakeRegistry(data="USDT", execution="USDC")):
+        assert bs.data_quote_currency() == "USDT"
+        assert bs.execution_quote_currency() == "USDC"
+    with patch.object(bs, "get_config",
+                      return_value=_FakeRegistry(data="USDC", execution="USDT")):
+        assert bs.data_quote_currency() == "USDC"
+        assert bs.execution_quote_currency() == "USDT"
+
+
+def test_quote_currency_legacy_alias_is_data():
+    """Legacy ``quote_currency()`` must resolve to the data quote so
+    existing callers (tests, scripts) read the historically-correct value."""
+    with patch.object(bs, "get_config",
+                      return_value=_FakeRegistry(data="USDT", execution="USDC")):
+        assert bs.quote_currency() == "USDT"
+
+
+def test_macro_reference_symbol_uses_data_quote():
+    """Macro ref reads OHLCV → must use the data quote, never execution."""
+    with patch.object(bs, "get_config",
+                      return_value=_FakeRegistry(data="USDT", execution="USDC")):
         assert bs.macro_reference_symbol() == "BTCUSDT"
+    with patch.object(bs, "get_config",
+                      return_value=_FakeRegistry(data="USDC", execution="USDT")):
+        assert bs.macro_reference_symbol() == "BTCUSDC"
 
 
-def test_filter_suffix_identity():
-    with patch.object(bs, "get_config", return_value=_FakeRegistry("USDC")):
-        assert bs.quote_currency_filter_suffix() == "USDC"
-    with patch.object(bs, "get_config", return_value=_FakeRegistry("USDT")):
+def test_filter_suffix_uses_data_quote():
+    with patch.object(bs, "get_config",
+                      return_value=_FakeRegistry(data="USDT")):
         assert bs.quote_currency_filter_suffix() == "USDT"
 
 
-def test_major_symbols_derives_from_quote_currency():
-    with patch.object(bs, "get_config", return_value=_FakeRegistry("USDC")):
+def test_major_symbols_uses_data_quote():
+    with patch.object(bs, "get_config",
+                      return_value=_FakeRegistry(data="USDT", execution="USDC")):
         syms = bs.major_symbols()
-    expected = tuple(sorted(f"{b}USDC" for b in bs.MAJOR_BASES))
+    expected = tuple(sorted(f"{b}USDT" for b in bs.MAJOR_BASES))
     assert syms == expected
-    # Spot-check: BTC + ETH are always in there.
-    assert "BTCUSDC" in syms
-    assert "ETHUSDC" in syms
+    # Data-quote-bound — executionquote must NOT appear.
+    assert "BTCUSDT" in syms
+    assert "BTCUSDC" not in syms
 
 
-def test_major_symbols_reacts_to_quote_flip():
-    with patch.object(bs, "get_config", return_value=_FakeRegistry("USDT")):
+def test_major_symbols_reacts_to_data_quote_flip():
+    with patch.object(bs, "get_config",
+                      return_value=_FakeRegistry(data="USDT")):
         syms_usdt = bs.major_symbols()
-    with patch.object(bs, "get_config", return_value=_FakeRegistry("USDC")):
+    with patch.object(bs, "get_config",
+                      return_value=_FakeRegistry(data="USDC")):
         syms_usdc = bs.major_symbols()
-    # Same length (derivation is base × quote), disjoint sets under flip.
     assert len(syms_usdt) == len(syms_usdc) == len(bs.MAJOR_BASES)
     assert not (set(syms_usdt) & set(syms_usdc))
 

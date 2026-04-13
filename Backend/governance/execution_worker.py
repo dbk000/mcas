@@ -92,9 +92,16 @@ class ExecConfig:
     daily_loss_cap_usd: float
     binance_mode: str
     dry_run: bool  # if True, log intended orders instead of sending
+    quote_currency: str  # resolved from registry — 'USDC' default
+    whitelist_path: str  # symbols permitted in the live universe
 
     @classmethod
     def from_env(cls) -> "ExecConfig":
+        # Post-split (2026-04-13): execution uses EXECUTION_QUOTE_CURRENCY
+        # specifically. Signals are tagged DATA_QUOTE (USDT) and
+        # translated to EXECUTION_QUOTE (USDC) at order placement via
+        # _translate_to_quote — this is the MVP hybrid restored.
+        from governance.bootstrap import execution_quote_currency as _eqc
         return cls(
             notional_usd=float(os.environ.get("BINANCE_NOTIONAL_PER_POSITION_USD", "40")),
             poll_interval_s=float(os.environ.get("EXECUTION_POLL_INTERVAL_S", "2.0")),
@@ -102,7 +109,46 @@ class ExecConfig:
             daily_loss_cap_usd=float(os.environ.get("LIVE_DAILY_LOSS_CAP_USD", "50")),
             binance_mode=os.environ.get("BINANCE_MODE", "testnet"),
             dry_run=os.environ.get("EXECUTION_DRY_RUN", "false").lower() == "true",
+            quote_currency=_eqc(),
+            whitelist_path=os.environ.get(
+                "BINANCE_WHITELIST_PATH",
+                "/backend/config/binance_spot_whitelist_usdc.txt",
+            ),
         )
+
+
+def _load_whitelist(path: str) -> set[str]:
+    """Load symbol whitelist from disk. Returns set of permitted symbols.
+    Lines starting with # or empty are ignored. Returns empty set on read failure
+    (callers treat empty as 'no restriction' to avoid shipping a broken filter)."""
+    try:
+        with open(path) as fh:
+            return {
+                line.strip()
+                for line in fh
+                if line.strip() and not line.startswith("#")
+            }
+    except (OSError, FileNotFoundError):
+        return set()
+
+
+def _translate_to_quote(symbol: str, target_quote: str) -> Optional[str]:
+    """Translate a USDT-suffixed symbol to target_quote suffix.
+
+    Returns None if symbol doesn't end in a recognised quote suffix.
+    No-op if symbol already ends in target_quote.
+
+    Sprint research was USDT-denominated; live trading on this account is
+    USDC-only (TRD_GRP_039 permission). Per operator: BTCUSDC and BTCUSDT
+    candles track within 0.01% — mechanical suffix swap is safe.
+    """
+    target_quote = target_quote.upper()
+    for src in ("USDT", "USDC", "BUSD", "FDUSD"):
+        if symbol.endswith(src):
+            if src == target_quote:
+                return symbol
+            return symbol[:-len(src)] + target_quote
+    return None
 
 
 # --------------------------------------------------------------------------- #
@@ -192,24 +238,55 @@ class ExecutionWorker:
         self._stop = threading.Event()
         self._positions_by_coid: Dict[str, int] = {}  # clientOrderId → live_positions.id
         self._coid_lock = threading.Lock()
+        # Whitelist of permitted live-trading symbols (USDC universe).
+        # Empty set = no restriction (unsafe — would let any symbol through).
+        # Failing to load a whitelist file logs a warning but doesn't crash;
+        # downstream gate then defaults to "no restriction" until the file
+        # appears or the path is corrected.
+        self._whitelist: set[str] = _load_whitelist(self.cfg.whitelist_path)
+        if not self._whitelist:
+            logger.warning(
+                "execution_worker: whitelist file empty or missing at %s — "
+                "all translated symbols will be permitted (no whitelist gate)",
+                self.cfg.whitelist_path,
+            )
+        else:
+            logger.info(
+                "execution_worker: loaded %d %s symbols from whitelist %s",
+                len(self._whitelist), self.cfg.quote_currency, self.cfg.whitelist_path,
+            )
 
     # ---------------- lifecycle ---------------- #
 
     def start(self) -> None:
         logger.info(
-            "execution_worker starting: mode=%s notional=%s dry_run=%s",
+            "execution_worker starting: mode=%s notional=%s dry_run=%s quote=%s",
             self.cfg.binance_mode, self.cfg.notional_usd, self.cfg.dry_run,
+            self.cfg.quote_currency,
         )
+        # WS user-data stream — fill events streamed in real-time when working.
+        # Binance deprecated /api/v3/userDataStream returns 410; the proper fix
+        # (new WS auth pattern) is REFACTOR-3 work. For Week-1 cap=1 trading,
+        # fall back to REST polling for fill state — slower but functional.
+        # EXECUTION_WS_REQUIRED=true env var restores fail-loud behaviour.
+        ws_required = os.environ.get("EXECUTION_WS_REQUIRED", "false").lower() == "true"
         if not self.cfg.dry_run:
             try:
                 self.client.start_ws_user_stream(
                     on_event=self._on_ws_event,
                     keepalive_interval_s=1800,
                 )
+                logger.info("user-data ws started — fills will stream in real-time")
             except Exception as exc:  # noqa: BLE001
-                logger.exception("user-data ws start failed: %s", exc)
-                # Fail-loud: no silent fill-less running.
-                raise
+                if ws_required:
+                    logger.exception("user-data ws start failed (EXECUTION_WS_REQUIRED=true): %s", exc)
+                    raise
+                logger.warning(
+                    "user-data ws start failed: %s — falling back to REST poll for fills "
+                    "(fill detection latency: ~poll_interval). Set EXECUTION_WS_REQUIRED=true "
+                    "to restore fail-loud behaviour.",
+                    exc,
+                )
 
         self._hb_thread = threading.Thread(
             target=self._heartbeat_loop, name="exec-heartbeat", daemon=True
@@ -309,6 +386,19 @@ class ExecutionWorker:
             self._advance_status(conn, opp_id, "rejected_no_price")
             return False
 
+        # Translate signal symbol to the live trading quote currency.
+        # Sprint research was USDT-denominated; this account trades USDC.
+        # Mechanical suffix swap, gated by the USDC whitelist.
+        live_symbol = _translate_to_quote(symbol, self.cfg.quote_currency)
+        if live_symbol is None:
+            logger.warning("opp %d: symbol %s has no recognised quote suffix — skipping", opp_id, symbol)
+            self._advance_status(conn, opp_id, "rejected_unknown_quote", audit={"symbol": symbol})
+            return False
+        if self._whitelist and live_symbol not in self._whitelist:
+            logger.info("opp %d: %s → %s not in %s whitelist — skipping", opp_id, symbol, live_symbol, self.cfg.quote_currency)
+            self._advance_status(conn, opp_id, "rejected_not_in_whitelist", audit={"signal_symbol": symbol, "live_symbol": live_symbol})
+            return False
+
         notional = self.cfg.notional_usd
         allowed, reason = _risk_allows_submit(notional_usd=notional, cfg=self.cfg)
         if not allowed:
@@ -320,6 +410,10 @@ class ExecutionWorker:
         coid = _client_order_id(opp_id)
         cluster_id = payload.get("cluster_id")
         variant_id = payload.get("variant_id")
+        # From here on, "symbol" refers to the live (translated) symbol.
+        # Original signal_symbol is preserved in audit for traceability.
+        signal_symbol = symbol
+        symbol = live_symbol
 
         # Record live_positions row BEFORE placement so a crash between
         # placement and DB-write doesn't leave an orphan exchange order.
@@ -530,7 +624,12 @@ class ExecutionWorker:
 # Entry point
 # --------------------------------------------------------------------------- #
 def run() -> None:
-    """Blocking entrypoint — run until SIGTERM."""
+    """Blocking entrypoint — run until SIGTERM.
+    Bootstrap the registry FIRST so QUOTE_CURRENCY (and any other governed
+    config the worker needs) is resolvable before ExecConfig.from_env() runs.
+    """
+    from governance.bootstrap import bootstrap_genesis
+    bootstrap_genesis()
     worker = ExecutionWorker()
     worker.start()
 

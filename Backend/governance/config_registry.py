@@ -299,13 +299,27 @@ class WorkerTypedConfig:
     CORS_ORIGINS: str = ""
     API_KEY: str = ""
 
-    # Quote currency for live trading — drives execution_worker symbol
-    # translation, regime_detector macro reference symbol, and any other
-    # code that needs to know "what stable do we trade against?". Default
-    # USDC because account TRD_GRP_039 restricts USDT spot trading.
-    # See REFACTOR_2_QUOTE_CURRENCY_AGNOSTIC.md for the comprehensive
-    # rollout that eliminates remaining USDT literals across signal layer.
-    QUOTE_CURRENCY: str = "USDC"
+    # Quote-currency split (REFACTOR-2 revision, 2026-04-13). Two
+    # governed values — conflating them broke the data/execution hybrid
+    # that the MVP got right.
+    #
+    # DATA_QUOTE_CURRENCY drives everything that touches historical OHLCV:
+    # ingestor universe filter, monitored-set always-include macro symbol,
+    # signal_engine symbol fetch, D1/U1 universe exclusion, run_executor
+    # BTC cache key, telemetry macro queries. Default USDT because that's
+    # where months of 1h history live; flipping it strands indicator
+    # warmup (8+ days for SMA_200 @ 1h).
+    #
+    # EXECUTION_QUOTE_CURRENCY drives execution_worker symbol translation
+    # at order placement time only. Default USDC because account
+    # TRD_GRP_039 restricts USDT spot trading.
+    #
+    # The MVP-hybrid invariant: signal layer emits DATA_QUOTE-tagged
+    # symbols (USDT), execution_worker._translate_to_quote() swaps the
+    # suffix to EXECUTION_QUOTE at order time. BTCUSDT ≈ BTCUSDC within
+    # 0.01% so the candle-to-order swap is safe.
+    DATA_QUOTE_CURRENCY: str = "USDT"
+    EXECUTION_QUOTE_CURRENCY: str = "USDC"
 
     # SNAPSHOT_ENRICH plan (2026-04-13). When True, signal_worker injects
     # ``quote_volume_24h_usd`` into IndicatorSnapshot payloads at persist

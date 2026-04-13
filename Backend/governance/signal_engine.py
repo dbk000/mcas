@@ -811,8 +811,8 @@ def fetch_top_symbols_by_volume(n: int = 1024, quote: Optional[str] = None) -> l
     """
     try:
         if quote is None:
-            from governance.bootstrap import quote_currency as _qc
-            quote = _qc()
+            from governance.bootstrap import data_quote_currency as _dqc
+            quote = _dqc()
         _ticker_base = get_config().Worker.BINANCE_TICKER_URL
         resp = requests.get(
             f"{_ticker_base}/24hr",

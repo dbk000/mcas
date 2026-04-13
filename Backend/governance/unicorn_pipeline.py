@@ -154,10 +154,11 @@ def seed_candles_to_redis(r, symbol: str, tf: str, candles: list[OHLCV]):
 # =============================================================================
 
 def fetch_exchange_symbols() -> list[dict]:
-    """Fetch all spot pairs (quoted in the registry QUOTE_CURRENCY) from
-    Binance with metadata."""
-    from governance.bootstrap import quote_currency
-    _quote = quote_currency()
+    """Fetch all spot pairs (quoted in DATA_QUOTE_CURRENCY) from Binance
+    with metadata. U1 needs historical OHLCV so it reads the data quote,
+    not the execution quote."""
+    from governance.bootstrap import data_quote_currency
+    _quote = data_quote_currency()
     try:
         resp = requests.get(f"{_worker_cfg().BINANCE_API_BASE}/api/v3/exchangeInfo", timeout=30)
         resp.raise_for_status()
