@@ -182,6 +182,59 @@ class S10TypedConfig:
     TIME_STOP_BARS: int = 12
 
 
+@dataclass
+class C1TypedConfig:
+    """C1 Golden Cross — SMA50/200 crossover trend following."""
+    VOLUME_Z_MIN: float = 1.0
+    STOP_ATR_MULT: float = 2.0
+    TP1_ATR_MULT: float = 2.0
+    TP2_ATR_MULT: float = 4.0
+    TIME_STOP_BARS: int = 48
+
+
+@dataclass
+class C2TypedConfig:
+    """C2 Support Bounce — buy near Donchian-20 support."""
+    SUPPORT_PROXIMITY_ATR: float = 0.5
+    RSI_MAX: float = 40.0
+    VOLUME_Z_MIN: float = 0.5
+    STOP_ATR_BELOW_SUPPORT: float = 0.5
+    TIME_STOP_BARS: int = 24
+
+
+@dataclass
+class C3TypedConfig:
+    """C3 Breakout — Donchian resistance break after BB compression."""
+    VOLUME_Z_MIN: float = 2.0
+    BB_WIDTH_PCTILE_MAX: float = 25.0
+    BB_WIDTH_LOOKBACK: int = 50
+    STOP_ATR_MULT: float = 1.0
+    TP1_ATR_MULT: float = 1.5
+    TP2_ATR_MULT: float = 3.0
+    TIME_STOP_BARS: int = 24
+
+
+@dataclass
+class C4TypedConfig:
+    """C4 RSI Reversal — oversold bounce near BB lower band."""
+    RSI_THRESHOLD: float = 30.0
+    BB_PROXIMITY_ATR: float = 1.0
+    VOLUME_Z_MIN: float = 0.5
+    STOP_ATR_MULT: float = 1.5
+    TIME_STOP_BARS: int = 18
+
+
+@dataclass
+class C5TypedConfig:
+    """C5 Volume Scalp — EMA + VWAP alignment on volume spike."""
+    VOLUME_Z_MIN: float = 2.5
+    RVOL_MIN: float = 2.0
+    STOP_ATR_MULT: float = 1.0
+    TP1_ATR_MULT: float = 1.0
+    TP2_ATR_MULT: float = 1.5
+    TIME_STOP_BARS: int = 12
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Infrastructure Configs
 # ─────────────────────────────────────────────────────────────────────────────
@@ -202,6 +255,11 @@ class WorkerTypedConfig:
     S10_SCORE_MULT: float = 1.0
     S11_SCORE_MULT: float = 1.0
     D1_SCORE_MULT: float = 1.0
+    C1_SCORE_MULT: float = 1.0
+    C2_SCORE_MULT: float = 1.0
+    C3_SCORE_MULT: float = 1.0
+    C4_SCORE_MULT: float = 1.0
+    C5_SCORE_MULT: float = 1.0
     CONFIG_POLL_INTERVAL_S: float = 10.0
     BINANCE_TICKER_URL: str = ""
     BINANCE_KLINES_URL: str = ""

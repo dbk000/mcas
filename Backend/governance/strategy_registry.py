@@ -89,6 +89,11 @@ def register_all_strategies(worker=None):
     from core_logic.s10_macd_scalp import S10Evaluator
     from core_logic.s9_short_reversion import S9Evaluator
     from core_logic.s11_macd_long_reversion import S11Evaluator
+    from core_logic.c1_golden_cross import C1Evaluator
+    from core_logic.c2_support_bounce import C2Evaluator
+    from core_logic.c3_breakout import C3Evaluator
+    from core_logic.c4_rsi_reversal import C4Evaluator
+    from core_logic.c5_volume_scalp import C5Evaluator
 
     config = get_config()
     worker_config = config.Worker
@@ -157,4 +162,69 @@ def register_all_strategies(worker=None):
         version="S11_v1.0",
         label="MACD Long Reversion v1.0",
         traceable=True,
+    ))
+
+    # C1 Strategy — Golden Cross on 4h
+    c1_eval = C1Evaluator()
+    RuntimeDispatchTable.register("C1", StrategyHandler(
+        evaluator=c1_eval,
+        compute_state=lambda snap, history, prev_state, **kwargs: c1_eval.compute_state(snap),
+        evaluate_trigger=lambda snap, state, sym, tf, **kwargs: c1_eval.evaluate_trigger(snap, state, sym, tf),
+        score_multiplier=worker_config.C1_SCORE_MULT,
+        timeframe_affinity=["4h"],
+        worker_evaluate=worker._evaluate_c1 if worker else None,
+        version="C1_v1.0",
+        label="Golden Cross v1.0",
+    ))
+
+    # C2 Strategy — Support Bounce on 1h
+    c2_eval = C2Evaluator()
+    RuntimeDispatchTable.register("C2", StrategyHandler(
+        evaluator=c2_eval,
+        compute_state=lambda snap, history, prev_state, **kwargs: c2_eval.compute_state(snap),
+        evaluate_trigger=lambda snap, state, sym, tf, **kwargs: c2_eval.evaluate_trigger(snap, state, sym, tf),
+        score_multiplier=worker_config.C2_SCORE_MULT,
+        timeframe_affinity=["1h"],
+        worker_evaluate=worker._evaluate_c2 if worker else None,
+        version="C2_v1.0",
+        label="Support Bounce v1.0",
+    ))
+
+    # C3 Strategy — Breakout on 1h
+    c3_eval = C3Evaluator()
+    RuntimeDispatchTable.register("C3", StrategyHandler(
+        evaluator=c3_eval,
+        compute_state=lambda snap, history, prev_state, **kwargs: c3_eval.compute_state(snap),
+        evaluate_trigger=lambda snap, state, sym, tf, **kwargs: c3_eval.evaluate_trigger(snap, state, sym, tf),
+        score_multiplier=worker_config.C3_SCORE_MULT,
+        timeframe_affinity=["1h"],
+        worker_evaluate=worker._evaluate_c3 if worker else None,
+        version="C3_v1.0",
+        label="Breakout v1.0",
+    ))
+
+    # C4 Strategy — RSI Reversal on 1h
+    c4_eval = C4Evaluator()
+    RuntimeDispatchTable.register("C4", StrategyHandler(
+        evaluator=c4_eval,
+        compute_state=lambda snap, history, prev_state, **kwargs: c4_eval.compute_state(snap),
+        evaluate_trigger=lambda snap, state, sym, tf, **kwargs: c4_eval.evaluate_trigger(snap, state, sym, tf),
+        score_multiplier=worker_config.C4_SCORE_MULT,
+        timeframe_affinity=["1h"],
+        worker_evaluate=worker._evaluate_c4 if worker else None,
+        version="C4_v1.0",
+        label="RSI Reversal v1.0",
+    ))
+
+    # C5 Strategy — Volume Scalp on 5m
+    c5_eval = C5Evaluator()
+    RuntimeDispatchTable.register("C5", StrategyHandler(
+        evaluator=c5_eval,
+        compute_state=lambda snap, history, prev_state, **kwargs: c5_eval.compute_state(snap),
+        evaluate_trigger=lambda snap, state, sym, tf, **kwargs: c5_eval.evaluate_trigger(snap, state, sym, tf),
+        score_multiplier=worker_config.C5_SCORE_MULT,
+        timeframe_affinity=["5m"],
+        worker_evaluate=worker._evaluate_c5 if worker else None,
+        version="C5_v1.0",
+        label="Volume Scalp v1.0",
     ))
