@@ -1,0 +1,557 @@
+{
+  "meta": {
+    "schema_version": "1.0",
+    "generated_ts": "2026-04-12T21:30:38.953623+00:00",
+    "source_batch_id": "gated_v1_20260411",
+    "n_opps_input": 46983,
+    "n_trials_tested": 863,
+    "promotion_criteria": {
+      "fold_stability_min": "4/4",
+      "pf_uplift_pct": 0.1,
+      "dsr_min": 0.0,
+      "n_post_min": 200,
+      "avg_daily_pf_min": 1.0
+    },
+    "setups_covered": [
+      "C2M",
+      "C4M",
+      "C2SH",
+      "C4ML",
+      "C3M",
+      "C2S"
+    ],
+    "coverage_bounds": {
+      "min": 0.2,
+      "max": 0.95
+    },
+    "walk_forward": {
+      "n_folds_requested": 5,
+      "embargo_days": 1,
+      "note": "first fold always dropped (no train); max 4 usable"
+    },
+    "thresholds_tested_per_feature": [
+      0.1,
+      0.25,
+      0.5,
+      0.75,
+      0.9
+    ]
+  },
+  "filters_by_strategy": {
+    "C2M": {
+      "filters": [
+        {
+          "variant_id": "C2M_indi_macd_signal_lt_-0p001022_v1",
+          "feature": "macd_signal",
+          "operator": "<",
+          "threshold": -0.0010220027529147658,
+          "direction": "accept_if",
+          "quantile_idx": 1,
+          "walk_forward_PF_pre": 0.9945159591394228,
+          "walk_forward_PF_post": 1.1945065476527268,
+          "avg_daily_PF_post": 1.1483497508422755,
+          "holdout_PF": null,
+          "DSR": 6.106226635438361e-16,
+          "trade_level_SR_post": 0.5170561878519594,
+          "fold_stability": "4/4",
+          "n_trades_pre": 25988,
+          "n_trades_post": 6466,
+          "winrate_pre": 0.48002924426658455,
+          "winrate_post": 0.493349829879369,
+          "status": "shortlisted"
+        }
+      ]
+    },
+    "C4M": {
+      "filters": [
+        {
+          "variant_id": "C4M_indi_atr_gt_0p006929_v1",
+          "feature": "atr",
+          "operator": ">",
+          "threshold": 0.006928571428571435,
+          "direction": "accept_if",
+          "quantile_idx": 3,
+          "walk_forward_PF_pre": 1.24915283194226,
+          "walk_forward_PF_post": 1.5793691025089618,
+          "avg_daily_PF_post": 1.8327073692150493,
+          "holdout_PF": null,
+          "DSR": 5.93513160840331e-09,
+          "trade_level_SR_post": 1.002747502888908,
+          "fold_stability": "4/4",
+          "n_trades_pre": 5364,
+          "n_trades_post": 1253,
+          "winrate_pre": 0.43717375093214017,
+          "winrate_post": 0.47246608140462887,
+          "status": "shortlisted"
+        },
+        {
+          "variant_id": "C4M_indi_macd_line_lt_-0p006707_v1",
+          "feature": "macd_line",
+          "operator": "<",
+          "threshold": -0.006706713581803123,
+          "direction": "accept_if",
+          "quantile_idx": 1,
+          "walk_forward_PF_pre": 1.24915283194226,
+          "walk_forward_PF_post": 1.5359509328337662,
+          "avg_daily_PF_post": 1.703123871078892,
+          "holdout_PF": null,
+          "DSR": 4.5994746900035466e-10,
+          "trade_level_SR_post": 0.9103468357946195,
+          "fold_stability": "4/4",
+          "n_trades_pre": 5364,
+          "n_trades_post": 1177,
+          "winrate_pre": 0.43717375093214017,
+          "winrate_post": 0.46813933729821583,
+          "status": "shortlisted"
+        },
+        {
+          "variant_id": "C4M_indi_macd_signal_lt_-0p005223_v1",
+          "feature": "macd_signal",
+          "operator": "<",
+          "threshold": -0.005222758641211338,
+          "direction": "accept_if",
+          "quantile_idx": 1,
+          "walk_forward_PF_pre": 1.24915283194226,
+          "walk_forward_PF_post": 1.5317779420294946,
+          "avg_daily_PF_post": 1.7129300416708573,
+          "holdout_PF": null,
+          "DSR": 3.0304758702470735e-10,
+          "trade_level_SR_post": 0.8960969106980334,
+          "fold_stability": "4/4",
+          "n_trades_pre": 5364,
+          "n_trades_post": 1191,
+          "winrate_pre": 0.43717375093214017,
+          "winrate_post": 0.47523089840470195,
+          "status": "shortlisted"
+        },
+        {
+          "variant_id": "C4M_indi_macd_prev_histogram_lt_-0p001121_v1",
+          "feature": "macd_prev_histogram",
+          "operator": "<",
+          "threshold": -0.0011213925135592465,
+          "direction": "accept_if",
+          "quantile_idx": 1,
+          "walk_forward_PF_pre": 1.24915283194226,
+          "walk_forward_PF_post": 1.5637341526490436,
+          "avg_daily_PF_post": 2.0509955550899437,
+          "holdout_PF": null,
+          "DSR": 1.32839628186332e-10,
+          "trade_level_SR_post": 0.8685186411753923,
+          "fold_stability": "4/4",
+          "n_trades_pre": 5364,
+          "n_trades_post": 1149,
+          "winrate_pre": 0.43717375093214017,
+          "winrate_post": 0.44734551784160137,
+          "status": "shortlisted"
+        },
+        {
+          "variant_id": "C4M_indi_macd_histogram_lt_-0p0009604_v1",
+          "feature": "macd_histogram",
+          "operator": "<",
+          "threshold": -0.0009603889403984625,
+          "direction": "accept_if",
+          "quantile_idx": 1,
+          "walk_forward_PF_pre": 1.24915283194226,
+          "walk_forward_PF_post": 1.4777230251494085,
+          "avg_daily_PF_post": 1.9056961008687165,
+          "holdout_PF": null,
+          "DSR": 1.014914263741673e-10,
+          "trade_level_SR_post": 0.8596788573959095,
+          "fold_stability": "4/4",
+          "n_trades_pre": 5364,
+          "n_trades_post": 1161,
+          "winrate_pre": 0.43717375093214017,
+          "winrate_post": 0.43324720068906114,
+          "status": "shortlisted"
+        },
+        {
+          "variant_id": "C4M_indi_rsi_slope_gt_2p509_v1",
+          "feature": "rsi_slope",
+          "operator": ">",
+          "threshold": 2.509147952404298,
+          "direction": "accept_if",
+          "quantile_idx": 2,
+          "walk_forward_PF_pre": 1.24915283194226,
+          "walk_forward_PF_post": 1.4788366248054874,
+          "avg_daily_PF_post": 1.4657537766026976,
+          "holdout_PF": null,
+          "DSR": 6.722400414105323e-14,
+          "trade_level_SR_post": 0.6422773181091594,
+          "fold_stability": "4/4",
+          "n_trades_pre": 5364,
+          "n_trades_post": 2457,
+          "winrate_pre": 0.43717375093214017,
+          "winrate_post": 0.450956450956451,
+          "status": "shortlisted"
+        },
+        {
+          "variant_id": "C4M_indi_rsi_slope_gt_0p6213_v1",
+          "feature": "rsi_slope",
+          "operator": ">",
+          "threshold": 0.6212811990988598,
+          "direction": "accept_if",
+          "quantile_idx": 1,
+          "walk_forward_PF_pre": 1.24915283194226,
+          "walk_forward_PF_post": 1.3912029377820323,
+          "avg_daily_PF_post": 1.302999007735948,
+          "holdout_PF": null,
+          "DSR": 8.43769498715119e-15,
+          "trade_level_SR_post": 0.5863760536266607,
+          "fold_stability": "4/4",
+          "n_trades_pre": 5364,
+          "n_trades_post": 3521,
+          "winrate_pre": 0.43717375093214017,
+          "winrate_post": 0.4515762567452428,
+          "status": "shortlisted"
+        }
+      ]
+    },
+    "C2SH": {
+      "filters": [],
+      "null_result": true,
+      "reason": "best filter was rsi < 54.13: PF_post=0.725 (pre=0.711), DSR=0.000, fold_stability=1/4, first_failure=fold_stability_fail"
+    },
+    "C4ML": {
+      "filters": [],
+      "null_result": true,
+      "reason": "best filter was rsi_sma < 31.74: PF_post=0.916 (pre=1.107), DSR=0.000, fold_stability=1/4, first_failure=fold_stability_fail"
+    },
+    "C3M": {
+      "filters": [],
+      "null_result": true,
+      "reason": "best filter was rsi_sma > 57.42: PF_post=0.439 (pre=0.690), DSR=0.000, fold_stability=0/4, first_failure=fold_stability_fail"
+    },
+    "C2S": {
+      "filters": [
+        {
+          "variant_id": "C2S_indi_quote_volume_24h_usd_lt_1p007e+06_v1",
+          "feature": "quote_volume_24h_usd",
+          "operator": "<",
+          "threshold": 1007259.19,
+          "direction": "accept_if",
+          "quantile_idx": 2,
+          "walk_forward_PF_pre": 2.337232308896681,
+          "walk_forward_PF_post": 5.962268144952779,
+          "avg_daily_PF_post": 2.0587637893264863,
+          "holdout_PF": null,
+          "DSR": 9.016611346446268e-10,
+          "trade_level_SR_post": 0.4115774234487043,
+          "fold_stability": "4/4",
+          "n_trades_pre": 662,
+          "n_trades_post": 350,
+          "winrate_pre": 0.48036253776435045,
+          "winrate_post": 0.5971428571428572,
+          "status": "shortlisted"
+        },
+        {
+          "variant_id": "C2S_indi_rsi_sma_lt_35p35_v1",
+          "feature": "rsi_sma",
+          "operator": "<",
+          "threshold": 35.354756904815474,
+          "direction": "accept_if",
+          "quantile_idx": 2,
+          "walk_forward_PF_pre": 2.337232308896681,
+          "walk_forward_PF_post": 5.422579211470021,
+          "avg_daily_PF_post": 3.890600763059564,
+          "holdout_PF": null,
+          "DSR": 1.186678533215968e-11,
+          "trade_level_SR_post": 0.38580746434695795,
+          "fold_stability": "4/4",
+          "n_trades_pre": 662,
+          "n_trades_post": 342,
+          "winrate_pre": 0.48036253776435045,
+          "winrate_post": 0.5730994152046783,
+          "status": "shortlisted"
+        },
+        {
+          "variant_id": "C2S_indi_sma50_slope_atr_lt_-0p09928_v1",
+          "feature": "sma50_slope_atr",
+          "operator": "<",
+          "threshold": -0.09928371856744117,
+          "direction": "accept_if",
+          "quantile_idx": 2,
+          "walk_forward_PF_pre": 2.337232308896681,
+          "walk_forward_PF_post": 4.6246058614233405,
+          "avg_daily_PF_post": 2.18694309249109,
+          "holdout_PF": null,
+          "DSR": 6.420086684499893e-12,
+          "trade_level_SR_post": 0.3605528843803259,
+          "fold_stability": "4/4",
+          "n_trades_pre": 662,
+          "n_trades_post": 342,
+          "winrate_pre": 0.48036253776435045,
+          "winrate_post": 0.5789473684210527,
+          "status": "shortlisted"
+        },
+        {
+          "variant_id": "C2S_indi_rsi_lt_36p4_v1",
+          "feature": "rsi",
+          "operator": "<",
+          "threshold": 36.40495912455536,
+          "direction": "accept_if",
+          "quantile_idx": 2,
+          "walk_forward_PF_pre": 2.337232308896681,
+          "walk_forward_PF_post": 4.2427485286488675,
+          "avg_daily_PF_post": 2.120045125829499,
+          "holdout_PF": null,
+          "DSR": 8.348877145181177e-14,
+          "trade_level_SR_post": 0.34470037741703285,
+          "fold_stability": "4/4",
+          "n_trades_pre": 662,
+          "n_trades_post": 341,
+          "winrate_pre": 0.48036253776435045,
+          "winrate_post": 0.5630498533724341,
+          "status": "shortlisted"
+        },
+        {
+          "variant_id": "C2S_indi_macd_signal_lt_-0p0005152_v1",
+          "feature": "macd_signal",
+          "operator": "<",
+          "threshold": -0.0005152307311187651,
+          "direction": "accept_if",
+          "quantile_idx": 2,
+          "walk_forward_PF_pre": 2.337232308896681,
+          "walk_forward_PF_post": 3.688898739239641,
+          "avg_daily_PF_post": 3.959288747929583,
+          "holdout_PF": null,
+          "DSR": 7.216449660063518e-16,
+          "trade_level_SR_post": 0.3188117429357106,
+          "fold_stability": "4/4",
+          "n_trades_pre": 662,
+          "n_trades_post": 336,
+          "winrate_pre": 0.48036253776435045,
+          "winrate_post": 0.5357142857142857,
+          "status": "shortlisted"
+        },
+        {
+          "variant_id": "C2S_indi_ema20_slope_atr_lt_-0p1672_v1",
+          "feature": "ema20_slope_atr",
+          "operator": "<",
+          "threshold": -0.16722441704935717,
+          "direction": "accept_if",
+          "quantile_idx": 2,
+          "walk_forward_PF_pre": 2.337232308896681,
+          "walk_forward_PF_post": 4.5712060952734515,
+          "avg_daily_PF_post": 11.798696687129494,
+          "holdout_PF": null,
+          "DSR": 6.661338147750939e-16,
+          "trade_level_SR_post": 0.31767302949362913,
+          "fold_stability": "4/4",
+          "n_trades_pre": 662,
+          "n_trades_post": 336,
+          "winrate_pre": 0.48036253776435045,
+          "winrate_post": 0.5982142857142857,
+          "status": "shortlisted"
+        },
+        {
+          "variant_id": "C2S_indi_macd_line_lt_-0p000766_v1",
+          "feature": "macd_line",
+          "operator": "<",
+          "threshold": -0.0007660252617516031,
+          "direction": "accept_if",
+          "quantile_idx": 2,
+          "walk_forward_PF_pre": 2.337232308896681,
+          "walk_forward_PF_post": 3.2691281619231742,
+          "avg_daily_PF_post": 3.969935868762974,
+          "holdout_PF": null,
+          "DSR": 4.996003610813204e-16,
+          "trade_level_SR_post": 0.3085455196301151,
+          "fold_stability": "4/4",
+          "n_trades_pre": 662,
+          "n_trades_post": 336,
+          "winrate_pre": 0.48036253776435045,
+          "winrate_post": 0.5238095238095238,
+          "status": "shortlisted"
+        },
+        {
+          "variant_id": "C2S_indi_sma50_slope_atr_lt_-0p04401_v1",
+          "feature": "sma50_slope_atr",
+          "operator": "<",
+          "threshold": -0.04401248224070766,
+          "direction": "accept_if",
+          "quantile_idx": 3,
+          "walk_forward_PF_pre": 2.337232308896681,
+          "walk_forward_PF_post": 4.007006534302481,
+          "avg_daily_PF_post": 1.7742845092733168,
+          "holdout_PF": null,
+          "DSR": 4.996003610813204e-16,
+          "trade_level_SR_post": 0.30939035719492824,
+          "fold_stability": "4/4",
+          "n_trades_pre": 662,
+          "n_trades_post": 514,
+          "winrate_pre": 0.48036253776435045,
+          "winrate_post": 0.546692607003891,
+          "status": "shortlisted"
+        }
+      ]
+    }
+  },
+  "rejected_filters_summary": {
+    "coverage": 217,
+    "pf_uplift_fail": 33,
+    "fold_stability_fail": 778,
+    "dsr_fail": 34,
+    "n_post_fail": 2
+  },
+  "node_impact": {
+    "per_setup_feature_survivors": {
+      "C2M": {
+        "macd_signal": [
+          "<-0.001022 (lt)"
+        ]
+      },
+      "C4M": {
+        "rsi_slope": [
+          ">0.6213 (gt)",
+          ">2.509 (gt)"
+        ],
+        "macd_prev_histogram": [
+          "<-0.001121 (lt)"
+        ],
+        "macd_line": [
+          "<-0.006707 (lt)"
+        ],
+        "macd_histogram": [
+          "<-0.0009604 (lt)"
+        ],
+        "macd_signal": [
+          "<-0.005223 (lt)"
+        ],
+        "atr": [
+          ">0.006929 (gt)"
+        ]
+      },
+      "C2SH": {},
+      "C4ML": {},
+      "C3M": {},
+      "C2S": {
+        "rsi": [
+          "<36.4 (lt)"
+        ],
+        "ema20_slope_atr": [
+          "<-0.1672 (lt)"
+        ],
+        "macd_signal": [
+          "<-0.0005152 (lt)"
+        ],
+        "sma50_slope_atr": [
+          "<-0.09928 (lt)",
+          "<-0.04401 (lt)"
+        ],
+        "macd_line": [
+          "<-0.000766 (lt)"
+        ],
+        "rsi_sma": [
+          "<35.35 (lt)"
+        ],
+        "quote_volume_24h_usd": [
+          "<1.007e+06 (lt)"
+        ]
+      }
+    }
+  },
+  "sensitivity": {
+    "C2M": {
+      "best_filter": {
+        "feature": "macd_signal",
+        "op": "<",
+        "threshold": -0.0010220027529147658
+      },
+      "adjacent": [
+        {
+          "mul": 0.9,
+          "thr": -0.0009198024776232893,
+          "n_post": 6728,
+          "PF_post": 1.1912242420783181,
+          "avg_daily_PF_post": 1.1359061746712913,
+          "winrate_post": 0.4928656361474435
+        },
+        {
+          "mul": 1.0,
+          "thr": -0.0010220027529147658,
+          "n_post": 6466,
+          "PF_post": 1.1945065476527268,
+          "avg_daily_PF_post": 1.1483497508422755,
+          "winrate_post": 0.493349829879369
+        },
+        {
+          "mul": 1.1,
+          "thr": -0.0011242030282062425,
+          "n_post": 6206,
+          "PF_post": 1.1878922023006018,
+          "avg_daily_PF_post": 1.139017222545055,
+          "winrate_post": 0.4929100870125685
+        }
+      ]
+    },
+    "C4M": {
+      "best_filter": {
+        "feature": "atr",
+        "op": ">",
+        "threshold": 0.006928571428571435
+      },
+      "adjacent": [
+        {
+          "mul": 0.9,
+          "thr": 0.0062357142857142915,
+          "n_post": 1314,
+          "PF_post": 1.5511777490515304,
+          "avg_daily_PF_post": 1.6850271773581815,
+          "winrate_post": 0.4733637747336377
+        },
+        {
+          "mul": 1.0,
+          "thr": 0.006928571428571435,
+          "n_post": 1253,
+          "PF_post": 1.5793691025089618,
+          "avg_daily_PF_post": 1.8327073692150493,
+          "winrate_post": 0.47246608140462887
+        },
+        {
+          "mul": 1.1,
+          "thr": 0.007621428571428579,
+          "n_post": 1209,
+          "PF_post": 1.568892038988537,
+          "avg_daily_PF_post": 1.798014313920666,
+          "winrate_post": 0.47559966914805624
+        }
+      ]
+    },
+    "C2SH": null,
+    "C4ML": null,
+    "C3M": null,
+    "C2S": {
+      "best_filter": {
+        "feature": "quote_volume_24h_usd",
+        "op": "<",
+        "threshold": 1007259.19
+      },
+      "adjacent": [
+        {
+          "mul": 0.9,
+          "thr": 906533.271,
+          "n_post": 337,
+          "PF_post": 6.079143920838769,
+          "avg_daily_PF_post": 1.936741820772675,
+          "winrate_post": 0.5934718100890207
+        },
+        {
+          "mul": 1.0,
+          "thr": 1007259.19,
+          "n_post": 350,
+          "PF_post": 5.962268144952779,
+          "avg_daily_PF_post": 2.0587637893264863,
+          "winrate_post": 0.5971428571428572
+        },
+        {
+          "mul": 1.1,
+          "thr": 1107985.109,
+          "n_post": 367,
+          "PF_post": 5.748784833822192,
+          "avg_daily_PF_post": 2.012573281881012,
+          "winrate_post": 0.5858310626702997
+        }
+      ]
+    }
+  }
+}

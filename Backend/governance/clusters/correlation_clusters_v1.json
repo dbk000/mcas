@@ -1,0 +1,3699 @@
+{
+  "meta": {
+    "schema_version": "1.0",
+    "generated_ts": "2026-04-12T22:24:46.879145+00:00",
+    "window_days": 90,
+    "timeframe": "1h",
+    "source": "binance",
+    "n_symbols": 432,
+    "n_symbols_whitelist": 440,
+    "n_symbols_dropped": 8,
+    "symbols_dropped": [
+      "CFGUSDT",
+      "KATUSDT",
+      "MANTRAUSDT",
+      "NIGHTUSDT",
+      "OPNUSDT",
+      "ROBOUSDT",
+      "USDSUSDT",
+      "XAUTUSDT"
+    ],
+    "batch_id_for_survival": "gated_v1_20260411",
+    "n_opps_in_scope": 46457,
+    "chosen_threshold": 0.8,
+    "alternatives_tested": [
+      0.7,
+      0.75,
+      0.8,
+      0.85
+    ],
+    "selection_rule": "USER OVERRIDE: forced \u03c4=0.80 (auto-selected \u03c4=0.85). At \u03c4=0.80: 400 clusters, largest=12 symbols (2.78%), cap3 survival=67.66%. Rationale: User override from auto-selected 0.85 \u2014 0.85 produced ~100% size-1 clusters making max_per_cluster toothless; 0.80 breaks the BTC-correlated mega-cluster while preserving meaningful diversification structure",
+    "signal_survival_cap3_max_per_cluster_1": 0.676626,
+    "bucket_proxy_seconds": 3600,
+    "bucket_proxy_note": "earliest opp per (cluster, 1h-bucket) kept \u2014 proxy for concurrent holding; refinement deferred to D2",
+    "node_impact": {
+      "sweep": [
+        {
+          "threshold": 0.7,
+          "n_clusters": 367,
+          "largest_cluster_pct": 13.4259,
+          "signal_survival_rate_cap3": 61.7302
+        },
+        {
+          "threshold": 0.75,
+          "n_clusters": 384,
+          "largest_cluster_pct": 10.1852,
+          "signal_survival_rate_cap3": 64.3369
+        },
+        {
+          "threshold": 0.8,
+          "n_clusters": 400,
+          "largest_cluster_pct": 2.7778,
+          "signal_survival_rate_cap3": 67.6626
+        },
+        {
+          "threshold": 0.85,
+          "n_clusters": 419,
+          "largest_cluster_pct": 1.3889,
+          "signal_survival_rate_cap3": 70.3769
+        }
+      ],
+      "selected_threshold": 0.8,
+      "selected_survival_pct": 67.6626
+    }
+  },
+  "clusters": [
+    {
+      "cluster_id": 0,
+      "centroid_symbol": "FLOKIUSDT",
+      "symbols": [
+        "ADAUSDT",
+        "BOMEUSDT",
+        "BONKUSDT",
+        "DOGEUSDT",
+        "FLOKIUSDT",
+        "NEIROUSDT",
+        "ONDOUSDT",
+        "PENGUUSDT",
+        "PEPEUSDT",
+        "PNUTUSDT",
+        "SHIBUSDT",
+        "SUIUSDT"
+      ],
+      "cluster_size": 12,
+      "mean_intra_corr": 0.827474
+    },
+    {
+      "cluster_id": 1,
+      "centroid_symbol": "ETHUSDT",
+      "symbols": [
+        "BNBUSDT",
+        "BNSOLUSDT",
+        "BTCUSDT",
+        "ETHUSDT",
+        "LINKUSDT",
+        "RUNEUSDT",
+        "SOLUSDT",
+        "WBETHUSDT",
+        "WBTCUSDT"
+      ],
+      "cluster_size": 9,
+      "mean_intra_corr": 0.847297
+    },
+    {
+      "cluster_id": 2,
+      "centroid_symbol": "TIAUSDT",
+      "symbols": [
+        "ARBUSDT",
+        "GALAUSDT",
+        "OPUSDT",
+        "SUSHIUSDT",
+        "TIAUSDT"
+      ],
+      "cluster_size": 5,
+      "mean_intra_corr": 0.808472
+    },
+    {
+      "cluster_id": 3,
+      "centroid_symbol": "ETCUSDT",
+      "symbols": [
+        "ENSUSDT",
+        "ETCUSDT",
+        "LDOUSDT",
+        "VETUSDT"
+      ],
+      "cluster_size": 4,
+      "mean_intra_corr": 0.814253
+    },
+    {
+      "cluster_id": 4,
+      "centroid_symbol": "AVAXUSDT",
+      "symbols": [
+        "AVAXUSDT",
+        "LTCUSDT"
+      ],
+      "cluster_size": 2,
+      "mean_intra_corr": 0.803835
+    },
+    {
+      "cluster_id": 5,
+      "centroid_symbol": "EURIUSDT",
+      "symbols": [
+        "EURIUSDT",
+        "EURUSDT"
+      ],
+      "cluster_size": 2,
+      "mean_intra_corr": 0.914725
+    },
+    {
+      "cluster_id": 6,
+      "centroid_symbol": "SANDUSDT",
+      "symbols": [
+        "MANAUSDT",
+        "SANDUSDT"
+      ],
+      "cluster_size": 2,
+      "mean_intra_corr": 0.852738
+    },
+    {
+      "cluster_id": 7,
+      "centroid_symbol": "ORDIUSDT",
+      "symbols": [
+        "ORDIUSDT",
+        "TRBUSDT"
+      ],
+      "cluster_size": 2,
+      "mean_intra_corr": 0.819452
+    },
+    {
+      "cluster_id": 8,
+      "centroid_symbol": "STGUSDT",
+      "symbols": [
+        "STGUSDT",
+        "ZROUSDT"
+      ],
+      "cluster_size": 2,
+      "mean_intra_corr": 0.824439
+    },
+    {
+      "cluster_id": 9,
+      "centroid_symbol": "XLMUSDT",
+      "symbols": [
+        "XLMUSDT",
+        "XRPUSDT"
+      ],
+      "cluster_size": 2,
+      "mean_intra_corr": 0.819427
+    },
+    {
+      "cluster_id": 10,
+      "centroid_symbol": "0GUSDT",
+      "symbols": [
+        "0GUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 11,
+      "centroid_symbol": "1000CATUSDT",
+      "symbols": [
+        "1000CATUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 12,
+      "centroid_symbol": "1000CHEEMSUSDT",
+      "symbols": [
+        "1000CHEEMSUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 13,
+      "centroid_symbol": "1000SATSUSDT",
+      "symbols": [
+        "1000SATSUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 14,
+      "centroid_symbol": "1INCHUSDT",
+      "symbols": [
+        "1INCHUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 15,
+      "centroid_symbol": "1MBABYDOGEUSDT",
+      "symbols": [
+        "1MBABYDOGEUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 16,
+      "centroid_symbol": "2ZUSDT",
+      "symbols": [
+        "2ZUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 17,
+      "centroid_symbol": "AAVEUSDT",
+      "symbols": [
+        "AAVEUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 18,
+      "centroid_symbol": "ACEUSDT",
+      "symbols": [
+        "ACEUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 19,
+      "centroid_symbol": "ACHUSDT",
+      "symbols": [
+        "ACHUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 20,
+      "centroid_symbol": "ACMUSDT",
+      "symbols": [
+        "ACMUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 21,
+      "centroid_symbol": "ACTUSDT",
+      "symbols": [
+        "ACTUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 22,
+      "centroid_symbol": "ACXUSDT",
+      "symbols": [
+        "ACXUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 23,
+      "centroid_symbol": "ADXUSDT",
+      "symbols": [
+        "ADXUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 24,
+      "centroid_symbol": "AEURUSDT",
+      "symbols": [
+        "AEURUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 25,
+      "centroid_symbol": "AEVOUSDT",
+      "symbols": [
+        "AEVOUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 26,
+      "centroid_symbol": "AGLDUSDT",
+      "symbols": [
+        "AGLDUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 27,
+      "centroid_symbol": "AIUSDT",
+      "symbols": [
+        "AIUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 28,
+      "centroid_symbol": "AIXBTUSDT",
+      "symbols": [
+        "AIXBTUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 29,
+      "centroid_symbol": "ALCXUSDT",
+      "symbols": [
+        "ALCXUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 30,
+      "centroid_symbol": "ALGOUSDT",
+      "symbols": [
+        "ALGOUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 31,
+      "centroid_symbol": "ALICEUSDT",
+      "symbols": [
+        "ALICEUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 32,
+      "centroid_symbol": "ALLOUSDT",
+      "symbols": [
+        "ALLOUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 33,
+      "centroid_symbol": "ALPINEUSDT",
+      "symbols": [
+        "ALPINEUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 34,
+      "centroid_symbol": "ALTUSDT",
+      "symbols": [
+        "ALTUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 35,
+      "centroid_symbol": "AMPUSDT",
+      "symbols": [
+        "AMPUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 36,
+      "centroid_symbol": "ANIMEUSDT",
+      "symbols": [
+        "ANIMEUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 37,
+      "centroid_symbol": "ANKRUSDT",
+      "symbols": [
+        "ANKRUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 38,
+      "centroid_symbol": "APEUSDT",
+      "symbols": [
+        "APEUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 39,
+      "centroid_symbol": "API3USDT",
+      "symbols": [
+        "API3USDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 40,
+      "centroid_symbol": "APTUSDT",
+      "symbols": [
+        "APTUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 41,
+      "centroid_symbol": "ARDRUSDT",
+      "symbols": [
+        "ARDRUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 42,
+      "centroid_symbol": "ARKMUSDT",
+      "symbols": [
+        "ARKMUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 43,
+      "centroid_symbol": "ARKUSDT",
+      "symbols": [
+        "ARKUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 44,
+      "centroid_symbol": "ARPAUSDT",
+      "symbols": [
+        "ARPAUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 45,
+      "centroid_symbol": "ARUSDT",
+      "symbols": [
+        "ARUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 46,
+      "centroid_symbol": "ASRUSDT",
+      "symbols": [
+        "ASRUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 47,
+      "centroid_symbol": "ASTERUSDT",
+      "symbols": [
+        "ASTERUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 48,
+      "centroid_symbol": "ASTRUSDT",
+      "symbols": [
+        "ASTRUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 49,
+      "centroid_symbol": "ATAUSDT",
+      "symbols": [
+        "ATAUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 50,
+      "centroid_symbol": "ATMUSDT",
+      "symbols": [
+        "ATMUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 51,
+      "centroid_symbol": "ATOMUSDT",
+      "symbols": [
+        "ATOMUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 52,
+      "centroid_symbol": "ATUSDT",
+      "symbols": [
+        "ATUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 53,
+      "centroid_symbol": "AUCTIONUSDT",
+      "symbols": [
+        "AUCTIONUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 54,
+      "centroid_symbol": "AUDIOUSDT",
+      "symbols": [
+        "AUDIOUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 55,
+      "centroid_symbol": "AUSDT",
+      "symbols": [
+        "AUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 56,
+      "centroid_symbol": "AVAUSDT",
+      "symbols": [
+        "AVAUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 57,
+      "centroid_symbol": "AVNTUSDT",
+      "symbols": [
+        "AVNTUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 58,
+      "centroid_symbol": "AWEUSDT",
+      "symbols": [
+        "AWEUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 59,
+      "centroid_symbol": "AXLUSDT",
+      "symbols": [
+        "AXLUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 60,
+      "centroid_symbol": "AXSUSDT",
+      "symbols": [
+        "AXSUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 61,
+      "centroid_symbol": "BABYUSDT",
+      "symbols": [
+        "BABYUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 62,
+      "centroid_symbol": "BANANAS31USDT",
+      "symbols": [
+        "BANANAS31USDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 63,
+      "centroid_symbol": "BANANAUSDT",
+      "symbols": [
+        "BANANAUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 64,
+      "centroid_symbol": "BANDUSDT",
+      "symbols": [
+        "BANDUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 65,
+      "centroid_symbol": "BANKUSDT",
+      "symbols": [
+        "BANKUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 66,
+      "centroid_symbol": "BARDUSDT",
+      "symbols": [
+        "BARDUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 67,
+      "centroid_symbol": "BARUSDT",
+      "symbols": [
+        "BARUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 68,
+      "centroid_symbol": "BATUSDT",
+      "symbols": [
+        "BATUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 69,
+      "centroid_symbol": "BBUSDT",
+      "symbols": [
+        "BBUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 70,
+      "centroid_symbol": "BCHUSDT",
+      "symbols": [
+        "BCHUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 71,
+      "centroid_symbol": "BEAMXUSDT",
+      "symbols": [
+        "BEAMXUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 72,
+      "centroid_symbol": "BELUSDT",
+      "symbols": [
+        "BELUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 73,
+      "centroid_symbol": "BERAUSDT",
+      "symbols": [
+        "BERAUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 74,
+      "centroid_symbol": "BFUSDUSDT",
+      "symbols": [
+        "BFUSDUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 75,
+      "centroid_symbol": "BICOUSDT",
+      "symbols": [
+        "BICOUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 76,
+      "centroid_symbol": "BIFIUSDT",
+      "symbols": [
+        "BIFIUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 77,
+      "centroid_symbol": "BIGTIMEUSDT",
+      "symbols": [
+        "BIGTIMEUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 78,
+      "centroid_symbol": "BIOUSDT",
+      "symbols": [
+        "BIOUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 79,
+      "centroid_symbol": "BLURUSDT",
+      "symbols": [
+        "BLURUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 80,
+      "centroid_symbol": "BMTUSDT",
+      "symbols": [
+        "BMTUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 81,
+      "centroid_symbol": "BNTUSDT",
+      "symbols": [
+        "BNTUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 82,
+      "centroid_symbol": "BREVUSDT",
+      "symbols": [
+        "BREVUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 83,
+      "centroid_symbol": "BROCCOLI714USDT",
+      "symbols": [
+        "BROCCOLI714USDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 84,
+      "centroid_symbol": "BTTCUSDT",
+      "symbols": [
+        "BTTCUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 85,
+      "centroid_symbol": "C98USDT",
+      "symbols": [
+        "C98USDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 86,
+      "centroid_symbol": "CAKEUSDT",
+      "symbols": [
+        "CAKEUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 87,
+      "centroid_symbol": "CATIUSDT",
+      "symbols": [
+        "CATIUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 88,
+      "centroid_symbol": "CELOUSDT",
+      "symbols": [
+        "CELOUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 89,
+      "centroid_symbol": "CELRUSDT",
+      "symbols": [
+        "CELRUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 90,
+      "centroid_symbol": "CETUSUSDT",
+      "symbols": [
+        "CETUSUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 91,
+      "centroid_symbol": "CFXUSDT",
+      "symbols": [
+        "CFXUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 92,
+      "centroid_symbol": "CGPTUSDT",
+      "symbols": [
+        "CGPTUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 93,
+      "centroid_symbol": "CHRUSDT",
+      "symbols": [
+        "CHRUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 94,
+      "centroid_symbol": "CHZUSDT",
+      "symbols": [
+        "CHZUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 95,
+      "centroid_symbol": "CITYUSDT",
+      "symbols": [
+        "CITYUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 96,
+      "centroid_symbol": "CKBUSDT",
+      "symbols": [
+        "CKBUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 97,
+      "centroid_symbol": "COMPUSDT",
+      "symbols": [
+        "COMPUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 98,
+      "centroid_symbol": "COOKIEUSDT",
+      "symbols": [
+        "COOKIEUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 99,
+      "centroid_symbol": "COSUSDT",
+      "symbols": [
+        "COSUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 100,
+      "centroid_symbol": "COTIUSDT",
+      "symbols": [
+        "COTIUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 101,
+      "centroid_symbol": "COWUSDT",
+      "symbols": [
+        "COWUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 102,
+      "centroid_symbol": "CRVUSDT",
+      "symbols": [
+        "CRVUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 103,
+      "centroid_symbol": "CTKUSDT",
+      "symbols": [
+        "CTKUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 104,
+      "centroid_symbol": "CTSIUSDT",
+      "symbols": [
+        "CTSIUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 105,
+      "centroid_symbol": "CUSDT",
+      "symbols": [
+        "CUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 106,
+      "centroid_symbol": "CVCUSDT",
+      "symbols": [
+        "CVCUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 107,
+      "centroid_symbol": "CVXUSDT",
+      "symbols": [
+        "CVXUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 108,
+      "centroid_symbol": "CYBERUSDT",
+      "symbols": [
+        "CYBERUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 109,
+      "centroid_symbol": "DASHUSDT",
+      "symbols": [
+        "DASHUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 110,
+      "centroid_symbol": "DCRUSDT",
+      "symbols": [
+        "DCRUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 111,
+      "centroid_symbol": "DEGOUSDT",
+      "symbols": [
+        "DEGOUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 112,
+      "centroid_symbol": "DENTUSDT",
+      "symbols": [
+        "DENTUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 113,
+      "centroid_symbol": "DEXEUSDT",
+      "symbols": [
+        "DEXEUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 114,
+      "centroid_symbol": "DGBUSDT",
+      "symbols": [
+        "DGBUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 115,
+      "centroid_symbol": "DIAUSDT",
+      "symbols": [
+        "DIAUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 116,
+      "centroid_symbol": "DODOUSDT",
+      "symbols": [
+        "DODOUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 117,
+      "centroid_symbol": "DOGSUSDT",
+      "symbols": [
+        "DOGSUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 118,
+      "centroid_symbol": "DOLOUSDT",
+      "symbols": [
+        "DOLOUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 119,
+      "centroid_symbol": "DOTUSDT",
+      "symbols": [
+        "DOTUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 120,
+      "centroid_symbol": "DUSDT",
+      "symbols": [
+        "DUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 121,
+      "centroid_symbol": "DUSKUSDT",
+      "symbols": [
+        "DUSKUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 122,
+      "centroid_symbol": "DYDXUSDT",
+      "symbols": [
+        "DYDXUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 123,
+      "centroid_symbol": "DYMUSDT",
+      "symbols": [
+        "DYMUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 124,
+      "centroid_symbol": "EDENUSDT",
+      "symbols": [
+        "EDENUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 125,
+      "centroid_symbol": "EDUUSDT",
+      "symbols": [
+        "EDUUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 126,
+      "centroid_symbol": "EGLDUSDT",
+      "symbols": [
+        "EGLDUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 127,
+      "centroid_symbol": "EIGENUSDT",
+      "symbols": [
+        "EIGENUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 128,
+      "centroid_symbol": "ENAUSDT",
+      "symbols": [
+        "ENAUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 129,
+      "centroid_symbol": "ENJUSDT",
+      "symbols": [
+        "ENJUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 130,
+      "centroid_symbol": "ENSOUSDT",
+      "symbols": [
+        "ENSOUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 131,
+      "centroid_symbol": "EPICUSDT",
+      "symbols": [
+        "EPICUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 132,
+      "centroid_symbol": "ERAUSDT",
+      "symbols": [
+        "ERAUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 133,
+      "centroid_symbol": "ESPUSDT",
+      "symbols": [
+        "ESPUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 134,
+      "centroid_symbol": "ETHFIUSDT",
+      "symbols": [
+        "ETHFIUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 135,
+      "centroid_symbol": "EULUSDT",
+      "symbols": [
+        "EULUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 136,
+      "centroid_symbol": "FARMUSDT",
+      "symbols": [
+        "FARMUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 137,
+      "centroid_symbol": "FDUSDUSDT",
+      "symbols": [
+        "FDUSDUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 138,
+      "centroid_symbol": "FETUSDT",
+      "symbols": [
+        "FETUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 139,
+      "centroid_symbol": "FFUSDT",
+      "symbols": [
+        "FFUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 140,
+      "centroid_symbol": "FIDAUSDT",
+      "symbols": [
+        "FIDAUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 141,
+      "centroid_symbol": "FILUSDT",
+      "symbols": [
+        "FILUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 142,
+      "centroid_symbol": "FIOUSDT",
+      "symbols": [
+        "FIOUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 143,
+      "centroid_symbol": "FLOWUSDT",
+      "symbols": [
+        "FLOWUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 144,
+      "centroid_symbol": "FLUXUSDT",
+      "symbols": [
+        "FLUXUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 145,
+      "centroid_symbol": "FOGOUSDT",
+      "symbols": [
+        "FOGOUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 146,
+      "centroid_symbol": "FORMUSDT",
+      "symbols": [
+        "FORMUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 147,
+      "centroid_symbol": "FRAXUSDT",
+      "symbols": [
+        "FRAXUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 148,
+      "centroid_symbol": "FTTUSDT",
+      "symbols": [
+        "FTTUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 149,
+      "centroid_symbol": "FUNUSDT",
+      "symbols": [
+        "FUNUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 150,
+      "centroid_symbol": "FUSDT",
+      "symbols": [
+        "FUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 151,
+      "centroid_symbol": "GASUSDT",
+      "symbols": [
+        "GASUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 152,
+      "centroid_symbol": "GIGGLEUSDT",
+      "symbols": [
+        "GIGGLEUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 153,
+      "centroid_symbol": "GLMRUSDT",
+      "symbols": [
+        "GLMRUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 154,
+      "centroid_symbol": "GLMUSDT",
+      "symbols": [
+        "GLMUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 155,
+      "centroid_symbol": "GMTUSDT",
+      "symbols": [
+        "GMTUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 156,
+      "centroid_symbol": "GMXUSDT",
+      "symbols": [
+        "GMXUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 157,
+      "centroid_symbol": "GNOUSDT",
+      "symbols": [
+        "GNOUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 158,
+      "centroid_symbol": "GNSUSDT",
+      "symbols": [
+        "GNSUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 159,
+      "centroid_symbol": "GPSUSDT",
+      "symbols": [
+        "GPSUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 160,
+      "centroid_symbol": "GRTUSDT",
+      "symbols": [
+        "GRTUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 161,
+      "centroid_symbol": "GTCUSDT",
+      "symbols": [
+        "GTCUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 162,
+      "centroid_symbol": "GUNUSDT",
+      "symbols": [
+        "GUNUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 163,
+      "centroid_symbol": "GUSDT",
+      "symbols": [
+        "GUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 164,
+      "centroid_symbol": "HAEDALUSDT",
+      "symbols": [
+        "HAEDALUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 165,
+      "centroid_symbol": "HBARUSDT",
+      "symbols": [
+        "HBARUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 166,
+      "centroid_symbol": "HEIUSDT",
+      "symbols": [
+        "HEIUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 167,
+      "centroid_symbol": "HEMIUSDT",
+      "symbols": [
+        "HEMIUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 168,
+      "centroid_symbol": "HFTUSDT",
+      "symbols": [
+        "HFTUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 169,
+      "centroid_symbol": "HIGHUSDT",
+      "symbols": [
+        "HIGHUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 170,
+      "centroid_symbol": "HIVEUSDT",
+      "symbols": [
+        "HIVEUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 171,
+      "centroid_symbol": "HMSTRUSDT",
+      "symbols": [
+        "HMSTRUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 172,
+      "centroid_symbol": "HOLOUSDT",
+      "symbols": [
+        "HOLOUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 173,
+      "centroid_symbol": "HOMEUSDT",
+      "symbols": [
+        "HOMEUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 174,
+      "centroid_symbol": "HOTUSDT",
+      "symbols": [
+        "HOTUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 175,
+      "centroid_symbol": "HUMAUSDT",
+      "symbols": [
+        "HUMAUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 176,
+      "centroid_symbol": "HYPERUSDT",
+      "symbols": [
+        "HYPERUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 177,
+      "centroid_symbol": "ICPUSDT",
+      "symbols": [
+        "ICPUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 178,
+      "centroid_symbol": "ICXUSDT",
+      "symbols": [
+        "ICXUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 179,
+      "centroid_symbol": "IDUSDT",
+      "symbols": [
+        "IDUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 180,
+      "centroid_symbol": "ILVUSDT",
+      "symbols": [
+        "ILVUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 181,
+      "centroid_symbol": "IMXUSDT",
+      "symbols": [
+        "IMXUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 182,
+      "centroid_symbol": "INITUSDT",
+      "symbols": [
+        "INITUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 183,
+      "centroid_symbol": "INJUSDT",
+      "symbols": [
+        "INJUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 184,
+      "centroid_symbol": "IOSTUSDT",
+      "symbols": [
+        "IOSTUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 185,
+      "centroid_symbol": "IOTAUSDT",
+      "symbols": [
+        "IOTAUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 186,
+      "centroid_symbol": "IOTXUSDT",
+      "symbols": [
+        "IOTXUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 187,
+      "centroid_symbol": "IOUSDT",
+      "symbols": [
+        "IOUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 188,
+      "centroid_symbol": "IQUSDT",
+      "symbols": [
+        "IQUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 189,
+      "centroid_symbol": "JASMYUSDT",
+      "symbols": [
+        "JASMYUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 190,
+      "centroid_symbol": "JOEUSDT",
+      "symbols": [
+        "JOEUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 191,
+      "centroid_symbol": "JSTUSDT",
+      "symbols": [
+        "JSTUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 192,
+      "centroid_symbol": "JTOUSDT",
+      "symbols": [
+        "JTOUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 193,
+      "centroid_symbol": "JUPUSDT",
+      "symbols": [
+        "JUPUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 194,
+      "centroid_symbol": "JUVUSDT",
+      "symbols": [
+        "JUVUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 195,
+      "centroid_symbol": "KAIAUSDT",
+      "symbols": [
+        "KAIAUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 196,
+      "centroid_symbol": "KAITOUSDT",
+      "symbols": [
+        "KAITOUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 197,
+      "centroid_symbol": "KAVAUSDT",
+      "symbols": [
+        "KAVAUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 198,
+      "centroid_symbol": "KERNELUSDT",
+      "symbols": [
+        "KERNELUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 199,
+      "centroid_symbol": "KGSTUSDT",
+      "symbols": [
+        "KGSTUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 200,
+      "centroid_symbol": "KITEUSDT",
+      "symbols": [
+        "KITEUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 201,
+      "centroid_symbol": "KMNOUSDT",
+      "symbols": [
+        "KMNOUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 202,
+      "centroid_symbol": "KNCUSDT",
+      "symbols": [
+        "KNCUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 203,
+      "centroid_symbol": "KSMUSDT",
+      "symbols": [
+        "KSMUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 204,
+      "centroid_symbol": "LAUSDT",
+      "symbols": [
+        "LAUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 205,
+      "centroid_symbol": "LAYERUSDT",
+      "symbols": [
+        "LAYERUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 206,
+      "centroid_symbol": "LAZIOUSDT",
+      "symbols": [
+        "LAZIOUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 207,
+      "centroid_symbol": "LINEAUSDT",
+      "symbols": [
+        "LINEAUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 208,
+      "centroid_symbol": "LISTAUSDT",
+      "symbols": [
+        "LISTAUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 209,
+      "centroid_symbol": "LPTUSDT",
+      "symbols": [
+        "LPTUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 210,
+      "centroid_symbol": "LQTYUSDT",
+      "symbols": [
+        "LQTYUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 211,
+      "centroid_symbol": "LSKUSDT",
+      "symbols": [
+        "LSKUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 212,
+      "centroid_symbol": "LUMIAUSDT",
+      "symbols": [
+        "LUMIAUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 213,
+      "centroid_symbol": "LUNAUSDT",
+      "symbols": [
+        "LUNAUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 214,
+      "centroid_symbol": "LUNCUSDT",
+      "symbols": [
+        "LUNCUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 215,
+      "centroid_symbol": "MAGICUSDT",
+      "symbols": [
+        "MAGICUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 216,
+      "centroid_symbol": "MANTAUSDT",
+      "symbols": [
+        "MANTAUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 217,
+      "centroid_symbol": "MASKUSDT",
+      "symbols": [
+        "MASKUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 218,
+      "centroid_symbol": "MAVUSDT",
+      "symbols": [
+        "MAVUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 219,
+      "centroid_symbol": "MBLUSDT",
+      "symbols": [
+        "MBLUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 220,
+      "centroid_symbol": "MBOXUSDT",
+      "symbols": [
+        "MBOXUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 221,
+      "centroid_symbol": "MDTUSDT",
+      "symbols": [
+        "MDTUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 222,
+      "centroid_symbol": "MEMEUSDT",
+      "symbols": [
+        "MEMEUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 223,
+      "centroid_symbol": "METISUSDT",
+      "symbols": [
+        "METISUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 224,
+      "centroid_symbol": "METUSDT",
+      "symbols": [
+        "METUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 225,
+      "centroid_symbol": "MEUSDT",
+      "symbols": [
+        "MEUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 226,
+      "centroid_symbol": "MINAUSDT",
+      "symbols": [
+        "MINAUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 227,
+      "centroid_symbol": "MIRAUSDT",
+      "symbols": [
+        "MIRAUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 228,
+      "centroid_symbol": "MITOUSDT",
+      "symbols": [
+        "MITOUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 229,
+      "centroid_symbol": "MLNUSDT",
+      "symbols": [
+        "MLNUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 230,
+      "centroid_symbol": "MMTUSDT",
+      "symbols": [
+        "MMTUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 231,
+      "centroid_symbol": "MORPHOUSDT",
+      "symbols": [
+        "MORPHOUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 232,
+      "centroid_symbol": "MOVEUSDT",
+      "symbols": [
+        "MOVEUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 233,
+      "centroid_symbol": "MOVRUSDT",
+      "symbols": [
+        "MOVRUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 234,
+      "centroid_symbol": "MTLUSDT",
+      "symbols": [
+        "MTLUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 235,
+      "centroid_symbol": "MUBARAKUSDT",
+      "symbols": [
+        "MUBARAKUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 236,
+      "centroid_symbol": "NEARUSDT",
+      "symbols": [
+        "NEARUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 237,
+      "centroid_symbol": "NEOUSDT",
+      "symbols": [
+        "NEOUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 238,
+      "centroid_symbol": "NEWTUSDT",
+      "symbols": [
+        "NEWTUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 239,
+      "centroid_symbol": "NEXOUSDT",
+      "symbols": [
+        "NEXOUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 240,
+      "centroid_symbol": "NFPUSDT",
+      "symbols": [
+        "NFPUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 241,
+      "centroid_symbol": "NILUSDT",
+      "symbols": [
+        "NILUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 242,
+      "centroid_symbol": "NMRUSDT",
+      "symbols": [
+        "NMRUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 243,
+      "centroid_symbol": "NOMUSDT",
+      "symbols": [
+        "NOMUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 244,
+      "centroid_symbol": "NOTUSDT",
+      "symbols": [
+        "NOTUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 245,
+      "centroid_symbol": "NXPCUSDT",
+      "symbols": [
+        "NXPCUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 246,
+      "centroid_symbol": "OGNUSDT",
+      "symbols": [
+        "OGNUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 247,
+      "centroid_symbol": "OGUSDT",
+      "symbols": [
+        "OGUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 248,
+      "centroid_symbol": "ONEUSDT",
+      "symbols": [
+        "ONEUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 249,
+      "centroid_symbol": "ONGUSDT",
+      "symbols": [
+        "ONGUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 250,
+      "centroid_symbol": "ONTUSDT",
+      "symbols": [
+        "ONTUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 251,
+      "centroid_symbol": "OPENUSDT",
+      "symbols": [
+        "OPENUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 252,
+      "centroid_symbol": "ORCAUSDT",
+      "symbols": [
+        "ORCAUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 253,
+      "centroid_symbol": "OSMOUSDT",
+      "symbols": [
+        "OSMOUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 254,
+      "centroid_symbol": "OXTUSDT",
+      "symbols": [
+        "OXTUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 255,
+      "centroid_symbol": "PARTIUSDT",
+      "symbols": [
+        "PARTIUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 256,
+      "centroid_symbol": "PAXGUSDT",
+      "symbols": [
+        "PAXGUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 257,
+      "centroid_symbol": "PENDLEUSDT",
+      "symbols": [
+        "PENDLEUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 258,
+      "centroid_symbol": "PEOPLEUSDT",
+      "symbols": [
+        "PEOPLEUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 259,
+      "centroid_symbol": "PHAUSDT",
+      "symbols": [
+        "PHAUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 260,
+      "centroid_symbol": "PHBUSDT",
+      "symbols": [
+        "PHBUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 261,
+      "centroid_symbol": "PIVXUSDT",
+      "symbols": [
+        "PIVXUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 262,
+      "centroid_symbol": "PIXELUSDT",
+      "symbols": [
+        "PIXELUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 263,
+      "centroid_symbol": "PLUMEUSDT",
+      "symbols": [
+        "PLUMEUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 264,
+      "centroid_symbol": "POLUSDT",
+      "symbols": [
+        "POLUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 265,
+      "centroid_symbol": "POLYXUSDT",
+      "symbols": [
+        "POLYXUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 266,
+      "centroid_symbol": "PONDUSDT",
+      "symbols": [
+        "PONDUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 267,
+      "centroid_symbol": "PORTALUSDT",
+      "symbols": [
+        "PORTALUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 268,
+      "centroid_symbol": "PORTOUSDT",
+      "symbols": [
+        "PORTOUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 269,
+      "centroid_symbol": "POWRUSDT",
+      "symbols": [
+        "POWRUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 270,
+      "centroid_symbol": "PROMUSDT",
+      "symbols": [
+        "PROMUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 271,
+      "centroid_symbol": "PROVEUSDT",
+      "symbols": [
+        "PROVEUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 272,
+      "centroid_symbol": "PSGUSDT",
+      "symbols": [
+        "PSGUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 273,
+      "centroid_symbol": "PUMPUSDT",
+      "symbols": [
+        "PUMPUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 274,
+      "centroid_symbol": "PUNDIXUSDT",
+      "symbols": [
+        "PUNDIXUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 275,
+      "centroid_symbol": "PYRUSDT",
+      "symbols": [
+        "PYRUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 276,
+      "centroid_symbol": "PYTHUSDT",
+      "symbols": [
+        "PYTHUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 277,
+      "centroid_symbol": "QIUSDT",
+      "symbols": [
+        "QIUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 278,
+      "centroid_symbol": "QKCUSDT",
+      "symbols": [
+        "QKCUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 279,
+      "centroid_symbol": "QNTUSDT",
+      "symbols": [
+        "QNTUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 280,
+      "centroid_symbol": "QTUMUSDT",
+      "symbols": [
+        "QTUMUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 281,
+      "centroid_symbol": "QUICKUSDT",
+      "symbols": [
+        "QUICKUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 282,
+      "centroid_symbol": "RADUSDT",
+      "symbols": [
+        "RADUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 283,
+      "centroid_symbol": "RAREUSDT",
+      "symbols": [
+        "RAREUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 284,
+      "centroid_symbol": "RAYUSDT",
+      "symbols": [
+        "RAYUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 285,
+      "centroid_symbol": "REDUSDT",
+      "symbols": [
+        "REDUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 286,
+      "centroid_symbol": "RENDERUSDT",
+      "symbols": [
+        "RENDERUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 287,
+      "centroid_symbol": "REQUSDT",
+      "symbols": [
+        "REQUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 288,
+      "centroid_symbol": "RESOLVUSDT",
+      "symbols": [
+        "RESOLVUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 289,
+      "centroid_symbol": "REZUSDT",
+      "symbols": [
+        "REZUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 290,
+      "centroid_symbol": "RIFUSDT",
+      "symbols": [
+        "RIFUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 291,
+      "centroid_symbol": "RLCUSDT",
+      "symbols": [
+        "RLCUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 292,
+      "centroid_symbol": "RLUSDUSDT",
+      "symbols": [
+        "RLUSDUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 293,
+      "centroid_symbol": "RONINUSDT",
+      "symbols": [
+        "RONINUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 294,
+      "centroid_symbol": "ROSEUSDT",
+      "symbols": [
+        "ROSEUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 295,
+      "centroid_symbol": "RPLUSDT",
+      "symbols": [
+        "RPLUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 296,
+      "centroid_symbol": "RSRUSDT",
+      "symbols": [
+        "RSRUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 297,
+      "centroid_symbol": "RVNUSDT",
+      "symbols": [
+        "RVNUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 298,
+      "centroid_symbol": "SAGAUSDT",
+      "symbols": [
+        "SAGAUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 299,
+      "centroid_symbol": "SAHARAUSDT",
+      "symbols": [
+        "SAHARAUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 300,
+      "centroid_symbol": "SANTOSUSDT",
+      "symbols": [
+        "SANTOSUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 301,
+      "centroid_symbol": "SAPIENUSDT",
+      "symbols": [
+        "SAPIENUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 302,
+      "centroid_symbol": "SCRTUSDT",
+      "symbols": [
+        "SCRTUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 303,
+      "centroid_symbol": "SCRUSDT",
+      "symbols": [
+        "SCRUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 304,
+      "centroid_symbol": "SCUSDT",
+      "symbols": [
+        "SCUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 305,
+      "centroid_symbol": "SEIUSDT",
+      "symbols": [
+        "SEIUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 306,
+      "centroid_symbol": "SENTUSDT",
+      "symbols": [
+        "SENTUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 307,
+      "centroid_symbol": "SFPUSDT",
+      "symbols": [
+        "SFPUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 308,
+      "centroid_symbol": "SHELLUSDT",
+      "symbols": [
+        "SHELLUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 309,
+      "centroid_symbol": "SIGNUSDT",
+      "symbols": [
+        "SIGNUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 310,
+      "centroid_symbol": "SKLUSDT",
+      "symbols": [
+        "SKLUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 311,
+      "centroid_symbol": "SKYUSDT",
+      "symbols": [
+        "SKYUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 312,
+      "centroid_symbol": "SLPUSDT",
+      "symbols": [
+        "SLPUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 313,
+      "centroid_symbol": "SNXUSDT",
+      "symbols": [
+        "SNXUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 314,
+      "centroid_symbol": "SOLVUSDT",
+      "symbols": [
+        "SOLVUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 315,
+      "centroid_symbol": "SOMIUSDT",
+      "symbols": [
+        "SOMIUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 316,
+      "centroid_symbol": "SOPHUSDT",
+      "symbols": [
+        "SOPHUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 317,
+      "centroid_symbol": "SPELLUSDT",
+      "symbols": [
+        "SPELLUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 318,
+      "centroid_symbol": "SPKUSDT",
+      "symbols": [
+        "SPKUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 319,
+      "centroid_symbol": "SSVUSDT",
+      "symbols": [
+        "SSVUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 320,
+      "centroid_symbol": "STEEMUSDT",
+      "symbols": [
+        "STEEMUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 321,
+      "centroid_symbol": "STORJUSDT",
+      "symbols": [
+        "STORJUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 322,
+      "centroid_symbol": "STOUSDT",
+      "symbols": [
+        "STOUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 323,
+      "centroid_symbol": "STRAXUSDT",
+      "symbols": [
+        "STRAXUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 324,
+      "centroid_symbol": "STRKUSDT",
+      "symbols": [
+        "STRKUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 325,
+      "centroid_symbol": "STXUSDT",
+      "symbols": [
+        "STXUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 326,
+      "centroid_symbol": "SUNUSDT",
+      "symbols": [
+        "SUNUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 327,
+      "centroid_symbol": "SUPERUSDT",
+      "symbols": [
+        "SUPERUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 328,
+      "centroid_symbol": "SUSDT",
+      "symbols": [
+        "SUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 329,
+      "centroid_symbol": "SXTUSDT",
+      "symbols": [
+        "SXTUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 330,
+      "centroid_symbol": "SYNUSDT",
+      "symbols": [
+        "SYNUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 331,
+      "centroid_symbol": "SYRUPUSDT",
+      "symbols": [
+        "SYRUPUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 332,
+      "centroid_symbol": "SYSUSDT",
+      "symbols": [
+        "SYSUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 333,
+      "centroid_symbol": "TAOUSDT",
+      "symbols": [
+        "TAOUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 334,
+      "centroid_symbol": "TFUELUSDT",
+      "symbols": [
+        "TFUELUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 335,
+      "centroid_symbol": "THETAUSDT",
+      "symbols": [
+        "THETAUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 336,
+      "centroid_symbol": "THEUSDT",
+      "symbols": [
+        "THEUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 337,
+      "centroid_symbol": "TKOUSDT",
+      "symbols": [
+        "TKOUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 338,
+      "centroid_symbol": "TLMUSDT",
+      "symbols": [
+        "TLMUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 339,
+      "centroid_symbol": "TNSRUSDT",
+      "symbols": [
+        "TNSRUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 340,
+      "centroid_symbol": "TONUSDT",
+      "symbols": [
+        "TONUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 341,
+      "centroid_symbol": "TOWNSUSDT",
+      "symbols": [
+        "TOWNSUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 342,
+      "centroid_symbol": "TREEUSDT",
+      "symbols": [
+        "TREEUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 343,
+      "centroid_symbol": "TRUMPUSDT",
+      "symbols": [
+        "TRUMPUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 344,
+      "centroid_symbol": "TRUUSDT",
+      "symbols": [
+        "TRUUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 345,
+      "centroid_symbol": "TRXUSDT",
+      "symbols": [
+        "TRXUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 346,
+      "centroid_symbol": "TSTUSDT",
+      "symbols": [
+        "TSTUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 347,
+      "centroid_symbol": "TURBOUSDT",
+      "symbols": [
+        "TURBOUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 348,
+      "centroid_symbol": "TURTLEUSDT",
+      "symbols": [
+        "TURTLEUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 349,
+      "centroid_symbol": "TUSDT",
+      "symbols": [
+        "TUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 350,
+      "centroid_symbol": "TUSDUSDT",
+      "symbols": [
+        "TUSDUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 351,
+      "centroid_symbol": "TUTUSDT",
+      "symbols": [
+        "TUTUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 352,
+      "centroid_symbol": "TWTUSDT",
+      "symbols": [
+        "TWTUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 353,
+      "centroid_symbol": "UMAUSDT",
+      "symbols": [
+        "UMAUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 354,
+      "centroid_symbol": "UNIUSDT",
+      "symbols": [
+        "UNIUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 355,
+      "centroid_symbol": "USD1USDT",
+      "symbols": [
+        "USD1USDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 356,
+      "centroid_symbol": "USDCUSDT",
+      "symbols": [
+        "USDCUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 357,
+      "centroid_symbol": "USDEUSDT",
+      "symbols": [
+        "USDEUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 358,
+      "centroid_symbol": "USDPUSDT",
+      "symbols": [
+        "USDPUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 359,
+      "centroid_symbol": "USTCUSDT",
+      "symbols": [
+        "USTCUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 360,
+      "centroid_symbol": "USUALUSDT",
+      "symbols": [
+        "USUALUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 361,
+      "centroid_symbol": "UTKUSDT",
+      "symbols": [
+        "UTKUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 362,
+      "centroid_symbol": "UUSDT",
+      "symbols": [
+        "UUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 363,
+      "centroid_symbol": "VANAUSDT",
+      "symbols": [
+        "VANAUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 364,
+      "centroid_symbol": "VANRYUSDT",
+      "symbols": [
+        "VANRYUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 365,
+      "centroid_symbol": "VELODROMEUSDT",
+      "symbols": [
+        "VELODROMEUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 366,
+      "centroid_symbol": "VICUSDT",
+      "symbols": [
+        "VICUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 367,
+      "centroid_symbol": "VIRTUALUSDT",
+      "symbols": [
+        "VIRTUALUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 368,
+      "centroid_symbol": "VTHOUSDT",
+      "symbols": [
+        "VTHOUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 369,
+      "centroid_symbol": "WALUSDT",
+      "symbols": [
+        "WALUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 370,
+      "centroid_symbol": "WANUSDT",
+      "symbols": [
+        "WANUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 371,
+      "centroid_symbol": "WAXPUSDT",
+      "symbols": [
+        "WAXPUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 372,
+      "centroid_symbol": "WCTUSDT",
+      "symbols": [
+        "WCTUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 373,
+      "centroid_symbol": "WIFUSDT",
+      "symbols": [
+        "WIFUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 374,
+      "centroid_symbol": "WINUSDT",
+      "symbols": [
+        "WINUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 375,
+      "centroid_symbol": "WLDUSDT",
+      "symbols": [
+        "WLDUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 376,
+      "centroid_symbol": "WLFIUSDT",
+      "symbols": [
+        "WLFIUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 377,
+      "centroid_symbol": "WOOUSDT",
+      "symbols": [
+        "WOOUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 378,
+      "centroid_symbol": "WUSDT",
+      "symbols": [
+        "WUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 379,
+      "centroid_symbol": "XAIUSDT",
+      "symbols": [
+        "XAIUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 380,
+      "centroid_symbol": "XECUSDT",
+      "symbols": [
+        "XECUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 381,
+      "centroid_symbol": "XNOUSDT",
+      "symbols": [
+        "XNOUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 382,
+      "centroid_symbol": "XPLUSDT",
+      "symbols": [
+        "XPLUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 383,
+      "centroid_symbol": "XTZUSDT",
+      "symbols": [
+        "XTZUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 384,
+      "centroid_symbol": "XUSDUSDT",
+      "symbols": [
+        "XUSDUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 385,
+      "centroid_symbol": "XVGUSDT",
+      "symbols": [
+        "XVGUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 386,
+      "centroid_symbol": "XVSUSDT",
+      "symbols": [
+        "XVSUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 387,
+      "centroid_symbol": "YBUSDT",
+      "symbols": [
+        "YBUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 388,
+      "centroid_symbol": "YFIUSDT",
+      "symbols": [
+        "YFIUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 389,
+      "centroid_symbol": "YGGUSDT",
+      "symbols": [
+        "YGGUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 390,
+      "centroid_symbol": "ZAMAUSDT",
+      "symbols": [
+        "ZAMAUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 391,
+      "centroid_symbol": "ZBTUSDT",
+      "symbols": [
+        "ZBTUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 392,
+      "centroid_symbol": "ZECUSDT",
+      "symbols": [
+        "ZECUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 393,
+      "centroid_symbol": "ZENUSDT",
+      "symbols": [
+        "ZENUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 394,
+      "centroid_symbol": "ZILUSDT",
+      "symbols": [
+        "ZILUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 395,
+      "centroid_symbol": "ZKCUSDT",
+      "symbols": [
+        "ZKCUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 396,
+      "centroid_symbol": "ZKPUSDT",
+      "symbols": [
+        "ZKPUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 397,
+      "centroid_symbol": "ZKUSDT",
+      "symbols": [
+        "ZKUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 398,
+      "centroid_symbol": "ZRXUSDT",
+      "symbols": [
+        "ZRXUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    },
+    {
+      "cluster_id": 399,
+      "centroid_symbol": "\u5e01\u5b89\u4eba\u751fUSDT",
+      "symbols": [
+        "\u5e01\u5b89\u4eba\u751fUSDT"
+      ],
+      "cluster_size": 1,
+      "mean_intra_corr": 1.0
+    }
+  ]
+}

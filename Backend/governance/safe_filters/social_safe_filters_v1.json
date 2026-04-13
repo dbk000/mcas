@@ -1,0 +1,689 @@
+{
+  "meta": {
+    "schema_version": "1.0",
+    "generated_ts": "2026-04-12T23:05:06.292095+00:00",
+    "source_batch_id": "gated_v1_20260411",
+    "n_opps_input": 44266,
+    "setups_covered": [
+      "C2M",
+      "C4M",
+      "C2SH",
+      "C4ML",
+      "C3M",
+      "C2S"
+    ],
+    "included_categories": [
+      "SOCIAL_WHALE",
+      "SOCIAL_REDDIT",
+      "SOCIAL_COMMUNITY",
+      "SOCIAL_DISCORD",
+      "GEOPOLITICAL",
+      "MONETARY",
+      "REGULATORY",
+      "STRUCTURAL"
+    ],
+    "excluded_categories": [
+      "SOCIAL_NEWS"
+    ],
+    "scope_narrow_rationale": "NEWS backfill failed (CryptoPanic free API removed 2026-04-01); remains dropped. SOCIAL_COMMUNITY + SOCIAL_DISCORD added back 2026-04-12 after DB cross-check: social_posts has 369K discord rows (live from 2026-03-01+) and ~10K live telegram + 10K backfilled telegram community posts. COMMUNITY+DISCORD categories only have lookback coverage for opps created from 2026-03-01 onwards; earlier opps will have zero category velocity (baseline_floor will apply). SOCIAL_REDDIT carries partial coverage warning as backfill may be incomplete at extraction time.",
+    "backfill_state": {
+      "telegram": "complete",
+      "reddit": "running_in_background_partial",
+      "news": "failed_dropped",
+      "discord": "live_from_2026_03_01",
+      "community": "live_from_2026_03_01 (discord + non-whale telegram)"
+    },
+    "walk_forward": {
+      "n_folds_requested": 5,
+      "embargo_days": 1,
+      "note": "first fold dropped (no train); max 4 usable"
+    },
+    "velocity_params": {
+      "lookback_hours": 24,
+      "baseline_hours": 168,
+      "baseline_floor_per_hour": 0.5
+    },
+    "thresholds_quantiles": [
+      0.1,
+      0.25,
+      0.5,
+      0.75,
+      0.9
+    ],
+    "n_trials_binary": 375,
+    "n_trials_magnitude": 265,
+    "promotion_criteria_binary": {
+      "fold_stability_min": "4/4",
+      "pf_uplift_pct": 0.1,
+      "dsr_min": 0.0,
+      "n_post_min": 200,
+      "avg_daily_pf_min": 1.0
+    },
+    "promotion_criteria_magnitude": {
+      "fold_stability_min": 4,
+      "shift_abs_min": 0.1,
+      "dsr_min": 0.0,
+      "n_post_min": 200
+    },
+    "coverage_stats": {
+      "C2M": {
+        "SOCIAL_WHALE": {
+          "n_opps": 31147,
+          "n_nonzero_lookback": 27478,
+          "n_nonzero_baseline": 31147,
+          "median_baseline_hits": 1746.0,
+          "median_recent_hits": 250.0,
+          "pct_nonzero_lookback": 88.22037435387035,
+          "pct_nonzero_baseline": 100.0
+        },
+        "SOCIAL_REDDIT": {
+          "n_opps": 31147,
+          "n_nonzero_lookback": 13490,
+          "n_nonzero_baseline": 16556,
+          "median_baseline_hits": 339.0,
+          "median_recent_hits": 0.0,
+          "pct_nonzero_lookback": 43.310752239381,
+          "pct_nonzero_baseline": 53.154396892156555
+        },
+        "SOCIAL_COMMUNITY": {
+          "n_opps": 31147,
+          "n_nonzero_lookback": 23646,
+          "n_nonzero_baseline": 25402,
+          "median_baseline_hits": 134.0,
+          "median_recent_hits": 16.0,
+          "pct_nonzero_lookback": 75.91742382894019,
+          "pct_nonzero_baseline": 81.55520595884033
+        },
+        "SOCIAL_DISCORD": {
+          "n_opps": 31147,
+          "n_nonzero_lookback": 10156,
+          "n_nonzero_baseline": 8846,
+          "median_baseline_hits": 0.0,
+          "median_recent_hits": 0.0,
+          "pct_nonzero_lookback": 32.60667158955919,
+          "pct_nonzero_baseline": 28.40080906668379
+        },
+        "GEOPOLITICAL": {
+          "n_opps": 31147,
+          "n_nonzero_lookback": 28866,
+          "n_nonzero_baseline": 31147,
+          "median_baseline_hits": 68.0,
+          "median_recent_hits": 10.0,
+          "pct_nonzero_lookback": 92.67666227887116,
+          "pct_nonzero_baseline": 100.0
+        },
+        "MONETARY": {
+          "n_opps": 31147,
+          "n_nonzero_lookback": 26584,
+          "n_nonzero_baseline": 31147,
+          "median_baseline_hits": 82.0,
+          "median_recent_hits": 11.0,
+          "pct_nonzero_lookback": 85.35011397566379,
+          "pct_nonzero_baseline": 100.0
+        },
+        "REGULATORY": {
+          "n_opps": 31147,
+          "n_nonzero_lookback": 24223,
+          "n_nonzero_baseline": 31147,
+          "median_baseline_hits": 72.0,
+          "median_recent_hits": 7.0,
+          "pct_nonzero_lookback": 77.76992968825247,
+          "pct_nonzero_baseline": 100.0
+        },
+        "STRUCTURAL": {
+          "n_opps": 31147,
+          "n_nonzero_lookback": 24784,
+          "n_nonzero_baseline": 31147,
+          "median_baseline_hits": 44.0,
+          "median_recent_hits": 4.0,
+          "pct_nonzero_lookback": 79.57106623430829,
+          "pct_nonzero_baseline": 100.0
+        }
+      },
+      "C4M": {
+        "SOCIAL_WHALE": {
+          "n_opps": 8780,
+          "n_nonzero_lookback": 8615,
+          "n_nonzero_baseline": 8780,
+          "median_baseline_hits": 1542.0,
+          "median_recent_hits": 236.0,
+          "pct_nonzero_lookback": 98.12072892938497,
+          "pct_nonzero_baseline": 100.0
+        },
+        "SOCIAL_REDDIT": {
+          "n_opps": 8780,
+          "n_nonzero_lookback": 5310,
+          "n_nonzero_baseline": 7365,
+          "median_baseline_hits": 519.0,
+          "median_recent_hits": 61.0,
+          "pct_nonzero_lookback": 60.478359908883824,
+          "pct_nonzero_baseline": 83.88382687927107
+        },
+        "SOCIAL_COMMUNITY": {
+          "n_opps": 8780,
+          "n_nonzero_lookback": 6447,
+          "n_nonzero_baseline": 8522,
+          "median_baseline_hits": 139.0,
+          "median_recent_hits": 16.0,
+          "pct_nonzero_lookback": 73.42824601366743,
+          "pct_nonzero_baseline": 97.06150341685648
+        },
+        "SOCIAL_DISCORD": {
+          "n_opps": 8780,
+          "n_nonzero_lookback": 1137,
+          "n_nonzero_baseline": 1157,
+          "median_baseline_hits": 0.0,
+          "median_recent_hits": 0.0,
+          "pct_nonzero_lookback": 12.949886104783598,
+          "pct_nonzero_baseline": 13.177676537585423
+        },
+        "GEOPOLITICAL": {
+          "n_opps": 8780,
+          "n_nonzero_lookback": 8665,
+          "n_nonzero_baseline": 8780,
+          "median_baseline_hits": 92.0,
+          "median_recent_hits": 9.0,
+          "pct_nonzero_lookback": 98.69020501138952,
+          "pct_nonzero_baseline": 100.0
+        },
+        "MONETARY": {
+          "n_opps": 8780,
+          "n_nonzero_lookback": 6953,
+          "n_nonzero_baseline": 8780,
+          "median_baseline_hits": 158.0,
+          "median_recent_hits": 9.0,
+          "pct_nonzero_lookback": 79.19134396355354,
+          "pct_nonzero_baseline": 100.0
+        },
+        "REGULATORY": {
+          "n_opps": 8780,
+          "n_nonzero_lookback": 8356,
+          "n_nonzero_baseline": 8780,
+          "median_baseline_hits": 124.0,
+          "median_recent_hits": 6.0,
+          "pct_nonzero_lookback": 95.17084282460137,
+          "pct_nonzero_baseline": 100.0
+        },
+        "STRUCTURAL": {
+          "n_opps": 8780,
+          "n_nonzero_lookback": 6692,
+          "n_nonzero_baseline": 8780,
+          "median_baseline_hits": 46.0,
+          "median_recent_hits": 5.0,
+          "pct_nonzero_lookback": 76.21867881548975,
+          "pct_nonzero_baseline": 100.0
+        }
+      },
+      "C2SH": {
+        "SOCIAL_WHALE": {
+          "n_opps": 1598,
+          "n_nonzero_lookback": 1386,
+          "n_nonzero_baseline": 1598,
+          "median_baseline_hits": 2521.0,
+          "median_recent_hits": 300.0,
+          "pct_nonzero_lookback": 86.7334167709637,
+          "pct_nonzero_baseline": 100.0
+        },
+        "SOCIAL_REDDIT": {
+          "n_opps": 1598,
+          "n_nonzero_lookback": 627,
+          "n_nonzero_baseline": 650,
+          "median_baseline_hits": 0.0,
+          "median_recent_hits": 0.0,
+          "pct_nonzero_lookback": 39.23654568210263,
+          "pct_nonzero_baseline": 40.67584480600751
+        },
+        "SOCIAL_COMMUNITY": {
+          "n_opps": 1598,
+          "n_nonzero_lookback": 875,
+          "n_nonzero_baseline": 1110,
+          "median_baseline_hits": 138.0,
+          "median_recent_hits": 10.0,
+          "pct_nonzero_lookback": 54.75594493116396,
+          "pct_nonzero_baseline": 69.46182728410513
+        },
+        "SOCIAL_DISCORD": {
+          "n_opps": 1598,
+          "n_nonzero_lookback": 248,
+          "n_nonzero_baseline": 460,
+          "median_baseline_hits": 0.0,
+          "median_recent_hits": 0.0,
+          "pct_nonzero_lookback": 15.519399249061328,
+          "pct_nonzero_baseline": 28.785982478097623
+        },
+        "GEOPOLITICAL": {
+          "n_opps": 1598,
+          "n_nonzero_lookback": 1450,
+          "n_nonzero_baseline": 1598,
+          "median_baseline_hits": 84.0,
+          "median_recent_hits": 4.0,
+          "pct_nonzero_lookback": 90.73842302878599,
+          "pct_nonzero_baseline": 100.0
+        },
+        "MONETARY": {
+          "n_opps": 1598,
+          "n_nonzero_lookback": 1450,
+          "n_nonzero_baseline": 1598,
+          "median_baseline_hits": 71.0,
+          "median_recent_hits": 9.0,
+          "pct_nonzero_lookback": 90.73842302878599,
+          "pct_nonzero_baseline": 100.0
+        },
+        "REGULATORY": {
+          "n_opps": 1598,
+          "n_nonzero_lookback": 1386,
+          "n_nonzero_baseline": 1598,
+          "median_baseline_hits": 31.0,
+          "median_recent_hits": 8.0,
+          "pct_nonzero_lookback": 86.7334167709637,
+          "pct_nonzero_baseline": 100.0
+        },
+        "STRUCTURAL": {
+          "n_opps": 1598,
+          "n_nonzero_lookback": 875,
+          "n_nonzero_baseline": 1598,
+          "median_baseline_hits": 30.0,
+          "median_recent_hits": 2.0,
+          "pct_nonzero_lookback": 54.75594493116396,
+          "pct_nonzero_baseline": 100.0
+        }
+      },
+      "C4ML": {
+        "SOCIAL_WHALE": {
+          "n_opps": 1157,
+          "n_nonzero_lookback": 1133,
+          "n_nonzero_baseline": 1157,
+          "median_baseline_hits": 1559.0,
+          "median_recent_hits": 697.0,
+          "pct_nonzero_lookback": 97.92566983578219,
+          "pct_nonzero_baseline": 100.0
+        },
+        "SOCIAL_REDDIT": {
+          "n_opps": 1157,
+          "n_nonzero_lookback": 404,
+          "n_nonzero_baseline": 781,
+          "median_baseline_hits": 373.0,
+          "median_recent_hits": 0.0,
+          "pct_nonzero_lookback": 34.91789109766638,
+          "pct_nonzero_baseline": 67.50216076058773
+        },
+        "SOCIAL_COMMUNITY": {
+          "n_opps": 1157,
+          "n_nonzero_lookback": 752,
+          "n_nonzero_baseline": 1124,
+          "median_baseline_hits": 129.0,
+          "median_recent_hits": 13.0,
+          "pct_nonzero_lookback": 64.99567847882454,
+          "pct_nonzero_baseline": 97.14779602420052
+        },
+        "SOCIAL_DISCORD": {
+          "n_opps": 1157,
+          "n_nonzero_lookback": 348,
+          "n_nonzero_baseline": 343,
+          "median_baseline_hits": 0.0,
+          "median_recent_hits": 0.0,
+          "pct_nonzero_lookback": 30.077787381158167,
+          "pct_nonzero_baseline": 29.64563526361279
+        },
+        "GEOPOLITICAL": {
+          "n_opps": 1157,
+          "n_nonzero_lookback": 1147,
+          "n_nonzero_baseline": 1157,
+          "median_baseline_hits": 69.0,
+          "median_recent_hits": 7.0,
+          "pct_nonzero_lookback": 99.13569576490924,
+          "pct_nonzero_baseline": 100.0
+        },
+        "MONETARY": {
+          "n_opps": 1157,
+          "n_nonzero_lookback": 848,
+          "n_nonzero_baseline": 1157,
+          "median_baseline_hits": 154.0,
+          "median_recent_hits": 8.0,
+          "pct_nonzero_lookback": 73.29299913569577,
+          "pct_nonzero_baseline": 100.0
+        },
+        "REGULATORY": {
+          "n_opps": 1157,
+          "n_nonzero_lookback": 1068,
+          "n_nonzero_baseline": 1157,
+          "median_baseline_hits": 76.0,
+          "median_recent_hits": 6.0,
+          "pct_nonzero_lookback": 92.3076923076923,
+          "pct_nonzero_baseline": 100.0
+        },
+        "STRUCTURAL": {
+          "n_opps": 1157,
+          "n_nonzero_lookback": 808,
+          "n_nonzero_baseline": 1157,
+          "median_baseline_hits": 40.0,
+          "median_recent_hits": 3.0,
+          "pct_nonzero_lookback": 69.83578219533275,
+          "pct_nonzero_baseline": 100.0
+        }
+      },
+      "C3M": {
+        "SOCIAL_WHALE": {
+          "n_opps": 884,
+          "n_nonzero_lookback": 705,
+          "n_nonzero_baseline": 884,
+          "median_baseline_hits": 2544.0,
+          "median_recent_hits": 383.0,
+          "pct_nonzero_lookback": 79.75113122171946,
+          "pct_nonzero_baseline": 100.0
+        },
+        "SOCIAL_REDDIT": {
+          "n_opps": 884,
+          "n_nonzero_lookback": 75,
+          "n_nonzero_baseline": 82,
+          "median_baseline_hits": 0.0,
+          "median_recent_hits": 0.0,
+          "pct_nonzero_lookback": 8.484162895927602,
+          "pct_nonzero_baseline": 9.276018099547512
+        },
+        "SOCIAL_COMMUNITY": {
+          "n_opps": 884,
+          "n_nonzero_lookback": 659,
+          "n_nonzero_baseline": 771,
+          "median_baseline_hits": 69137.0,
+          "median_recent_hits": 13942.0,
+          "pct_nonzero_lookback": 74.5475113122172,
+          "pct_nonzero_baseline": 87.21719457013575
+        },
+        "SOCIAL_DISCORD": {
+          "n_opps": 884,
+          "n_nonzero_lookback": 584,
+          "n_nonzero_baseline": 689,
+          "median_baseline_hits": 69044.0,
+          "median_recent_hits": 13925.0,
+          "pct_nonzero_lookback": 66.06334841628959,
+          "pct_nonzero_baseline": 77.94117647058823
+        },
+        "GEOPOLITICAL": {
+          "n_opps": 884,
+          "n_nonzero_lookback": 727,
+          "n_nonzero_baseline": 884,
+          "median_baseline_hits": 405.0,
+          "median_recent_hits": 53.0,
+          "pct_nonzero_lookback": 82.23981900452489,
+          "pct_nonzero_baseline": 100.0
+        },
+        "MONETARY": {
+          "n_opps": 884,
+          "n_nonzero_lookback": 703,
+          "n_nonzero_baseline": 884,
+          "median_baseline_hits": 77.0,
+          "median_recent_hits": 9.0,
+          "pct_nonzero_lookback": 79.52488687782805,
+          "pct_nonzero_baseline": 100.0
+        },
+        "REGULATORY": {
+          "n_opps": 884,
+          "n_nonzero_lookback": 555,
+          "n_nonzero_baseline": 884,
+          "median_baseline_hits": 34.0,
+          "median_recent_hits": 8.0,
+          "pct_nonzero_lookback": 62.782805429864254,
+          "pct_nonzero_baseline": 100.0
+        },
+        "STRUCTURAL": {
+          "n_opps": 884,
+          "n_nonzero_lookback": 713,
+          "n_nonzero_baseline": 884,
+          "median_baseline_hits": 43.0,
+          "median_recent_hits": 2.0,
+          "pct_nonzero_lookback": 80.65610859728507,
+          "pct_nonzero_baseline": 100.0
+        }
+      },
+      "C2S": {
+        "SOCIAL_WHALE": {
+          "n_opps": 700,
+          "n_nonzero_lookback": 674,
+          "n_nonzero_baseline": 700,
+          "median_baseline_hits": 4546.0,
+          "median_recent_hits": 781.0,
+          "pct_nonzero_lookback": 96.28571428571429,
+          "pct_nonzero_baseline": 100.0
+        },
+        "SOCIAL_REDDIT": {
+          "n_opps": 700,
+          "n_nonzero_lookback": 156,
+          "n_nonzero_baseline": 164,
+          "median_baseline_hits": 0.0,
+          "median_recent_hits": 0.0,
+          "pct_nonzero_lookback": 22.285714285714285,
+          "pct_nonzero_baseline": 23.42857142857143
+        },
+        "SOCIAL_COMMUNITY": {
+          "n_opps": 700,
+          "n_nonzero_lookback": 181,
+          "n_nonzero_baseline": 215,
+          "median_baseline_hits": 0.0,
+          "median_recent_hits": 0.0,
+          "pct_nonzero_lookback": 25.857142857142858,
+          "pct_nonzero_baseline": 30.714285714285715
+        },
+        "SOCIAL_DISCORD": {
+          "n_opps": 700,
+          "n_nonzero_lookback": 25,
+          "n_nonzero_baseline": 51,
+          "median_baseline_hits": 0.0,
+          "median_recent_hits": 0.0,
+          "pct_nonzero_lookback": 3.571428571428571,
+          "pct_nonzero_baseline": 7.285714285714286
+        },
+        "GEOPOLITICAL": {
+          "n_opps": 700,
+          "n_nonzero_lookback": 684,
+          "n_nonzero_baseline": 700,
+          "median_baseline_hits": 25.0,
+          "median_recent_hits": 4.0,
+          "pct_nonzero_lookback": 97.71428571428571,
+          "pct_nonzero_baseline": 100.0
+        },
+        "MONETARY": {
+          "n_opps": 700,
+          "n_nonzero_lookback": 684,
+          "n_nonzero_baseline": 700,
+          "median_baseline_hits": 9.0,
+          "median_recent_hits": 6.0,
+          "pct_nonzero_lookback": 97.71428571428571,
+          "pct_nonzero_baseline": 100.0
+        },
+        "REGULATORY": {
+          "n_opps": 700,
+          "n_nonzero_lookback": 676,
+          "n_nonzero_baseline": 700,
+          "median_baseline_hits": 10.0,
+          "median_recent_hits": 1.0,
+          "pct_nonzero_lookback": 96.57142857142857,
+          "pct_nonzero_baseline": 100.0
+        },
+        "STRUCTURAL": {
+          "n_opps": 700,
+          "n_nonzero_lookback": 186,
+          "n_nonzero_baseline": 700,
+          "median_baseline_hits": 10.0,
+          "median_recent_hits": 0.0,
+          "pct_nonzero_lookback": 26.571428571428573,
+          "pct_nonzero_baseline": 100.0
+        }
+      }
+    }
+  },
+  "filters_by_strategy": {
+    "C2M": {
+      "filters": [
+        {
+          "variant_id": "C2M_binary_GEOPOLITICAL_gt_0p583333_v1",
+          "setup_id": "C2M",
+          "category": "GEOPOLITICAL",
+          "direction": "gt",
+          "operator": ">",
+          "threshold": 0.5833333333333334,
+          "quantile_idx": 1,
+          "quantile_value": 0.25,
+          "fold_stability": 4,
+          "fold_stability_max": 4,
+          "fold_stability_str": "4/4",
+          "DSR": 7.216449660063518e-16,
+          "n_trades_post": 16997,
+          "walk_forward_PF_pre": 0.994515959139423,
+          "walk_forward_PF_post": 1.1566317136791593,
+          "avg_daily_PF_pre": 1.010354829865644,
+          "avg_daily_PF_post": 1.4548029581679252,
+          "winrate_pre": 0.48002924426658455,
+          "winrate_post": 0.5044419603459434,
+          "n_trades_pre": 25988,
+          "promoted": true,
+          "holdout_PF": null
+        },
+        {
+          "variant_id": "C2M_binary_MONETARY_gt_0p583333_v1",
+          "setup_id": "C2M",
+          "category": "MONETARY",
+          "direction": "gt",
+          "operator": ">",
+          "threshold": 0.5833333333333334,
+          "quantile_idx": 1,
+          "quantile_value": 0.25,
+          "fold_stability": 4,
+          "fold_stability_max": 4,
+          "fold_stability_str": "4/4",
+          "DSR": 2.525757381022231e-14,
+          "n_trades_post": 15452,
+          "walk_forward_PF_pre": 0.994515959139423,
+          "walk_forward_PF_post": 1.1202993645467039,
+          "avg_daily_PF_pre": 1.010354829865644,
+          "avg_daily_PF_post": 1.3263353782662233,
+          "winrate_pre": 0.48002924426658455,
+          "winrate_post": 0.5135257571835361,
+          "n_trades_pre": 25988,
+          "promoted": true,
+          "holdout_PF": null
+        }
+      ],
+      "null_result": false
+    },
+    "C4M": {
+      "filters": [
+        {
+          "variant_id": "C4M_binary_SOCIAL_COMMUNITY_gt_0p850829_v1",
+          "setup_id": "C4M",
+          "category": "SOCIAL_COMMUNITY",
+          "direction": "gt",
+          "operator": ">",
+          "threshold": 0.850828729281768,
+          "quantile_idx": 2,
+          "quantile_value": 0.5,
+          "fold_stability": 4,
+          "fold_stability_max": 4,
+          "fold_stability_str": "4/4",
+          "DSR": 3.638700452057719e-12,
+          "n_trades_post": 1817,
+          "walk_forward_PF_pre": 1.24915283194226,
+          "walk_forward_PF_post": 1.39189682993607,
+          "avg_daily_PF_pre": 1.2165706253873891,
+          "avg_daily_PF_post": 1.3471788645231344,
+          "winrate_pre": 0.43717375093214017,
+          "winrate_post": 0.45404512933406715,
+          "n_trades_pre": 5364,
+          "promoted": true,
+          "holdout_PF": null
+        },
+        {
+          "variant_id": "C4M_binary_GEOPOLITICAL_gt_0p663158_v1",
+          "setup_id": "C4M",
+          "category": "GEOPOLITICAL",
+          "direction": "gt",
+          "operator": ">",
+          "threshold": 0.6631578947368422,
+          "quantile_idx": 2,
+          "quantile_value": 0.5,
+          "fold_stability": 4,
+          "fold_stability_max": 4,
+          "fold_stability_str": "4/4",
+          "DSR": 3.7786440643117203e-13,
+          "n_trades_post": 1862,
+          "walk_forward_PF_pre": 1.24915283194226,
+          "walk_forward_PF_post": 1.5053511443468244,
+          "avg_daily_PF_pre": 1.2165706253873891,
+          "avg_daily_PF_post": 1.9621605619469744,
+          "winrate_pre": 0.43717375093214017,
+          "winrate_post": 0.4865735767991407,
+          "n_trades_pre": 5364,
+          "promoted": true,
+          "holdout_PF": null
+        },
+        {
+          "variant_id": "C4M_binary_MONETARY_gt_0p583333_v1",
+          "setup_id": "C4M",
+          "category": "MONETARY",
+          "direction": "gt",
+          "operator": ">",
+          "threshold": 0.5833333333333334,
+          "quantile_idx": 2,
+          "quantile_value": 0.5,
+          "fold_stability": 4,
+          "fold_stability_max": 4,
+          "fold_stability_str": "4/4",
+          "DSR": 5.144721315630818e-10,
+          "n_trades_post": 2546,
+          "walk_forward_PF_pre": 1.24915283194226,
+          "walk_forward_PF_post": 1.5977267039105965,
+          "avg_daily_PF_pre": 1.2165706253873891,
+          "avg_daily_PF_post": 1.8930682447718064,
+          "winrate_pre": 0.43717375093214017,
+          "winrate_post": 0.48978790259230165,
+          "n_trades_pre": 5364,
+          "promoted": true,
+          "holdout_PF": null
+        }
+      ],
+      "null_result": false
+    },
+    "C2SH": {
+      "filters": [],
+      "null_result": true
+    },
+    "C4ML": {
+      "filters": [
+        {
+          "variant_id": "C4ML_binary_MONETARY_gt_0p666667_v1",
+          "setup_id": "C4ML",
+          "category": "MONETARY",
+          "direction": "gt",
+          "operator": ">",
+          "threshold": 0.6666666666666666,
+          "quantile_idx": 2,
+          "quantile_value": 0.5,
+          "fold_stability": 4,
+          "fold_stability_max": 4,
+          "fold_stability_str": "4/4",
+          "DSR": 7.897560383440805e-10,
+          "n_trades_post": 352,
+          "walk_forward_PF_pre": 1.1067039389562785,
+          "walk_forward_PF_post": 2.9639692413801613,
+          "avg_daily_PF_pre": 1.5431994883234752,
+          "avg_daily_PF_post": 2.286412983378427,
+          "winrate_pre": 0.42627599243856334,
+          "winrate_post": 0.5596590909090909,
+          "n_trades_pre": 1058,
+          "promoted": true,
+          "holdout_PF": null
+        }
+      ],
+      "null_result": false
+    },
+    "C3M": {
+      "filters": [],
+      "null_result": true
+    },
+    "C2S": {
+      "filters": [],
+      "null_result": true
+    }
+  },
+  "global_null_result": false
+}
