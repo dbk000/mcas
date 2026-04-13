@@ -471,6 +471,8 @@ def _populate_stop_policies(reg: StopPolicyRegistry) -> None:
     # but not yet frozen at this point — we use the hardcoded catalog directly).
     _SETUP_IDS = sorted([
         "S1", "S2", "S6", "S9", "S10", "S11", "U1", "D1", "D2", "PM",
+        # C-series (Monday 2026-04-13 sprint — parents + live variants).
+        "C1", "C2", "C3", "C4", "C5", "C2M", "C2S", "C2SH", "C3M", "C4M", "C4ML",
         "EQFP", "EQ_TSMOM", "EQ_XSMOM", "EQ_REV1A", "EQ_REV1B",
         "EQ_VPD", "EQ_ATC", "EQ_NVDA_MACRO",
     ])
