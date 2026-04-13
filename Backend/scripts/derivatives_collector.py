@@ -188,6 +188,8 @@ def load_symbols(db_url):
     resp = req_lib.get(f"{FAPI_BASE}/fapi/v1/exchangeInfo", timeout=10)
     resp.raise_for_status()
     futures_symbols = set()
+    # USDT-M perpetual venue — contract denomination is intrinsically
+    # USDT regardless of the spot QUOTE_CURRENCY.
     for s in resp.json()["symbols"]:
         if (s["contractType"] == "PERPETUAL" and
                 s["quoteAsset"] == "USDT" and

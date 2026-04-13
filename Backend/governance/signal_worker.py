@@ -31,9 +31,13 @@ from governance.selection.cap3_pipeline import (
 # C-series variant registry (Phase B-STEP2). Parent → allowed variant
 # setup_ids. ``LIVE_VARIANT_SETUP_IDS`` gates which variants actually emit
 # (Monday go-live: C2M + C4M only; C2S deferred pending snapshot
-# enrichment; C2SH/C3M/C4ML null sprint results).
+# enrichment; C4ML null sprint result).
+#
+# DAY_GATE_VALIDATION (2026-04-13): C2SH decommissioned — no edge,
+# uncapped PF 0.742, no SAFE filter survivors. Removed from mapping to
+# prevent future accidental re-enable.
 C_SERIES_VARIANTS: dict[str, list[str]] = {
-    "C2": ["C2M", "C2S", "C2SH"],
+    "C2": ["C2M", "C2S"],
     "C3": ["C3M"],
     "C4": ["C4M", "C4ML"],
 }
@@ -56,6 +60,8 @@ from governance.cache_contract import (
     # Unicorn keys
     get_embryo_active_symbols, read_unicorn_state,
     unicorn_state_key, UNICORN_STATE_TTL_S,
+    # SNAPSHOT_ENRICH — 24h quote volume lookup at payload-build time
+    read_volume_24h,
 )
 import numpy as np
 from indicators.indicators import IndicatorSnapshot, FeatureFactory, OHLCV
@@ -292,6 +298,10 @@ class SignalWorker(LineageEnforcer):
         # LiveConfig: poll meta.config_version for hot-reload
         wcfg = _worker_cfg()
         db_url = _database_url()
+        # SNAPSHOT_ENRICH: gate the payload injection on a governed flag so
+        # ops can disable cheaply if the new field causes issues.
+        self._volume_24h_enabled = bool(
+            getattr(wcfg, "SNAPSHOT_VOLUME_24H_ENABLED", True))
         self._live_config = LiveConfig(
             database_url=db_url,
             poll_interval_s=wcfg.CONFIG_POLL_INTERVAL_S,
@@ -2056,6 +2066,20 @@ class SignalWorker(LineageEnforcer):
     def _persist_signal_to_pg(self, symbol: str, tf: str, setup_id: str,
                                score: float, reason: str, payload: dict,
                                trace_json):
+        # SNAPSHOT_ENRICH (2026-04-13): inject quote_volume_24h_usd so
+        # Cap3Pipeline's indicator_safe gate can read C2S's strongest filter.
+        # Permissive-on-miss: if the ingestor hasn't populated the Redis
+        # hash (or the data is stale), emit None so Cap3Pipeline's
+        # permissive-pass kicks in — never fabricate a value.
+        if self._volume_24h_enabled and isinstance(payload, dict):
+            if "quote_volume_24h_usd" not in payload:
+                try:
+                    vol = read_volume_24h(self.r, symbol)
+                except Exception as _exc:
+                    logger.debug("volume_24h read failed for %s: %s", symbol, _exc)
+                    vol = None
+                payload["quote_volume_24h_usd"] = vol
+
         # Regime enforcer gate — sprint plan §4.5 minimum-viable.
         # Shadow mode logs rejects; active mode short-circuits the persist.
         if self._enforcer is not None:
@@ -2492,9 +2516,12 @@ class SignalWorker(LineageEnforcer):
             return
 
         # Cheap single-row pre-check: is there a new final 1h bar we haven't
-        # scanned yet? BTCUSDT is the reference symbol — it's always in the
-        # whitelist and always tracked, so its latest final bar is a reliable
-        # proxy for "S9 data is ready at bar X".
+        # scanned yet? The macro reference symbol (BTC against the live
+        # quote currency) is always in the whitelist and always tracked,
+        # so its latest final bar is a reliable proxy for "S9 data is ready
+        # at bar X".
+        from governance.bootstrap import macro_reference_symbol
+        _macro_sym = macro_reference_symbol()
         try:
             with _pool_get_conn() as conn:
                 with conn.cursor() as cur:
@@ -2502,11 +2529,12 @@ class SignalWorker(LineageEnforcer):
                         """
                         SELECT MAX(bar_start_ts)
                         FROM ohlcv
-                        WHERE symbol = 'BTCUSDT'
+                        WHERE symbol = %s
                           AND timeframe = '1h'
                           AND is_final = TRUE
                           AND bar_start_ts >= NOW() - INTERVAL '3 hours';
-                        """
+                        """,
+                        (_macro_sym,),
                     )
                     row = cur.fetchone()
         except Exception as e:

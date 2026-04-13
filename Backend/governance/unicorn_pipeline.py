@@ -154,7 +154,10 @@ def seed_candles_to_redis(r, symbol: str, tf: str, candles: list[OHLCV]):
 # =============================================================================
 
 def fetch_exchange_symbols() -> list[dict]:
-    """Fetch all USDT spot pairs from Binance with metadata."""
+    """Fetch all spot pairs (quoted in the registry QUOTE_CURRENCY) from
+    Binance with metadata."""
+    from governance.bootstrap import quote_currency
+    _quote = quote_currency()
     try:
         resp = requests.get(f"{_worker_cfg().BINANCE_API_BASE}/api/v3/exchangeInfo", timeout=30)
         resp.raise_for_status()
@@ -162,7 +165,7 @@ def fetch_exchange_symbols() -> list[dict]:
 
         symbols = []
         for s in data.get("symbols", []):
-            if s.get("quoteAsset") == "USDT" and s.get("status") == "TRADING":
+            if s.get("quoteAsset") == _quote and s.get("status") == "TRADING":
                 if s.get("isSpotTradingAllowed", False):
                     # Extract min notional from filters
                     min_notional = 0.0

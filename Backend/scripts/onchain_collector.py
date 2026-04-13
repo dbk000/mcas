@@ -794,7 +794,8 @@ def collect_coinglass(symbols, mapping, write_queue, batch_id, backfill_days=365
     headers = {"coinglassSecret": COINGLASS_API_KEY}
     stats = defaultdict(int)
 
-    # Coinglass uses same symbols as Binance futures
+    # Coinglass uses same symbols as Binance USDT-M futures — the suffix
+    # here is the perp venue denomination, not the spot QUOTE_CURRENCY.
     futures_symbols = [s for s in symbols if s.endswith("USDT")]
     logger.info("  Coinglass: collecting for %d symbols", len(futures_symbols))
 

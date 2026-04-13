@@ -174,7 +174,10 @@ class U1Config:
     SOCIAL_SILENCE_FILTER: bool = False   # Social silence precision filter (disabled by default)
     EXPRESS_LANE: bool = True             # Express Lane trigger path (enabled by default)
 
-    # Universe (MVP: Spot USDT only)
+    # Universe (MVP: Spot, single quote currency).
+    # QUOTE_CURRENCY is overridden at bootstrap from the registry
+    # (REFACTOR-2); default here is the post-sprint equilibrium USDC.
+    QUOTE_CURRENCY = "USDC"
     MIN_VOLUME_USD = 75_000.0
     MAX_VOLUME_USD = 3_000_000.0
     MAX_MIN_NOTIONAL = 100
@@ -184,12 +187,14 @@ class U1Config:
     WRAPPED_PATTERNS = ["WBTC", "WETH", "WBNB"]
     LEVERAGE_PATTERNS = ["UP", "DOWN", "BULL", "BEAR", "3L", "3S"]
 
-    # Major symbols excluded from pennycoin universe
-    MAJOR_SYMBOLS = {
-        "BTCUSDT", "ETHUSDT", "BNBUSDT", "SOLUSDT", "XRPUSDT",
-        "DOGEUSDT", "ADAUSDT", "AVAXUSDT", "DOTUSDT", "LINKUSDT",
-        "MATICUSDT", "LTCUSDT", "TRXUSDT", "ATOMUSDT",
-    }
+    # Major symbols excluded from pennycoin universe. Derived below
+    # (class-scope comprehension can't see sibling class attrs in Python).
+    MAJOR_BASES = (
+        "BTC", "ETH", "BNB", "SOL", "XRP",
+        "DOGE", "ADA", "AVAX", "DOT", "LINK",
+        "MATIC", "LTC", "TRX", "ATOM",
+    )
+    MAJOR_SYMBOLS: set[str] = set()  # populated post-class
 
     # Gates
     GATE_WINDOW_BARS = 48
@@ -274,15 +279,27 @@ class U1Config:
     REVERSION_SCORE_WEIGHT = 0.05  # NOT from WS2 -- invented starting point, requires validation
 
 
+# Derive MAJOR_SYMBOLS post-class (class-scope comprehensions can't see
+# sibling class attributes in Python).
+U1Config.MAJOR_SYMBOLS = {
+    f"{b}{q}"
+    for b in U1Config.MAJOR_BASES
+    for q in U1Config.STABLECOIN_BASES
+}
+
+
 # =============================================================================
 # Universe Helpers
 # =============================================================================
 
 def base_asset(symbol: str) -> str:
-    """Extract base asset from trading pair symbol."""
-    if symbol.endswith("USDT"):
-        return symbol[:-4]
-    for quote in ["BUSD", "USDC", "BTC", "ETH"]:
+    """Extract base asset from trading pair symbol.
+
+    Tries the active QUOTE_CURRENCY first, then other known stables and
+    crypto quotes for legacy-row compatibility.
+    """
+    for quote in (U1Config.QUOTE_CURRENCY, "USDT", "USDC", "BUSD", "FDUSD",
+                  "BTC", "ETH"):
         if symbol.endswith(quote):
             return symbol[:-len(quote)]
     return symbol

@@ -1,7 +1,11 @@
 """Regime detector — composite-trigger poller for the Phase A enforcer.
 
 Polls every 5 minutes:
-    1. Fetch BTCUSDT 4h closes from the ``ohlcv`` table (last 2 bars).
+    1. Fetch the macro reference symbol's 4h closes from the ``ohlcv``
+       table (last 2 bars). Symbol resolved via
+       ``governance.bootstrap.macro_reference_symbol()`` so the detector
+       follows the registry QUOTE_CURRENCY (BTCUSDC by default, BTCUSDT
+       when the operator flips QUOTE_CURRENCY back to USDT).
     2. Compute the 4h return.
     3. If drawdown <= -3%: scan keyword text for the last 24h vs the
        trailing 168h baseline and compute ``velocity_ratio`` per category
@@ -98,10 +102,14 @@ DEFAULT_REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
 # ---------------------------------------------------------------------------
 
 def _fetch_btc_4h_closes(pg_conn: Any, n_bars: int = 2) -> list[float]:
-    """Return the last ``n_bars`` 4h BTCUSDT close prices (oldest -> newest).
+    """Return the last ``n_bars`` 4h BTC{QUOTE_CURRENCY} close prices
+    (oldest -> newest). Macro reference symbol resolves from the bootstrap
+    registry — BTCUSDT for USDT accounts, BTCUSDC for USDC accounts.
 
     Empty list if the rows are missing (e.g. ohlcv backfill stalled).
     """
+    from governance.bootstrap import macro_reference_symbol
+    macro_symbol = macro_reference_symbol()
     sql = (
         "SELECT close FROM ohlcv "
         "WHERE symbol = %s AND timeframe = %s "
@@ -109,7 +117,7 @@ def _fetch_btc_4h_closes(pg_conn: Any, n_bars: int = 2) -> list[float]:
     )
     closes: list[float] = []
     with pg_conn.cursor() as cur:
-        cur.execute(sql, ("BTCUSDT", "4h", n_bars))
+        cur.execute(sql, (macro_symbol, "4h", n_bars))
         rows = cur.fetchall()
     for row in reversed(rows):
         closes.append(float(row[0]))

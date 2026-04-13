@@ -57,7 +57,12 @@ OUTPUT_DIR = REPO_BACKEND / "scripts" / "output"
 
 
 def fetch_perp_symbols() -> set[str]:
-    """Fetch all TRADING USDT-M perp symbols from Binance futures."""
+    """Fetch all TRADING USDT-M perp symbols from Binance futures.
+
+    S9 trades USDT-M perpetuals exclusively — "USDT" here is the native
+    contract denomination, NOT the spot QUOTE_CURRENCY registry value.
+    REFACTOR-2 leaves this literal intentionally.
+    """
     logger.info("Fetching Binance futures exchangeInfo: %s", FAPI_EXCHANGE_INFO)
     t0 = time.time()
     resp = requests.get(FAPI_EXCHANGE_INFO, timeout=15)
@@ -69,7 +74,7 @@ def fetch_perp_symbols() -> set[str]:
     for entry in data.get("symbols", []):
         if (
             entry.get("contractType") == "PERPETUAL"
-            and entry.get("quoteAsset") == "USDT"
+            and entry.get("quoteAsset") == "USDT"  # USDT-M perp venue, not spot quote
             and entry.get("status") == "TRADING"
         ):
             symbols.add(entry["symbol"].upper())

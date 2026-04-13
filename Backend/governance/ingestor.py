@@ -35,6 +35,7 @@ from governance.cache_contract import (
     symbol_partition, is_bar_closed,
     get_social_candidates, SOCIAL_CANDIDATES_KEY,
     PIPELINE_ACTIVITY_KEY, PIPELINE_ACTIVITY_MAX,
+    store_volume_24h,
 )
 
 logger = logging.getLogger("ingestor")
@@ -146,7 +147,7 @@ class CandleAggregator:
         """Process a closed 1s candle and return any completed TF candles.
 
         Args:
-            symbol: e.g. "BTCUSDT"
+            symbol: e.g. "BTCUSDC" (quote follows registry QUOTE_CURRENCY)
             candle_1s: dict with bar_start_ts, open, high, low, close, volume
 
         Returns:
@@ -397,17 +398,19 @@ def _fetch_klines_rest(symbol: str, interval: str, limit: int = 500) -> list[dic
 
 def _fetch_top_symbols(n: int = 200) -> list[str]:
     """DEPRECATED: fallback only. Use _fetch_volume_map() for two-tier universe."""
+    from governance.bootstrap import quote_currency as _qc
+    _quote = _qc()
     try:
         resp = requests.get(f"{BINANCE_BASE}/ticker/24hr", timeout=15)
         resp.raise_for_status()
         tickers = resp.json()
-        usdt_pairs = [
+        pairs = [
             t for t in tickers
-            if t["symbol"].endswith("USDT")
+            if t["symbol"].endswith(_quote)
             and float(t["quoteVolume"]) > 0
         ]
-        usdt_pairs.sort(key=lambda t: float(t["quoteVolume"]), reverse=True)
-        return [t["symbol"] for t in usdt_pairs[:n]]
+        pairs.sort(key=lambda t: float(t["quoteVolume"]), reverse=True)
+        return [t["symbol"] for t in pairs[:n]]
     except Exception as e:
         logger.warning(f"Dynamic symbol fetch failed: {e}")
         # Fallback: import from signal_engine
@@ -416,23 +419,26 @@ def _fetch_top_symbols(n: int = 200) -> list[str]:
 
 
 def _fetch_volume_map() -> dict[str, float]:
-    """Fetch 24h quote volume for all USDT pairs from Binance.
+    """Fetch 24h quote volume for all pairs quoted in the registry
+    ``QUOTE_CURRENCY`` from Binance.
 
-    Invariant: Known Universe is strictly USDT-quoted pairs so
-    quoteVolume ≈ USD (no cross-rate conversion needed).
+    Invariant: Known Universe is strictly single-quote so quoteVolume ≈ USD
+    (no cross-rate conversion needed).
 
     Returns:
-        {symbol: quoteVolume} for all USDT pairs with volume > 0.
+        {symbol: quoteVolume} for all qualifying pairs with volume > 0.
     """
+    from governance.bootstrap import quote_currency as _qc
+    _quote = _qc()
     try:
         resp = requests.get(f"{BINANCE_BASE}/ticker/24hr", timeout=15)
         resp.raise_for_status()
         tickers = resp.json()
-        # USDT-only filter — Canon §1.4C invariant
+        # Single-quote filter — Canon §1.4C invariant
         return {
             t["symbol"]: float(t["quoteVolume"])
             for t in tickers
-            if t["symbol"].endswith("USDT")
+            if t["symbol"].endswith(_quote)
             and float(t["quoteVolume"]) > 0
         }
     except Exception as e:
@@ -455,7 +461,7 @@ def _filter_monitored_universe(
     Safety net: if fewer than 50 symbols pass filter, fall back to top SYMBOL_COUNT
     by volume to avoid an empty monitored set.
 
-    BTCUSDT is always included.
+    The macro reference symbol (BTC{QUOTE_CURRENCY}) is always included.
     """
     if current_monitored is None:
         current_monitored = set()
@@ -479,9 +485,11 @@ def _filter_monitored_universe(
         sorted_known = sorted(known, key=lambda s: volume_map.get(s, 0), reverse=True)
         monitored = set(sorted_known[:SYMBOL_COUNT])
 
-    # BTCUSDT always included
-    if "BTCUSDT" in volume_map or "BTCUSDT" in known:
-        monitored.add("BTCUSDT")
+    # Macro reference symbol always included
+    from governance.bootstrap import macro_reference_symbol
+    _macro_sym = macro_reference_symbol()
+    if _macro_sym in volume_map or _macro_sym in known:
+        monitored.add(_macro_sym)
 
     return sorted(monitored)
 
@@ -569,11 +577,23 @@ class Ingestor:
             self.monitored = _filter_monitored_universe(
                 self.known, volume_map, MIN_24H_QUOTE_VOLUME_USD)
 
-        # Ensure BTCUSDT is always included (needed for BTC filters)
-        if "BTCUSDT" not in self.monitored:
-            self.monitored.insert(0, "BTCUSDT")
-        if "BTCUSDT" not in self.known:
-            self.known.insert(0, "BTCUSDT")
+            # SNAPSHOT_ENRICH: persist volume map so signal_worker can inject
+            # quote_volume_24h_usd into IndicatorSnapshot payloads. Permissive
+            # on failure — signal_worker handles missing data.
+            try:
+                store_volume_24h(self.r, volume_map)
+                logger.info("volume_24h: persisted %d symbols", len(volume_map))
+            except Exception as e:
+                logger.warning("volume_24h: persist failed: %s", e)
+
+        # Ensure the macro reference symbol is always included (needed
+        # for BTC filters against the current QUOTE_CURRENCY)
+        from governance.bootstrap import macro_reference_symbol
+        _macro_sym = macro_reference_symbol()
+        if _macro_sym not in self.monitored:
+            self.monitored.insert(0, _macro_sym)
+        if _macro_sym not in self.known:
+            self.known.insert(0, _macro_sym)
 
         # Social promotion: merge candidates into monitored universe
         social_promoted = _get_social_promoted_symbols(self.r)
@@ -749,6 +769,13 @@ class Ingestor:
                     logger.warning("Hourly refresh: volume map empty, skipping")
                     continue
 
+                # SNAPSHOT_ENRICH: refresh Redis hash for signal_worker reads.
+                try:
+                    store_volume_24h(self.r, volume_map)
+                    logger.info("volume_24h: refreshed %d symbols", len(volume_map))
+                except Exception as e:
+                    logger.warning("volume_24h: refresh failed: %s", e)
+
                 # Re-derive Known Universe
                 sorted_symbols = sorted(volume_map.keys(),
                                         key=lambda s: volume_map[s], reverse=True)
@@ -760,11 +787,13 @@ class Ingestor:
                     new_known, volume_map, MIN_24H_QUOTE_VOLUME_USD,
                     current_monitored=current_monitored_set)
 
-                # Ensure BTCUSDT always included
-                if "BTCUSDT" not in new_monitored:
-                    new_monitored.insert(0, "BTCUSDT")
-                if "BTCUSDT" not in new_known:
-                    new_known.insert(0, "BTCUSDT")
+                # Ensure macro reference symbol always included
+                from governance.bootstrap import macro_reference_symbol
+                _macro_sym = macro_reference_symbol()
+                if _macro_sym not in new_monitored:
+                    new_monitored.insert(0, _macro_sym)
+                if _macro_sym not in new_known:
+                    new_known.insert(0, _macro_sym)
 
                 # Social promotion: merge candidates into refreshed monitored
                 social_promoted = _get_social_promoted_symbols(self.r)

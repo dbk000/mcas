@@ -732,10 +732,14 @@ class RunExecutor(LineageEnforcer):
                     if len(vwap_distance_history[key]) > 200:
                         vwap_distance_history[key] = vwap_distance_history[key][-200:]
 
-                # BTC snapshot for correlation/shock filters
+                # BTC snapshot for correlation/shock filters. The macro
+                # reference symbol tracks whichever quote currency the
+                # registry currently resolves to (USDC default).
                 btc_snapshot = None
-                btc_key = f"BTCUSDT_{timeframe}"
-                if symbol != "BTCUSDT" and btc_key in candle_history and len(candle_history[btc_key]) >= 201:
+                from governance.bootstrap import macro_reference_symbol
+                _macro_sym = macro_reference_symbol()
+                btc_key = f"{_macro_sym}_{timeframe}"
+                if symbol != _macro_sym and btc_key in candle_history and len(candle_history[btc_key]) >= 201:
                     try:
                         btc_snapshot = feature_factory.compute(candle_history[btc_key])
                     except Exception:

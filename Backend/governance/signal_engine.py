@@ -447,7 +447,8 @@ class SignalEngine:
                 logger.warning("Cache not ready, falling back to REST")
                 self.source = "rest"
             else:
-                s = check_staleness(self.redis_client, "BTCUSDT", "1m")
+                from governance.bootstrap import macro_reference_symbol
+                s = check_staleness(self.redis_client, macro_reference_symbol(), "1m")
                 if s["stale"]:
                     logger.warning(f"Cache stale ({s['age_s']:.0f}s), falling back to REST")
                     self.source = "rest"
@@ -800,7 +801,7 @@ def get_default_symbols() -> list[str]:
     ]
 
 
-def fetch_top_symbols_by_volume(n: int = 1024, quote: str = "USDT") -> list[str]:
+def fetch_top_symbols_by_volume(n: int = 1024, quote: Optional[str] = None) -> list[str]:
     """
     Dynamically fetch top N symbols by 24h quote volume from Binance.
     Falls back to hardcoded list on error.
@@ -809,6 +810,9 @@ def fetch_top_symbols_by_volume(n: int = 1024, quote: str = "USDT") -> list[str]
     with two-tier universe architecture (Canon §1.4C).
     """
     try:
+        if quote is None:
+            from governance.bootstrap import quote_currency as _qc
+            quote = _qc()
         _ticker_base = get_config().Worker.BINANCE_TICKER_URL
         resp = requests.get(
             f"{_ticker_base}/24hr",
@@ -816,16 +820,16 @@ def fetch_top_symbols_by_volume(n: int = 1024, quote: str = "USDT") -> list[str]
         )
         resp.raise_for_status()
         tickers = resp.json()
-        
-        # Filter to USDT pairs and sort by quote volume
-        usdt_pairs = [
+
+        # Filter to pairs quoted in the current QUOTE_CURRENCY
+        filtered = [
             t for t in tickers
             if t["symbol"].endswith(quote)
             and float(t["quoteVolume"]) > 0
         ]
-        usdt_pairs.sort(key=lambda t: float(t["quoteVolume"]), reverse=True)
-        
-        symbols = [t["symbol"] for t in usdt_pairs[:n]]
+        filtered.sort(key=lambda t: float(t["quoteVolume"]), reverse=True)
+
+        symbols = [t["symbol"] for t in filtered[:n]]
         logger.info("Fetched dynamic symbols", extra={
             "event": "dynamic_symbols", "count": len(symbols),
         })

@@ -42,16 +42,27 @@ class D1Config:
 
     Defaults are hardcoded here (pure math module -- no env var reads).
     Runtime overrides are applied via D1Evaluator.update_config() from
-    TypedConfigRegistry at bootstrap.
+    TypedConfigRegistry at bootstrap. ``QUOTE_CURRENCY`` is sync'd from
+    the Worker config so ``is_d1_excluded`` follows the live trading
+    quote currency (REFACTOR-2).
     """
 
-    # Universe filters (same exclusions as U1)
-    MAJOR_SYMBOLS = {
-        "BTCUSDT", "ETHUSDT", "BNBUSDT", "SOLUSDT", "XRPUSDT",
-        "DOGEUSDT", "ADAUSDT", "AVAXUSDT", "DOTUSDT", "LINKUSDT",
-        "MATICUSDT", "LTCUSDT", "TRXUSDT", "ATOMUSDT",
-    }
+    # Live-trading quote currency. Overridden by update_config() from the
+    # registry; default here must be static (core_logic cannot import
+    # governance).
+    QUOTE_CURRENCY = "USDC"
+
+    # Universe filters (same exclusions as U1). ``MAJOR_BASES`` is the
+    # canonical base set; the active ``MAJOR_SYMBOLS`` set is derived as
+    # ``MAJOR_BASES × STABLECOIN_BASES`` (populated below the class body —
+    # Python class-scope set comprehensions don't see sibling class vars).
+    MAJOR_BASES = (
+        "BTC", "ETH", "BNB", "SOL", "XRP",
+        "DOGE", "ADA", "AVAX", "DOT", "LINK",
+        "MATIC", "LTC", "TRX", "ATOM",
+    )
     STABLECOIN_BASES = {"USDT", "USDC", "BUSD", "DAI", "TUSD", "USDP", "FDUSD", "PYUSD"}
+    MAJOR_SYMBOLS: set[str] = set()  # populated post-class (see below)
     WRAPPED_PATTERNS = ["WBTC", "WETH", "WBNB"]
     LEVERAGE_PATTERNS = ["UP", "DOWN", "BULL", "BEAR", "3L", "3S"]
 
@@ -140,6 +151,15 @@ class D1Config:
     BTC_BETA_WINDOW = 20  # bars
 
 
+# Derive MAJOR_SYMBOLS post-class (class-scope comprehensions can't see
+# sibling class attributes).
+D1Config.MAJOR_SYMBOLS = {
+    f"{b}{q}"
+    for b in D1Config.MAJOR_BASES
+    for q in D1Config.STABLECOIN_BASES
+}
+
+
 def _sync_d1config_class_attrs(changed: dict, alias_map: dict) -> None:
     """MIGRATION SHIM — propagate registry changes to D1Config class attrs.
 
@@ -164,19 +184,25 @@ def _sync_d1config_class_attrs(changed: dict, alias_map: dict) -> None:
 # =============================================================================
 
 def _base_asset(symbol: str) -> str:
-    if symbol.endswith("USDT"):
-        return symbol[:-4]
-    for quote in ["BUSD", "USDC", "BTC", "ETH"]:
+    # Try the active QUOTE_CURRENCY first so the common path is cheap;
+    # fall back to any known stable/crypto quote for legacy rows.
+    for quote in (D1Config.QUOTE_CURRENCY, "USDT", "USDC", "BUSD", "FDUSD",
+                  "BTC", "ETH"):
         if symbol.endswith(quote):
             return symbol[:-len(quote)]
     return symbol
 
 
 def is_d1_excluded(symbol: str) -> bool:
-    """Check if symbol should be excluded from D1 evaluation."""
+    """Check if symbol should be excluded from D1 evaluation.
+
+    Universe accepts symbols quoted in ``D1Config.QUOTE_CURRENCY`` — the
+    registry value synced via ``update_config()``. Pure-math fallback: if
+    the class attr has not been patched by bootstrap, defaults to 'USDC'.
+    """
     if symbol in D1Config.MAJOR_SYMBOLS:
         return True
-    if not symbol.endswith("USDT"):
+    if not symbol.endswith(D1Config.QUOTE_CURRENCY):
         return True
     base = _base_asset(symbol)
     if base in D1Config.STABLECOIN_BASES:

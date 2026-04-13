@@ -18,6 +18,7 @@ If this module fails, the process is dead. That is correct.
 import os
 import sys
 import logging
+from typing import Optional
 
 from governance.kernel import (
     ConfigRegistry, StrategyRegistry, TaskRegistry, StopPolicyRegistry,
@@ -68,6 +69,101 @@ def get_config() -> ConfigRegistry:
         print("FATAL: ConfigRegistry accessed before bootstrap_genesis()", file=sys.stderr)
         sys.exit(78)
     return _CONFIG
+
+
+def quote_currency() -> str:
+    """Return the live-trading quote currency from the registry.
+    Crashes if bootstrap hasn't run."""
+    return get_config().Worker.QUOTE_CURRENCY
+
+
+def macro_reference_symbol() -> str:
+    """Return the macro reference symbol (BTC{QUOTE_CURRENCY}) used by
+    regime detection, telemetry, and any 'what's BTC doing right now' lookup.
+    Single source of truth — REFACTOR-2 sweeps any remaining BTCUSDT
+    literals to use this helper."""
+    return f"BTC{quote_currency()}"
+
+
+def quote_currency_filter_suffix() -> str:
+    """Return the quote-currency suffix used in ``symbol.endswith(...)``
+    universe filters. Identity alias for ``quote_currency()`` — kept as a
+    distinct name so the intent is obvious at the call site."""
+    return quote_currency()
+
+
+# MAJOR_BASES: canonical set of majors the codebase treats specially
+# (portfolio-level gates, social-silence carve-outs, BTC-beta anchors, etc.).
+# Derived symbol list = MAJOR_BASES × QUOTE_CURRENCY resolved at call time.
+MAJOR_BASES: tuple[str, ...] = (
+    "BTC", "ETH", "BNB", "SOL", "XRP", "DOGE", "ADA",
+    "AVAX", "DOT", "LINK", "MATIC", "LTC", "TRX", "ATOM",
+)
+
+
+def major_symbols() -> tuple[str, ...]:
+    """Return sorted tuple of MAJOR_BASES × current QUOTE_CURRENCY.
+
+    Replaces the hardcoded MAJOR_SYMBOLS tuples scattered through strategy
+    configs. Resolution is at call time so the list follows the live
+    registry value.
+    """
+    q = quote_currency()
+    return tuple(sorted(f"{b}{q}" for b in MAJOR_BASES))
+
+
+def _parse_day_gate_env(raw: str) -> dict[str, bool]:
+    """Parse ``DAY_GATE_ENABLED`` env var into ``{setup_id: bool}``.
+
+    Format: ``"C2M:false,C4M:false,C2S:true"``. Empty string → empty dict.
+    Any entry without a colon, or with a non-bool value, is ignored so a
+    mis-typed env var never silently enables something unexpected.
+    """
+    result: dict[str, bool] = {}
+    if not raw:
+        return result
+    for chunk in raw.split(","):
+        if ":" not in chunk:
+            continue
+        k, v = chunk.split(":", 1)
+        k = k.strip().upper()
+        v = v.strip().lower()
+        if not k:
+            continue
+        if v in ("true", "1", "yes", "on"):
+            result[k] = True
+        elif v in ("false", "0", "no", "off"):
+            result[k] = False
+    return result
+
+
+def day_gate_active(setup_id: str) -> bool:
+    """Return True iff the historical day-gate for ``setup_id`` is still in
+    effect. Reads ``WorkerTypedConfig.DAY_GATE_ENABLED``. Default (missing
+    key) is ``False`` — the post-DAY_GATE_VALIDATION equilibrium."""
+    cfg = get_config().Worker.DAY_GATE_ENABLED
+    if not isinstance(cfg, dict):
+        return False
+    return bool(cfg.get(setup_id, False))
+
+
+# Canonical weekday-of-gate map. Shared by backfill scripts and any live
+# code that still honours a day gate (post-validation: only strategies
+# whose DAY_GATE_ENABLED flag is True).
+DAY_GATE_WEEKDAY: dict[str, int] = {
+    "C2M": 0,   # Monday
+    "C4M": 0,
+    "C4ML": 0,
+    "C3M": 0,
+    "C2S": 5,   # Saturday
+    "C2SH": 5,
+}
+
+
+def day_gate_weekday(setup_id: str) -> Optional[int]:
+    """Return the weekday (0=Mon..6=Sun) the strategy's historical gate
+    selects, or None if the strategy has no documented day gate."""
+    return DAY_GATE_WEEKDAY.get(setup_id)
 
 
 def get_strategy() -> StrategyRegistry:
@@ -218,8 +314,36 @@ def _populate_config(reg: ConfigRegistry) -> None:
         BACKFILL_RATE_PER_SEC=float(os.getenv("BACKFILL_RATE_PER_SEC", "6.0")),
         CORS_ORIGINS=os.getenv("CORS_ORIGINS", ""),
         API_KEY=os.getenv("API_KEY", ""),
+        # Live-trading quote currency. Default USDC matches the operator's
+        # account permissions (TRD_GRP_039 restricts USDT spot trading).
+        # Drives execution_worker translation + regime_detector macro symbol.
+        QUOTE_CURRENCY=os.getenv("QUOTE_CURRENCY", "USDC").upper(),
+        # SNAPSHOT_ENRICH (2026-04-13): per-signal quote_volume_24h_usd
+        # injection from the ingestor-refreshed Redis hash.
+        SNAPSHOT_VOLUME_24H_ENABLED=os.getenv(
+            "SNAPSHOT_VOLUME_24H_ENABLED", "true").lower() == "true",
+        # DAY_GATE_VALIDATION (2026-04-13): per-strategy day-gate map.
+        # Parse from "SETUP_ID:true,SETUP_ID:false" format. Missing
+        # keys = gate bypassed.
+        DAY_GATE_ENABLED=_parse_day_gate_env(os.getenv("DAY_GATE_ENABLED", "")),
     )
     reg._register("Worker", worker)
+
+    # REFACTOR-2: sync QUOTE_CURRENCY into the core_logic strategy
+    # classes. These modules cannot import governance (pure-math layer),
+    # so bootstrap patches the class attr directly once the registry is
+    # populated. Import lazily so a failed core_logic import can't brick
+    # registry bootstrap.
+    try:
+        from core_logic.d1_dormancy_ignition import D1Config as _D1Config
+        _D1Config.QUOTE_CURRENCY = worker.QUOTE_CURRENCY
+    except Exception as _exc:  # pragma: no cover
+        logger.warning("D1Config QUOTE_CURRENCY sync failed: %s", _exc)
+    try:
+        from core_logic.u1_unicorn_ignition import U1Config as _U1Config
+        _U1Config.QUOTE_CURRENCY = worker.QUOTE_CURRENCY
+    except Exception as _exc:  # pragma: no cover
+        logger.warning("U1Config QUOTE_CURRENCY sync failed: %s", _exc)
 
     # --- Strategy configs ---
     reg._register("D1", D1TypedConfig(

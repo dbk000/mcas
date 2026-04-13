@@ -226,6 +226,11 @@ async def fetch_binance_exchange_info() -> set[str]:
                     logger.warning("Binance exchangeInfo: HTTP %d", resp.status)
                     return set()
                 data = await resp.json()
+                # D2 trades Binance USDT-M perps exclusively — these are
+                # natively USDT-quoted contracts, a distinct venue from
+                # the spot QUOTE_CURRENCY used by the live trader. The
+                # "USDT" suffix here is the perpetual contract denomination,
+                # not the spot quote currency.
                 perps = {
                     s["symbol"] for s in data["symbols"]
                     if s.get("contractType") == "PERPETUAL" and s["symbol"].endswith("USDT")

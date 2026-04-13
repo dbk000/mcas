@@ -195,6 +195,8 @@ def compute_regime_context(
         return ctx
 
     try:
+        from governance.bootstrap import macro_reference_symbol
+        _macro_sym = macro_reference_symbol()
         with conn.cursor() as cur:
             # BTC 1h bar at entry_ts (used for price + 1h return)
             cur.execute(
@@ -202,7 +204,7 @@ def compute_regime_context(
                 SELECT DISTINCT ON (bar_start_ts)
                        bar_start_ts, open, close
                 FROM ohlcv
-                WHERE symbol = 'BTCUSDT' AND timeframe = '1h'
+                WHERE symbol = %s AND timeframe = '1h'
                   AND bar_start_ts <= %s
                   AND is_final = TRUE
                 ORDER BY bar_start_ts DESC,
@@ -211,7 +213,7 @@ def compute_regime_context(
                                      ELSE 2 END
                 LIMIT 1;
                 """,
-                (entry_ts,),
+                (_macro_sym, entry_ts),
             )
             row = cur.fetchone()
             if row:
@@ -226,7 +228,7 @@ def compute_regime_context(
                 """
                 SELECT DISTINCT ON (bar_start_ts) close
                 FROM ohlcv
-                WHERE symbol = 'BTCUSDT' AND timeframe = '1h'
+                WHERE symbol = %s AND timeframe = '1h'
                   AND bar_start_ts <= %s - INTERVAL '24 hours'
                   AND is_final = TRUE
                 ORDER BY bar_start_ts DESC,
@@ -235,7 +237,7 @@ def compute_regime_context(
                                      ELSE 2 END
                 LIMIT 1;
                 """,
-                (entry_ts,),
+                (_macro_sym, entry_ts),
             )
             row_24 = cur.fetchone()
             if row_24 and ctx["btc_price_at_entry"]:

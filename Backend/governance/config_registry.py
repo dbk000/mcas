@@ -299,6 +299,28 @@ class WorkerTypedConfig:
     CORS_ORIGINS: str = ""
     API_KEY: str = ""
 
+    # Quote currency for live trading — drives execution_worker symbol
+    # translation, regime_detector macro reference symbol, and any other
+    # code that needs to know "what stable do we trade against?". Default
+    # USDC because account TRD_GRP_039 restricts USDT spot trading.
+    # See REFACTOR_2_QUOTE_CURRENCY_AGNOSTIC.md for the comprehensive
+    # rollout that eliminates remaining USDT literals across signal layer.
+    QUOTE_CURRENCY: str = "USDC"
+
+    # SNAPSHOT_ENRICH plan (2026-04-13). When True, signal_worker injects
+    # ``quote_volume_24h_usd`` into IndicatorSnapshot payloads at persist
+    # time by reading Redis hash ``universe:volume_24h`` (written by the
+    # ingestor). Set False to disable if the new payload field ever causes
+    # downstream issues. Unlocks C2S's strongest SAFE filter.
+    SNAPSHOT_VOLUME_24H_ENABLED: bool = True
+
+    # DAY_GATE_VALIDATION plan (2026-04-13). Per-strategy day-gate enable
+    # map. Empty default means "no day gates" — any strategy whose key is
+    # present AND True keeps the historical weekday gate; any strategy
+    # absent or set False bypasses the gate. Registry-governed so the
+    # evaluator does not hardcode ``weekday == 0`` / ``weekday == 5``.
+    DAY_GATE_ENABLED: dict = field(default_factory=dict)
+
     # Public feed
     PUBLIC_FEED_CACHE_TTL_S: int = 10
     PUBLIC_FEED_MAX_EVENTS: int = 50

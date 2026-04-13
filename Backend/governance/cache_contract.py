@@ -43,6 +43,16 @@ PIPELINE_ACTIVITY_MAX = 200
 SETUP_STATE_TTL_S = 86400      # 24h — prevent stale state for delisted symbols
 RECONCILE_INTERVAL_S = 60      # Reconciliation loop frequency
 
+# Universe 24h quote volume (SNAPSHOT_ENRICH plan). Hourly ingestor refresh
+# persists {symbol: quoteVolume} to a Redis HASH; signal_worker reads at
+# payload-build time to inject quote_volume_24h_usd into IndicatorSnapshot.
+# Writer: ingestor (governance/ingestor.py). Reader: signal_worker.
+# Stale handling: if `last_update_ts` is older than TTL or key missing,
+# callers MUST treat the value as missing (None) — never fabricate.
+UNIVERSE_VOLUME_24H_KEY = "universe:volume_24h"
+UNIVERSE_VOLUME_24H_LAST_UPDATE_KEY = "universe:volume_24h:last_update_ts"
+UNIVERSE_VOLUME_24H_TTL_S = 4 * 3600  # 4h — 4× hourly refresh interval
+
 TF_SECONDS = {
     "1m": 60,
     "5m": 300,
@@ -801,6 +811,70 @@ def get_timeframes(r) -> list[str]:
     """Read tracked timeframes from Redis."""
     members = r.smembers("cache:timeframes")
     return [b2s(m) for m in members]
+
+
+# =============================================================================
+# Universe 24h Quote Volume (SNAPSHOT_ENRICH plan)
+# =============================================================================
+
+def store_volume_24h(r, volume_map: dict[str, float],
+                     ttl_s: int = UNIVERSE_VOLUME_24H_TTL_S) -> None:
+    """Persist the full {symbol: quoteVolume} hash atomically.
+
+    Writer is the ingestor, called after each ``_fetch_volume_map()`` cycle.
+    Uses a pipeline so the HSET + sentinel + EXPIRE are applied together.
+    Empty input is treated as a no-op to avoid wiping the hash when
+    Binance returns nothing transiently.
+    """
+    if not volume_map:
+        return
+    pipe = r.pipeline(transaction=False)
+    # Fresh hash each refresh: DEL + HSET mapping guarantees no stale
+    # entries for delisted symbols.
+    pipe.delete(UNIVERSE_VOLUME_24H_KEY)
+    pipe.hset(UNIVERSE_VOLUME_24H_KEY,
+              mapping={k: str(float(v)) for k, v in volume_map.items()})
+    pipe.expire(UNIVERSE_VOLUME_24H_KEY, int(ttl_s))
+    pipe.set(UNIVERSE_VOLUME_24H_LAST_UPDATE_KEY, str(time.time()),
+             ex=int(ttl_s))
+    pipe.execute()
+
+
+def read_volume_24h(r, symbol: str,
+                    ttl_s: int = UNIVERSE_VOLUME_24H_TTL_S) -> Optional[float]:
+    """Return the 24h quote volume for ``symbol`` or ``None`` if missing/stale.
+
+    Staleness rule: if the sentinel ``last_update_ts`` is missing or older
+    than ``ttl_s``, return None. Callers must NOT fabricate a placeholder
+    value (per SNAPSHOT_ENRICH §three-laws / no silent default).
+    """
+    last_update = r.get(UNIVERSE_VOLUME_24H_LAST_UPDATE_KEY)
+    if not last_update:
+        return None
+    try:
+        last_ts = float(b2s(last_update))
+    except (ValueError, TypeError):
+        return None
+    if (time.time() - last_ts) > ttl_s:
+        return None
+    raw = r.hget(UNIVERSE_VOLUME_24H_KEY, symbol)
+    if raw is None:
+        return None
+    try:
+        return float(b2s(raw))
+    except (ValueError, TypeError):
+        return None
+
+
+def volume_24h_last_update_ts(r) -> Optional[float]:
+    """Return the epoch seconds of the last volume-24h refresh, or None."""
+    raw = r.get(UNIVERSE_VOLUME_24H_LAST_UPDATE_KEY)
+    if not raw:
+        return None
+    try:
+        return float(b2s(raw))
+    except (ValueError, TypeError):
+        return None
 
 
 # =============================================================================
