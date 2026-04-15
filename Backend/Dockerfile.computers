@@ -11,6 +11,7 @@ COPY indicators /backend/indicators
 COPY scripts /backend/scripts
 COPY computers /backend/computers
 COPY config /backend/config
+COPY trading /backend/trading
 
 ENV PYTHONPATH=/backend:/backend/scripts
 
