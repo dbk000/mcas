@@ -118,7 +118,7 @@ services:
       interval: 30s
       retries: 3
       start_period: 60s
-    mem_limit: 3g
+    mem_limit: 6g
     depends_on:
       - postgres
       - redis
