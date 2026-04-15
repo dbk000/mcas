@@ -1,0 +1,10 @@
+# GX_Research local artefacts — regenerated on every run, never deploy
+output/
+
+# LibreOffice lock files for the tracker workbook
+.~lock.*
+~$*
+
+# Local parquet caches that may have leaked outside output/
+*.parquet
+!**/migrations/*.parquet
