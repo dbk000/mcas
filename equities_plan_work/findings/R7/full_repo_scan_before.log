@@ -1,0 +1,267 @@
+CI DOCTRINE GATES: 248 VIOLATION(S) FOUND
+========================================================================
+
+[DYNAMIC_DISPATCH] — 1 occurrence(s)
+  scripts/backfill_candle_pattern_partials.py:175 [DYNAMIC_DISPATCH] locals() enables variable-as-function dispatch
+
+[DYNAMIC_IMPORT] — 1 occurrence(s)
+  trading/export_model.py:21 [DYNAMIC_IMPORT] __import__() is dynamic logic; use static import statements
+
+[ENV_OUTSIDE_BOOTSTRAP] — 85 occurrence(s)
+  GX_Research/lib/db.py:26 [ENV_OUTSIDE_BOOTSTRAP] os.environ only allowed in bootstrap.py
+  Playbook/backfill_strategies.py:45 [ENV_OUTSIDE_BOOTSTRAP] os.environ only allowed in bootstrap.py
+  Playbook/backfill_strategies.py:61 [ENV_OUTSIDE_BOOTSTRAP] os.environ only allowed in bootstrap.py
+  Playbook/c_series_triggers.py:154 [ENV_OUTSIDE_BOOTSTRAP] os.environ only allowed in bootstrap.py
+  Playbook/day_of_week_pf.py:21 [ENV_OUTSIDE_BOOTSTRAP] os.environ only allowed in bootstrap.py
+  Playbook/discover_social_safe_filters.py:141 [ENV_OUTSIDE_BOOTSTRAP] os.environ only allowed in bootstrap.py
+  Playbook/discover_social_safe_filters.py:142 [ENV_OUTSIDE_BOOTSTRAP] os.environ only allowed in bootstrap.py
+  Playbook/discover_social_safe_filters.py:143 [ENV_OUTSIDE_BOOTSTRAP] os.environ only allowed in bootstrap.py
+  Playbook/discover_social_safe_filters.py:144 [ENV_OUTSIDE_BOOTSTRAP] os.environ only allowed in bootstrap.py
+  Playbook/discover_social_safe_filters.py:145 [ENV_OUTSIDE_BOOTSTRAP] os.environ only allowed in bootstrap.py
+  api/app/routers/emergency.py:70 [ENV_OUTSIDE_BOOTSTRAP] os.environ only allowed in bootstrap.py
+  api/app/routers/stripe_router.py:42 [ENV_OUTSIDE_BOOTSTRAP] os.getenv() only allowed in bootstrap.py
+  api/app/routers/stripe_router.py:49 [ENV_OUTSIDE_BOOTSTRAP] os.getenv() only allowed in bootstrap.py
+  api/app/routers/stripe_router.py:54 [ENV_OUTSIDE_BOOTSTRAP] os.getenv() only allowed in bootstrap.py
+  api/app/routers/stripe_router.py:55 [ENV_OUTSIDE_BOOTSTRAP] os.getenv() only allowed in bootstrap.py
+  c2s_deploy/c2s_canon_resim.py:64 [ENV_OUTSIDE_BOOTSTRAP] os.getenv() only allowed in bootstrap.py
+  c2s_deploy/c2s_canon_resim.py:312 [ENV_OUTSIDE_BOOTSTRAP] os.getenv() only allowed in bootstrap.py
+  c2s_deploy/inject_test_signal.py:35 [ENV_OUTSIDE_BOOTSTRAP] os.environ only allowed in bootstrap.py
+  c2s_deploy/inject_test_signal.py:178 [ENV_OUTSIDE_BOOTSTRAP] os.environ only allowed in bootstrap.py
+  computers/main.py:35 [ENV_OUTSIDE_BOOTSTRAP] os.getenv() only allowed in bootstrap.py
+  core_logic/c_series_triggers.py:154 [ENV_OUTSIDE_BOOTSTRAP] os.environ only allowed in bootstrap.py
+  governance/execution_worker.py:76 [ENV_OUTSIDE_BOOTSTRAP] os.environ only allowed in bootstrap.py
+  governance/execution_worker.py:106 [ENV_OUTSIDE_BOOTSTRAP] os.environ only allowed in bootstrap.py
+  governance/execution_worker.py:107 [ENV_OUTSIDE_BOOTSTRAP] os.environ only allowed in bootstrap.py
+  governance/execution_worker.py:108 [ENV_OUTSIDE_BOOTSTRAP] os.environ only allowed in bootstrap.py
+  governance/execution_worker.py:109 [ENV_OUTSIDE_BOOTSTRAP] os.environ only allowed in bootstrap.py
+  governance/execution_worker.py:110 [ENV_OUTSIDE_BOOTSTRAP] os.environ only allowed in bootstrap.py
+  governance/execution_worker.py:111 [ENV_OUTSIDE_BOOTSTRAP] os.environ only allowed in bootstrap.py
+  governance/execution_worker.py:113 [ENV_OUTSIDE_BOOTSTRAP] os.environ only allowed in bootstrap.py
+  governance/execution_worker.py:272 [ENV_OUTSIDE_BOOTSTRAP] os.environ only allowed in bootstrap.py
+  governance/regime_detector.py:65 [ENV_OUTSIDE_BOOTSTRAP] os.getenv() only allowed in bootstrap.py
+  governance/regime_detector.py:70 [ENV_OUTSIDE_BOOTSTRAP] os.getenv() only allowed in bootstrap.py
+  governance/regime_detector.py:83 [ENV_OUTSIDE_BOOTSTRAP] os.getenv() only allowed in bootstrap.py
+  governance/regime_detector.py:87 [ENV_OUTSIDE_BOOTSTRAP] os.getenv() only allowed in bootstrap.py
+  governance/regime_detector.py:88 [ENV_OUTSIDE_BOOTSTRAP] os.getenv() only allowed in bootstrap.py
+  governance/regime_detector.py:91 [ENV_OUTSIDE_BOOTSTRAP] os.getenv() only allowed in bootstrap.py
+  governance/regime_detector.py:97 [ENV_OUTSIDE_BOOTSTRAP] os.getenv() only allowed in bootstrap.py
+  governance/regime_detector.py:410 [ENV_OUTSIDE_BOOTSTRAP] os.getenv() only allowed in bootstrap.py
+  governance/risk_limits.py:124 [ENV_OUTSIDE_BOOTSTRAP] os.environ only allowed in bootstrap.py
+  governance/signal_worker.py:461 [ENV_OUTSIDE_BOOTSTRAP] os.environ only allowed in bootstrap.py
+  governance/signal_worker.py:470 [ENV_OUTSIDE_BOOTSTRAP] os.environ only allowed in bootstrap.py
+  governance/signal_worker.py:490 [ENV_OUTSIDE_BOOTSTRAP] os.environ only allowed in bootstrap.py
+  governance/signal_worker.py:491 [ENV_OUTSIDE_BOOTSTRAP] os.environ only allowed in bootstrap.py
+  governance/signal_worker.py:496 [ENV_OUTSIDE_BOOTSTRAP] os.environ only allowed in bootstrap.py
+  governance/signal_worker.py:517 [ENV_OUTSIDE_BOOTSTRAP] os.environ only allowed in bootstrap.py
+  governance/signal_worker.py:534 [ENV_OUTSIDE_BOOTSTRAP] os.environ only allowed in bootstrap.py
+  governance/signal_worker.py:537 [ENV_OUTSIDE_BOOTSTRAP] os.environ only allowed in bootstrap.py
+  monitoring/cpu_collector.py:20 [ENV_OUTSIDE_BOOTSTRAP] os.getenv() only allowed in bootstrap.py
+  monitoring/cpu_collector.py:21 [ENV_OUTSIDE_BOOTSTRAP] os.getenv() only allowed in bootstrap.py
+  monitoring/cpu_collector.py:22 [ENV_OUTSIDE_BOOTSTRAP] os.getenv() only allowed in bootstrap.py
+  monitoring/cpu_collector.py:23 [ENV_OUTSIDE_BOOTSTRAP] os.getenv() only allowed in bootstrap.py
+  monitoring/cpu_collector.py:24 [ENV_OUTSIDE_BOOTSTRAP] os.getenv() only allowed in bootstrap.py
+  monitoring/cpu_collector.py:25 [ENV_OUTSIDE_BOOTSTRAP] os.getenv() only allowed in bootstrap.py
+  monitoring/cpu_collector.py:26 [ENV_OUTSIDE_BOOTSTRAP] os.getenv() only allowed in bootstrap.py
+  monitoring/cpu_collector.py:27 [ENV_OUTSIDE_BOOTSTRAP] os.getenv() only allowed in bootstrap.py
+  monitoring/cpu_collector.py:28 [ENV_OUTSIDE_BOOTSTRAP] os.getenv() only allowed in bootstrap.py
+  social_collector/app/backfill_telegram.py:278 [ENV_OUTSIDE_BOOTSTRAP] os.environ only allowed in bootstrap.py
+  social_collector/app/backfill_telegram.py:283 [ENV_OUTSIDE_BOOTSTRAP] os.environ only allowed in bootstrap.py
+  social_collector/app/backfill_telegram.py:284 [ENV_OUTSIDE_BOOTSTRAP] os.environ only allowed in bootstrap.py
+  social_collector/app/backfill_telegram.py:285 [ENV_OUTSIDE_BOOTSTRAP] os.environ only allowed in bootstrap.py
+  social_collector/app/brain1.py:35 [ENV_OUTSIDE_BOOTSTRAP] os.getenv() only allowed in bootstrap.py
+  social_collector/app/brain1.py:36 [ENV_OUTSIDE_BOOTSTRAP] os.getenv() only allowed in bootstrap.py
+  social_collector/app/brain1.py:37 [ENV_OUTSIDE_BOOTSTRAP] os.getenv() only allowed in bootstrap.py
+  social_collector/app/brain1.py:155 [ENV_OUTSIDE_BOOTSTRAP] os.getenv() only allowed in bootstrap.py
+  social_collector/app/collectors/telegram.py:29 [ENV_OUTSIDE_BOOTSTRAP] os.getenv() only allowed in bootstrap.py
+  social_collector/app/config.py:4 [ENV_OUTSIDE_BOOTSTRAP] os.environ only allowed in bootstrap.py
+  social_collector/app/config.py:5 [ENV_OUTSIDE_BOOTSTRAP] os.getenv() only allowed in bootstrap.py
+  social_collector/app/config.py:8 [ENV_OUTSIDE_BOOTSTRAP] os.getenv() only allowed in bootstrap.py
+  social_collector/app/config.py:9 [ENV_OUTSIDE_BOOTSTRAP] os.getenv() only allowed in bootstrap.py
+  social_collector/app/config.py:10 [ENV_OUTSIDE_BOOTSTRAP] os.getenv() only allowed in bootstrap.py
+  social_collector/app/config.py:11 [ENV_OUTSIDE_BOOTSTRAP] os.getenv() only allowed in bootstrap.py
+  social_collector/app/config.py:12 [ENV_OUTSIDE_BOOTSTRAP] os.getenv() only allowed in bootstrap.py
+  social_collector/app/config.py:15 [ENV_OUTSIDE_BOOTSTRAP] os.getenv() only allowed in bootstrap.py
+  social_collector/app/config.py:16 [ENV_OUTSIDE_BOOTSTRAP] os.getenv() only allowed in bootstrap.py
+  social_collector/app/config.py:17 [ENV_OUTSIDE_BOOTSTRAP] os.getenv() only allowed in bootstrap.py
+  social_collector/app/config.py:20 [ENV_OUTSIDE_BOOTSTRAP] os.getenv() only allowed in bootstrap.py
+  social_collector/app/config.py:21 [ENV_OUTSIDE_BOOTSTRAP] os.getenv() only allowed in bootstrap.py
+  social_collector/app/config.py:22 [ENV_OUTSIDE_BOOTSTRAP] os.getenv() only allowed in bootstrap.py
+  social_collector/app/config.py:25 [ENV_OUTSIDE_BOOTSTRAP] os.getenv() only allowed in bootstrap.py
+  trading/binance_client.py:191 [ENV_OUTSIDE_BOOTSTRAP] os.environ only allowed in bootstrap.py
+  trading/binance_client.py:193 [ENV_OUTSIDE_BOOTSTRAP] os.environ only allowed in bootstrap.py
+  trading/binance_client.py:195 [ENV_OUTSIDE_BOOTSTRAP] os.environ only allowed in bootstrap.py
+  trading/export_model.py:56 [ENV_OUTSIDE_BOOTSTRAP] os.getenv() only allowed in bootstrap.py
+  trading/runner.py:406 [ENV_OUTSIDE_BOOTSTRAP] os.getenv() only allowed in bootstrap.py
+  trading/runner.py:407 [ENV_OUTSIDE_BOOTSTRAP] os.getenv() only allowed in bootstrap.py
+
+[GOVERNANCE_EXCEPTION_CATCH] — 3 occurrence(s)
+  scripts/bybit_ohlcv_live.py:203 [GOVERNANCE_EXCEPTION_CATCH] except KeyboardInterrupt intercepts governance process death; governance kills must be uncatchable
+  scripts/s11_trade_desk.py:468 [GOVERNANCE_EXCEPTION_CATCH] except KeyboardInterrupt intercepts governance process death; governance kills must be uncatchable
+  scripts/start_s9_paper_run.py:129 [GOVERNANCE_EXCEPTION_CATCH] except SystemExit intercepts governance process death; governance kills must be uncatchable
+
+[HASATTR_DISPATCH] — 41 occurrence(s)
+  Playbook/backfill_strategies.py:135 [HASATTR_DISPATCH] hasattr() enables dynamic dispatch; use explicit registry attribute access
+  api/app/routers/public_feed.py:147 [HASATTR_DISPATCH] hasattr() enables dynamic dispatch; use explicit registry attribute access
+  api/app/routers/public_feed.py:148 [HASATTR_DISPATCH] hasattr() enables dynamic dispatch; use explicit registry attribute access
+  api/app/routers/stats.py:61 [HASATTR_DISPATCH] hasattr() enables dynamic dispatch; use explicit registry attribute access
+  governance/signal_worker.py:382 [HASATTR_DISPATCH] hasattr() enables dynamic dispatch; use explicit registry attribute access
+  governance/signal_worker.py:2587 [HASATTR_DISPATCH] hasattr() enables dynamic dispatch; use explicit registry attribute access
+  governance/signal_worker.py:2678 [HASATTR_DISPATCH] hasattr() enables dynamic dispatch; use explicit registry attribute access
+  scripts/backfill_strategies.py:135 [HASATTR_DISPATCH] hasattr() enables dynamic dispatch; use explicit registry attribute access
+  scripts/curate_proof_pack.py:118 [HASATTR_DISPATCH] hasattr() enables dynamic dispatch; use explicit registry attribute access
+  scripts/export_sim_results_xlsx.py:195 [HASATTR_DISPATCH] hasattr() enables dynamic dispatch; use explicit registry attribute access
+  scripts/macd_wide_candidates.py:271 [HASATTR_DISPATCH] hasattr() enables dynamic dispatch; use explicit registry attribute access
+  scripts/macd_wide_candidates.py:274 [HASATTR_DISPATCH] hasattr() enables dynamic dispatch; use explicit registry attribute access
+  scripts/macd_wide_candidates.py:306 [HASATTR_DISPATCH] hasattr() enables dynamic dispatch; use explicit registry attribute access
+  scripts/macd_wide_candidates.py:339 [HASATTR_DISPATCH] hasattr() enables dynamic dispatch; use explicit registry attribute access
+  scripts/macd_wide_candidates.py:386 [HASATTR_DISPATCH] hasattr() enables dynamic dispatch; use explicit registry attribute access
+  scripts/outcome_first_4h.py:279 [HASATTR_DISPATCH] hasattr() enables dynamic dispatch; use explicit registry attribute access
+  scripts/regenerate_opportunities.py:196 [HASATTR_DISPATCH] hasattr() enables dynamic dispatch; use explicit registry attribute access
+  scripts/regime_concurrency.py:88 [HASATTR_DISPATCH] hasattr() enables dynamic dispatch; use explicit registry attribute access
+  scripts/regime_hunt.py:112 [HASATTR_DISPATCH] hasattr() enables dynamic dispatch; use explicit registry attribute access
+  scripts/research_macd_multi_tf.py:268 [HASATTR_DISPATCH] hasattr() enables dynamic dispatch; use explicit registry attribute access
+  scripts/research_macd_multi_tf.py:271 [HASATTR_DISPATCH] hasattr() enables dynamic dispatch; use explicit registry attribute access
+  scripts/research_macd_multi_tf.py:329 [HASATTR_DISPATCH] hasattr() enables dynamic dispatch; use explicit registry attribute access
+  scripts/research_macd_multi_tf.py:416 [HASATTR_DISPATCH] hasattr() enables dynamic dispatch; use explicit registry attribute access
+  scripts/research_macd_multi_tf.py:438 [HASATTR_DISPATCH] hasattr() enables dynamic dispatch; use explicit registry attribute access
+  scripts/research_macd_multi_tf.py:532 [HASATTR_DISPATCH] hasattr() enables dynamic dispatch; use explicit registry attribute access
+  scripts/research_macd_multi_tf.py:535 [HASATTR_DISPATCH] hasattr() enables dynamic dispatch; use explicit registry attribute access
+  scripts/s11_concurrency_report.py:257 [HASATTR_DISPATCH] hasattr() enables dynamic dispatch; use explicit registry attribute access
+  scripts/s11_concurrency_report.py:412 [HASATTR_DISPATCH] hasattr() enables dynamic dispatch; use explicit registry attribute access
+  scripts/s11_fast_backfill.py:208 [HASATTR_DISPATCH] hasattr() enables dynamic dispatch; use explicit registry attribute access
+  scripts/s11_trade_desk.py:121 [HASATTR_DISPATCH] hasattr() enables dynamic dispatch; use explicit registry attribute access
+  scripts/s13_bottom_decile.py:284 [HASATTR_DISPATCH] hasattr() enables dynamic dispatch; use explicit registry attribute access
+  scripts/s14_momentum_candidates.py:291 [HASATTR_DISPATCH] hasattr() enables dynamic dispatch; use explicit registry attribute access
+  scripts/settle_1s_backfill.py:156 [HASATTR_DISPATCH] hasattr() enables dynamic dispatch; use explicit registry attribute access
+  scripts/simultaneous_solver.py:217 [HASATTR_DISPATCH] hasattr() enables dynamic dispatch; use explicit registry attribute access
+  scripts/sweep_d1_stop_pct.py:218 [HASATTR_DISPATCH] hasattr() enables dynamic dispatch; use explicit registry attribute access
+  scripts/sweep_s10_full_matrix.py:287 [HASATTR_DISPATCH] hasattr() enables dynamic dispatch; use explicit registry attribute access
+  scripts/sweep_s10_stop_atr.py:336 [HASATTR_DISPATCH] hasattr() enables dynamic dispatch; use explicit registry attribute access
+  social_collector/app/collectors/discord_collector.py:142 [HASATTR_DISPATCH] hasattr() enables dynamic dispatch; use explicit registry attribute access
+  social_collector/app/collectors/rss.py:56 [HASATTR_DISPATCH] hasattr() enables dynamic dispatch; use explicit registry attribute access
+  social_collector/app/collectors/rss.py:61 [HASATTR_DISPATCH] hasattr() enables dynamic dispatch; use explicit registry attribute access
+  trading/export_model.py:81 [HASATTR_DISPATCH] hasattr() enables dynamic dispatch; use explicit registry attribute access
+
+[SILENT_GETATTR] — 33 occurrence(s)
+  c2s_deploy/c2s_canon_resim.py:182 [SILENT_GETATTR] getattr() with default silently hides missing dependencies
+  governance/execution_worker.py:493 [SILENT_GETATTR] getattr() with default silently hides missing dependencies
+  governance/regime/enforcer.py:250 [SILENT_GETATTR] getattr() with default silently hides missing dependencies
+  governance/regime/enforcer.py:388 [SILENT_GETATTR] getattr() with default silently hides missing dependencies
+  governance/regime_detector.py:419 [SILENT_GETATTR] getattr() with default silently hides missing dependencies
+  governance/risk_limits.py:367 [SILENT_GETATTR] getattr() with default silently hides missing dependencies
+  governance/signal_worker.py:185 [SILENT_GETATTR] getattr() with default silently hides missing dependencies
+  governance/signal_worker.py:192 [SILENT_GETATTR] getattr() with default silently hides missing dependencies
+  governance/signal_worker.py:308 [SILENT_GETATTR] getattr() with default silently hides missing dependencies
+  governance/signal_worker.py:314 [SILENT_GETATTR] getattr() with default silently hides missing dependencies
+  governance/signal_worker.py:881 [SILENT_GETATTR] getattr() with default silently hides missing dependencies
+  scripts/backfill_social_whale_telegram.py:388 [SILENT_GETATTR] getattr() with default silently hides missing dependencies
+  scripts/pm_calibration_backtest.py:457 [SILENT_GETATTR] getattr() with default silently hides missing dependencies
+  scripts/pm_calibration_backtest.py:458 [SILENT_GETATTR] getattr() with default silently hides missing dependencies
+  scripts/pm_calibration_backtest.py:475 [SILENT_GETATTR] getattr() with default silently hides missing dependencies
+  scripts/pm_calibration_backtest.py:479 [SILENT_GETATTR] getattr() with default silently hides missing dependencies
+  scripts/pm_calibration_backtest.py:480 [SILENT_GETATTR] getattr() with default silently hides missing dependencies
+  scripts/regenerate_opportunities.py:538 [SILENT_GETATTR] getattr() with default silently hides missing dependencies
+  scripts/regenerate_opportunities.py:556 [SILENT_GETATTR] getattr() with default silently hides missing dependencies
+  scripts/regenerate_opportunities.py:557 [SILENT_GETATTR] getattr() with default silently hides missing dependencies
+  scripts/regenerate_opportunities.py:833 [SILENT_GETATTR] getattr() with default silently hides missing dependencies
+  scripts/regenerate_opportunities.py:834 [SILENT_GETATTR] getattr() with default silently hides missing dependencies
+  scripts/sim_c1_c4_batch.py:146 [SILENT_GETATTR] getattr() with default silently hides missing dependencies
+  scripts/sim_exit_sweep.py:153 [SILENT_GETATTR] getattr() with default silently hides missing dependencies
+  scripts/simulate_s9_s10_batch.py:189 [SILENT_GETATTR] getattr() with default silently hides missing dependencies
+  scripts/sweep_d1_stop_pct.py:216 [SILENT_GETATTR] getattr() with default silently hides missing dependencies
+  scripts/sweep_d1_stop_pct.py:238 [SILENT_GETATTR] getattr() with default silently hides missing dependencies
+  scripts/sweep_s10_full_matrix.py:273 [SILENT_GETATTR] getattr() with default silently hides missing dependencies
+  scripts/sweep_s10_full_matrix.py:285 [SILENT_GETATTR] getattr() with default silently hides missing dependencies
+  scripts/sweep_s10_full_matrix.py:324 [SILENT_GETATTR] getattr() with default silently hides missing dependencies
+  scripts/sweep_s10_stop_atr.py:276 [SILENT_GETATTR] getattr() with default silently hides missing dependencies
+  scripts/sweep_s10_stop_atr.py:334 [SILENT_GETATTR] getattr() with default silently hides missing dependencies
+  social_collector/app/backfill_telegram.py:204 [SILENT_GETATTR] getattr() with default silently hides missing dependencies
+
+[SYS_PATH_ACCESS] — 84 occurrence(s)
+  GX_Research/scripts/01_coarse_trigger_sweep.py:30 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  GX_Research/scripts/02_stop_exit_sweep.py:25 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  GX_Research/scripts/03_dow_hour_split.py:15 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  GX_Research/scripts/04_filter_discovery.py:27 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  GX_Research/scripts/05_cross_tf_sweep.py:25 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  GX_Research/scripts/06_portfolio_sim.py:19 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  GX_Research/scripts/_common.py:12 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  GX_Research/scripts/_common.py:13 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  GX_Research/scripts/init_tracker.py:8 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  GX_Research/scripts/report.py:12 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  Playbook/backfill_strategies.py:38 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  Playbook/backfill_strategies.py:40 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  Playbook/d6_integrated_backfill_sim.py:46 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  Playbook/discover_indicator_safe_filters.py:58 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  Playbook/discover_indicator_safe_filters.py:59 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  Playbook/discover_social_safe_filters.py:125 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  c2s_deploy/c2s_canon_resim.py:52 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  c2s_deploy/c2s_canon_resim.py:54 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  scripts/alert_watchdog.py:26 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  scripts/alert_watchdog.py:28 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  scripts/analyze_candle_pattern_expectancy.py:55 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  scripts/analyze_candle_pattern_expectancy.py:56 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  scripts/audit_monitored_universe_evaluability.py:36 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  scripts/audit_monitored_universe_evaluability.py:38 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  scripts/backfill_candle_pattern_partials.py:69 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  scripts/backfill_candle_pattern_partials.py:70 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  scripts/backfill_monitored_history.py:34 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  scripts/backfill_monitored_history.py:36 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  scripts/backfill_strategies.py:38 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  scripts/backfill_strategies.py:40 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  scripts/build_indicator_filter_dedup_map.py:24 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  scripts/d6_integrated_backfill_sim.py:46 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  scripts/discover_indicator_safe_filters.py:58 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  scripts/discover_indicator_safe_filters.py:59 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  scripts/discover_social_safe_filters.py:125 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  scripts/export_sim_results_xlsx.py:25 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  scripts/label_shock_events.py:86 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  scripts/label_shock_events.py:87 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  scripts/label_shock_events.py:89 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  scripts/label_shock_events.py:90 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  scripts/macd_holdout_validation.py:37 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  scripts/macd_robust_filter_discovery.py:45 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  scripts/outcome_first_4h.py:46 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  scripts/pm_calibration_backtest.py:58 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  scripts/pm_calibration_backtest.py:60 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  scripts/refinement_3_c4ml_trial.py:34 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  scripts/refinement_3_c4ml_trial_usdc.py:31 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  scripts/regenerate_opportunities.py:74 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  scripts/regenerate_opportunities.py:79 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  scripts/regime_cluster_loss_analysis.py:36 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  scripts/regime_concurrency.py:17 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  scripts/regime_hunt.py:27 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  scripts/relabel_shock_events.py:44 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  scripts/relabel_shock_events.py:45 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  scripts/relabel_shock_events.py:46 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  scripts/relabel_shock_events.py:47 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  scripts/relabel_shock_events.py:50 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  scripts/s11_fast_backfill.py:45 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  scripts/s13_bottom_decile.py:42 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  scripts/s14_momentum_candidates.py:49 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  scripts/s9_paper_reconcile.py:59 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  scripts/s9_paper_reconcile.py:61 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  scripts/settle_1s_backfill.py:41 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  scripts/settle_1s_backfill.py:43 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  scripts/sim_c1_c4_batch.py:36 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  scripts/sim_c1_c4_batch.py:38 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  scripts/sim_exit_sweep.py:25 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  scripts/sim_exit_sweep.py:27 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  scripts/simulate_s9_s10_batch.py:34 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  scripts/simulate_s9_s10_batch.py:36 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  scripts/simultaneous_solver.py:38 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  scripts/start_s9_paper_run.py:56 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  scripts/start_s9_paper_run.py:58 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  scripts/sweep_d1_stop_pct.py:49 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  scripts/sweep_d1_stop_pct.py:51 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  scripts/sweep_s10_full_matrix.py:69 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  scripts/sweep_s10_full_matrix.py:71 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  scripts/sweep_s10_stop_atr.py:52 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  scripts/sweep_s10_stop_atr.py:54 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  scripts/wf_microcap_dip.py:27 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  trading/export_model.py:19 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  trading/export_model.py:21 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  trading/runner.py:48 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+  trading/runner.py:50 [SYS_PATH_ACCESS] sys.path access enables import path manipulation
+
+========================================================================
+Fix all violations before merging.

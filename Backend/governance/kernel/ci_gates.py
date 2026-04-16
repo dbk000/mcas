@@ -29,6 +29,7 @@ Violations caught:
    16. builtin aliasing (ga = getattr, e = exec, etc.)
    17. sys.meta_path / sys.path access
    18. dunder reassignment (ClassName.__method__ = ...)
+   19. function body is Ellipsis or pass without @abstractmethod decorator
 """
 
 import ast
@@ -349,6 +350,65 @@ class DoctrineVisitor(ast.NodeVisitor):
                            f".{target.attr} = ... — dunder reassignment on non-self target "
                            f"enables governance bypass")
 
+        self.generic_visit(node)
+
+    # --- Rule 19: Function body is Ellipsis or Pass without @abstractmethod ---
+
+    def _decorator_is_abstractmethod(self, decorator: ast.expr) -> bool:
+        """True when a decorator node denotes abstractmethod.
+
+        Matches both the bare-import form (``@abstractmethod`` -> Name)
+        and the qualified form (``@abc.abstractmethod`` -> Attribute).
+        Decorators applied as calls (e.g. ``@abstractmethod()``) are
+        normalised to their callee.
+        """
+        node = decorator
+        if isinstance(node, ast.Call):
+            node = node.func
+        if isinstance(node, ast.Name):
+            return node.id == 'abstractmethod'
+        if isinstance(node, ast.Attribute):
+            return node.attr == 'abstractmethod'
+        return False
+
+    def _check_empty_body(self, node: ast.AST) -> None:
+        """Flag functions whose body is exactly ``...`` or ``pass``.
+
+        Python parses ``...`` as ``Expr(Constant(value=Ellipsis))`` (3.12)
+        and a bare ``pass`` as ``Pass``. Either is a silent no-op that
+        looks "already stubbed" to downstream tools. Real abstract
+        interfaces marked with ``@abstractmethod`` are exempt.
+        """
+        body = getattr(node, 'body', None)
+        if not body or len(body) != 1:
+            return
+
+        stmt = body[0]
+        is_pass = isinstance(stmt, ast.Pass)
+        is_ellipsis = (
+            isinstance(stmt, ast.Expr)
+            and isinstance(stmt.value, ast.Constant)
+            and stmt.value.value is Ellipsis
+        )
+        if not (is_pass or is_ellipsis):
+            return
+
+        decorators = getattr(node, 'decorator_list', []) or []
+        if any(self._decorator_is_abstractmethod(d) for d in decorators):
+            return
+
+        kind = 'pass' if is_pass else 'Ellipsis'
+        name = getattr(node, 'name', '<unknown>')
+        self._add(node, "ELLIPSIS_OR_PASS_BODY",
+                   f"function {name!r} body is {kind} without @abstractmethod decorator; "
+                   f"real work or raise NotImplementedError(...) is required")
+
+    def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
+        self._check_empty_body(node)
+        self.generic_visit(node)
+
+    def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
+        self._check_empty_body(node)
         self.generic_visit(node)
 
 

@@ -1,0 +1,18 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.0.2, pluggy-1.6.0 -- /usr/bin/python3
+cachedir: .pytest_cache
+rootdir: /home/darren/Desktop/MCAS/Backend
+configfile: pytest.ini
+collecting ... collected 9 items
+
+tests/governance/test_ci_gates_violation_19.py::test_ellipsis_body_fires PASSED [ 11%]
+tests/governance/test_ci_gates_violation_19.py::test_pass_body_fires PASSED [ 22%]
+tests/governance/test_ci_gates_violation_19.py::test_abstractmethod_ellipsis_exempt PASSED [ 33%]
+tests/governance/test_ci_gates_violation_19.py::test_abstractmethod_pass_exempt PASSED [ 44%]
+tests/governance/test_ci_gates_violation_19.py::test_real_body_does_not_fire PASSED [ 55%]
+tests/governance/test_ci_gates_violation_19.py::test_raise_not_implemented_does_not_fire PASSED [ 66%]
+tests/governance/test_ci_gates_violation_19.py::test_qualified_abstractmethod_exempt PASSED [ 77%]
+tests/governance/test_ci_gates_violation_19.py::test_async_function_fires PASSED [ 88%]
+tests/governance/test_ci_gates_violation_19.py::test_docstring_plus_ellipsis_does_not_fire_len_gt_1 PASSED [100%]
+
+============================== 9 passed in 0.03s ===============================
