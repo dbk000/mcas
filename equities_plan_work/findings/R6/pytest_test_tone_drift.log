@@ -1,0 +1,26 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.0.2, pluggy-1.6.0 -- /usr/bin/python3
+cachedir: .pytest_cache
+rootdir: /home/darren/Desktop/MCAS/Backend
+configfile: pytest.ini
+collecting ... collected 17 items
+
+tests/governance/test_tone_drift.py::test_kl_of_identical_distribution_is_zero PASSED [  5%]
+tests/governance/test_tone_drift.py::test_kl_increases_with_drift PASSED [ 11%]
+tests/governance/test_tone_drift.py::test_kl_clamped_nonnegative PASSED  [ 17%]
+tests/governance/test_tone_drift.py::test_kl_bin_edge_mismatch_rejected PASSED [ 23%]
+tests/governance/test_tone_drift.py::test_kl_schema_version_mismatch_rejected PASSED [ 29%]
+tests/governance/test_tone_drift.py::test_trigger_fires_on_five_consecutive_days PASSED [ 35%]
+tests/governance/test_tone_drift.py::test_trigger_does_NOT_fire_on_four_days PASSED [ 41%]
+tests/governance/test_tone_drift.py::test_trigger_does_NOT_fire_on_mixed_history PASSED [ 47%]
+tests/governance/test_tone_drift.py::test_trigger_uses_tail_of_history PASSED [ 52%]
+tests/governance/test_tone_drift.py::test_trigger_on_empty_history_is_false PASSED [ 58%]
+tests/governance/test_tone_drift.py::test_build_baseline_artifact_shape PASSED [ 64%]
+tests/governance/test_tone_drift.py::test_build_baseline_with_heldout_chunks_is_positive PASSED [ 70%]
+tests/governance/test_tone_drift.py::test_build_baseline_rejects_tiny_window PASSED [ 76%]
+tests/governance/test_tone_drift.py::test_load_baseline_missing_file_raises PASSED [ 82%]
+tests/governance/test_tone_drift.py::test_load_baseline_missing_fields_raises PASSED [ 88%]
+tests/governance/test_tone_drift.py::test_load_baseline_roundtrip PASSED [ 94%]
+tests/governance/test_tone_drift.py::test_monitor_facade_delegates PASSED [100%]
+
+============================== 17 passed in 0.11s ==============================
