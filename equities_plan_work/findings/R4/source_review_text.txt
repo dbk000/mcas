@@ -1,0 +1,15 @@
+### 2.4 Explicit 1m backfill trigger criterion
+
+**What 4.6 says.** "1m bars: defer. Will be backfilled per-strategy once the SAFE sweep flags need" (§2.1.3, §2.2.2).
+
+**What's missing.** No operational trigger. "Flags need" is a vibe, not a criterion.
+
+**Add.** A strategy is eligible for targeted 1m backfill on its promoted universe slice iff **all** of:
+
+- It passes the hourly-bar sweep at some capital tier (PF lift ≥ 10%, 4/5 folds, DSR > 0).
+- Per-trade edge after hourly modelled slippage (from §1.4 above) < 2× the fee floor for the active tier.
+- Entry or exit gate explicitly references intraday timing (opening range, VWAP deviation, gap-fade, closing auction).
+
+Failing any one → no 1m backfill. Passes all three → queue the 1m backfill for the strategy's candidate universe (capped at 100 symbols × 2y) before final promotion.
+
+**Why.** Makes the deferral reversible on clean data, not on vibes. Also protects the scope — strategies without an explicit sub-hourly gate don't trigger 1m fetch cost, even if they pass the other two.
