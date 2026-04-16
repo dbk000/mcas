@@ -1,0 +1,6 @@
+# pg_dump stdout capture 20260416_213832
+# Command: docker exec backend-postgres-1 pg_dump -U trading -d trading -t 'equities_*' -t 'ahc_*' -t 'config_active_strategies' -t 'config_fee_schedule' --no-owner --no-acl
+# pg_dump default writes the SQL dump itself to stdout (redirected to equities_tables.sql in the snapshot dir).
+# There is no separate stdout log — the redirected stdout IS the dump file.
+# Dump file: Backend/scripts/output/snapshots/equities_pre_backfill_20260416_213832/equities_tables.sql (3.5 GB, 1,464,960 lines, 20 CREATE TABLE statements)
+# Exit code: 0

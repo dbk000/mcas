@@ -1,0 +1,51 @@
+# Verification queries run 2026-04-16T21:39:32Z
+# Dump path: /home/darren/Desktop/MCAS/Backend/scripts/output/snapshots/equities_pre_backfill_20260416_213832/equities_tables.sql
+
+=== wc -l <dump> ===
+1464960 /home/darren/Desktop/MCAS/Backend/scripts/output/snapshots/equities_pre_backfill_20260416_213832/equities_tables.sql
+
+=== du -h <dump> ===
+3.5G	/home/darren/Desktop/MCAS/Backend/scripts/output/snapshots/equities_pre_backfill_20260416_213832/equities_tables.sql
+
+=== du -b <dump> (bytes) ===
+3748716823	/home/darren/Desktop/MCAS/Backend/scripts/output/snapshots/equities_pre_backfill_20260416_213832/equities_tables.sql
+
+=== grep -c 'CREATE TABLE.*equities_' ===
+14
+
+=== grep -c 'CREATE TABLE.*ahc_' ===
+4
+
+=== grep -c 'CREATE TABLE.*config_' ===
+2
+
+=== total CREATE TABLE (all tables in dump) ===
+20
+
+=== all CREATE TABLE lines (sorted) ===
+CREATE TABLE public.ahc_author_history (
+CREATE TABLE public.ahc_daily_universe (
+CREATE TABLE public.ahc_overnight_features (
+CREATE TABLE public.ahc_targets (
+CREATE TABLE public.config_active_strategies (
+CREATE TABLE public.config_fee_schedule (
+CREATE TABLE public.equities_bar_meta (
+CREATE TABLE public.equities_calibration_alerts (
+CREATE TABLE public.equities_earnings_calendar (
+CREATE TABLE public.equities_events (
+CREATE TABLE public.equities_feature_events (
+CREATE TABLE public.equities_model_evaluations (
+CREATE TABLE public.equities_opportunities (
+CREATE TABLE public.equities_opportunity_outcomes (
+CREATE TABLE public.equities_pipeline_events (
+CREATE TABLE public.equities_predictions (
+CREATE TABLE public.equities_raw_mentions (
+CREATE TABLE public.equities_selection_policies (
+CREATE TABLE public.equities_source_cache (
+CREATE TABLE public.equities_symbol_registry (
+
+=== equities_symbol_registry present check ===
+1
+
+=== stderr size (should be 0) ===
+-rw-rw-r-- 1 darren darren 0 Apr 16 21:38 Backend/scripts/output/snapshots/equities_pre_backfill_20260416_213832/pg_dump_stderr_20260416_213832.log
