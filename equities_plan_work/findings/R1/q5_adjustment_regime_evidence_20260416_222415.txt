@@ -1,0 +1,3 @@
+Q5 adjustment regime evidence
+NVDA 2024-06-10 10:1 split — pre_close(2024-06-07)=120.88800048828125, post_close(2024-06-10)=121.79000091552734, ratio=0.9926 -> regime=split-only
+Fetcher quote path: indicators.quote[0] (split-only per Yahoo semantics)

@@ -1,0 +1,14 @@
+source,n_rows,bucket,verdict
+binance,204593428,crypto_known,PASS
+bitget,1199591,crypto_known,PASS
+bitmart,12693121,crypto_known,PASS
+bybit,21446097,crypto_known,PASS
+coinex,237440,crypto_known,PASS
+equities_yahoo,275723,equity_expected,PASS
+gate,79740,crypto_known,PASS
+htx,113186,crypto_known,PASS
+kucoin,32553879,crypto_known,PASS
+mexc,4760559,crypto_known,PASS
+okx,470665,crypto_known,PASS
+ws,16994913,crypto_known,PASS
+yahoo_chart,66170,equity_expected,PASS

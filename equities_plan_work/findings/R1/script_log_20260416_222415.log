@@ -1,0 +1,255 @@
+equities_data_health_read — start 2026-04-16T22:24:15.913468+00:00
+log path: Backend/scripts/output/equities_data_health_read_20260416_222415.log
+DATABASE_URL host: 172.18.0.11:5432
+========================================================================
+Q1 — OHLCV continuity on existing equity symbols (1h + 1d)
+========================================================================
+  AAPL     1d   n=634    expected=535    short= 0.00%  PASS
+  ABBV     1d   n=635    expected=535    short= 0.00%  PASS
+  ADBE     1d   n=634    expected=535    short= 0.00%  PASS
+  AMAT     1d   n=170    expected=155    short= 0.00%  PASS
+  AMD      1d   n=634    expected=535    short= 0.00%  PASS
+  AMZN     1d   n=634    expected=535    short= 0.00%  PASS
+  AVGO     1d   n=634    expected=535    short= 0.00%  PASS
+  BAC      1d   n=635    expected=535    short= 0.00%  PASS
+  BRK-B    1d   n=635    expected=535    short= 0.00%  PASS
+  C        1d   n=635    expected=535    short= 0.00%  PASS
+  CAT      1d   n=635    expected=535    short= 0.00%  PASS
+  COP      1d   n=635    expected=535    short= 0.00%  PASS
+  COST     1d   n=634    expected=535    short= 0.00%  PASS
+  CRM      1d   n=635    expected=535    short= 0.00%  PASS
+  CVX      1d   n=635    expected=535    short= 0.00%  PASS
+  DUK      1d   n=635    expected=535    short= 0.00%  PASS
+  GE       1d   n=635    expected=535    short= 0.00%  PASS
+  GOOGL    1d   n=634    expected=535    short= 0.00%  PASS
+  GS       1d   n=635    expected=535    short= 0.00%  PASS
+  HD       1d   n=635    expected=535    short= 0.00%  PASS
+  HON      1d   n=634    expected=535    short= 0.00%  PASS
+  IBM      1d   n=635    expected=535    short= 0.00%  PASS
+  INTC     1d   n=634    expected=535    short= 0.00%  PASS
+  JNJ      1d   n=635    expected=535    short= 0.00%  PASS
+  JPM      1d   n=635    expected=535    short= 0.00%  PASS
+  KLAC     1d   n=170    expected=155    short= 0.00%  PASS
+  KO       1d   n=635    expected=535    short= 0.00%  PASS
+  LMT      1d   n=635    expected=535    short= 0.00%  PASS
+  LOW      1d   n=635    expected=535    short= 0.00%  PASS
+  LRCX     1d   n=170    expected=155    short= 0.00%  PASS
+  MA       1d   n=635    expected=535    short= 0.00%  PASS
+  MCD      1d   n=635    expected=535    short= 0.00%  PASS
+  META     1d   n=634    expected=535    short= 0.00%  PASS
+  MRK      1d   n=635    expected=535    short= 0.00%  PASS
+  MRVL     1d   n=170    expected=155    short= 0.00%  PASS
+  MSFT     1d   n=634    expected=535    short= 0.00%  PASS
+  MU       1d   n=170    expected=155    short= 0.00%  PASS
+  NEE      1d   n=635    expected=535    short= 0.00%  PASS
+  NKE      1d   n=635    expected=535    short= 0.00%  PASS
+  NVDA     1d   n=634    expected=535    short= 0.00%  PASS
+  ORCL     1d   n=635    expected=535    short= 0.00%  PASS
+  PEP      1d   n=634    expected=535    short= 0.00%  PASS
+  PFE      1d   n=635    expected=535    short= 0.00%  PASS
+  PG       1d   n=635    expected=535    short= 0.00%  PASS
+  QCOM     1d   n=634    expected=535    short= 0.00%  PASS
+  QQQ      1d   n=634    expected=535    short= 0.00%  PASS
+  RTX      1d   n=635    expected=535    short= 0.00%  PASS
+  SLB      1d   n=635    expected=535    short= 0.00%  PASS
+  SMH      1d   n=170    expected=155    short= 0.00%  PASS
+  SOXX     1d   n=170    expected=155    short= 0.00%  PASS
+  SPY      1d   n=634    expected=535    short= 0.00%  PASS
+  TMO      1d   n=635    expected=535    short= 0.00%  PASS
+  TSLA     1d   n=634    expected=535    short= 0.00%  PASS
+  TSM      1d   n=170    expected=155    short= 0.00%  PASS
+  TXN      1d   n=634    expected=535    short= 0.00%  PASS
+  UNH      1d   n=635    expected=535    short= 0.00%  PASS
+  V        1d   n=635    expected=535    short= 0.00%  PASS
+  WFC      1d   n=635    expected=535    short= 0.00%  PASS
+  WMT      1d   n=634    expected=535    short= 0.00%  PASS
+  XLB      1d   n=635    expected=535    short= 0.00%  PASS
+  XLE      1d   n=635    expected=535    short= 0.00%  PASS
+  XLF      1d   n=634    expected=535    short= 0.00%  PASS
+  XLI      1d   n=634    expected=535    short= 0.00%  PASS
+  XLK      1d   n=634    expected=535    short= 0.00%  PASS
+  XLP      1d   n=634    expected=535    short= 0.00%  PASS
+  XLRE     1d   n=635    expected=535    short= 0.00%  PASS
+  XLU      1d   n=635    expected=535    short= 0.00%  PASS
+  XLV      1d   n=635    expected=535    short= 0.00%  PASS
+  XLY      1d   n=635    expected=535    short= 0.00%  PASS
+  XOM      1d   n=635    expected=535    short= 0.00%  PASS
+  AAPL     1h   n=9091   expected=9095   short= 0.04%  PASS
+  ABBV     1h   n=2730   expected=2652   short= 0.00%  PASS
+  ADBE     1h   n=2755   expected=2652   short= 0.00%  PASS
+  AMAT     1h   n=2584   expected=2635   short= 1.94%  PASS
+  AMD      1h   n=2765   expected=2652   short= 0.00%  PASS
+  AMZN     1h   n=9091   expected=9095   short= 0.04%  PASS
+  AVGO     1h   n=2765   expected=2652   short= 0.00%  PASS
+  BAC      1h   n=2769   expected=2652   short= 0.00%  PASS
+  BRK-B    1h   n=2773   expected=2652   short= 0.00%  PASS
+  C        1h   n=2759   expected=2652   short= 0.00%  PASS
+  CAT      1h   n=2763   expected=2652   short= 0.00%  PASS
+  COP      1h   n=2732   expected=2652   short= 0.00%  PASS
+  COST     1h   n=2721   expected=2652   short= 0.00%  PASS
+  CRM      1h   n=2772   expected=2652   short= 0.00%  PASS
+  CVX      1h   n=2763   expected=2652   short= 0.00%  PASS
+  DUK      1h   n=2713   expected=2652   short= 0.00%  PASS
+  GE       1h   n=2757   expected=2669   short= 0.00%  PASS
+  GOOGL    1h   n=9089   expected=9095   short= 0.07%  PASS
+  GS       1h   n=2750   expected=2669   short= 0.00%  PASS
+  HD       1h   n=2749   expected=2669   short= 0.00%  PASS
+  HON      1h   n=2606   expected=2652   short= 1.73%  PASS
+  IBM      1h   n=2772   expected=2669   short= 0.00%  PASS
+  INTC     1h   n=2765   expected=2652   short= 0.00%  PASS
+  JNJ      1h   n=2750   expected=2652   short= 0.00%  PASS
+  JPM      1h   n=2772   expected=2669   short= 0.00%  PASS
+  KLAC     1h   n=2491   expected=2635   short= 5.46%  FAIL
+  KO       1h   n=2764   expected=2669   short= 0.00%  PASS
+  LMT      1h   n=2751   expected=2652   short= 0.00%  PASS
+  LOW      1h   n=2724   expected=2652   short= 0.00%  PASS
+  LRCX     1h   n=2577   expected=2635   short= 2.20%  PASS
+  MA       1h   n=2762   expected=2652   short= 0.00%  PASS
+  MCD      1h   n=2743   expected=2652   short= 0.00%  PASS
+  META     1h   n=2767   expected=2652   short= 0.00%  PASS
+  MRK      1h   n=2749   expected=2652   short= 0.00%  PASS
+  MRVL     1h   n=2596   expected=2635   short= 1.48%  PASS
+  MSFT     1h   n=9089   expected=9095   short= 0.07%  PASS
+  MU       1h   n=2597   expected=2635   short= 1.44%  PASS
+  NEE      1h   n=2762   expected=2652   short= 0.00%  PASS
+  NKE      1h   n=2762   expected=2652   short= 0.00%  PASS
+  NVDA     1h   n=9091   expected=9095   short= 0.04%  PASS
+  ORCL     1h   n=2774   expected=2652   short= 0.00%  PASS
+  PEP      1h   n=2685   expected=2652   short= 0.00%  PASS
+  PFE      1h   n=2768   expected=2652   short= 0.00%  PASS
+  PG       1h   n=2752   expected=2652   short= 0.00%  PASS
+  QCOM     1h   n=2747   expected=2652   short= 0.00%  PASS
+  QQQ      1h   n=2762   expected=2652   short= 0.00%  PASS
+  RTX      1h   n=2758   expected=2652   short= 0.00%  PASS
+  SLB      1h   n=2747   expected=2652   short= 0.00%  PASS
+  SMH      1h   n=2592   expected=2635   short= 1.63%  PASS
+  SOXX     1h   n=2592   expected=2635   short= 1.63%  PASS
+  SPY      1h   n=2772   expected=2652   short= 0.00%  PASS
+  TMO      1h   n=2770   expected=2652   short= 0.00%  PASS
+  TSLA     1h   n=9090   expected=9095   short= 0.05%  PASS
+  TSM      1h   n=2605   expected=2635   short= 1.14%  PASS
+  TXN      1h   n=2686   expected=2652   short= 0.00%  PASS
+  UNH      1h   n=2770   expected=2652   short= 0.00%  PASS
+  V        1h   n=2766   expected=2652   short= 0.00%  PASS
+  WFC      1h   n=9041   expected=9095   short= 0.59%  PASS
+  WMT      1h   n=2753   expected=2652   short= 0.00%  PASS
+  XLB      1h   n=2605   expected=2652   short= 1.77%  PASS
+  XLE      1h   n=2769   expected=2652   short= 0.00%  PASS
+  XLF      1h   n=2767   expected=2652   short= 0.00%  PASS
+  XLI      1h   n=2673   expected=2652   short= 0.00%  PASS
+  XLK      1h   n=2743   expected=2652   short= 0.00%  PASS
+  XLP      1h   n=2725   expected=2652   short= 0.00%  PASS
+  XLRE     1h   n=2604   expected=2652   short= 1.81%  PASS
+  XLU      1h   n=2760   expected=2652   short= 0.00%  PASS
+  XLV      1h   n=2733   expected=2652   short= 0.00%  PASS
+  XLY      1h   n=2659   expected=2652   short= 0.00%  PASS
+  XOM      1h   n=2767   expected=2652   short= 0.00%  PASS
+Q1 verdict: FAIL — 1 pairs failed: KLAC/1h: 2491/2635 (5.5% short)
+========================================================================
+Q2 — equities_feature_events per-symbol coverage
+========================================================================
+  AAPL      n=10940    PASS
+  ABBV      n=10964    PASS
+  ADBE      n=10912    PASS
+  AMAT      n=10840    PASS
+  AMD       n=10932    PASS
+  AMZN      n=10940    PASS
+  AVGO      n=10932    PASS
+  BAC       n=10964    PASS
+  BRK-B     n=10964    PASS
+  C         n=10960    PASS
+  CAT       n=10964    PASS
+  COP       n=10948    PASS
+  COST      n=10792    PASS
+  CRM       n=10964    PASS
+  CVX       n=10968    PASS
+  DUK       n=10904    PASS
+  GE        n=10964    PASS
+  GOOGL     n=10936    PASS
+  GS        n=10960    PASS
+  HD        n=10960    PASS
+  HON       n=10480    PASS
+  IBM       n=10964    PASS
+  INTC      n=10932    PASS
+  JNJ       n=10964    PASS
+  JPM       n=10964    PASS
+  KLAC      n=10504    PASS
+  KO        n=10964    PASS
+  LMT       n=10964    PASS
+  LOW       n=10872    PASS
+  LRCX      n=10808    PASS
+  MA        n=10964    PASS
+  MCD       n=10964    PASS
+  META      n=10932    PASS
+  MRK       n=10964    PASS
+  MRVL      n=10872    PASS
+  MSFT      n=10932    PASS
+  MU        n=10876    PASS
+  NEE       n=10964    PASS
+  NKE       n=10964    PASS
+  NVDA      n=10940    PASS
+  ORCL      n=10968    PASS
+  PEP       n=10716    PASS
+  PFE       n=10964    PASS
+  PG        n=10968    PASS
+  QCOM      n=10912    PASS
+  QQQ       n=10932    PASS
+  RTX       n=10964    PASS
+  SLB       n=10948    PASS
+  SMH       n=10868    PASS
+  SOXX      n=10872    PASS
+  SPY       n=10964    PASS
+  TMO       n=11180    PASS
+  TSLA      n=10936    PASS
+  TSM       n=10908    PASS
+  TXN       n=10744    PASS
+  UNH       n=10964    PASS
+  V         n=10964    PASS
+  WFC       n=10956    PASS
+  WMT       n=10912    PASS
+  XLB       n=10448    PASS
+  XLE       n=10964    PASS
+  XLF       n=10964    PASS
+  XLI       n=10724    PASS
+  XLK       n=10964    PASS
+  XLP       n=10932    PASS
+  XLRE      n=10516    PASS
+  XLU       n=10960    PASS
+  XLV       n=10964    PASS
+  XLY       n=10744    PASS
+  XOM       n=10964    PASS
+Q2 verdict: PASS — 70 symbols all ≥ 100 feature-events
+========================================================================
+Q3 — equities_feature_events available_at_ts integrity
+========================================================================
+  Q3 point-in-time leakage check
+    query: SELECT COUNT(*)
+        FROM public.equities_feature_events
+        WHERE available_at_ts <= bar_start_ts
+    violation_count: 0
+Q3 verdict: PASS — 0 rows with available_at_ts <= bar_start_ts
+========================================================================
+Q4 — source-column consistency
+========================================================================
+  source='binance'  n=204593428  bucket=crypto_known  PASS
+  source='bitget'  n=1199591  bucket=crypto_known  PASS
+  source='bitmart'  n=12693121  bucket=crypto_known  PASS
+  source='bybit'  n=21446097  bucket=crypto_known  PASS
+  source='coinex'  n=237440  bucket=crypto_known  PASS
+  source='equities_yahoo'  n=275723  bucket=equity_expected  PASS
+  source='gate'  n=79740  bucket=crypto_known  PASS
+  source='htx'  n=113186  bucket=crypto_known  PASS
+  source='kucoin'  n=32553879  bucket=crypto_known  PASS
+  source='mexc'  n=4760559  bucket=crypto_known  PASS
+  source='okx'  n=470665  bucket=crypto_known  PASS
+  source='ws'  n=16994913  bucket=crypto_known  PASS
+  source='yahoo_chart'  n=66170  bucket=equity_expected  PASS
+Q4 verdict: PASS — equity sources exactly {equities_yahoo, yahoo_chart}; no rogue crypto/equity drift
+========================================================================
+Q5 — adjustment regime per Yahoo source (known splits in window)
+========================================================================
+NVDA 2024-06-10 10:1 split — pre_close(2024-06-07)=120.88800048828125, post_close(2024-06-10)=121.79000091552734, ratio=0.9926 -> regime=split-only
+Fetcher quote path: indicators.quote[0] (split-only per Yahoo semantics)
+Q5 verdict: PASS — regime=split-only — split-only (Yahoo indicators.quote path) — consistent across evaluated splits; dividend-adjustment will be handled by A7 corporate-actions migration
+CP-2 report: equities_plan_work/checkpoints/CP-2.md
+OVERALL VERDICT: FAIL

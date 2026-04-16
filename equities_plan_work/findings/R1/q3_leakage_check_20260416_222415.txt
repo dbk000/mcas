@@ -1,0 +1,5 @@
+Q3 point-in-time leakage check
+  query: SELECT COUNT(*)
+        FROM public.equities_feature_events
+        WHERE available_at_ts <= bar_start_ts
+  violation_count: 0
