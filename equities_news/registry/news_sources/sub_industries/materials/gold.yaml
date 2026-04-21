@@ -1,0 +1,33 @@
+- source_id: sub_industry.materials.gold.cftc_cot_gold
+  source_name: CFTC — COT Gold
+  url: https://www.cftc.gov/MarketReports/CommitmentsofTraders/index.htm
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: Weekly CFTC Commitments of Traders — gold futures positioning. Friday 3:30pm ET. Speculator positioning leading indicator.
+  lineage:
+    authored_by: phase_b_materials_opus
+    authored_at: '2026-04-21T14:41:18Z'
+- source_id: sub_industry.materials.gold.lbma
+  source_name: LBMA — News
+  url: https://www.lbma.org.uk/news
+  adapter_type: rss
+  jurisdiction: GB
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - commodity_price_event
+  - sector_regulation
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: 0
+  notes: London Bullion Market Association — gold benchmark (AM/PM fix). Global gold spot authority.
+  lineage:
+    authored_by: phase_b_materials_opus
+    authored_at: '2026-04-21T14:41:18Z'

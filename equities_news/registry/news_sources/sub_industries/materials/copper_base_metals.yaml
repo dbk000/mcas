@@ -1,0 +1,34 @@
+- source_id: sub_industry.materials.copper_base_metals.codelco_news
+  source_name: Codelco — News
+  url: https://www.codelco.com/prensa
+  adapter_type: scraper
+  jurisdiction: XX
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - production_update
+  - commodity_price_event
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: Chilean state copper producer. Production guidance moves copper price + FCX, SCCO, ANTO, TCK.
+  lineage:
+    authored_by: phase_b_materials_opus
+    authored_at: '2026-04-21T14:41:18Z'
+- source_id: sub_industry.materials.copper_base_metals.shanghai_warehouse
+  source_name: SHFE Copper Warehouse Stocks
+  url: https://www.shfe.com.cn/eng/statements/
+  adapter_type: scraper
+  jurisdiction: XX
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - commodity_price_event
+  - macro_data_release
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: 0
+  notes: Weekly SHFE + LME copper warehouse stocks. Tight-inventory driver.
+  lineage:
+    authored_by: phase_b_materials_opus
+    authored_at: '2026-04-21T14:41:18Z'

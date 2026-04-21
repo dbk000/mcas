@@ -1,0 +1,416 @@
+- source_id: sector.materials.argus_ferts
+  source_name: Argus Fertilizer
+  url: https://www.argusmedia.com/en/fertilizer
+  adapter_type: scraper
+  jurisdiction: XX
+  language: en
+  cost_tier: paid
+  update_cadence: weekly
+  event_types_covered:
+  - commodity_price_event
+  - production_update
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: 0
+  notes: Argus Fertilizer Week. DAP/MAP/urea benchmarks. Moves NTR, MOS, CF, SQM, YAR.
+  lineage:
+    authored_by: phase_b_materials_opus
+    authored_at: '2026-04-21T14:41:18Z'
+- source_id: sector.materials.cen_acs
+  source_name: Chemical & Engineering News
+  url: https://cen.acs.org/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - product_launch
+  - ma_announcement
+  - regulatory_action
+  edge_weight_prior: 0.65
+  typical_lead_time_vs_english_minutes: 120
+  notes: ACS-published industry-academic chemistry. R&D + regulatory news.
+  lineage:
+    authored_by: phase_b_materials_opus
+    authored_at: '2026-04-21T14:41:18Z'
+- source_id: sector.materials.chemical_week
+  source_name: Chemical Week
+  url: https://chemweek.com/
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: paid
+  update_cadence: weekly
+  event_types_covered:
+  - ma_announcement
+  - production_update
+  - executive_change
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: 0
+  notes: S&P Global chemicals publication. Capacity additions + plant closures for specialty + commodity chemicals.
+  lineage:
+    authored_by: phase_b_materials_opus
+    authored_at: '2026-04-21T14:41:18Z'
+- source_id: sector.materials.cme_hrc
+  source_name: CME — HRC Steel Futures
+  url: https://www.cmegroup.com/markets/metals/ferrous/hrc-steel.html
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - commodity_price_event
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: 0
+  notes: CME HRC (hot-rolled coil) steel futures. Primary forward-earnings driver for NUE, STLD, CLF, X.
+  lineage:
+    authored_by: phase_b_materials_opus
+    authored_at: '2026-04-21T14:41:18Z'
+- source_id: sector.materials.cme_metals
+  source_name: CME Metals — Market Data
+  url: https://www.cmegroup.com/markets/metals.html
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: realtime
+  event_types_covered:
+  - commodity_price_event
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: 0
+  notes: COMEX gold + silver + copper futures. Weekly COT report. HRC steel futures relevant to NUE/STLD/CLF.
+  lineage:
+    authored_by: phase_b_materials_opus
+    authored_at: '2026-04-21T14:41:18Z'
+- source_id: sector.materials.cru_group
+  source_name: CRU Group — Insights
+  url: https://www.crugroup.com/insights-analysis/
+  adapter_type: scraper
+  jurisdiction: GB
+  language: en
+  cost_tier: paid
+  update_cadence: weekly
+  event_types_covered:
+  - commodity_price_event
+  - macro_data_release
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: 0
+  notes: CRU — paid research covering steel, aluminium, copper, fertilisers. Press headlines free.
+  lineage:
+    authored_by: phase_b_materials_opus
+    authored_at: '2026-04-21T14:41:18Z'
+- source_id: sector.materials.ember_eu_ets
+  source_name: Ember — EU ETS Carbon Price
+  url: https://ember-climate.org/data/
+  adapter_type: scraper
+  jurisdiction: XX
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - commodity_price_event
+  - sector_regulation
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: EU ETS carbon price. Direct input cost for European steel (MT, SSAB, SZG, VOE) + cement (HOLN, HEI.DE, CRH).
+  lineage:
+    authored_by: phase_b_materials_opus
+    authored_at: '2026-04-21T14:41:18Z'
+- source_id: sector.materials.fao_food_index
+  source_name: FAO Food Price Index
+  url: https://www.fao.org/worldfoodsituation/foodpricesindex/en/
+  adapter_type: scraper
+  jurisdiction: XX
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  edge_weight_prior: 0.65
+  typical_lead_time_vs_english_minutes: 0
+  notes: FAO monthly food price index. Fertiliser-demand signal.
+  lineage:
+    authored_by: phase_b_materials_opus
+    authored_at: '2026-04-21T14:41:18Z'
+- source_id: sector.materials.fastmarkets
+  source_name: Fastmarkets
+  url: https://www.fastmarkets.com/news-and-insight/
+  adapter_type: scraper
+  jurisdiction: XX
+  language: en
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - commodity_price_event
+  - production_update
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: 0
+  notes: Fastmarkets (incl. former Metal Bulletin + RISI). Price benchmarks for steel, aluminium, battery metals, pulp.
+  lineage:
+    authored_by: phase_b_materials_opus
+    authored_at: '2026-04-21T14:41:18Z'
+- source_id: sector.materials.icis
+  source_name: ICIS
+  url: https://www.icis.com/explore/news/
+  adapter_type: scraper
+  jurisdiction: XX
+  language: en
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - commodity_price_event
+  - production_update
+  - contract_award
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: 0
+  notes: Independent Chemical Information Service. Polymer + olefin + plastics prices. Moves DOW, LYB, WLK, CE.
+  lineage:
+    authored_by: phase_b_materials_opus
+    authored_at: '2026-04-21T14:41:18Z'
+- source_id: sector.materials.ism_pmi
+  source_name: ISM — Manufacturing PMI
+  url: https://www.ismworld.org/supply-management-news-and-reports/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: 0
+  notes: Institute for Supply Management monthly Manufacturing PMI. Broad demand proxy for chemicals + metals + packaging.
+  lineage:
+    authored_by: phase_b_materials_opus
+    authored_at: '2026-04-21T14:41:18Z'
+- source_id: sector.materials.kitco_news
+  source_name: Kitco News
+  url: https://www.kitco.com/news/
+  adapter_type: rss
+  jurisdiction: CA
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - commodity_price_event
+  - macro_data_release
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: Precious-metals specialist news + price aggregator. Gold + silver focus.
+  lineage:
+    authored_by: phase_b_materials_opus
+    authored_at: '2026-04-21T14:41:18Z'
+- source_id: sector.materials.lme_news
+  source_name: LME — News
+  url: https://www.lme.com/News/
+  adapter_type: rss
+  jurisdiction: GB
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - commodity_price_event
+  - sector_regulation
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: 0
+  notes: London Metal Exchange — benchmark prices for copper, aluminium, zinc, nickel, tin. Direct price driver for base-metals
+    miners.
+  lineage:
+    authored_by: phase_b_materials_opus
+    authored_at: '2026-04-21T14:41:18Z'
+- source_id: sector.materials.mining_com
+  source_name: Mining.com
+  url: https://www.mining.com/
+  adapter_type: rss
+  jurisdiction: XX
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - commodity_price_event
+  - ma_announcement
+  - production_update
+  - contract_award
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: 0
+  notes: Global mining industry daily. Commodity price + deal coverage across gold, copper, iron ore, lithium.
+  lineage:
+    authored_by: phase_b_materials_opus
+    authored_at: '2026-04-21T14:41:18Z'
+- source_id: sector.materials.mining_journal
+  source_name: Mining Journal
+  url: https://www.mining-journal.com/
+  adapter_type: scraper
+  jurisdiction: GB
+  language: en
+  cost_tier: paid
+  update_cadence: weekly
+  event_types_covered:
+  - production_update
+  - ma_announcement
+  - executive_change
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: London-based mining publication. Strong on AAL.L, GLEN.L, ANTO.L.
+  lineage:
+    authored_by: phase_b_materials_opus
+    authored_at: '2026-04-21T14:41:18Z'
+- source_id: sector.materials.mining_weekly
+  source_name: Mining Weekly
+  url: https://www.miningweekly.com/
+  adapter_type: rss
+  jurisdiction: XX
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - production_update
+  - ma_announcement
+  - regulatory_action
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: African + global mining daily. Strong SA/Zambia/DRC coverage.
+  lineage:
+    authored_by: phase_b_materials_opus
+    authored_at: '2026-04-21T14:41:18Z'
+- source_id: sector.materials.northern_miner
+  source_name: The Northern Miner
+  url: https://www.northernminer.com/
+  adapter_type: rss
+  jurisdiction: CA
+  language: en
+  cost_tier: paid
+  update_cadence: weekly
+  event_types_covered:
+  - production_update
+  - ma_announcement
+  - reserve_update
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: Canadian mining industry weekly. NI 43-101 reports + exploration news. Moves AEM, KGC, K.TO, LUN.TO.
+  lineage:
+    authored_by: phase_b_materials_opus
+    authored_at: '2026-04-21T14:41:18Z'
+- source_id: sector.materials.packaging_digest
+  source_name: Packaging Digest
+  url: https://www.packagingdigest.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - product_launch
+  - ma_announcement
+  - contract_award
+  edge_weight_prior: 0.6
+  typical_lead_time_vs_english_minutes: 60
+  notes: Packaging industry trade. Format innovations + sustainability regulation. Moves AMCR, IP, WRK, PKG, CCK, BLL.
+  lineage:
+    authored_by: phase_b_materials_opus
+    authored_at: '2026-04-21T14:41:18Z'
+- source_id: sector.materials.paperage
+  source_name: PaperAge
+  url: https://www.paperage.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - production_update
+  - commodity_price_event
+  - ma_announcement
+  edge_weight_prior: 0.6
+  typical_lead_time_vs_english_minutes: 60
+  notes: Pulp + paper trade. Mill downtime + market pulp prices.
+  lineage:
+    authored_by: phase_b_materials_opus
+    authored_at: '2026-04-21T14:41:18Z'
+- source_id: sector.materials.shfe
+  source_name: SHFE — News
+  url: https://www.shfe.com.cn/eng/
+  adapter_type: scraper
+  jurisdiction: XX
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - commodity_price_event
+  - sector_regulation
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: 0
+  notes: Shanghai Futures Exchange. Key for Chinese-demand-exposed copper + aluminium prices.
+  lineage:
+    authored_by: phase_b_materials_opus
+    authored_at: '2026-04-21T14:41:18Z'
+- source_id: sector.materials.steelorbis
+  source_name: SteelOrbis
+  url: https://www.steelorbis.com/steel-news
+  adapter_type: rss
+  jurisdiction: XX
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - commodity_price_event
+  - production_update
+  - sector_regulation
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: Global steel industry news. Turkish/EU scrap + HRC pricing. Moves NUE, STLD, CLF, X, RS.
+  lineage:
+    authored_by: phase_b_materials_opus
+    authored_at: '2026-04-21T14:41:18Z'
+- source_id: sector.materials.streetwise
+  source_name: Streetwise Reports
+  url: https://www.streetwisereports.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - sell_side_rating_change
+  - production_update
+  edge_weight_prior: 0.5
+  typical_lead_time_vs_english_minutes: 120
+  notes: Aggregator of newsletter-writer commentary on small-cap miners. Coverage of names not picked up by sell-side.
+  lineage:
+    authored_by: phase_b_materials_opus
+    authored_at: '2026-04-21T14:41:18Z'
+- source_id: sector.materials.usgs_mineral_summaries
+  source_name: USGS — Mineral Commodity Summaries
+  url: https://www.usgs.gov/centers/nmic
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: US Geological Survey annual Mineral Commodity Summaries + monthly updates. Authoritative US production + reserves
+    data.
+  lineage:
+    authored_by: phase_b_materials_opus
+    authored_at: '2026-04-21T14:41:18Z'
+- source_id: sector.materials.world_gold_council
+  source_name: World Gold Council
+  url: https://www.gold.org/news
+  adapter_type: rss
+  jurisdiction: XX
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  - commodity_price_event
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: Gold.org — quarterly Gold Demand Trends + central-bank purchase data. Moves NEM, GOLD, AEM.
+  lineage:
+    authored_by: phase_b_materials_opus
+    authored_at: '2026-04-21T14:41:18Z'

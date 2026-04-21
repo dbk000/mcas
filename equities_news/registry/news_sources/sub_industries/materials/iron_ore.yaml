@@ -1,0 +1,33 @@
+- source_id: sub_industry.materials.iron_ore.mysteel
+  source_name: Mysteel
+  url: https://www.mysteel.net/
+  adapter_type: scraper
+  jurisdiction: XX
+  language: en
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - commodity_price_event
+  - production_update
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: 0
+  notes: Chinese steel industry data + weekly mill inventory survey. Leading demand indicator for iron-ore + coking coal.
+  lineage:
+    authored_by: phase_b_materials_opus
+    authored_at: '2026-04-21T14:41:18Z'
+- source_id: sub_industry.materials.iron_ore.platts_62fe
+  source_name: S&P Platts IODEX 62% Fe
+  url: https://www.spglobal.com/commodityinsights/en/our-methodology/price-assessments/metals/iodex-iron-ore
+  adapter_type: scraper
+  jurisdiction: XX
+  language: en
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - commodity_price_event
+  edge_weight_prior: 0.95
+  typical_lead_time_vs_english_minutes: 0
+  notes: Platts IODEX 62% Fe CFR China benchmark. Core iron-ore index. Direct BHP/RIO/VALE earnings input.
+  lineage:
+    authored_by: phase_b_materials_opus
+    authored_at: '2026-04-21T14:41:18Z'

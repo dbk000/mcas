@@ -1,0 +1,17 @@
+- source_id: sub_industry.materials.specialty_chemicals.euwid_pulp
+  source_name: EUWID — Pulp & Paper
+  url: https://www.euwid-paper.com/
+  adapter_type: rss
+  jurisdiction: DE
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - commodity_price_event
+  - production_update
+  edge_weight_prior: 0.6
+  typical_lead_time_vs_english_minutes: 60
+  notes: European pulp + paper trade. Euro-region coverage of STERV, UPM, BILL, SCA.
+  lineage:
+    authored_by: phase_b_materials_opus
+    authored_at: '2026-04-21T14:41:18Z'
