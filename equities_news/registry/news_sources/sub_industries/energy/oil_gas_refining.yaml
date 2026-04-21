@@ -1,0 +1,35 @@
+- source_id: sub_industry.energy.oil_gas_refining.iir_outage_tracker
+  source_name: IIR Energy — Refinery Outage Tracker
+  url: https://www.iir-energy.com/refining
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - production_update
+  - commodity_price_event
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: -120
+  notes: IIR — refinery outage + turnaround scheduling. Leading signal for refining margin by region. Moves VLO, MPC, PSX,
+    DINO, PBF, CVI, PARR, DK.
+  lineage:
+    authored_by: phase_b_energy_opus
+    authored_at: '2026-04-21T13:13:54Z'
+- source_id: sub_industry.energy.oil_gas_refining.opis_crack_spread
+  source_name: OPIS — Refining Margins
+  url: https://www.opisnet.com/product/pricing/spot/refining-margins/
+  adapter_type: api
+  jurisdiction: US
+  language: en
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - commodity_price_event
+  - production_update
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: 0
+  notes: OPIS refining-margin benchmarks — 3:2:1, 5:3:2 crack spreads by region. Direct earnings driver for US refiners.
+  lineage:
+    authored_by: phase_b_energy_opus
+    authored_at: '2026-04-21T13:13:54Z'

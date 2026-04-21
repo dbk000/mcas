@@ -1,0 +1,37 @@
+- source_id: sub_industry.energy.oil_gas_upstream.enverus_daily
+  source_name: Enverus — Daily News
+  url: https://www.enverus.com/press/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - production_update
+  - ma_announcement
+  - contract_award
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: Enverus (formerly DrillingInfo). Well-completion data + M&A market commentary. Public press releases free; subscription
+    data paid.
+  lineage:
+    authored_by: phase_b_energy_opus
+    authored_at: '2026-04-21T13:13:54Z'
+- source_id: sub_industry.energy.oil_gas_upstream.spears_drilling_survey
+  source_name: Spears & Associates — Drilling Survey
+  url: https://www.spearsresearch.com/drilling-and-production-outlook
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: paid
+  update_cadence: weekly
+  event_types_covered:
+  - production_update
+  - macro_data_release
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: Spears weekly rig + completion survey. Alternative to Baker Hughes with deeper well-level data. Material for FANG,
+    EOG, PR, CTRA, MTDR, SM.
+  lineage:
+    authored_by: phase_b_energy_opus
+    authored_at: '2026-04-21T13:13:54Z'

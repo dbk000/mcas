@@ -1,0 +1,56 @@
+- source_id: sub_industry.energy.renewable_energy.pv_magazine
+  source_name: PV Magazine
+  url: https://www.pv-magazine.com/
+  adapter_type: rss
+  jurisdiction: XX
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - contract_award
+  - production_update
+  - sector_regulation
+  - product_launch
+  edge_weight_prior: 0.65
+  typical_lead_time_vs_english_minutes: 60
+  notes: Global solar trade press. Module pricing + utility-scale project announcements. Moves FSLR, ENPH, SEDG, ARRY, SHLS
+    — typically not Energy sector constituents but relevant here.
+  lineage:
+    authored_by: phase_b_energy_opus
+    authored_at: '2026-04-21T13:13:54Z'
+- source_id: sub_industry.energy.renewable_energy.recharge_news
+  source_name: Recharge News
+  url: https://www.rechargenews.com/
+  adapter_type: scraper
+  jurisdiction: XX
+  language: en
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - contract_award
+  - production_update
+  - ma_announcement
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: Wind + offshore wind + hydrogen specialist. NHST-owned. Deep European project pipeline coverage.
+  lineage:
+    authored_by: phase_b_energy_opus
+    authored_at: '2026-04-21T13:13:54Z'
+- source_id: sub_industry.energy.renewable_energy.renewables_now
+  source_name: Renewables Now
+  url: https://renewablesnow.com/
+  adapter_type: rss
+  jurisdiction: XX
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - contract_award
+  - production_update
+  - ma_announcement
+  edge_weight_prior: 0.6
+  typical_lead_time_vs_english_minutes: 60
+  notes: Wind + solar + storage project news. Sofia-based, covers EU + emerging markets more than US.
+  lineage:
+    authored_by: phase_b_energy_opus
+    authored_at: '2026-04-21T13:13:54Z'

@@ -1,0 +1,36 @@
+- source_id: sub_industry.energy.oil_gas_midstream.ingaa_news
+  source_name: INGAA — News
+  url: https://www.ingaa.org/News.aspx
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - sector_regulation
+  - regulatory_action
+  edge_weight_prior: 0.55
+  typical_lead_time_vs_english_minutes: 60
+  notes: Interstate Natural Gas Association of America. Pipeline trade advocacy — regulatory commentary on FERC proceedings.
+  lineage:
+    authored_by: phase_b_energy_opus
+    authored_at: '2026-04-21T13:13:54Z'
+- source_id: sub_industry.energy.oil_gas_midstream.rbn_energy
+  source_name: RBN Energy Blog
+  url: https://rbnenergy.com/blog
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - production_update
+  - commodity_price_event
+  - macro_data_release
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: RBN Energy — deeply data-driven midstream analytics. Pipeline flows, NGL spreads, Permian takeaway. Blog free; full
+    suite paid.
+  lineage:
+    authored_by: phase_b_energy_opus
+    authored_at: '2026-04-21T13:13:54Z'

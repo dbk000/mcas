@@ -1,0 +1,423 @@
+- source_id: sector.energy.aer_alberta
+  source_name: Alberta Energy Regulator
+  url: https://www.aer.ca/providing-information/news
+  adapter_type: rss
+  jurisdiction: CA
+  language: en
+  cost_tier: free
+  update_cadence: ad_hoc
+  event_types_covered:
+  - regulatory_action
+  - production_update
+  - sector_regulation
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: AER — Alberta oil sands + conventional. Approval timelines + incident reports. Drives SU, CNQ, CVE, IMO, OVV exposure.
+  lineage:
+    authored_by: phase_b_energy_opus
+    authored_at: '2026-04-21T13:13:54Z'
+- source_id: sector.energy.api_weekly
+  source_name: American Petroleum Institute — Statistical Bulletin
+  url: https://www.api.org/news-policy-and-issues/news/
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: paid
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  - commodity_price_event
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: -900
+  notes: API Weekly Statistical Bulletin — Tue 4:30pm ET. ~15 hours ahead of EIA WPSR. Typically leads crude + product inventory
+    direction. Subscription.
+  lineage:
+    authored_by: phase_b_energy_opus
+    authored_at: '2026-04-21T13:13:54Z'
+- source_id: sector.energy.argus_media_oil
+  source_name: Argus Media — Oil
+  url: https://www.argusmedia.com/en/crude-oil
+  adapter_type: scraper
+  jurisdiction: XX
+  language: en
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - commodity_price_event
+  - macro_data_release
+  - production_update
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: 0
+  notes: Argus — Platts competitor. Strong on refined products, LPG, fuel oil, heavy sour benchmarks.
+  lineage:
+    authored_by: phase_b_energy_opus
+    authored_at: '2026-04-21T13:13:54Z'
+- source_id: sector.energy.baker_hughes_rig_count
+  source_name: Baker Hughes — Rig Count
+  url: https://rigcount.bakerhughes.com/
+  adapter_type: scraper
+  jurisdiction: XX
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  - production_update
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: 0
+  notes: Weekly US + international rig count. Friday 1pm ET. Leading indicator for oilfield-services revenue (SLB, HAL, BKR,
+    NOV, PTEN).
+  lineage:
+    authored_by: phase_b_energy_opus
+    authored_at: '2026-04-21T13:13:54Z'
+- source_id: sector.energy.blm_oil_gas
+  source_name: BLM — Oil & Gas
+  url: https://www.blm.gov/programs/energy-and-minerals/oil-and-gas
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: ad_hoc
+  event_types_covered:
+  - regulatory_action
+  - sector_regulation
+  edge_weight_prior: 0.6
+  typical_lead_time_vs_english_minutes: 0
+  notes: Bureau of Land Management — federal onshore lease sales + permitting. Moves producers with federal-land exposure
+    (DVN, CRC, CHRD portions).
+  lineage:
+    authored_by: phase_b_energy_opus
+    authored_at: '2026-04-21T13:13:54Z'
+- source_id: sector.energy.boem_offshore
+  source_name: BOEM — Offshore Energy
+  url: https://www.boem.gov/newsroom/press-releases
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: ad_hoc
+  event_types_covered:
+  - regulatory_action
+  - sector_regulation
+  - contract_award
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: Bureau of Ocean Energy Management. Gulf of Mexico lease sales + offshore-wind auctions. Moves RIG, VAL, NE (offshore
+    drillers) + TALO, KOS, SOC (offshore E&P).
+  lineage:
+    authored_by: phase_b_energy_opus
+    authored_at: '2026-04-21T13:13:54Z'
+- source_id: sector.energy.eia_news
+  source_name: EIA — News
+  url: https://www.eia.gov/news/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - macro_data_release
+  - commodity_price_event
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: 0
+  notes: EIA STEO (Short-Term Energy Outlook) + Annual Energy Outlook + monthly drilling reports.
+  lineage:
+    authored_by: phase_b_energy_opus
+    authored_at: '2026-04-21T13:13:54Z'
+- source_id: sector.energy.eia_weekly_petroleum
+  source_name: EIA — Weekly Petroleum Status Report
+  url: https://www.eia.gov/petroleum/supply/weekly/
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  - commodity_price_event
+  edge_weight_prior: 0.95
+  typical_lead_time_vs_english_minutes: 0
+  notes: EIA WPSR — Wed 10:30 ET. Largest weekly event in oil markets. Crude + product + refinery-utilisation + imports.
+  lineage:
+    authored_by: phase_b_energy_opus
+    authored_at: '2026-04-21T13:13:54Z'
+- source_id: sector.energy.ferc_natgas
+  source_name: FERC — Natural Gas
+  url: https://www.ferc.gov/industries-data/natural-gas
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: ad_hoc
+  event_types_covered:
+  - regulatory_action
+  - sector_regulation
+  - ma_announcement
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: 0
+  notes: FERC Natural Gas docket — pipeline certificates, LNG export authorisations, storage rulings. Drives WMB, KMI, OKE,
+    TRGP, DTM, LNG.
+  lineage:
+    authored_by: phase_b_energy_opus
+    authored_at: '2026-04-21T13:13:54Z'
+- source_id: sector.energy.hart_energy
+  source_name: Hart Energy
+  url: https://www.hartenergy.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - production_update
+  - ma_announcement
+  - commodity_price_event
+  - executive_change
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 60
+  notes: Hart Energy network (E&P, Midstream Business, Oil & Gas Investor). US-focused trade coverage.
+  lineage:
+    authored_by: phase_b_energy_opus
+    authored_at: '2026-04-21T13:13:54Z'
+- source_id: sector.energy.iea_news
+  source_name: IEA — News
+  url: https://www.iea.org/news
+  adapter_type: rss
+  jurisdiction: XX
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  - sector_regulation
+  - commodity_price_event
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: 0
+  notes: International Energy Agency. Monthly Oil Market Report (OMR) mid-month — OECD stock data + demand forecast.
+  lineage:
+    authored_by: phase_b_energy_opus
+    authored_at: '2026-04-21T13:13:54Z'
+- source_id: sector.energy.offshore_energy_biz
+  source_name: Offshore Energy
+  url: https://www.offshore-energy.biz/
+  adapter_type: rss
+  jurisdiction: XX
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - contract_award
+  - production_update
+  - executive_change
+  edge_weight_prior: 0.6
+  typical_lead_time_vs_english_minutes: 60
+  notes: Offshore oil + wind trade. Day-rate gossip for RIG, VAL, NE. Subsea 7, Saipem, Aker BP first-hand.
+  lineage:
+    authored_by: phase_b_energy_opus
+    authored_at: '2026-04-21T13:13:54Z'
+- source_id: sector.energy.oilgas_journal
+  source_name: Oil & Gas Journal
+  url: https://www.ogj.com/
+  adapter_type: rss
+  jurisdiction: XX
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - production_update
+  - contract_award
+  - commodity_price_event
+  - sector_regulation
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 60
+  notes: Long-standing oil & gas industry publication. Drilling + production + refinery coverage. Weekly magazine + daily
+    news.
+  lineage:
+    authored_by: phase_b_energy_opus
+    authored_at: '2026-04-21T13:13:54Z'
+- source_id: sector.energy.opec_press
+  source_name: OPEC — Press Releases
+  url: https://www.opec.org/opec_web/en/press_room/28.htm
+  adapter_type: scraper
+  jurisdiction: XX
+  language: en
+  cost_tier: free
+  update_cadence: ad_hoc
+  event_types_covered:
+  - sector_regulation
+  - commodity_price_event
+  - macro_data_release
+  edge_weight_prior: 0.95
+  typical_lead_time_vs_english_minutes: 0
+  notes: OPEC+ ministerial meeting communiqués + MOMR (monthly oil market report). Meeting-day announcements drive 3-5% single-day
+    moves in XOM, CVX, OXY, BP.
+  lineage:
+    authored_by: phase_b_energy_opus
+    authored_at: '2026-04-21T13:13:54Z'
+- source_id: sector.energy.opis
+  source_name: Oil Price Information Service
+  url: https://www.opisnet.com/
+  adapter_type: api
+  jurisdiction: US
+  language: en
+  cost_tier: paid
+  update_cadence: realtime
+  event_types_covered:
+  - commodity_price_event
+  - production_update
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: 0
+  notes: Dow Jones-owned OPIS. US retail + wholesale gasoline + diesel pricing. Moves VLO, MPC, PSX, DINO, PBF, CVI, PARR
+    retail margins.
+  lineage:
+    authored_by: phase_b_energy_opus
+    authored_at: '2026-04-21T13:13:54Z'
+- source_id: sector.energy.petroleum_economist
+  source_name: Petroleum Economist
+  url: https://www.petroleum-economist.com/
+  adapter_type: scraper
+  jurisdiction: XX
+  language: en
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - commodity_price_event
+  - sector_regulation
+  - macro_data_release
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: Macro-oil journalism. OPEC, geopolitics, long-term market structure.
+  lineage:
+    authored_by: phase_b_energy_opus
+    authored_at: '2026-04-21T13:13:54Z'
+- source_id: sector.energy.pipeline_gas_journal
+  source_name: Pipeline & Gas Journal
+  url: https://pgjonline.com/
+  adapter_type: rss
+  jurisdiction: XX
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - production_update
+  - contract_award
+  - regulatory_action
+  edge_weight_prior: 0.65
+  typical_lead_time_vs_english_minutes: 120
+  notes: Pipeline industry trade. Construction-project + FERC-cert tracking for midstream.
+  lineage:
+    authored_by: phase_b_energy_opus
+    authored_at: '2026-04-21T13:13:54Z'
+- source_id: sector.energy.rigzone
+  source_name: Rigzone
+  url: https://www.rigzone.com/news/
+  adapter_type: rss
+  jurisdiction: XX
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - production_update
+  - contract_award
+  - executive_change
+  - commodity_price_event
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 30
+  notes: Oilfield-services + upstream news. Contract awards, rig moves, layoffs. Useful for SLB, HAL, BKR, NOV, FTI.
+  lineage:
+    authored_by: phase_b_energy_opus
+    authored_at: '2026-04-21T13:13:54Z'
+- source_id: sector.energy.rystad_press
+  source_name: Rystad Energy — Newsroom
+  url: https://www.rystadenergy.com/newsroom/
+  adapter_type: rss
+  jurisdiction: XX
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  - sector_regulation
+  - commodity_price_event
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: Oslo-based energy consultancy. Public research notes + quarterly supply outlook. Strong on Permian well productivity.
+  lineage:
+    authored_by: phase_b_energy_opus
+    authored_at: '2026-04-21T13:13:54Z'
+- source_id: sector.energy.sp_global_platts
+  source_name: S&P Global Commodity Insights (Platts)
+  url: https://www.spglobal.com/commodityinsights/en/
+  adapter_type: scraper
+  jurisdiction: XX
+  language: en
+  cost_tier: paid
+  update_cadence: realtime
+  event_types_covered:
+  - commodity_price_event
+  - macro_data_release
+  - production_update
+  edge_weight_prior: 0.95
+  typical_lead_time_vs_english_minutes: 0
+  notes: Platts — authoritative price benchmarks (Brent Dated, WTI Houston, Henry Hub, LNG JKM). Settlement prices drive refining
+    crack spreads.
+  lineage:
+    authored_by: phase_b_energy_opus
+    authored_at: '2026-04-21T13:13:54Z'
+- source_id: sector.energy.upstream_online
+  source_name: Upstream
+  url: https://www.upstreamonline.com/
+  adapter_type: scraper
+  jurisdiction: XX
+  language: en
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - production_update
+  - ma_announcement
+  - contract_award
+  - regulatory_action
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: 0
+  notes: NHST-owned upstream E&P trade paper. Deep North Sea + Gulf of Mexico + Guyana + Brazil coverage. Moves EQNR, SHEL,
+    BP, TTE, PBR.
+  lineage:
+    authored_by: phase_b_energy_opus
+    authored_at: '2026-04-21T13:13:54Z'
+- source_id: sector.energy.wood_mac_oil
+  source_name: Wood Mackenzie — Oil & Gas Press
+  url: https://www.woodmac.com/press-releases/
+  adapter_type: rss
+  jurisdiction: XX
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  - sector_regulation
+  - commodity_price_event
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: 0
+  notes: Wood Mac press releases. Paid research requires subscription. Press releases free, summary of commercially-licensed
+    reports.
+  lineage:
+    authored_by: phase_b_energy_opus
+    authored_at: '2026-04-21T13:13:54Z'
+- source_id: sector.energy.world_oil
+  source_name: World Oil
+  url: https://www.worldoil.com/
+  adapter_type: rss
+  jurisdiction: XX
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - production_update
+  - contract_award
+  - commodity_price_event
+  edge_weight_prior: 0.65
+  typical_lead_time_vs_english_minutes: 90
+  notes: Drilling + production-focused trade. Monthly forecast issue cited for completion trends.
+  lineage:
+    authored_by: phase_b_energy_opus
+    authored_at: '2026-04-21T13:13:54Z'

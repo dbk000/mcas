@@ -1,0 +1,34 @@
+- source_id: sub_industry.energy.oil_gas_service_equipment.jpt_spe
+  source_name: Journal of Petroleum Technology (SPE)
+  url: https://jpt.spe.org/
+  adapter_type: rss
+  jurisdiction: XX
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - production_update
+  - sector_regulation
+  edge_weight_prior: 0.55
+  typical_lead_time_vs_english_minutes: 120
+  notes: SPE flagship journal. Engineering + field-study coverage for well completions + EOR. Slower-cadence technical signal.
+  lineage:
+    authored_by: phase_b_energy_opus
+    authored_at: '2026-04-21T13:13:54Z'
+- source_id: sub_industry.energy.oil_gas_service_equipment.offshore_magazine
+  source_name: Offshore Magazine
+  url: https://www.offshore-mag.com/
+  adapter_type: rss
+  jurisdiction: XX
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - contract_award
+  - production_update
+  edge_weight_prior: 0.65
+  typical_lead_time_vs_english_minutes: 60
+  notes: Offshore drilling + subsea project tracking. Contract awards for Subsea 7, Saipem, SBM Offshore, TechnipFMC, MODEC.
+  lineage:
+    authored_by: phase_b_energy_opus
+    authored_at: '2026-04-21T13:13:54Z'
