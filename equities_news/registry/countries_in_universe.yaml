@@ -1,0 +1,388 @@
+version: 1
+generated_at: '2026-04-21T12:13:27Z'
+source: ground_truth/bible_v1.xlsx
+total_symbols: 5203
+total_countries: 30
+countries:
+  US:
+    country_name: United States
+    iso_alpha_2: US
+    symbol_count: 2540
+    sector_distribution:
+      Information Technology: 313
+      Communication Services: 112
+      Consumer Discretionary: 287
+      Consumer Staples: 109
+      Health Care: 435
+      Financials: 458
+      Industrials: 385
+      Energy: 113
+      Utilities: 66
+      Real Estate: 148
+      Materials: 114
+  JP:
+    country_name: Japan
+    iso_alpha_2: JP
+    symbol_count: 924
+    sector_distribution:
+      Information Technology: 116
+      Communication Services: 35
+      Consumer Discretionary: 151
+      Consumer Staples: 83
+      Health Care: 48
+      Financials: 85
+      Industrials: 227
+      Energy: 9
+      Utilities: 15
+      Real Estate: 65
+      Materials: 90
+  GB:
+    country_name: United Kingdom
+    iso_alpha_2: GB
+    symbol_count: 260
+    sector_distribution:
+      Information Technology: 13
+      Communication Services: 17
+      Consumer Discretionary: 44
+      Consumer Staples: 19
+      Health Care: 13
+      Financials: 51
+      Industrials: 46
+      Energy: 8
+      Utilities: 8
+      Real Estate: 21
+      Materials: 20
+  AU:
+    country_name: Australia
+    iso_alpha_2: AU
+    symbol_count: 232
+    sector_distribution:
+      Information Technology: 15
+      Communication Services: 9
+      Consumer Discretionary: 25
+      Consumer Staples: 9
+      Health Care: 15
+      Financials: 31
+      Industrials: 29
+      Energy: 11
+      Utilities: 3
+      Real Estate: 28
+      Materials: 57
+  SE:
+    country_name: Sweden
+    iso_alpha_2: SE
+    symbol_count: 154
+    sector_distribution:
+      Information Technology: 12
+      Communication Services: 12
+      Consumer Discretionary: 19
+      Consumer Staples: 5
+      Health Care: 19
+      Financials: 18
+      Industrials: 43
+      Real Estate: 17
+      Materials: 9
+  DE:
+    country_name: Germany
+    iso_alpha_2: DE
+    symbol_count: 142
+    sector_distribution:
+      Information Technology: 18
+      Communication Services: 8
+      Consumer Discretionary: 19
+      Consumer Staples: 7
+      Health Care: 15
+      Financials: 12
+      Industrials: 40
+      Energy: 2
+      Utilities: 2
+      Real Estate: 6
+      Materials: 13
+  FR:
+    country_name: France
+    iso_alpha_2: FR
+    symbol_count: 132
+    sector_distribution:
+      Information Technology: 11
+      Communication Services: 11
+      Consumer Discretionary: 19
+      Consumer Staples: 6
+      Health Care: 12
+      Financials: 16
+      Industrials: 30
+      Energy: 7
+      Utilities: 4
+      Real Estate: 9
+      Materials: 7
+  IL:
+    country_name: Israel
+    iso_alpha_2: IL
+    symbol_count: 113
+    sector_distribution:
+      Information Technology: 17
+      Communication Services: 3
+      Consumer Discretionary: 10
+      Consumer Staples: 6
+      Health Care: 3
+      Financials: 19
+      Industrials: 17
+      Energy: 4
+      Utilities: 7
+      Real Estate: 24
+      Materials: 3
+  CH:
+    country_name: Switzerland
+    iso_alpha_2: CH
+    symbol_count: 107
+    sector_distribution:
+      Information Technology: 9
+      Communication Services: 4
+      Consumer Discretionary: 5
+      Consumer Staples: 6
+      Health Care: 22
+      Financials: 15
+      Industrials: 33
+      Utilities: 1
+      Real Estate: 5
+      Materials: 7
+  IT:
+    country_name: Italy
+    iso_alpha_2: IT
+    symbol_count: 86
+    sector_distribution:
+      Information Technology: 4
+      Communication Services: 6
+      Consumer Discretionary: 15
+      Consumer Staples: 4
+      Health Care: 5
+      Financials: 18
+      Industrials: 17
+      Energy: 4
+      Utilities: 10
+      Materials: 3
+  HK:
+    country_name: Hong Kong
+    iso_alpha_2: HK
+    symbol_count: 85
+    sector_distribution:
+      Information Technology: 8
+      Communication Services: 5
+      Consumer Discretionary: 16
+      Consumer Staples: 4
+      Health Care: 3
+      Financials: 11
+      Industrials: 17
+      Energy: 1
+      Utilities: 4
+      Real Estate: 15
+      Materials: 1
+  SG:
+    country_name: Singapore
+    iso_alpha_2: SG
+    symbol_count: 70
+    sector_distribution:
+      Information Technology: 4
+      Communication Services: 3
+      Consumer Discretionary: 3
+      Consumer Staples: 5
+      Health Care: 2
+      Financials: 7
+      Industrials: 13
+      Energy: 2
+      Utilities: 1
+      Real Estate: 29
+      Materials: 1
+  'NO':
+    country_name: Norway
+    iso_alpha_2: 'NO'
+    symbol_count: 55
+    sector_distribution:
+      Information Technology: 5
+      Communication Services: 2
+      Consumer Discretionary: 1
+      Consumer Staples: 7
+      Financials: 8
+      Industrials: 11
+      Energy: 16
+      Utilities: 1
+      Real Estate: 1
+      Materials: 3
+  NL:
+    country_name: Netherlands
+    iso_alpha_2: NL
+    symbol_count: 53
+    sector_distribution:
+      Information Technology: 5
+      Communication Services: 3
+      Consumer Discretionary: 2
+      Consumer Staples: 6
+      Health Care: 3
+      Financials: 11
+      Industrials: 14
+      Energy: 2
+      Real Estate: 2
+      Materials: 5
+  ES:
+    country_name: Spain
+    iso_alpha_2: ES
+    symbol_count: 51
+    sector_distribution:
+      Information Technology: 1
+      Communication Services: 3
+      Consumer Discretionary: 7
+      Consumer Staples: 2
+      Health Care: 4
+      Financials: 8
+      Industrials: 11
+      Energy: 2
+      Utilities: 8
+      Real Estate: 2
+      Materials: 3
+  DK:
+    country_name: Denmark
+    iso_alpha_2: DK
+    symbol_count: 40
+    sector_distribution:
+      Information Technology: 1
+      Consumer Discretionary: 3
+      Consumer Staples: 4
+      Health Care: 11
+      Financials: 6
+      Industrials: 12
+      Energy: 1
+      Utilities: 1
+      Materials: 1
+  BE:
+    country_name: Belgium
+    iso_alpha_2: BE
+    symbol_count: 39
+    sector_distribution:
+      Information Technology: 2
+      Communication Services: 2
+      Consumer Discretionary: 1
+      Consumer Staples: 4
+      Health Care: 5
+      Financials: 6
+      Industrials: 4
+      Energy: 1
+      Utilities: 1
+      Real Estate: 8
+      Materials: 5
+  FI:
+    country_name: Finland
+    iso_alpha_2: FI
+    symbol_count: 35
+    sector_distribution:
+      Information Technology: 4
+      Communication Services: 1
+      Consumer Discretionary: 6
+      Consumer Staples: 1
+      Health Care: 2
+      Financials: 3
+      Industrials: 9
+      Energy: 1
+      Utilities: 1
+      Real Estate: 1
+      Materials: 6
+  AT:
+    country_name: Austria
+    iso_alpha_2: AT
+    symbol_count: 19
+    sector_distribution:
+      Information Technology: 1
+      Financials: 5
+      Industrials: 5
+      Energy: 1
+      Utilities: 2
+      Real Estate: 2
+      Materials: 3
+  PT:
+    country_name: Portugal
+    iso_alpha_2: PT
+    symbol_count: 13
+    sector_distribution:
+      Communication Services: 1
+      Consumer Staples: 2
+      Financials: 1
+      Industrials: 2
+      Energy: 1
+      Utilities: 3
+      Materials: 3
+  NZ:
+    country_name: New Zealand
+    iso_alpha_2: NZ
+    symbol_count: 13
+    sector_distribution:
+      Communication Services: 1
+      Health Care: 3
+      Financials: 1
+      Industrials: 3
+      Utilities: 3
+      Real Estate: 2
+  CA:
+    country_name: Canada
+    iso_alpha_2: CA
+    symbol_count: 12
+    sector_distribution:
+      Consumer Discretionary: 1
+      Consumer Staples: 1
+      Financials: 1
+      Industrials: 2
+      Energy: 1
+      Utilities: 2
+      Real Estate: 1
+      Materials: 3
+  IE:
+    country_name: Ireland
+    iso_alpha_2: IE
+    symbol_count: 11
+    sector_distribution:
+      Consumer Discretionary: 2
+      Consumer Staples: 3
+      Health Care: 1
+      Financials: 2
+      Industrials: 2
+      Real Estate: 1
+  BR:
+    country_name: Brazil
+    iso_alpha_2: BR
+    symbol_count: 5
+    sector_distribution:
+      Financials: 5
+  BM:
+    country_name: Bermuda
+    iso_alpha_2: BM
+    symbol_count: 5
+    sector_distribution:
+      Financials: 1
+      Energy: 4
+  MC:
+    country_name: Monaco
+    iso_alpha_2: MC
+    symbol_count: 3
+    sector_distribution:
+      Industrials: 3
+  PA:
+    country_name: Panama
+    iso_alpha_2: PA
+    symbol_count: 1
+    sector_distribution:
+      Financials: 1
+  GR:
+    country_name: Greece
+    iso_alpha_2: GR
+    symbol_count: 1
+    sector_distribution:
+      Industrials: 1
+  PE:
+    country_name: Peru
+    iso_alpha_2: PE
+    symbol_count: 1
+    sector_distribution:
+      Materials: 1
+  ZA:
+    country_name: South Africa
+    iso_alpha_2: ZA
+    symbol_count: 1
+    sector_distribution:
+      Materials: 1

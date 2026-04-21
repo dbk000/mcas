@@ -1,0 +1,35 @@
+- source_id: sub_industry.utilities.electric_utilities.eei_issues_policy
+  source_name: EEI — Issues & Policy
+  url: https://www.eei.org/issues-and-policy
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - sector_regulation
+  - regulatory_action
+  edge_weight_prior: 0.6
+  typical_lead_time_vs_english_minutes: 60
+  notes: EEI issue-level policy tracker. Narrower than EEI news feed — focused on active federal rulemakings affecting IOUs.
+  lineage:
+    authored_by: phase_b_utilities_opus
+    authored_at: '2026-04-21T13:04:10Z'
+- source_id: sub_industry.utilities.electric_utilities.naruc_news
+  source_name: NARUC — News
+  url: https://www.naruc.org/about-naruc/press-releases/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - regulatory_action
+  - sector_regulation
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: National Association of Regulatory Utility Commissioners — clearinghouse for state PSC positions. Rate-case precedent
+    across 50 states.
+  lineage:
+    authored_by: phase_b_utilities_opus
+    authored_at: '2026-04-21T13:04:10Z'

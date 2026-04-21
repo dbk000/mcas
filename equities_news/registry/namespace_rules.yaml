@@ -1,0 +1,125 @@
+# Namespace rules — FROZEN at Phase 1.b bootstrap.
+# Any change to this file requires a governance review + explicit Lineage stamp.
+#
+# Rule of the registry: every source_id slug lives in exactly one of four namespaces.
+# A slug outside these namespaces fails merge-time validation (verification/consistency_checker.py).
+#
+# Four namespaces:
+#   universal.{slug}                                 — cross-sector, cross-geo (Phase A)
+#   geo.{country_code}.{slug}                        — country-level, cross-sector (Phase A)
+#   sector.{sector_slug}.{slug}                      — sector-level, cross-geo (Phase B)
+#   sub_industry.{sector_slug}.{sub_industry_slug}.{slug}  — sub-industry override (Phase B)
+
+version: 1
+frozen_at: 2026-04-21
+
+# Slug component regex — each dot-separated segment must match.
+# Components: lowercase letters, digits, underscore. No hyphens (avoid URL ambiguity).
+# Length: 1-64 chars per segment. Total id <= 200 chars.
+slug_component_regex: "^[a-z0-9][a-z0-9_]{0,63}$"
+max_total_id_length: 200
+
+# Country code regex — ISO 3166-1 alpha-2, lowercased for slug use.
+country_code_regex: "^[a-z]{2}$"
+
+# Allowed sector slugs — EXHAUSTIVE. Sector agent may only author under its assigned slug.
+sector_slugs:
+  - information_technology
+  - communication_services
+  - consumer_discretionary
+  - consumer_staples
+  - health_care
+  - financials
+  - industrials
+  - energy
+  - utilities
+  - real_estate
+  - materials
+
+# Namespace prefix routing — used by consistency_checker to bucket entries.
+namespaces:
+  universal:
+    prefix: universal
+    depth: 2                # universal.{slug}
+    phase: A
+    writable_by: [phase_a_opus, phase_a_human]
+  geo:
+    prefix: geo
+    depth: 3                # geo.{cc}.{slug}
+    phase: A
+    writable_by: [phase_a_opus, phase_a_human]
+  sector:
+    prefix: sector
+    depth: 3                # sector.{sector_slug}.{slug}
+    phase: B
+    writable_by_pattern: "^phase_b_{sector_slug}(_opus|_human)$"
+  sub_industry:
+    prefix: sub_industry
+    depth: 4                # sub_industry.{sector_slug}.{sub_industry_slug}.{slug}
+    phase: B
+    writable_by_pattern: "^phase_b_{sector_slug}(_opus|_human)$"
+
+# Required fields on every source entry — enforced at load time.
+# Entries missing any required field are invalid and fail merge_gate.
+required_fields:
+  - source_id
+  - source_name
+  - url
+  - adapter_type
+  - jurisdiction
+  - language
+  - cost_tier
+  - update_cadence
+  - event_types_covered
+  - edge_weight_prior
+  - typical_lead_time_vs_english_minutes
+  - lineage
+
+# Lineage sub-schema — required on every entry.
+lineage_required_fields:
+  - authored_by
+  - authored_at
+
+# Lineage optional-but-recommended (verification timestamp once format_validator has run).
+lineage_optional_fields:
+  - verified_by
+  - verified_at
+
+# Enum constraints.
+enums:
+  adapter_type:
+    - rss
+    - api
+    - scraper
+    - manual
+  cost_tier:
+    - free
+    - metered
+    - paid
+    - restricted
+  update_cadence:
+    - realtime
+    - hourly
+    - daily
+    - weekly
+    - ad_hoc
+
+# edge_weight_prior bounds.
+edge_weight_prior:
+  min: 0.0
+  max: 1.0
+
+# typical_lead_time_vs_english_minutes bounds.
+# Negative: leads English-language wires (e.g. JP TDnet -180 means 3h earlier).
+# Positive: lags.
+typical_lead_time_vs_english_minutes:
+  min: -1440     # 24h lead is the plausible max
+  max: 1440      # 24h lag is the plausible max
+
+# Tiering for resolver.sources_for_symbol — higher wins on conflicts.
+resolver_tier_weights:
+  universal: 1
+  geo: 2
+  sector: 3
+  sub_industry: 4
+  symbol_direct: 5   # per-symbol overlay (IR URL, X handle, etc.)

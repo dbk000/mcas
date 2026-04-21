@@ -1,0 +1,108 @@
+- source_id: geo.no.dagens_naeringsliv
+  source_name: Dagens Næringsliv (DN)
+  url: https://www.dn.no/
+  adapter_type: scraper
+  jurisdiction: 'NO'
+  language: 'no'
+  cost_tier: paid
+  update_cadence: realtime
+  event_types_covered:
+  - earnings_report
+  - ma_announcement
+  - executive_change
+  - reserve_update
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: -60
+  notes: Norway's business daily. Strong on oil + gas + shipping.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.no.e24
+  source_name: E24 — VG Business
+  url: https://e24.no/
+  adapter_type: rss
+  jurisdiction: 'NO'
+  language: 'no'
+  cost_tier: free
+  update_cadence: realtime
+  event_types_covered:
+  - earnings_report
+  - ma_announcement
+  - executive_change
+  - macro_data_release
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: VG Nett business portal. Free.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.no.finansavisen
+  source_name: Finansavisen
+  url: https://www.finansavisen.no/
+  adapter_type: scraper
+  jurisdiction: 'NO'
+  language: 'no'
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - earnings_report
+  - ma_announcement
+  - executive_change
+  - sell_side_rating_change
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: -15
+  notes: Finance-focused Norwegian daily.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.no.norges_bank_press
+  source_name: Norges Bank — Press Releases
+  url: https://www.norges-bank.no/en/news-events/news-publications/Press-releases/
+  adapter_type: rss
+  jurisdiction: 'NO'
+  language: en
+  cost_tier: free
+  update_cadence: ad_hoc
+  event_types_covered: &id001
+  - macro_data_release
+  edge_weight_prior: 1.0
+  typical_lead_time_vs_english_minutes: 0
+  notes: Norwegian central bank.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.no.obx_announcements
+  source_name: Oslo Børs — News
+  url: https://newsweb.oslobors.no/
+  adapter_type: scraper
+  jurisdiction: 'NO'
+  language: en
+  cost_tier: free
+  update_cadence: realtime
+  event_types_covered:
+  - material_disclosure
+  - regulatory_filing
+  - earnings_report
+  - ma_announcement
+  - executive_change
+  edge_weight_prior: 1.0
+  typical_lead_time_vs_english_minutes: 0
+  notes: Oslo Børs mandatory disclosure portal (newsweb).
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.no.ssb_releases
+  source_name: Statistics Norway (SSB) — Latest
+  url: https://www.ssb.no/en/
+  adapter_type: rss
+  jurisdiction: 'NO'
+  language: en
+  cost_tier: free
+  update_cadence: ad_hoc
+  event_types_covered: *id001
+  edge_weight_prior: 1.0
+  typical_lead_time_vs_english_minutes: 0
+  notes: CPI, GDP, oil production stats.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'

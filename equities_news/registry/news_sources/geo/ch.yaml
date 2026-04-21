@@ -1,0 +1,105 @@
+- source_id: geo.ch.bfs_releases
+  source_name: Swiss Federal Statistical Office — Releases
+  url: https://www.bfs.admin.ch/bfs/en/home/news.html
+  adapter_type: rss
+  jurisdiction: CH
+  language: en
+  cost_tier: free
+  update_cadence: ad_hoc
+  event_types_covered: &id001
+  - macro_data_release
+  edge_weight_prior: 1.0
+  typical_lead_time_vs_english_minutes: 0
+  notes: CPI, GDP, trade.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.ch.finanz_und_wirtschaft
+  source_name: Finanz und Wirtschaft
+  url: https://www.fuw.ch/
+  adapter_type: scraper
+  jurisdiction: CH
+  language: de
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - earnings_report
+  - ma_announcement
+  - executive_change
+  - sell_side_rating_change
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: -30
+  notes: Swiss specialist finance weekly + online. Strong on SIX-listed.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.ch.finma_news
+  source_name: FINMA — News
+  url: https://www.finma.ch/en/news/
+  adapter_type: rss
+  jurisdiction: CH
+  language: en
+  cost_tier: free
+  update_cadence: ad_hoc
+  event_types_covered:
+  - regulatory_action
+  - sector_regulation
+  - investigation_disclosure
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: 0
+  notes: Swiss financial market supervisor.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.ch.letemps_economie
+  source_name: Le Temps — Économie
+  url: https://www.letemps.ch/economie
+  adapter_type: rss
+  jurisdiction: CH
+  language: fr
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - earnings_report
+  - ma_announcement
+  - executive_change
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: Swiss French-language daily business desk.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.ch.nzz
+  source_name: Neue Zürcher Zeitung
+  url: https://www.nzz.ch/
+  adapter_type: rss
+  jurisdiction: CH
+  language: de
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - earnings_report
+  - ma_announcement
+  - executive_change
+  - macro_data_release
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: -30
+  notes: Zurich-based Swiss daily. Serious economics + business desk.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.ch.snb_press
+  source_name: Swiss National Bank — Press
+  url: https://www.snb.ch/en/iabout/pub/media/id/pub_media
+  adapter_type: rss
+  jurisdiction: CH
+  language: en
+  cost_tier: free
+  update_cadence: ad_hoc
+  event_types_covered: *id001
+  edge_weight_prior: 1.0
+  typical_lead_time_vs_english_minutes: 0
+  notes: Swiss central bank. Rate + FX policy.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'

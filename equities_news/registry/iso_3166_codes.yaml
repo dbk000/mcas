@@ -1,0 +1,69 @@
+# ISO 3166-1 alpha-2 → country name mapping (subset covering Bible universe + common neighbours).
+# Used by country_enumerator.py to validate Country column values and emit countries_in_universe.yaml.
+# Not exhaustive — enough to cover the 30 countries in the Bible plus common listings.
+# Additions: append only.
+
+version: 1
+frozen_at: 2026-04-21
+
+# Canonical mapping: human name (as it appears in the Bible's Country column) → alpha-2 code.
+country_to_code:
+  "United States": US
+  "Japan": JP
+  "United Kingdom": GB
+  "Australia": AU
+  "Sweden": SE
+  "Germany": DE
+  "France": FR
+  "Israel": IL
+  "Switzerland": CH
+  "Italy": IT
+  "Hong Kong": HK
+  "Singapore": SG
+  "Norway": "NO"
+  "Netherlands": NL
+  "Spain": ES
+  "Denmark": DK
+  "Belgium": BE
+  "Finland": FI
+  "Austria": AT
+  "Portugal": PT
+  "New Zealand": NZ
+  "Canada": CA
+  "Ireland": IE
+  "Brazil": BR
+  "Bermuda": BM
+  "Monaco": MC
+  "Panama": PA
+  "Greece": GR
+  "Peru": PE
+  "South Africa": ZA
+  # Other common listings domiciles for future coverage.
+  "China": CN
+  "Korea, Republic of": KR
+  "South Korea": KR
+  "Taiwan": TW
+  "India": IN
+  "Mexico": MX
+  "Luxembourg": LU
+  "Cayman Islands": KY
+  "British Virgin Islands": VG
+  "Jersey": JE
+  "Guernsey": GG
+  "Iceland": IS
+  "United Arab Emirates": AE
+  "Saudi Arabia": SA
+  "Turkey": TR
+  "Thailand": TH
+  "Indonesia": ID
+  "Malaysia": MY
+  "Philippines": PH
+  "Vietnam": VN
+  "Argentina": AR
+  "Chile": CL
+  "Colombia": CO
+  "Poland": PL
+  "Czech Republic": CZ
+  "Hungary": HU
+
+# Reverse mapping is derived programmatically in country_enumerator.py.

@@ -1,0 +1,91 @@
+- source_id: geo.nl.afm_news
+  source_name: AFM — News
+  url: https://www.afm.nl/en/over-de-afm/actueel
+  adapter_type: rss
+  jurisdiction: NL
+  language: en
+  cost_tier: free
+  update_cadence: ad_hoc
+  event_types_covered:
+  - regulatory_action
+  - sector_regulation
+  - investigation_disclosure
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: 0
+  notes: Dutch financial markets authority.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.nl.cbs_releases
+  source_name: CBS Netherlands — News
+  url: https://www.cbs.nl/en-gb/news
+  adapter_type: rss
+  jurisdiction: NL
+  language: en
+  cost_tier: free
+  update_cadence: ad_hoc
+  event_types_covered:
+  - macro_data_release
+  edge_weight_prior: 1.0
+  typical_lead_time_vs_english_minutes: 0
+  notes: CPI, GDP, industrial production.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.nl.dnb_press
+  source_name: De Nederlandsche Bank — Press
+  url: https://www.dnb.nl/en/news-items/press-releases/
+  adapter_type: rss
+  jurisdiction: NL
+  language: en
+  cost_tier: free
+  update_cadence: ad_hoc
+  event_types_covered:
+  - macro_data_release
+  - regulatory_action
+  - sector_regulation
+  - investigation_disclosure
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: 0
+  notes: Dutch central bank + prudential regulator.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.nl.fd
+  source_name: Het Financieele Dagblad (FD)
+  url: https://fd.nl/
+  adapter_type: scraper
+  jurisdiction: NL
+  language: nl
+  cost_tier: paid
+  update_cadence: realtime
+  event_types_covered:
+  - earnings_report
+  - ma_announcement
+  - executive_change
+  - sell_side_rating_change
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: -30
+  notes: Dutch business daily. Leads English wires on AEX corporates.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.nl.nrc_economie
+  source_name: NRC Handelsblad — Economie
+  url: https://www.nrc.nl/sectie/economie/
+  adapter_type: rss
+  jurisdiction: NL
+  language: nl
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - earnings_report
+  - ma_announcement
+  - executive_change
+  - macro_data_release
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: NRC business section.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'

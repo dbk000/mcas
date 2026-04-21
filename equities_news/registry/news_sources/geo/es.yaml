@@ -1,0 +1,111 @@
+- source_id: geo.es.bde_press
+  source_name: Banco de España — Press
+  url: https://www.bde.es/wbe/en/sala-prensa/notas-informativas/
+  adapter_type: rss
+  jurisdiction: ES
+  language: en
+  cost_tier: free
+  update_cadence: ad_hoc
+  event_types_covered:
+  - macro_data_release
+  - regulatory_action
+  - sector_regulation
+  - investigation_disclosure
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: 0
+  notes: Spanish central bank.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.es.bolsa_madrid_hechos
+  source_name: Bolsa de Madrid — Hechos Relevantes
+  url: https://www.bolsamadrid.es/esp/aspx/Empresas/Empresas.aspx
+  adapter_type: scraper
+  jurisdiction: ES
+  language: es
+  cost_tier: free
+  update_cadence: realtime
+  event_types_covered:
+  - material_disclosure
+  - regulatory_filing
+  - earnings_report
+  - ma_announcement
+  - executive_change
+  edge_weight_prior: 1.0
+  typical_lead_time_vs_english_minutes: -60
+  notes: Bolsa de Madrid issuer disclosure portal.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.es.cinco_dias
+  source_name: Cinco Días
+  url: https://cincodias.elpais.com/
+  adapter_type: rss
+  jurisdiction: ES
+  language: es
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - earnings_report
+  - ma_announcement
+  - executive_change
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: -15
+  notes: PRISA business daily. Complements Expansión.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.es.el_economista
+  source_name: El Economista
+  url: https://www.eleconomista.es/
+  adapter_type: rss
+  jurisdiction: ES
+  language: es
+  cost_tier: metered
+  update_cadence: daily
+  event_types_covered:
+  - earnings_report
+  - ma_announcement
+  - executive_change
+  - macro_data_release
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: Independent business daily.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.es.expansion
+  source_name: Expansión
+  url: https://www.expansion.com/
+  adapter_type: rss
+  jurisdiction: ES
+  language: es
+  cost_tier: paid
+  update_cadence: realtime
+  event_types_covered:
+  - earnings_report
+  - ma_announcement
+  - executive_change
+  - sell_side_rating_change
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: -30
+  notes: Spain's leading business daily. Leads English wires on IBEX 35.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.es.ine_releases
+  source_name: INE — Statistics Spain
+  url: https://www.ine.es/en/prensa/calendario_en.htm
+  adapter_type: rss
+  jurisdiction: ES
+  language: en
+  cost_tier: free
+  update_cadence: ad_hoc
+  event_types_covered:
+  - macro_data_release
+  edge_weight_prior: 1.0
+  typical_lead_time_vs_english_minutes: 0
+  notes: Instituto Nacional de Estadística.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'

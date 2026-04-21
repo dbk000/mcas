@@ -1,0 +1,142 @@
+- source_id: geo.gb.city_am
+  source_name: City A.M.
+  url: https://www.cityam.com/
+  adapter_type: rss
+  jurisdiction: GB
+  language: en
+  cost_tier: free
+  update_cadence: realtime
+  event_types_covered:
+  - earnings_report
+  - ma_announcement
+  - executive_change
+  - sell_side_rating_change
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: London financial-district free daily. Strong on UK listed company coverage.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.gb.companies_house_stream
+  source_name: Companies House — Streaming / Filing History
+  url: https://developer.company-information.service.gov.uk/
+  adapter_type: api
+  jurisdiction: GB
+  language: en
+  cost_tier: free
+  update_cadence: realtime
+  event_types_covered:
+  - material_disclosure
+  - regulatory_filing
+  - executive_change
+  - regulatory_filing
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: 0
+  notes: Statutory company registrar. Director appointments, accounts, charges — deeper than RNS.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.gb.hm_treasury
+  source_name: HM Treasury — News
+  url: https://www.gov.uk/government/organisations/hm-treasury
+  adapter_type: rss
+  jurisdiction: GB
+  language: en
+  cost_tier: free
+  update_cadence: ad_hoc
+  event_types_covered:
+  - sector_regulation
+  - macro_data_release
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: 0
+  notes: UK fiscal announcements, Budget, Spring Statement.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.gb.investors_chronicle
+  source_name: Investors' Chronicle
+  url: https://www.investorschronicle.co.uk/
+  adapter_type: scraper
+  jurisdiction: GB
+  language: en
+  cost_tier: paid
+  update_cadence: weekly
+  event_types_covered:
+  - earnings_report
+  - ma_announcement
+  - executive_change
+  - sell_side_rating_change
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: 0
+  notes: FT-owned weekly. Strong analytical coverage of UK-listed mid/small caps.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.gb.ons_releases
+  source_name: Office for National Statistics — Releases
+  url: https://www.ons.gov.uk/releasecalendar
+  adapter_type: rss
+  jurisdiction: GB
+  language: en
+  cost_tier: free
+  update_cadence: ad_hoc
+  event_types_covered:
+  - macro_data_release
+  edge_weight_prior: 1.0
+  typical_lead_time_vs_english_minutes: 0
+  notes: UK CPI, GDP, employment, retail sales.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.gb.sfo_news
+  source_name: Serious Fraud Office — News
+  url: https://www.sfo.gov.uk/news/
+  adapter_type: rss
+  jurisdiction: GB
+  language: en
+  cost_tier: free
+  update_cadence: ad_hoc
+  event_types_covered:
+  - regulatory_action
+  - sector_regulation
+  - investigation_disclosure
+  - litigation
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: 0
+  notes: UK fraud investigator. Corporate charges + DPAs.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.gb.telegraph_business
+  source_name: The Telegraph — Business
+  url: https://www.telegraph.co.uk/business/
+  adapter_type: rss
+  jurisdiction: GB
+  language: en
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered: &id001
+  - earnings_report
+  - ma_announcement
+  - executive_change
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: UK broadsheet business desk. Strong on FTSE 250 + small-cap.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.gb.the_times_business
+  source_name: The Times — Business
+  url: https://www.thetimes.com/business-money
+  adapter_type: rss
+  jurisdiction: GB
+  language: en
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered: *id001
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: 0
+  notes: UK broadsheet business desk. Scoop-driven on UK corporates.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'

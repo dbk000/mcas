@@ -1,0 +1,16 @@
+- source_id: geo.mc.monaco_economie
+  source_name: Gouvernement Princier — Economie
+  url: https://www.gouv.mc/Action-Gouvernementale/Economie-et-Finances
+  adapter_type: scraper
+  jurisdiction: MC
+  language: fr
+  cost_tier: free
+  update_cadence: ad_hoc
+  event_types_covered:
+  - macro_data_release
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: Monaco government economy portal. Minimal coverage — most Monaco listings dual-list in FR/IT/CH.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'

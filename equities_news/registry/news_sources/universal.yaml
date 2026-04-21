@@ -1,0 +1,1165 @@
+# Universal news sources — Phase A.2
+# Cross-sector, cross-geo references used as baseline coverage for every symbol.
+# Geo-specific papers (Nikkei Business Daily JP-language, Handelsblatt DE) that also
+# have widely-read English flagships (asia.nikkei.com, handelsblatt.com English summary)
+# appear HERE in their English/global form and AGAIN under geo/{cc}.yaml in their
+# local-language form. The split is intentional — different adapters, different
+# languages, different typical_lead_time_vs_english_minutes.
+
+# =============================================================================
+# REGULATORY FILINGS AGGREGATORS — one per filing regime, never per filer.
+# =============================================================================
+
+- source_id: universal.sec_edgar
+  source_name: SEC EDGAR
+  url: https://www.sec.gov/cgi-bin/browse-edgar
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: realtime
+  event_types_covered:
+    - earnings_report
+    - regulatory_filing
+    - material_disclosure
+    - insider_transaction
+    - share_buyback
+    - ma_announcement
+    - executive_change
+    - activist_campaign
+  edge_weight_prior: 1.0
+  typical_lead_time_vs_english_minutes: 0
+  notes: Authoritative source for all US-registered issuers (10-K/Q, 8-K, Form 4, 13D/G, 13F, S-1, proxy DEF 14A). Per-filer pages use CIK substitution.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: 2026-04-21T00:00:00Z
+
+- source_id: universal.sedar_plus
+  source_name: SEDAR+ (Canadian Securities Administrators)
+  url: https://www.sedarplus.ca/
+  adapter_type: scraper
+  jurisdiction: CA
+  language: en
+  cost_tier: free
+  update_cadence: realtime
+  event_types_covered:
+    - earnings_report
+    - regulatory_filing
+    - material_disclosure
+    - ma_announcement
+    - capital_raise
+    - executive_change
+  edge_weight_prior: 1.0
+  typical_lead_time_vs_english_minutes: 0
+  notes: Successor to SEDAR; authoritative for Canadian issuers. English-first with French companion filings.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: 2026-04-21T00:00:00Z
+
+- source_id: universal.tdnet
+  source_name: TDnet (Tokyo Exchange Timely Disclosure Network)
+  url: https://www.release.tdnet.info/
+  adapter_type: scraper
+  jurisdiction: JP
+  language: ja
+  cost_tier: free
+  update_cadence: realtime
+  event_types_covered:
+    - earnings_report
+    - guidance_revision
+    - material_disclosure
+    - executive_change
+    - ma_announcement
+    - share_buyback
+    - dividend_change
+  edge_weight_prior: 1.0
+  typical_lead_time_vs_english_minutes: -180
+  notes: All Tokyo-listed issuers must file here first under JPX rules. Typically leads English-language wires by ~3h. Machine-readable XBRL companion.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: 2026-04-21T00:00:00Z
+
+- source_id: universal.rns_lse
+  source_name: RNS (London Stock Exchange Regulatory News Service)
+  url: https://www.londonstockexchange.com/news
+  adapter_type: rss
+  jurisdiction: GB
+  language: en
+  cost_tier: free
+  update_cadence: realtime
+  event_types_covered:
+    - earnings_report
+    - material_disclosure
+    - regulatory_filing
+    - ma_announcement
+    - executive_change
+    - dividend_change
+    - share_buyback
+    - capital_raise
+  edge_weight_prior: 1.0
+  typical_lead_time_vs_english_minutes: 0
+  notes: Primary regulatory disclosure channel for LSE-listed issuers. Per-filer RSS feeds available.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: 2026-04-21T00:00:00Z
+
+- source_id: universal.bafin_hv_bekanntmachung
+  source_name: BaFin Company Announcements / DGAP (EQS)
+  url: https://www.dgap.de/dgap/News/
+  adapter_type: rss
+  jurisdiction: DE
+  language: de
+  cost_tier: free
+  update_cadence: realtime
+  event_types_covered:
+    - material_disclosure
+    - earnings_report
+    - ma_announcement
+    - executive_change
+    - regulatory_filing
+  edge_weight_prior: 1.0
+  typical_lead_time_vs_english_minutes: -30
+  notes: DGAP (now EQS Group) is the primary BaFin-mandated ad-hoc disclosure channel for German issuers. Leads English wires modestly.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: 2026-04-21T00:00:00Z
+
+- source_id: universal.amf_france
+  source_name: AMF France — Décisions et informations financières
+  url: https://www.amf-france.org/en/news-publications
+  adapter_type: scraper
+  jurisdiction: FR
+  language: fr
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+    - regulatory_filing
+    - regulatory_action
+    - investigation_disclosure
+    - material_disclosure
+  edge_weight_prior: 0.95
+  typical_lead_time_vs_english_minutes: 0
+  notes: Autorité des marchés financiers — French securities regulator. Publishes enforcement, listing prospectuses, investigation disclosures.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: 2026-04-21T00:00:00Z
+
+- source_id: universal.asx_announcements
+  source_name: ASX Announcements
+  url: https://www.asx.com.au/markets/trade-our-cash-market/announcements
+  adapter_type: scraper
+  jurisdiction: AU
+  language: en
+  cost_tier: free
+  update_cadence: realtime
+  event_types_covered:
+    - earnings_report
+    - material_disclosure
+    - ma_announcement
+    - executive_change
+    - capital_raise
+    - reserve_update
+  edge_weight_prior: 1.0
+  typical_lead_time_vs_english_minutes: 0
+  notes: Primary disclosure channel for ASX-listed issuers. Price-sensitive announcements flagged.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: 2026-04-21T00:00:00Z
+
+- source_id: universal.hkex_disclosure
+  source_name: HKEX News & Market Data — Listed Company Information
+  url: https://www1.hkexnews.hk/
+  adapter_type: scraper
+  jurisdiction: HK
+  language: en
+  cost_tier: free
+  update_cadence: realtime
+  event_types_covered:
+    - earnings_report
+    - material_disclosure
+    - regulatory_filing
+    - ma_announcement
+    - capital_raise
+    - executive_change
+  edge_weight_prior: 1.0
+  typical_lead_time_vs_english_minutes: 0
+  notes: HKEX mandatory disclosure channel. Announcements in English and Chinese simultaneously.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: 2026-04-21T00:00:00Z
+
+- source_id: universal.six_exchange_regulation
+  source_name: SIX Exchange Regulation — Ad hoc announcements
+  url: https://www.ser-ag.com/en/resources/notifications-market-participants.html
+  adapter_type: scraper
+  jurisdiction: CH
+  language: en
+  cost_tier: free
+  update_cadence: realtime
+  event_types_covered:
+    - material_disclosure
+    - earnings_report
+    - ma_announcement
+    - executive_change
+  edge_weight_prior: 1.0
+  typical_lead_time_vs_english_minutes: 0
+  notes: SER mandates ad-hoc disclosure for SIX-listed issuers. Published in German, French, and often English.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: 2026-04-21T00:00:00Z
+
+- source_id: universal.euronext_live_news
+  source_name: Euronext Live — Company News
+  url: https://live.euronext.com/en/products/equities/company-news
+  adapter_type: scraper
+  jurisdiction: XX
+  language: en
+  cost_tier: free
+  update_cadence: realtime
+  event_types_covered:
+    - earnings_report
+    - material_disclosure
+    - regulatory_filing
+    - ma_announcement
+  edge_weight_prior: 1.0
+  typical_lead_time_vs_english_minutes: 0
+  notes: Covers Amsterdam, Brussels, Dublin, Lisbon, Milan, Oslo, Paris. Multi-country disclosure aggregator.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: 2026-04-21T00:00:00Z
+
+- source_id: universal.borsa_italiana_news
+  source_name: Borsa Italiana — News
+  url: https://www.borsaitaliana.it/borsa/notizie.html
+  adapter_type: scraper
+  jurisdiction: IT
+  language: it
+  cost_tier: free
+  update_cadence: realtime
+  event_types_covered:
+    - earnings_report
+    - material_disclosure
+    - regulatory_filing
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: -30
+  notes: Italian-language corporate disclosure. Overlaps Euronext (which owns BIt) but maintained separately.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: 2026-04-21T00:00:00Z
+
+- source_id: universal.cnmv_spain
+  source_name: CNMV — Hechos Relevantes
+  url: https://www.cnmv.es/portal/HR/CifWeb.aspx
+  adapter_type: scraper
+  jurisdiction: ES
+  language: es
+  cost_tier: free
+  update_cadence: realtime
+  event_types_covered:
+    - material_disclosure
+    - earnings_report
+    - regulatory_filing
+    - ma_announcement
+  edge_weight_prior: 1.0
+  typical_lead_time_vs_english_minutes: -60
+  notes: Comisión Nacional del Mercado de Valores — Spanish regulator. Hechos relevantes is the mandatory price-sensitive disclosure filing.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: 2026-04-21T00:00:00Z
+
+- source_id: universal.cnmv_es
+  source_name: CNMV — Registros Oficiales (English)
+  url: https://www.cnmv.es/portal/home.aspx?lang=en
+  adapter_type: scraper
+  jurisdiction: ES
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+    - regulatory_filing
+    - regulatory_action
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: 0
+  notes: English-language CNMV portal. Subset of hechos_relevantes coverage but easier parsing.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: 2026-04-21T00:00:00Z
+
+- source_id: universal.cninfo
+  source_name: CNINFO — China Securities Regulatory Commission disclosure portal
+  url: http://www.cninfo.com.cn/
+  adapter_type: scraper
+  jurisdiction: CN
+  language: zh
+  cost_tier: free
+  update_cadence: realtime
+  event_types_covered:
+    - earnings_report
+    - material_disclosure
+    - regulatory_filing
+    - ma_announcement
+  edge_weight_prior: 0.95
+  typical_lead_time_vs_english_minutes: -240
+  notes: Mainland China mandatory disclosure portal. Chinese-language. Leads English wires substantially for Shanghai/Shenzhen-listed issuers.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: 2026-04-21T00:00:00Z
+
+- source_id: universal.dart_krx
+  source_name: DART — Korean Financial Supervisory Service Data Analysis Retrieval
+  url: https://englishdart.fss.or.kr/
+  adapter_type: api
+  jurisdiction: KR
+  language: ko
+  cost_tier: free
+  update_cadence: realtime
+  event_types_covered:
+    - earnings_report
+    - material_disclosure
+    - regulatory_filing
+    - ma_announcement
+  edge_weight_prior: 0.95
+  typical_lead_time_vs_english_minutes: -120
+  notes: Korean statutory disclosure portal with English mirror. API for programmatic retrieval.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: 2026-04-21T00:00:00Z
+
+- source_id: universal.cvm_brazil
+  source_name: CVM — Comissão de Valores Mobiliários (Brazil)
+  url: https://www.gov.br/cvm/pt-br
+  adapter_type: scraper
+  jurisdiction: BR
+  language: pt
+  cost_tier: free
+  update_cadence: realtime
+  event_types_covered:
+    - material_disclosure
+    - earnings_report
+    - regulatory_filing
+  edge_weight_prior: 1.0
+  typical_lead_time_vs_english_minutes: -60
+  notes: Brazilian securities regulator. Brazilian issuers often dual-file here and with SEC via 20-F.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: 2026-04-21T00:00:00Z
+
+- source_id: universal.fsa_japan
+  source_name: Financial Services Agency of Japan — Disclosure
+  url: https://www.fsa.go.jp/en/
+  adapter_type: scraper
+  jurisdiction: JP
+  language: ja
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+    - regulatory_action
+    - investigation_disclosure
+    - sector_regulation
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: -60
+  notes: FSA is the Japanese securities regulator. TDnet handles per-issuer mandatory disclosure; FSA handles enforcement/rule changes.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: 2026-04-21T00:00:00Z
+
+- source_id: universal.esma_news
+  source_name: ESMA — European Securities and Markets Authority news
+  url: https://www.esma.europa.eu/press-news/esma-news
+  adapter_type: rss
+  jurisdiction: XX
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+    - regulatory_action
+    - sector_regulation
+    - investigation_disclosure
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: 0
+  notes: Supranational EU regulator. Sets cross-border rules and publishes enforcement.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: 2026-04-21T00:00:00Z
+
+- source_id: universal.fca_uk
+  source_name: FCA — Financial Conduct Authority news
+  url: https://www.fca.org.uk/news/news-stories
+  adapter_type: rss
+  jurisdiction: GB
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+    - regulatory_action
+    - investigation_disclosure
+    - sector_regulation
+  edge_weight_prior: 0.95
+  typical_lead_time_vs_english_minutes: 0
+  notes: UK conduct regulator. Publishes enforcement notices, final notices, speeches.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: 2026-04-21T00:00:00Z
+
+# =============================================================================
+# GLOBAL WIRES — first-break breaking news.
+# =============================================================================
+
+- source_id: universal.reuters
+  source_name: Reuters
+  url: https://www.reuters.com/business/
+  adapter_type: rss
+  jurisdiction: XX
+  language: en
+  cost_tier: metered
+  update_cadence: realtime
+  event_types_covered:
+    - earnings_report
+    - ma_announcement
+    - executive_change
+    - litigation
+    - regulatory_action
+    - macro_data_release
+    - sell_side_rating_change
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: 0
+  notes: Global wire. Free web access metered; Refinitiv/Eikon terminal paid.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: 2026-04-21T00:00:00Z
+
+- source_id: universal.bloomberg_news
+  source_name: Bloomberg News (public web)
+  url: https://www.bloomberg.com/markets
+  adapter_type: rss
+  jurisdiction: XX
+  language: en
+  cost_tier: metered
+  update_cadence: realtime
+  event_types_covered:
+    - earnings_report
+    - ma_announcement
+    - executive_change
+    - macro_data_release
+    - sell_side_rating_change
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: 0
+  notes: Terminal news is paid+restricted; public web is metered. Terminal scoops web by minutes.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: 2026-04-21T00:00:00Z
+
+- source_id: universal.ap_business
+  source_name: Associated Press — Business
+  url: https://apnews.com/business
+  adapter_type: rss
+  jurisdiction: XX
+  language: en
+  cost_tier: free
+  update_cadence: realtime
+  event_types_covered:
+    - earnings_report
+    - ma_announcement
+    - executive_change
+    - litigation
+    - macro_data_release
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: 0
+  notes: AP wire with public free web. Slower than Reuters/Bloomberg on some exclusives; often first on US court rulings.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: 2026-04-21T00:00:00Z
+
+- source_id: universal.afp_business
+  source_name: Agence France-Presse — Business
+  url: https://www.afp.com/en/news-hub
+  adapter_type: rss
+  jurisdiction: XX
+  language: en
+  cost_tier: metered
+  update_cadence: realtime
+  event_types_covered:
+    - macro_data_release
+    - ma_announcement
+    - regulatory_action
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: 0
+  notes: French wire with global coverage. Strong on EU/ME/Africa.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: 2026-04-21T00:00:00Z
+
+- source_id: universal.nikkei_asia_english
+  source_name: Nikkei Asia (English)
+  url: https://asia.nikkei.com/
+  adapter_type: rss
+  jurisdiction: JP
+  language: en
+  cost_tier: metered
+  update_cadence: realtime
+  event_types_covered:
+    - earnings_report
+    - ma_announcement
+    - executive_change
+    - macro_data_release
+    - product_launch
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: -60
+  notes: English edition of Nikkei. Leads English wires on Japan/Asia exclusives. Distinct from geo.jp.nikkei_business_daily (JP-language).
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: 2026-04-21T00:00:00Z
+
+- source_id: universal.kyodo_english
+  source_name: Kyodo News (English)
+  url: https://english.kyodonews.net/
+  adapter_type: rss
+  jurisdiction: JP
+  language: en
+  cost_tier: free
+  update_cadence: realtime
+  event_types_covered:
+    - macro_data_release
+    - executive_change
+    - ma_announcement
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: -30
+  notes: Japanese wire with English edition. Strong on government/policy breaking news.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: 2026-04-21T00:00:00Z
+
+- source_id: universal.xinhua_english
+  source_name: Xinhua News Agency (English)
+  url: https://english.news.cn/
+  adapter_type: rss
+  jurisdiction: CN
+  language: en
+  cost_tier: free
+  update_cadence: realtime
+  event_types_covered:
+    - macro_data_release
+    - sector_regulation
+    - regulatory_action
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: -120
+  notes: Chinese state wire. Authoritative on Chinese macro/regulation; treat with source-bias filter.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: 2026-04-21T00:00:00Z
+
+- source_id: universal.dpa_international
+  source_name: dpa international (German Press Agency English)
+  url: https://www.dpa-international.com/
+  adapter_type: rss
+  jurisdiction: DE
+  language: en
+  cost_tier: metered
+  update_cadence: realtime
+  event_types_covered:
+    - macro_data_release
+    - executive_change
+    - ma_announcement
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: -15
+  notes: German wire service with English international desk.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: 2026-04-21T00:00:00Z
+
+- source_id: universal.agencia_estado
+  source_name: Agência Estado (Brazil)
+  url: https://www.estadao.com.br/agencia-estado/
+  adapter_type: scraper
+  jurisdiction: BR
+  language: pt
+  cost_tier: metered
+  update_cadence: realtime
+  event_types_covered:
+    - earnings_report
+    - ma_announcement
+    - macro_data_release
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: -60
+  notes: Brazilian business wire. Leads English wires on Brazilian corporates.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: 2026-04-21T00:00:00Z
+
+- source_id: universal.prnewswire
+  source_name: PR Newswire (Cision)
+  url: https://www.prnewswire.com/news-releases/
+  adapter_type: rss
+  jurisdiction: XX
+  language: en
+  cost_tier: free
+  update_cadence: realtime
+  event_types_covered:
+    - earnings_report
+    - material_disclosure
+    - product_launch
+    - executive_change
+    - contract_award
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: 0
+  notes: Issuer-paid wire distribution. Many US issuers announce via PR Newswire concurrent with 8-K. Company-controlled narrative; not independent editorial.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: 2026-04-21T00:00:00Z
+
+- source_id: universal.businesswire
+  source_name: Business Wire (Berkshire Hathaway)
+  url: https://www.businesswire.com/portal/site/home/news/
+  adapter_type: rss
+  jurisdiction: XX
+  language: en
+  cost_tier: free
+  update_cadence: realtime
+  event_types_covered:
+    - earnings_report
+    - material_disclosure
+    - product_launch
+    - executive_change
+    - contract_award
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: 0
+  notes: Issuer-paid wire. Competes with PR Newswire. Berkshire Hathaway subsidiary.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: 2026-04-21T00:00:00Z
+
+- source_id: universal.globenewswire
+  source_name: GlobeNewswire (Intrado / Notified)
+  url: https://www.globenewswire.com/
+  adapter_type: rss
+  jurisdiction: XX
+  language: en
+  cost_tier: free
+  update_cadence: realtime
+  event_types_covered:
+    - earnings_report
+    - material_disclosure
+    - product_launch
+    - contract_award
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: 0
+  notes: Issuer-paid wire with strong Nordic + small-cap US coverage.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: 2026-04-21T00:00:00Z
+
+# =============================================================================
+# MAJOR BUSINESS DAILIES — country-originated, internationally-read, multi-sector.
+# =============================================================================
+
+- source_id: universal.ft
+  source_name: Financial Times
+  url: https://www.ft.com/
+  adapter_type: rss
+  jurisdiction: GB
+  language: en
+  cost_tier: paid
+  update_cadence: realtime
+  event_types_covered:
+    - earnings_report
+    - ma_announcement
+    - executive_change
+    - activist_campaign
+    - regulatory_action
+    - sell_side_rating_change
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: 0
+  notes: UK-headquartered, global coverage. Scoop-driven editorial on EU/UK corporates.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: 2026-04-21T00:00:00Z
+
+- source_id: universal.wsj
+  source_name: The Wall Street Journal
+  url: https://www.wsj.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: paid
+  update_cadence: realtime
+  event_types_covered:
+    - earnings_report
+    - ma_announcement
+    - executive_change
+    - activist_campaign
+    - regulatory_action
+    - litigation
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: 0
+  notes: US-headquartered, global coverage. Frequent M&A scoops.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: 2026-04-21T00:00:00Z
+
+- source_id: universal.handelsblatt
+  source_name: Handelsblatt (German Business Daily)
+  url: https://www.handelsblatt.com/
+  adapter_type: scraper
+  jurisdiction: DE
+  language: de
+  cost_tier: paid
+  update_cadence: realtime
+  event_types_covered:
+    - earnings_report
+    - ma_announcement
+    - executive_change
+    - sector_regulation
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: -30
+  notes: Germany's leading business daily. Leads English wires on German corporate stories.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: 2026-04-21T00:00:00Z
+
+- source_id: universal.les_echos
+  source_name: Les Echos (French Business Daily)
+  url: https://www.lesechos.fr/
+  adapter_type: scraper
+  jurisdiction: FR
+  language: fr
+  cost_tier: paid
+  update_cadence: realtime
+  event_types_covered:
+    - earnings_report
+    - ma_announcement
+    - executive_change
+    - sector_regulation
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: -30
+  notes: French business daily. Leads on CAC 40 corporate stories.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: 2026-04-21T00:00:00Z
+
+- source_id: universal.faz_wirtschaft
+  source_name: Frankfurter Allgemeine Zeitung — Wirtschaft
+  url: https://www.faz.net/aktuell/wirtschaft/
+  adapter_type: rss
+  jurisdiction: DE
+  language: de
+  cost_tier: metered
+  update_cadence: daily
+  event_types_covered:
+    - earnings_report
+    - ma_announcement
+    - executive_change
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: -15
+  notes: Centre-right German paper with serious business desk. Complements Handelsblatt.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: 2026-04-21T00:00:00Z
+
+- source_id: universal.afr
+  source_name: Australian Financial Review
+  url: https://www.afr.com/
+  adapter_type: rss
+  jurisdiction: AU
+  language: en
+  cost_tier: paid
+  update_cadence: realtime
+  event_types_covered:
+    - earnings_report
+    - ma_announcement
+    - executive_change
+    - reserve_update
+    - sector_regulation
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: -30
+  notes: Australia's leading business daily. Leads on ASX corporate and mining stories.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: 2026-04-21T00:00:00Z
+
+- source_id: universal.globe_and_mail_rob
+  source_name: Globe and Mail — Report on Business
+  url: https://www.theglobeandmail.com/business/
+  adapter_type: rss
+  jurisdiction: CA
+  language: en
+  cost_tier: paid
+  update_cadence: realtime
+  event_types_covered:
+    - earnings_report
+    - ma_announcement
+    - executive_change
+    - reserve_update
+    - sector_regulation
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: 0
+  notes: Canadian business flagship. Primary coverage for TSX corporates.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: 2026-04-21T00:00:00Z
+
+- source_id: universal.scmp_business
+  source_name: South China Morning Post — Business
+  url: https://www.scmp.com/business
+  adapter_type: rss
+  jurisdiction: HK
+  language: en
+  cost_tier: metered
+  update_cadence: realtime
+  event_types_covered:
+    - earnings_report
+    - ma_announcement
+    - macro_data_release
+    - sector_regulation
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: -30
+  notes: English-language HK daily. Strong on Greater China corporate + macro.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: 2026-04-21T00:00:00Z
+
+- source_id: universal.valor_economico
+  source_name: Valor Econômico (Brazil)
+  url: https://valor.globo.com/
+  adapter_type: rss
+  jurisdiction: BR
+  language: pt
+  cost_tier: paid
+  update_cadence: realtime
+  event_types_covered:
+    - earnings_report
+    - ma_announcement
+    - executive_change
+    - macro_data_release
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: -60
+  notes: Brazil's leading business daily. Leads English wires on B3-listed corporates.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: 2026-04-21T00:00:00Z
+
+# =============================================================================
+# IR / TRANSCRIPT INFRASTRUCTURE
+# =============================================================================
+
+- source_id: universal.quartr
+  source_name: Quartr — Earnings Call Transcripts + Live Audio
+  url: https://quartr.com/
+  adapter_type: api
+  jurisdiction: XX
+  language: en
+  cost_tier: metered
+  update_cadence: realtime
+  event_types_covered:
+    - earnings_report
+    - guidance_revision
+    - ceo_statement_social
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: 0
+  notes: Best-in-class global transcript aggregator covering 10k+ issuers including many non-US. API for programmatic access.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: 2026-04-21T00:00:00Z
+
+- source_id: universal.seekingalpha_transcripts
+  source_name: Seeking Alpha — Earnings Call Transcripts
+  url: https://seekingalpha.com/earnings/earnings-call-transcripts
+  adapter_type: scraper
+  jurisdiction: XX
+  language: en
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+    - earnings_report
+    - guidance_revision
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 120
+  notes: Long-standing transcript archive, strong US coverage. Premium subscription gated for full transcripts.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: 2026-04-21T00:00:00Z
+
+- source_id: universal.motley_fool_transcripts
+  source_name: Motley Fool — Earnings Call Transcripts
+  url: https://www.fool.com/earnings/
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+    - earnings_report
+  edge_weight_prior: 0.65
+  typical_lead_time_vs_english_minutes: 240
+  notes: Free US-focused transcript archive. Lower coverage than Quartr/SA.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: 2026-04-21T00:00:00Z
+
+- source_id: universal.zacks
+  source_name: Zacks Investment Research
+  url: https://www.zacks.com/
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: metered
+  update_cadence: daily
+  event_types_covered:
+    - earnings_report
+    - sell_side_rating_change
+  edge_weight_prior: 0.6
+  typical_lead_time_vs_english_minutes: 60
+  notes: Consensus estimate + earnings surprise source. US-biased.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: 2026-04-21T00:00:00Z
+
+- source_id: universal.refinitiv_eikon
+  source_name: Refinitiv Eikon / LSEG Workspace
+  url: https://www.lseg.com/en/data-analytics/products/workspace
+  adapter_type: api
+  jurisdiction: XX
+  language: en
+  cost_tier: paid
+  update_cadence: realtime
+  event_types_covered:
+    - earnings_report
+    - ma_announcement
+    - executive_change
+    - sell_side_rating_change
+    - macro_data_release
+  edge_weight_prior: 0.95
+  typical_lead_time_vs_english_minutes: -5
+  notes: Institutional terminal. Entry included for reference — not poll-able without license. Governance treats as restricted.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: 2026-04-21T00:00:00Z
+
+- source_id: universal.bloomberg_terminal
+  source_name: Bloomberg Terminal
+  url: https://www.bloomberg.com/professional/
+  adapter_type: api
+  jurisdiction: XX
+  language: en
+  cost_tier: restricted
+  update_cadence: realtime
+  event_types_covered:
+    - earnings_report
+    - ma_announcement
+    - executive_change
+    - sell_side_rating_change
+    - macro_data_release
+  edge_weight_prior: 1.0
+  typical_lead_time_vs_english_minutes: -5
+  notes: Institutional terminal. Reference-only — B-PIPE API license required. Governance treats as restricted.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: 2026-04-21T00:00:00Z
+
+# =============================================================================
+# CROSS-SECTOR SOCIAL AGGREGATORS
+# =============================================================================
+
+- source_id: universal.stocktwits
+  source_name: StockTwits
+  url: https://stocktwits.com/
+  adapter_type: api
+  jurisdiction: XX
+  language: en
+  cost_tier: metered
+  update_cadence: realtime
+  event_types_covered:
+    - social_mention_spike
+    - short_interest_change
+  edge_weight_prior: 0.35
+  typical_lead_time_vs_english_minutes: -5
+  notes: Retail-heavy micro-blogging platform. Noisy; valuable as volume-spike signal.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: 2026-04-21T00:00:00Z
+
+- source_id: universal.reddit_stocks
+  source_name: Reddit — r/stocks, r/investing, r/wallstreetbets
+  url: https://www.reddit.com/r/stocks/
+  adapter_type: api
+  jurisdiction: XX
+  language: en
+  cost_tier: metered
+  update_cadence: realtime
+  event_types_covered:
+    - social_mention_spike
+    - short_interest_change
+  edge_weight_prior: 0.4
+  typical_lead_time_vs_english_minutes: 0
+  notes: Reddit API with OAuth. Sector-specific subs (r/biotech, r/MiningCorps) referenced separately under sector.*.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: 2026-04-21T00:00:00Z
+
+- source_id: universal.x_finance_lists
+  source_name: X (Twitter) — curated finance lists
+  url: https://x.com/i/lists/
+  adapter_type: api
+  jurisdiction: XX
+  language: en
+  cost_tier: paid
+  update_cadence: realtime
+  event_types_covered:
+    - ceo_statement_social
+    - social_mention_spike
+    - ma_announcement
+    - sell_side_rating_change
+  edge_weight_prior: 0.5
+  typical_lead_time_vs_english_minutes: -10
+  notes: X API v2 basic/pro tier required post-2023. Specific handles curated per sector under sector.*.x_handles. This entry covers the platform-level adapter.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: 2026-04-21T00:00:00Z
+
+- source_id: universal.substack_finance
+  source_name: Substack — curated finance newsletters
+  url: https://substack.com/
+  adapter_type: rss
+  jurisdiction: XX
+  language: en
+  cost_tier: metered
+  update_cadence: daily
+  event_types_covered:
+    - ceo_statement_social
+    - social_mention_spike
+  edge_weight_prior: 0.45
+  typical_lead_time_vs_english_minutes: 60
+  notes: Individual Substack feeds enumerated under sector.*.substacks. Platform adapter here.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: 2026-04-21T00:00:00Z
+
+# =============================================================================
+# RATING AGENCIES — cross-sector, cross-geo credit actions.
+# =============================================================================
+
+- source_id: universal.sp_global_ratings
+  source_name: S&P Global Ratings — Rating Actions
+  url: https://www.spglobal.com/ratings/en/research-insights/ratings-actions
+  adapter_type: rss
+  jurisdiction: XX
+  language: en
+  cost_tier: metered
+  update_cadence: daily
+  event_types_covered:
+    - sell_side_rating_change
+    - regulatory_filing
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: 0
+  notes: Credit-rating actions affect bond prices and sometimes equities via covenant triggers.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: 2026-04-21T00:00:00Z
+
+- source_id: universal.moodys_ratings
+  source_name: Moody's Investors Service — Rating Actions
+  url: https://www.moodys.com/newsandevents/topics/Rating-Action-0002B0
+  adapter_type: rss
+  jurisdiction: XX
+  language: en
+  cost_tier: metered
+  update_cadence: daily
+  event_types_covered:
+    - sell_side_rating_change
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: 0
+  notes: Peer to S&P. Often moves in lock-step on sovereign/corporate downgrades.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: 2026-04-21T00:00:00Z
+
+- source_id: universal.fitch_ratings
+  source_name: Fitch Ratings — Rating Actions
+  url: https://www.fitchratings.com/research/rating-actions
+  adapter_type: rss
+  jurisdiction: XX
+  language: en
+  cost_tier: metered
+  update_cadence: daily
+  event_types_covered:
+    - sell_side_rating_change
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: 0
+  notes: Third of the big three. Sometimes leads on EM sovereigns.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: 2026-04-21T00:00:00Z
+
+# =============================================================================
+# MACRO / CENTRAL BANKS (most-referenced)
+# =============================================================================
+
+- source_id: universal.fed_press
+  source_name: US Federal Reserve — Press Releases
+  url: https://www.federalreserve.gov/newsevents/pressreleases.htm
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: ad_hoc
+  event_types_covered:
+    - macro_data_release
+    - sector_regulation
+  edge_weight_prior: 1.0
+  typical_lead_time_vs_english_minutes: 0
+  notes: Rate decisions, FOMC minutes, regulatory announcements. Embargoed pre-releases to press.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: 2026-04-21T00:00:00Z
+
+- source_id: universal.ecb_press
+  source_name: European Central Bank — Press
+  url: https://www.ecb.europa.eu/press/pr/html/index.en.html
+  adapter_type: rss
+  jurisdiction: XX
+  language: en
+  cost_tier: free
+  update_cadence: ad_hoc
+  event_types_covered:
+    - macro_data_release
+    - sector_regulation
+  edge_weight_prior: 1.0
+  typical_lead_time_vs_english_minutes: 0
+  notes: Euro-area monetary policy + banking supervision.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: 2026-04-21T00:00:00Z
+
+- source_id: universal.boj_press
+  source_name: Bank of Japan — Announcements
+  url: https://www.boj.or.jp/en/announcements/index.htm
+  adapter_type: rss
+  jurisdiction: JP
+  language: en
+  cost_tier: free
+  update_cadence: ad_hoc
+  event_types_covered:
+    - macro_data_release
+  edge_weight_prior: 1.0
+  typical_lead_time_vs_english_minutes: 0
+  notes: BOJ rate decisions + Tankan survey. English mirror of Japanese original; JP-language sometimes leads.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: 2026-04-21T00:00:00Z
+
+- source_id: universal.boe_news
+  source_name: Bank of England — News and Publications
+  url: https://www.bankofengland.co.uk/news
+  adapter_type: rss
+  jurisdiction: GB
+  language: en
+  cost_tier: free
+  update_cadence: ad_hoc
+  event_types_covered:
+    - macro_data_release
+    - sector_regulation
+  edge_weight_prior: 1.0
+  typical_lead_time_vs_english_minutes: 0
+  notes: Monetary Policy Committee decisions, Financial Policy Committee statements, PRA supervisory notices.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: 2026-04-21T00:00:00Z

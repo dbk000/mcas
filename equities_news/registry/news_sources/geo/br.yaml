@@ -1,0 +1,70 @@
+- source_id: geo.br.b3_news
+  source_name: B3 — News
+  url: https://www.b3.com.br/en_us/news/
+  adapter_type: scraper
+  jurisdiction: BR
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - material_disclosure
+  - regulatory_filing
+  - earnings_report
+  - ma_announcement
+  - executive_change
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: 0
+  notes: Brazilian exchange (B3 SA). Listing changes, circuit breakers.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.br.bcb_press
+  source_name: Banco Central do Brasil — Press
+  url: https://www.bcb.gov.br/en/#press
+  adapter_type: rss
+  jurisdiction: BR
+  language: en
+  cost_tier: free
+  update_cadence: ad_hoc
+  event_types_covered: &id001
+  - macro_data_release
+  edge_weight_prior: 1.0
+  typical_lead_time_vs_english_minutes: 0
+  notes: Brazilian central bank. Selic rate decisions.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.br.ibge_releases
+  source_name: IBGE — Indicators
+  url: https://www.ibge.gov.br/en/home-eng.html
+  adapter_type: rss
+  jurisdiction: BR
+  language: en
+  cost_tier: free
+  update_cadence: ad_hoc
+  event_types_covered: *id001
+  edge_weight_prior: 1.0
+  typical_lead_time_vs_english_minutes: 0
+  notes: Brazilian stats. CPI (IPCA), GDP, employment.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.br.infomoney
+  source_name: InfoMoney
+  url: https://www.infomoney.com.br/
+  adapter_type: rss
+  jurisdiction: BR
+  language: pt
+  cost_tier: free
+  update_cadence: realtime
+  event_types_covered:
+  - earnings_report
+  - ma_announcement
+  - executive_change
+  - macro_data_release
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: -30
+  notes: Brazilian retail-focused business portal.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'

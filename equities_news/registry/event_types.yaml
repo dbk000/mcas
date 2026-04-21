@@ -1,0 +1,106 @@
+# Event types taxonomy — referenced by event_types_covered on every source entry.
+# Phase 1.5 deliverable. This file is the authoritative enum for event types.
+# Additions require a governance review; existing event_type slugs are append-only.
+#
+# source.event_types_covered must be a subset of the slugs listed here.
+# consistency_checker rejects any source referencing an undefined event_type.
+
+version: 1
+frozen_at: 2026-04-21
+
+event_types:
+  # --- Issuer disclosures ---
+  - slug: earnings_report
+    description: Quarterly/annual earnings release (headline + statements).
+  - slug: guidance_revision
+    description: Forward guidance raise/cut/reiterate outside of regular cadence.
+  - slug: pre_announcement
+    description: Pre-release of financial results ahead of scheduled earnings.
+  - slug: material_disclosure
+    description: Any material information subject to mandatory filing (8-K, RNS, TDnet, etc.).
+  - slug: regulatory_filing
+    description: Periodic filings (10-K, 10-Q, 20-F, 13F, proxy) not otherwise classified.
+  - slug: insider_transaction
+    description: Form 4 / equivalent insider buy/sell/option exercise.
+  - slug: share_buyback
+    description: Buyback authorisation, expansion, or execution update.
+  - slug: dividend_change
+    description: Dividend initiation, increase, cut, suspension, or special.
+
+  # --- Corporate actions ---
+  - slug: ma_announcement
+    description: Merger / acquisition / tender offer announcement.
+  - slug: ma_completion
+    description: Closing of previously-announced M&A.
+  - slug: divestiture
+    description: Spin-off, carve-out, asset sale.
+  - slug: ipo_listing
+    description: IPO, direct listing, or secondary listing on a new exchange.
+  - slug: delisting
+    description: Voluntary or forced delisting from an exchange.
+  - slug: capital_raise
+    description: Equity / convertible / secondary offering.
+  - slug: debt_issuance
+    description: Bond or note issuance.
+  - slug: bankruptcy_filing
+    description: Chapter 11, administration, or foreign equivalent.
+
+  # --- People ---
+  - slug: executive_change
+    description: CEO/CFO/COO/Chair appointment, resignation, or termination.
+  - slug: board_change
+    description: Director appointment, resignation, activist nomination.
+  - slug: activist_campaign
+    description: 13D filing, public letter, proxy fight launch.
+
+  # --- Legal / regulatory ---
+  - slug: litigation
+    description: Lawsuit filed, class certification, verdict, settlement.
+  - slug: regulatory_action
+    description: Agency enforcement, fine, consent decree, license grant/revocation.
+  - slug: investigation_disclosure
+    description: Disclosure of investigation by SEC/DOJ/FCA/SFO/etc.
+
+  # --- Product / operations ---
+  - slug: product_launch
+    description: New product release, SKU expansion, geographic launch.
+  - slug: product_approval
+    description: FDA/EMA/PMDA/MHRA approval, CE mark, clearance.
+  - slug: clinical_trial_readout
+    description: Phase 1/2/3 data, interim analysis, trial halt or resumption.
+  - slug: production_update
+    description: Manufacturing start/stop, capacity addition, plant closure.
+  - slug: recall
+    description: Product recall, safety advisory, withdrawal.
+  - slug: cyber_incident
+    description: Breach, ransomware, outage disclosure.
+  - slug: contract_award
+    description: Major customer contract, government contract, backlog update.
+
+  # --- Industry / macro ---
+  - slug: sell_side_rating_change
+    description: Analyst rating/PT change from a major sell-side firm.
+  - slug: index_inclusion
+    description: Add/remove from S&P 500, Nikkei 225, FTSE 100, etc.
+  - slug: short_interest_change
+    description: Short interest update or major short report publication.
+  - slug: macro_data_release
+    description: Central bank rate, CPI, PMI, employment, GDP, trade balance.
+  - slug: sector_regulation
+    description: New sector-wide rule, tariff, export control.
+
+  # --- Commodity / sector-specific (referenced by sector.* entries) ---
+  - slug: commodity_price_event
+    description: Material move in sector-relevant commodity (oil, gas, metals, lumber, grains).
+  - slug: reserve_update
+    description: Oil/gas/mineral reserve estimate change, drilling result.
+  - slug: fda_ad_com
+    description: FDA advisory committee vote / briefing document release.
+  - slug: patent_event
+    description: Patent grant, expiry, litigation outcome material to revenue.
+
+  # --- Social / unstructured ---
+  - slug: social_mention_spike
+    description: Anomalous volume on X/Reddit/StockTwits aggregated signals.
+  - slug: ceo_statement_social
+    description: C-suite personal social post with material implications.

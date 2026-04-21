@@ -1,0 +1,86 @@
+- source_id: geo.dk.borsen
+  source_name: Børsen
+  url: https://borsen.dk/
+  adapter_type: scraper
+  jurisdiction: DK
+  language: da
+  cost_tier: paid
+  update_cadence: realtime
+  event_types_covered:
+  - earnings_report
+  - ma_announcement
+  - executive_change
+  - sell_side_rating_change
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: -45
+  notes: Denmark's business daily. Leads English wires on OMX Copenhagen 25.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.dk.dfsa_press
+  source_name: Finanstilsynet — Press
+  url: https://www.dfsa.dk/news
+  adapter_type: rss
+  jurisdiction: DK
+  language: en
+  cost_tier: free
+  update_cadence: ad_hoc
+  event_types_covered:
+  - regulatory_action
+  - sector_regulation
+  - investigation_disclosure
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: 0
+  notes: Danish FSA.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.dk.dst_news
+  source_name: Statistics Denmark — News
+  url: https://www.dst.dk/en/Statistik/nyheder-analyser-publ
+  adapter_type: rss
+  jurisdiction: DK
+  language: en
+  cost_tier: free
+  update_cadence: ad_hoc
+  event_types_covered: &id001
+  - macro_data_release
+  edge_weight_prior: 1.0
+  typical_lead_time_vs_english_minutes: 0
+  notes: CPI, GDP.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.dk.finans_dk
+  source_name: Finans (Jyllands-Posten)
+  url: https://finans.dk/
+  adapter_type: rss
+  jurisdiction: DK
+  language: da
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - earnings_report
+  - ma_announcement
+  - executive_change
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: -15
+  notes: Jyllands-Posten business vertical.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.dk.nationalbanken_press
+  source_name: Danmarks Nationalbank — Press
+  url: https://www.nationalbanken.dk/en/news/
+  adapter_type: rss
+  jurisdiction: DK
+  language: en
+  cost_tier: free
+  update_cadence: ad_hoc
+  event_types_covered: *id001
+  edge_weight_prior: 1.0
+  typical_lead_time_vs_english_minutes: 0
+  notes: Danish central bank (manages DKK-EUR peg).
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'

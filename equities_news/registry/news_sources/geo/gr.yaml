@@ -1,0 +1,38 @@
+- source_id: geo.gr.ase_announcements
+  source_name: Athens Stock Exchange — Announcements
+  url: https://www.athexgroup.gr/en/web/guest/company-announcements
+  adapter_type: scraper
+  jurisdiction: GR
+  language: en
+  cost_tier: free
+  update_cadence: realtime
+  event_types_covered:
+  - material_disclosure
+  - regulatory_filing
+  - earnings_report
+  - ma_announcement
+  - executive_change
+  edge_weight_prior: 0.95
+  typical_lead_time_vs_english_minutes: 0
+  notes: ATHEX corporate disclosure.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.gr.hcmc_news
+  source_name: Hellenic Capital Market Commission — News
+  url: https://www.hcmc.gr/en/
+  adapter_type: rss
+  jurisdiction: GR
+  language: en
+  cost_tier: free
+  update_cadence: ad_hoc
+  event_types_covered:
+  - regulatory_action
+  - sector_regulation
+  - investigation_disclosure
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: 0
+  notes: Greek securities regulator.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'

@@ -1,0 +1,103 @@
+- source_id: geo.it.banca_italia_press
+  source_name: Banca d'Italia — Press
+  url: https://www.bancaditalia.it/media/comunicati/index.html
+  adapter_type: rss
+  jurisdiction: IT
+  language: it
+  cost_tier: free
+  update_cadence: ad_hoc
+  event_types_covered:
+  - macro_data_release
+  - sector_regulation
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: -15
+  notes: Italian central bank.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.it.consob_news
+  source_name: Consob — Comunicati Stampa
+  url: https://www.consob.it/web/consob/news-and-media
+  adapter_type: rss
+  jurisdiction: IT
+  language: it
+  cost_tier: free
+  update_cadence: ad_hoc
+  event_types_covered:
+  - regulatory_action
+  - sector_regulation
+  - investigation_disclosure
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: 0
+  notes: Italian securities regulator. Enforcement + rule updates.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.it.il_sole_24_ore
+  source_name: Il Sole 24 Ore
+  url: https://www.ilsole24ore.com/
+  adapter_type: rss
+  jurisdiction: IT
+  language: it
+  cost_tier: paid
+  update_cadence: realtime
+  event_types_covered:
+  - earnings_report
+  - ma_announcement
+  - executive_change
+  - sell_side_rating_change
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: -30
+  notes: Italy's leading business daily. Confindustria-owned. Leads English wires on Italian corporates.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.it.istat_releases
+  source_name: Istat — Releases
+  url: https://www.istat.it/en/press-releases
+  adapter_type: rss
+  jurisdiction: IT
+  language: en
+  cost_tier: free
+  update_cadence: ad_hoc
+  event_types_covered:
+  - macro_data_release
+  edge_weight_prior: 1.0
+  typical_lead_time_vs_english_minutes: 0
+  notes: Italian statistics office. CPI, GDP, industrial production.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.it.la_repubblica_affari
+  source_name: La Repubblica — Affari&Finanza
+  url: https://www.repubblica.it/economia/
+  adapter_type: rss
+  jurisdiction: IT
+  language: it
+  cost_tier: metered
+  update_cadence: daily
+  event_types_covered: &id001
+  - earnings_report
+  - ma_announcement
+  - executive_change
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: Repubblica's economy desk.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.it.milano_finanza
+  source_name: Milano Finanza (MF)
+  url: https://www.milanofinanza.it/
+  adapter_type: scraper
+  jurisdiction: IT
+  language: it
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered: *id001
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: -15
+  notes: Specialist finance daily. Strong on M&A scoops.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'

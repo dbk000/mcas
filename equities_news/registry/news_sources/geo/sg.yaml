@@ -1,0 +1,92 @@
+- source_id: geo.sg.business_times
+  source_name: The Business Times (Singapore)
+  url: https://www.businesstimes.com.sg/
+  adapter_type: rss
+  jurisdiction: SG
+  language: en
+  cost_tier: paid
+  update_cadence: realtime
+  event_types_covered:
+  - earnings_report
+  - ma_announcement
+  - executive_change
+  - macro_data_release
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: 0
+  notes: SPH-owned business daily. Leads on SGX corporate stories.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.sg.mas_news
+  source_name: Monetary Authority of Singapore — News
+  url: https://www.mas.gov.sg/news
+  adapter_type: rss
+  jurisdiction: SG
+  language: en
+  cost_tier: free
+  update_cadence: ad_hoc
+  event_types_covered:
+  - macro_data_release
+  - regulatory_action
+  - sector_regulation
+  - investigation_disclosure
+  edge_weight_prior: 0.95
+  typical_lead_time_vs_english_minutes: 0
+  notes: Singapore's central bank + financial regulator (dual role).
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.sg.sgx_announcements
+  source_name: SGX — Company Announcements
+  url: https://www.sgx.com/securities/company-announcements
+  adapter_type: scraper
+  jurisdiction: SG
+  language: en
+  cost_tier: free
+  update_cadence: realtime
+  event_types_covered:
+  - material_disclosure
+  - regulatory_filing
+  - earnings_report
+  - ma_announcement
+  - executive_change
+  edge_weight_prior: 1.0
+  typical_lead_time_vs_english_minutes: 0
+  notes: Singapore Exchange mandatory disclosure portal.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.sg.singstat_releases
+  source_name: Department of Statistics Singapore — News
+  url: https://www.singstat.gov.sg/whats-new
+  adapter_type: rss
+  jurisdiction: SG
+  language: en
+  cost_tier: free
+  update_cadence: ad_hoc
+  event_types_covered:
+  - macro_data_release
+  edge_weight_prior: 1.0
+  typical_lead_time_vs_english_minutes: 0
+  notes: CPI, GDP, manufacturing output.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.sg.straits_times_business
+  source_name: The Straits Times — Business
+  url: https://www.straitstimes.com/business
+  adapter_type: rss
+  jurisdiction: SG
+  language: en
+  cost_tier: paid
+  update_cadence: realtime
+  event_types_covered:
+  - earnings_report
+  - ma_announcement
+  - executive_change
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: 0
+  notes: SPH broadsheet business section.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'

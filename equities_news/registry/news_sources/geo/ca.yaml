@@ -1,0 +1,86 @@
+- source_id: geo.ca.boc_news
+  source_name: Bank of Canada — News
+  url: https://www.bankofcanada.ca/press/
+  adapter_type: rss
+  jurisdiction: CA
+  language: en
+  cost_tier: free
+  update_cadence: ad_hoc
+  event_types_covered: &id001
+  - macro_data_release
+  edge_weight_prior: 1.0
+  typical_lead_time_vs_english_minutes: 0
+  notes: Canadian central bank.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.ca.financial_post
+  source_name: Financial Post (National Post)
+  url: https://financialpost.com/
+  adapter_type: rss
+  jurisdiction: CA
+  language: en
+  cost_tier: metered
+  update_cadence: realtime
+  event_types_covered:
+  - earnings_report
+  - ma_announcement
+  - executive_change
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: 0
+  notes: Postmedia business portal. Complements Globe and Mail ROB.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.ca.osc_news
+  source_name: Ontario Securities Commission — News
+  url: https://www.osc.ca/en/news-events
+  adapter_type: rss
+  jurisdiction: CA
+  language: en
+  cost_tier: free
+  update_cadence: ad_hoc
+  event_types_covered:
+  - regulatory_action
+  - sector_regulation
+  - investigation_disclosure
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: 0
+  notes: OSC is the largest CSA regulator.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.ca.statcan_releases
+  source_name: Statistics Canada — The Daily
+  url: https://www150.statcan.gc.ca/n1/dai-quo/index-eng.htm
+  adapter_type: rss
+  jurisdiction: CA
+  language: en
+  cost_tier: free
+  update_cadence: ad_hoc
+  event_types_covered: *id001
+  edge_weight_prior: 1.0
+  typical_lead_time_vs_english_minutes: 0
+  notes: CPI, GDP, employment.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.ca.stockhouse
+  source_name: Stockhouse
+  url: https://stockhouse.com/
+  adapter_type: scraper
+  jurisdiction: CA
+  language: en
+  cost_tier: free
+  update_cadence: realtime
+  event_types_covered:
+  - earnings_report
+  - ma_announcement
+  - executive_change
+  - reserve_update
+  edge_weight_prior: 0.55
+  typical_lead_time_vs_english_minutes: 0
+  notes: Retail-focused Canadian small-cap coverage. Strong on junior miners.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'

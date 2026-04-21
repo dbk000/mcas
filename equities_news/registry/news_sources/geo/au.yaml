@@ -1,0 +1,119 @@
+- source_id: geo.au.abc_news_business
+  source_name: ABC News — Business
+  url: https://www.abc.net.au/news/business/
+  adapter_type: rss
+  jurisdiction: AU
+  language: en
+  cost_tier: free
+  update_cadence: realtime
+  event_types_covered:
+  - earnings_report
+  - ma_announcement
+  - executive_change
+  - macro_data_release
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: Public broadcaster. Strong on regulation + macro.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.au.abs_releases
+  source_name: Australian Bureau of Statistics — Releases
+  url: https://www.abs.gov.au/media-centre/media-releases
+  adapter_type: rss
+  jurisdiction: AU
+  language: en
+  cost_tier: free
+  update_cadence: ad_hoc
+  event_types_covered:
+  - macro_data_release
+  edge_weight_prior: 1.0
+  typical_lead_time_vs_english_minutes: 0
+  notes: CPI, employment, GDP, retail trade.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.au.aer_releases
+  source_name: Australian Energy Regulator — Media
+  url: https://www.aer.gov.au/news
+  adapter_type: rss
+  jurisdiction: AU
+  language: en
+  cost_tier: free
+  update_cadence: ad_hoc
+  event_types_covered:
+  - sector_regulation
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: Energy regulator. Relevant for utilities + AEMO distribution businesses.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.au.asic_media
+  source_name: ASIC — Media Centre
+  url: https://asic.gov.au/about-asic/news-centre/
+  adapter_type: rss
+  jurisdiction: AU
+  language: en
+  cost_tier: free
+  update_cadence: ad_hoc
+  event_types_covered:
+  - regulatory_action
+  - sector_regulation
+  - investigation_disclosure
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: 0
+  notes: Australian Securities & Investments Commission enforcement + guidance.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.au.rba_media
+  source_name: Reserve Bank of Australia — Media Releases
+  url: https://www.rba.gov.au/media-releases/
+  adapter_type: rss
+  jurisdiction: AU
+  language: en
+  cost_tier: free
+  update_cadence: ad_hoc
+  event_types_covered:
+  - macro_data_release
+  - sector_regulation
+  edge_weight_prior: 1.0
+  typical_lead_time_vs_english_minutes: 0
+  notes: RBA rate decisions, Statement on Monetary Policy.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.au.sydney_morning_herald_biz
+  source_name: Sydney Morning Herald — Business
+  url: https://www.smh.com.au/business
+  adapter_type: rss
+  jurisdiction: AU
+  language: en
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered: &id001
+  - earnings_report
+  - ma_announcement
+  - executive_change
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: Nine Media broadsheet. Backup to AFR for ASX corporate coverage.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.au.the_australian_business
+  source_name: The Australian — Business
+  url: https://www.theaustralian.com.au/business
+  adapter_type: rss
+  jurisdiction: AU
+  language: en
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered: *id001
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: News Corp broadsheet. Strong on mining + resources.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'

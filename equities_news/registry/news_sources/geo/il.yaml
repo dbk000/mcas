@@ -1,0 +1,123 @@
+- source_id: geo.il.boi_press
+  source_name: Bank of Israel — Press Releases
+  url: https://www.boi.org.il/en/communication-and-publications/press-releases/
+  adapter_type: rss
+  jurisdiction: IL
+  language: en
+  cost_tier: free
+  update_cadence: ad_hoc
+  event_types_covered: &id001
+  - macro_data_release
+  edge_weight_prior: 1.0
+  typical_lead_time_vs_english_minutes: 0
+  notes: Israeli central bank.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.il.calcalist_english
+  source_name: Calcalist — English edition
+  url: https://www.calcalistech.com/
+  adapter_type: rss
+  jurisdiction: IL
+  language: en
+  cost_tier: free
+  update_cadence: realtime
+  event_types_covered: &id002
+  - earnings_report
+  - ma_announcement
+  - executive_change
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: Tech-focused Israeli business publication. Strong on start-ups.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.il.cbs_israel
+  source_name: Central Bureau of Statistics (Israel)
+  url: https://www.cbs.gov.il/en/
+  adapter_type: rss
+  jurisdiction: IL
+  language: en
+  cost_tier: free
+  update_cadence: ad_hoc
+  event_types_covered: *id001
+  edge_weight_prior: 1.0
+  typical_lead_time_vs_english_minutes: 0
+  notes: CPI, GDP, trade balance.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.il.globes
+  source_name: Globes (Israeli Business News, English)
+  url: https://en.globes.co.il/en/
+  adapter_type: rss
+  jurisdiction: IL
+  language: en
+  cost_tier: metered
+  update_cadence: realtime
+  event_types_covered:
+  - earnings_report
+  - ma_announcement
+  - executive_change
+  - macro_data_release
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: -60
+  notes: Israeli business daily with English edition. Leads on TASE + Israeli tech.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.il.isa_press
+  source_name: Israel Securities Authority — Press
+  url: https://www.isa.gov.il/sites/ISAEng/
+  adapter_type: rss
+  jurisdiction: IL
+  language: en
+  cost_tier: free
+  update_cadence: ad_hoc
+  event_types_covered:
+  - regulatory_action
+  - sector_regulation
+  - investigation_disclosure
+  - material_disclosure
+  - regulatory_filing
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: 0
+  notes: Israeli securities regulator.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.il.tase_maya
+  source_name: TASE Maya — Disclosure portal
+  url: https://maya.tase.co.il/
+  adapter_type: scraper
+  jurisdiction: IL
+  language: en
+  cost_tier: free
+  update_cadence: realtime
+  event_types_covered:
+  - material_disclosure
+  - regulatory_filing
+  - earnings_report
+  - ma_announcement
+  - executive_change
+  edge_weight_prior: 1.0
+  typical_lead_time_vs_english_minutes: 0
+  notes: Tel Aviv Stock Exchange mandatory disclosure portal. Issuer-level filings.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.il.themarker_english
+  source_name: TheMarker (Haaretz) — English
+  url: https://www.haaretz.com/israel-news/business
+  adapter_type: rss
+  jurisdiction: IL
+  language: en
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered: *id002
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: Haaretz business desk in English.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'

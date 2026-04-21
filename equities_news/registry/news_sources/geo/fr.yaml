@@ -1,0 +1,107 @@
+- source_id: geo.fr.acpr_news
+  source_name: ACPR — Autorité de contrôle prudentiel et de résolution
+  url: https://acpr.banque-france.fr/en/news
+  adapter_type: rss
+  jurisdiction: FR
+  language: en
+  cost_tier: free
+  update_cadence: ad_hoc
+  event_types_covered:
+  - regulatory_action
+  - sector_regulation
+  - investigation_disclosure
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: 0
+  notes: French banking + insurance prudential regulator.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.fr.banque_de_france_press
+  source_name: Banque de France — Press
+  url: https://www.banque-france.fr/en/communique-de-presse
+  adapter_type: rss
+  jurisdiction: FR
+  language: en
+  cost_tier: free
+  update_cadence: ad_hoc
+  event_types_covered:
+  - macro_data_release
+  - sector_regulation
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: 0
+  notes: French central bank. Complements ECB.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.fr.insee_press
+  source_name: INSEE — Publications
+  url: https://www.insee.fr/en/statistiques
+  adapter_type: rss
+  jurisdiction: FR
+  language: en
+  cost_tier: free
+  update_cadence: ad_hoc
+  event_types_covered:
+  - macro_data_release
+  edge_weight_prior: 1.0
+  typical_lead_time_vs_english_minutes: 0
+  notes: French statistics institute. CPI, GDP, industrial output.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.fr.la_tribune
+  source_name: La Tribune
+  url: https://www.latribune.fr/
+  adapter_type: rss
+  jurisdiction: FR
+  language: fr
+  cost_tier: metered
+  update_cadence: daily
+  event_types_covered:
+  - earnings_report
+  - ma_announcement
+  - executive_change
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: French economy-focused online daily.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.fr.lagefi
+  source_name: L'Agefi
+  url: https://www.agefi.fr/
+  adapter_type: scraper
+  jurisdiction: FR
+  language: fr
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - earnings_report
+  - ma_announcement
+  - executive_change
+  - sell_side_rating_change
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: -30
+  notes: Paris finance-industry daily. Peers to Les Echos on banking + markets.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.fr.le_figaro_economie
+  source_name: Le Figaro — Économie
+  url: https://www.lefigaro.fr/economie
+  adapter_type: rss
+  jurisdiction: FR
+  language: fr
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - earnings_report
+  - ma_announcement
+  - executive_change
+  - macro_data_release
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: Le Figaro's economy desk.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'

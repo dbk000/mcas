@@ -1,0 +1,55 @@
+- source_id: sub_industry.utilities.water_utilities.awwa_news
+  source_name: American Water Works Association — News
+  url: https://www.awwa.org/AWWA-Articles
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - sector_regulation
+  - regulatory_action
+  - production_update
+  edge_weight_prior: 0.65
+  typical_lead_time_vs_english_minutes: 120
+  notes: AWWA — water utility trade association. Lead + PFAS regulation tracking. Moves AWK, WTRG, CWT, AWR, MSEX, YORW, HTO,
+    CWCO.
+  lineage:
+    authored_by: phase_b_utilities_opus
+    authored_at: '2026-04-21T13:04:10Z'
+- source_id: sub_industry.utilities.water_utilities.wateronline
+  source_name: Water Online
+  url: https://www.wateronline.com/
+  adapter_type: rss
+  jurisdiction: XX
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - contract_award
+  - production_update
+  - sector_regulation
+  edge_weight_prior: 0.5
+  typical_lead_time_vs_english_minutes: 120
+  notes: Water-sector trade press with water-quality + regulatory compliance focus.
+  lineage:
+    authored_by: phase_b_utilities_opus
+    authored_at: '2026-04-21T13:04:10Z'
+- source_id: sub_industry.utilities.water_utilities.waterworld
+  source_name: WaterWorld
+  url: https://www.waterworld.com/
+  adapter_type: rss
+  jurisdiction: XX
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - contract_award
+  - production_update
+  - sector_regulation
+  edge_weight_prior: 0.55
+  typical_lead_time_vs_english_minutes: 120
+  notes: Water + wastewater industry trade press. Contract awards + infrastructure-project coverage.
+  lineage:
+    authored_by: phase_b_utilities_opus
+    authored_at: '2026-04-21T13:04:10Z'

@@ -1,0 +1,36 @@
+- source_id: sub_industry.utilities.ipp_power_traders.eia_grid_monitor
+  source_name: EIA — Hourly Electric Grid Monitor
+  url: https://www.eia.gov/electricity/gridmonitor/
+  adapter_type: api
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: hourly
+  event_types_covered:
+  - macro_data_release
+  - commodity_price_event
+  - production_update
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: 0
+  notes: Hourly generation + demand by balancing authority. Real-time merchant-generation signal for VST, NRG, CEG, TLN, AES.
+  lineage:
+    authored_by: phase_b_utilities_opus
+    authored_at: '2026-04-21T13:04:10Z'
+- source_id: sub_industry.utilities.ipp_power_traders.energy_intel_merchant
+  source_name: Energy Intelligence — Merchant Power
+  url: https://www.energyintel.com/power
+  adapter_type: scraper
+  jurisdiction: XX
+  language: en
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - commodity_price_event
+  - contract_award
+  - production_update
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: Merchant-power specialist coverage. Heat-rate + capacity-price analytics relevant to VST, NRG, CEG hedge book.
+  lineage:
+    authored_by: phase_b_utilities_opus
+    authored_at: '2026-04-21T13:04:10Z'

@@ -1,0 +1,73 @@
+- source_id: geo.za.business_day
+  source_name: Business Day (SA)
+  url: https://www.businesslive.co.za/bd/
+  adapter_type: rss
+  jurisdiction: ZA
+  language: en
+  cost_tier: paid
+  update_cadence: realtime
+  event_types_covered:
+  - earnings_report
+  - ma_announcement
+  - executive_change
+  - macro_data_release
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: 0
+  notes: South Africa's business daily.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.za.fsca_news
+  source_name: Financial Sector Conduct Authority — News
+  url: https://www.fsca.co.za/News%20Documents/Forms/AllItems.aspx
+  adapter_type: scraper
+  jurisdiction: ZA
+  language: en
+  cost_tier: free
+  update_cadence: ad_hoc
+  event_types_covered:
+  - regulatory_action
+  - sector_regulation
+  - investigation_disclosure
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: 0
+  notes: SA financial conduct regulator.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.za.jse_sens
+  source_name: JSE SENS — Stock Exchange News Service
+  url: https://www.jse.co.za/news
+  adapter_type: scraper
+  jurisdiction: ZA
+  language: en
+  cost_tier: free
+  update_cadence: realtime
+  event_types_covered:
+  - material_disclosure
+  - regulatory_filing
+  - earnings_report
+  - ma_announcement
+  - executive_change
+  edge_weight_prior: 1.0
+  typical_lead_time_vs_english_minutes: 0
+  notes: JSE issuer disclosure portal.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.za.sarb_press
+  source_name: South African Reserve Bank — Publications
+  url: https://www.resbank.co.za/en/home/publications/news
+  adapter_type: rss
+  jurisdiction: ZA
+  language: en
+  cost_tier: free
+  update_cadence: ad_hoc
+  event_types_covered:
+  - macro_data_release
+  edge_weight_prior: 1.0
+  typical_lead_time_vs_english_minutes: 0
+  notes: SA central bank.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'

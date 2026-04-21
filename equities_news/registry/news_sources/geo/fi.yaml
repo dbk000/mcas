@@ -1,0 +1,87 @@
+- source_id: geo.fi.fin_fsa_news
+  source_name: Finanssivalvonta (FIN-FSA) — News
+  url: https://www.finanssivalvonta.fi/en/news/
+  adapter_type: rss
+  jurisdiction: FI
+  language: en
+  cost_tier: free
+  update_cadence: ad_hoc
+  event_types_covered:
+  - regulatory_action
+  - sector_regulation
+  - investigation_disclosure
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: 0
+  notes: Finnish FSA.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.fi.helsingin_sanomat_talous
+  source_name: Helsingin Sanomat — Talous
+  url: https://www.hs.fi/talous/
+  adapter_type: rss
+  jurisdiction: FI
+  language: fi
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - earnings_report
+  - ma_announcement
+  - executive_change
+  - macro_data_release
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: HS business section.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.fi.kauppalehti
+  source_name: Kauppalehti
+  url: https://www.kauppalehti.fi/
+  adapter_type: scraper
+  jurisdiction: FI
+  language: fi
+  cost_tier: paid
+  update_cadence: realtime
+  event_types_covered:
+  - earnings_report
+  - ma_announcement
+  - executive_change
+  - sell_side_rating_change
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: -45
+  notes: Finland's business daily. Leads English wires on OMX Helsinki 25.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.fi.stat_fi_releases
+  source_name: Statistics Finland — Releases
+  url: https://www.stat.fi/index_en.html
+  adapter_type: rss
+  jurisdiction: FI
+  language: en
+  cost_tier: free
+  update_cadence: ad_hoc
+  event_types_covered: &id001
+  - macro_data_release
+  edge_weight_prior: 1.0
+  typical_lead_time_vs_english_minutes: 0
+  notes: CPI, GDP.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.fi.suomen_pankki_press
+  source_name: Bank of Finland — Press
+  url: https://www.suomenpankki.fi/en/media-and-publications/releases/
+  adapter_type: rss
+  jurisdiction: FI
+  language: en
+  cost_tier: free
+  update_cadence: ad_hoc
+  event_types_covered: *id001
+  edge_weight_prior: 1.0
+  typical_lead_time_vs_english_minutes: 0
+  notes: Finnish central bank.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'

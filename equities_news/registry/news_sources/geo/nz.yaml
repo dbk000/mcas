@@ -1,0 +1,84 @@
+- source_id: geo.nz.businessdesk
+  source_name: BusinessDesk NZ
+  url: https://businessdesk.co.nz/
+  adapter_type: scraper
+  jurisdiction: NZ
+  language: en
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered: &id001
+  - earnings_report
+  - ma_announcement
+  - executive_change
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: -15
+  notes: NZX-focused business daily.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.nz.nzherald_business
+  source_name: NZ Herald — Business
+  url: https://www.nzherald.co.nz/business/
+  adapter_type: rss
+  jurisdiction: NZ
+  language: en
+  cost_tier: paid
+  update_cadence: realtime
+  event_types_covered: *id001
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: 0
+  notes: New Zealand's leading broadsheet business desk.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.nz.nzx_announcements
+  source_name: NZX — Company Announcements
+  url: https://www.nzx.com/markets/NZSX
+  adapter_type: scraper
+  jurisdiction: NZ
+  language: en
+  cost_tier: free
+  update_cadence: realtime
+  event_types_covered:
+  - material_disclosure
+  - regulatory_filing
+  - earnings_report
+  - ma_announcement
+  - executive_change
+  edge_weight_prior: 1.0
+  typical_lead_time_vs_english_minutes: 0
+  notes: NZX mandatory disclosure.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.nz.rbnz_news
+  source_name: Reserve Bank of New Zealand — News
+  url: https://www.rbnz.govt.nz/hub/news
+  adapter_type: rss
+  jurisdiction: NZ
+  language: en
+  cost_tier: free
+  update_cadence: ad_hoc
+  event_types_covered: &id002
+  - macro_data_release
+  edge_weight_prior: 1.0
+  typical_lead_time_vs_english_minutes: 0
+  notes: NZ central bank.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.nz.stats_nz
+  source_name: Stats NZ — Information Releases
+  url: https://www.stats.govt.nz/information-releases/
+  adapter_type: rss
+  jurisdiction: NZ
+  language: en
+  cost_tier: free
+  update_cadence: ad_hoc
+  event_types_covered: *id002
+  edge_weight_prior: 1.0
+  typical_lead_time_vs_english_minutes: 0
+  notes: CPI, GDP.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'

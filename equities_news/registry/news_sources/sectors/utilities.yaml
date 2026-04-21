@@ -1,0 +1,415 @@
+- source_id: sector.utilities.aemo_news
+  source_name: AEMO — Newsroom
+  url: https://aemo.com.au/newsroom
+  adapter_type: rss
+  jurisdiction: AU
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - commodity_price_event
+  - sector_regulation
+  - production_update
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: 0
+  notes: Australian Energy Market Operator. NEM + WEM price + capacity data. Drives ORG (Origin), AGL, APA.
+  lineage:
+    authored_by: phase_b_utilities_opus
+    authored_at: '2026-04-21T13:04:10Z'
+- source_id: sector.utilities.appa_news
+  source_name: American Public Power Association — News
+  url: https://www.publicpower.org/news-feed
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - sector_regulation
+  - regulatory_action
+  - production_update
+  edge_weight_prior: 0.6
+  typical_lead_time_vs_english_minutes: 60
+  notes: Public-power (municipal + cooperative) trade association. Context for federal policy affecting IOUs indirectly.
+  lineage:
+    authored_by: phase_b_utilities_opus
+    authored_at: '2026-04-21T13:04:10Z'
+- source_id: sector.utilities.argus_power
+  source_name: Argus Media — Power
+  url: https://www.argusmedia.com/en/electricity
+  adapter_type: scraper
+  jurisdiction: XX
+  language: en
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - commodity_price_event
+  - regulatory_action
+  - production_update
+  - sector_regulation
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: 0
+  notes: Global power-market price benchmarks + editorial. EU + Americas coverage. Competitor of Platts.
+  lineage:
+    authored_by: phase_b_utilities_opus
+    authored_at: '2026-04-21T13:04:10Z'
+- source_id: sector.utilities.bnef_news
+  source_name: BloombergNEF — News
+  url: https://about.bnef.com/newsroom/
+  adapter_type: scraper
+  jurisdiction: XX
+  language: en
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - commodity_price_event
+  - sector_regulation
+  - production_update
+  - macro_data_release
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: 0
+  notes: BloombergNEF — authoritative clean-energy + storage analytics. LCOE updates, installed-capacity surveys, battery
+    cost curves.
+  lineage:
+    authored_by: phase_b_utilities_opus
+    authored_at: '2026-04-21T13:04:10Z'
+- source_id: sector.utilities.caiso_news
+  source_name: California ISO — News
+  url: https://www.caiso.com/about/Pages/News/default.aspx
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - commodity_price_event
+  - sector_regulation
+  - production_update
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: 0
+  notes: California ISO. Wildfire-season pricing, Flex Alerts, and ancillary-market clearing. Drives PCG, EIX, SRE exposure.
+  lineage:
+    authored_by: phase_b_utilities_opus
+    authored_at: '2026-04-21T13:04:10Z'
+- source_id: sector.utilities.doe_news
+  source_name: US Department of Energy — Articles
+  url: https://www.energy.gov/articles
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - sector_regulation
+  - contract_award
+  - regulatory_action
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: DOE press + loan programme office. IRA-related grant announcements for renewables + nuclear.
+  lineage:
+    authored_by: phase_b_utilities_opus
+    authored_at: '2026-04-21T13:04:10Z'
+- source_id: sector.utilities.eei_news
+  source_name: Edison Electric Institute — News
+  url: https://www.eei.org/news
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - sector_regulation
+  - regulatory_action
+  - executive_change
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 60
+  notes: Investor-owned utility trade association. Policy positions + executive commentary, not primary news. Useful for sector-wide
+    regulatory stance.
+  lineage:
+    authored_by: phase_b_utilities_opus
+    authored_at: '2026-04-21T13:04:10Z'
+- source_id: sector.utilities.eia_electricity
+  source_name: EIA — Electricity
+  url: https://www.eia.gov/electricity/
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  - commodity_price_event
+  - production_update
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: 0
+  notes: 'Energy Information Administration electricity data: monthly generation + retail sales + fuel mix. Grid monitor for
+    hourly data.'
+  lineage:
+    authored_by: phase_b_utilities_opus
+    authored_at: '2026-04-21T13:04:10Z'
+- source_id: sector.utilities.eia_natgas_storage
+  source_name: EIA — Weekly Natural Gas Storage
+  url: https://www.eia.gov/naturalgas/weekly/
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  - commodity_price_event
+  edge_weight_prior: 0.95
+  typical_lead_time_vs_english_minutes: 0
+  notes: WNGSR — Thursday 10:30 ET. Dominant weekly event for gas-distribution utilities + nat-gas-exposed electric generators.
+  lineage:
+    authored_by: phase_b_utilities_opus
+    authored_at: '2026-04-21T13:04:10Z'
+- source_id: sector.utilities.entsoe_news
+  source_name: ENTSO-E — News
+  url: https://www.entsoe.eu/news/
+  adapter_type: rss
+  jurisdiction: XX
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - commodity_price_event
+  - sector_regulation
+  - production_update
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: 0
+  notes: European Network of Transmission System Operators — pan-EU grid ops. Cross-border flow + winter-readiness statements
+    move IBE, ENEL, EOAN, RWE, ENGI, NG (UK), SSE.
+  lineage:
+    authored_by: phase_b_utilities_opus
+    authored_at: '2026-04-21T13:04:10Z'
+- source_id: sector.utilities.epa_ghgrp
+  source_name: EPA — Greenhouse Gas Reporting Program
+  url: https://www.epa.gov/ghgreporting
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: ad_hoc
+  event_types_covered:
+  - macro_data_release
+  - sector_regulation
+  edge_weight_prior: 0.55
+  typical_lead_time_vs_english_minutes: 1440
+  notes: Per-plant CO2e emissions data. Annual update — not market-moving in isolation but feeds carbon-intensity indicators
+    for IOUs.
+  lineage:
+    authored_by: phase_b_utilities_opus
+    authored_at: '2026-04-21T13:04:10Z'
+- source_id: sector.utilities.ercot_news
+  source_name: ERCOT — News
+  url: https://www.ercot.com/news
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - commodity_price_event
+  - sector_regulation
+  - production_update
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: 0
+  notes: Electric Reliability Council of Texas. Summer peak-price events drive VST (Vistra) + CEG + NRG merchant generation.
+    Winter storm Uri reference event.
+  lineage:
+    authored_by: phase_b_utilities_opus
+    authored_at: '2026-04-21T13:04:10Z'
+- source_id: sector.utilities.ferc_news
+  source_name: FERC — News & Media
+  url: https://www.ferc.gov/news-events/news
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: ad_hoc
+  event_types_covered:
+  - regulatory_action
+  - sector_regulation
+  - ma_announcement
+  edge_weight_prior: 0.95
+  typical_lead_time_vs_english_minutes: 0
+  notes: Federal Energy Regulatory Commission — authoritative for interstate transmission rate cases + utility merger approvals
+    + FERC 841 storage + capacity-market rulings.
+  lineage:
+    authored_by: phase_b_utilities_opus
+    authored_at: '2026-04-21T13:04:10Z'
+- source_id: sector.utilities.iso_ne_news
+  source_name: ISO New England — News
+  url: https://www.iso-ne.com/about/news-media
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - commodity_price_event
+  - sector_regulation
+  - production_update
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: 0
+  notes: ISO-NE. Forward Capacity Market auctions drive ES (Eversource) + NEE (New England assets).
+  lineage:
+    authored_by: phase_b_utilities_opus
+    authored_at: '2026-04-21T13:04:10Z'
+- source_id: sector.utilities.miso_news
+  source_name: MISO — News
+  url: https://www.misoenergy.org/about/media-center/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - commodity_price_event
+  - sector_regulation
+  - production_update
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: 0
+  notes: Midcontinent ISO. Planning Resource Auction drives AEP, DTE, CMS, LNT, EVRG, XEL, NI capacity pricing.
+  lineage:
+    authored_by: phase_b_utilities_opus
+    authored_at: '2026-04-21T13:04:10Z'
+- source_id: sector.utilities.nrc_news
+  source_name: Nuclear Regulatory Commission — News
+  url: https://www.nrc.gov/reading-rm/doc-collections/news/index.html
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: ad_hoc
+  event_types_covered:
+  - regulatory_action
+  - production_update
+  - sector_regulation
+  edge_weight_prior: 0.95
+  typical_lead_time_vs_english_minutes: 0
+  notes: NRC event reports + license amendments. Moves CEG, VST (nuclear side), DUK, SO, ETR, EXC. event.nrc.gov/lerreader
+    for event reports.
+  lineage:
+    authored_by: phase_b_utilities_opus
+    authored_at: '2026-04-21T13:04:10Z'
+- source_id: sector.utilities.nyiso_news
+  source_name: NYISO — News
+  url: https://www.nyiso.com/news
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - commodity_price_event
+  - sector_regulation
+  - production_update
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: 0
+  notes: New York ISO. Installed capacity-market auctions drive ED (Con Ed) regulated-side + downstate merchant generation.
+  lineage:
+    authored_by: phase_b_utilities_opus
+    authored_at: '2026-04-21T13:04:10Z'
+- source_id: sector.utilities.ofgem_news
+  source_name: Ofgem — Press Releases
+  url: https://www.ofgem.gov.uk/publications/press-releases
+  adapter_type: rss
+  jurisdiction: GB
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - regulatory_action
+  - sector_regulation
+  - commodity_price_event
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: 0
+  notes: UK energy regulator. Price cap announcements, RIIO-2/3 settlements, retail supplier actions. Drives NG, SSE, CNA,
+    SVT, UU, PNN, DRX.
+  lineage:
+    authored_by: phase_b_utilities_opus
+    authored_at: '2026-04-21T13:04:10Z'
+- source_id: sector.utilities.pjm_news
+  source_name: PJM Interconnection — News
+  url: https://www.pjm.com/about-pjm/newsroom
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - commodity_price_event
+  - sector_regulation
+  - production_update
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: 0
+  notes: PJM — largest US wholesale market by volume. Base-Residual Auction results move EXC, CEG, AEP, D, FE, PPL, WEC, ES,
+    PEG, DTE.
+  lineage:
+    authored_by: phase_b_utilities_opus
+    authored_at: '2026-04-21T13:04:10Z'
+- source_id: sector.utilities.rto_insider
+  source_name: RTO Insider
+  url: https://www.rtoinsider.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - regulatory_action
+  - sector_regulation
+  - production_update
+  - commodity_price_event
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: 0
+  notes: Regional Transmission Organization + ISO market coverage — CAISO/ERCOT/PJM/MISO/NYISO/ISO-NE. Primary source for
+    capacity-market auction results + FERC-jurisdictional rulings. Subscription.
+  lineage:
+    authored_by: phase_b_utilities_opus
+    authored_at: '2026-04-21T13:04:10Z'
+- source_id: sector.utilities.sp_global_utilities
+  source_name: S&P Global Market Intelligence — Utilities
+  url: https://www.spglobal.com/market-intelligence/en/solutions/utilities
+  adapter_type: scraper
+  jurisdiction: XX
+  language: en
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - regulatory_action
+  - ma_announcement
+  - material_disclosure
+  - sell_side_rating_change
+  - sector_regulation
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: 0
+  notes: Formerly SNL Utility. Deep rate-case database + per-utility financial intelligence. Paid — MCAS requires commercial
+    licence for programmatic use.
+  lineage:
+    authored_by: phase_b_utilities_opus
+    authored_at: '2026-04-21T13:04:10Z'
+- source_id: sector.utilities.utility_dive
+  source_name: Utility Dive
+  url: https://www.utilitydive.com/
+  adapter_type: rss
+  jurisdiction: XX
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - regulatory_action
+  - ma_announcement
+  - executive_change
+  - production_update
+  - sector_regulation
+  - contract_award
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: 0
+  notes: Dominant US-based utilities trade press. Rate-case tracking, IRP filings, M&A, renewable transition coverage. Core
+    feed for electric + multi + renewable IPP.
+  lineage:
+    authored_by: phase_b_utilities_opus
+    authored_at: '2026-04-21T13:04:10Z'

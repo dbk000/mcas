@@ -1,0 +1,37 @@
+- source_id: geo.pe.bvl_announcements
+  source_name: Bolsa de Valores de Lima — Noticias
+  url: https://www.bvl.com.pe/
+  adapter_type: scraper
+  jurisdiction: PE
+  language: es
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - material_disclosure
+  - regulatory_filing
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: 0
+  notes: Lima Stock Exchange.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.pe.smv_peru
+  source_name: SMV Perú — Comunicados
+  url: https://www.smv.gob.pe/
+  adapter_type: scraper
+  jurisdiction: PE
+  language: es
+  cost_tier: free
+  update_cadence: ad_hoc
+  event_types_covered:
+  - regulatory_action
+  - sector_regulation
+  - investigation_disclosure
+  - material_disclosure
+  - regulatory_filing
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: 0
+  notes: Superintendencia del Mercado de Valores de Perú.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'

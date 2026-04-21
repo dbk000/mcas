@@ -1,0 +1,176 @@
+- source_id: geo.us.barrons
+  source_name: Barron's
+  url: https://www.barrons.com/
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: paid
+  update_cadence: weekly
+  event_types_covered:
+  - earnings_report
+  - ma_announcement
+  - executive_change
+  - sell_side_rating_change
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 60
+  notes: Weekly value-investing flagship. Feature stories + Roundtable move mid-cap prices on Monday opens.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.us.bea_news
+  source_name: US Bureau of Economic Analysis — News
+  url: https://www.bea.gov/news
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: ad_hoc
+  event_types_covered: &id001
+  - macro_data_release
+  edge_weight_prior: 1.0
+  typical_lead_time_vs_english_minutes: 0
+  notes: GDP, personal income, trade balance.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.us.bls_releases
+  source_name: US Bureau of Labor Statistics — News Releases
+  url: https://www.bls.gov/schedule/news_release/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: ad_hoc
+  event_types_covered: *id001
+  edge_weight_prior: 1.0
+  typical_lead_time_vs_english_minutes: 0
+  notes: CPI, NFP, PPI, JOLTS. Authoritative US labor + inflation data.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.us.cftc_press
+  source_name: CFTC Press Releases
+  url: https://www.cftc.gov/PressRoom/PressReleases
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: ad_hoc
+  event_types_covered: &id002
+  - regulatory_action
+  - sector_regulation
+  - investigation_disclosure
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: 0
+  notes: Commodity futures regulator. Enforcement actions + position limits.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.us.cnbc
+  source_name: CNBC
+  url: https://www.cnbc.com/world/?region=world
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: realtime
+  event_types_covered:
+  - earnings_report
+  - ma_announcement
+  - executive_change
+  - sell_side_rating_change
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: US cable business news. Strong on US corporate earnings + Fed coverage.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.us.federal_register
+  source_name: Federal Register (US Government)
+  url: https://www.federalregister.gov/
+  adapter_type: api
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - sector_regulation
+  - regulatory_action
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: 0
+  notes: Authoritative gazette for US federal agency rules + notices. Not issuer-specific; covers all sectors.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.us.finra_news
+  source_name: FINRA Newsroom
+  url: https://www.finra.org/media-center/news-releases
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: ad_hoc
+  event_types_covered: *id002
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: 0
+  notes: Broker-dealer self-regulator. Enforcement fines + rule changes.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.us.investors_business_daily
+  source_name: Investor's Business Daily
+  url: https://www.investors.com/
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - earnings_report
+  - ma_announcement
+  - executive_change
+  - sell_side_rating_change
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: CAN SLIM growth-investing paper. Proprietary ratings.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.us.marketwatch
+  source_name: MarketWatch
+  url: https://www.marketwatch.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: realtime
+  event_types_covered:
+  - earnings_report
+  - ma_announcement
+  - executive_change
+  - macro_data_release
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: Dow Jones retail finance portal. Free web. Fast aggregator, not usually first-break.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.us.yahoo_finance
+  source_name: Yahoo Finance
+  url: https://finance.yahoo.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: realtime
+  event_types_covered:
+  - earnings_report
+  - ma_announcement
+  - executive_change
+  - earnings_report
+  edge_weight_prior: 0.65
+  typical_lead_time_vs_english_minutes: 15
+  notes: Retail-popular finance portal. Aggregator rather than original source; useful for sentiment/retail signal.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'

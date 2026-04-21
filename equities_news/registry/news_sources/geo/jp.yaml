@@ -1,0 +1,195 @@
+- source_id: geo.jp.boj_tankan
+  source_name: BOJ Tankan Survey
+  url: https://www.boj.or.jp/en/statistics/tk/
+  adapter_type: scraper
+  jurisdiction: JP
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered: &id001
+  - macro_data_release
+  edge_weight_prior: 1.0
+  typical_lead_time_vs_english_minutes: 0
+  notes: Quarterly business sentiment survey — widely-watched leading indicator.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.jp.cao_gdp
+  source_name: Cabinet Office — Quarterly GDP
+  url: https://www.esri.cao.go.jp/en/sna/menu.html
+  adapter_type: scraper
+  jurisdiction: JP
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered: *id001
+  edge_weight_prior: 1.0
+  typical_lead_time_vs_english_minutes: 0
+  notes: Authoritative quarterly GDP release.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.jp.diamond_online
+  source_name: Diamond Online
+  url: https://diamond.jp/
+  adapter_type: rss
+  jurisdiction: JP
+  language: ja
+  cost_tier: metered
+  update_cadence: daily
+  event_types_covered:
+  - earnings_report
+  - ma_announcement
+  - executive_change
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: -60
+  notes: Japanese business weekly. Scoop-heavy editorial on listed companies.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.jp.jpx_announcements
+  source_name: JPX Group — Announcements
+  url: https://www.jpx.co.jp/english/news/
+  adapter_type: rss
+  jurisdiction: JP
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - sector_regulation
+  - regulatory_action
+  - delisting
+  - index_inclusion
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: 0
+  notes: Japan Exchange Group parent-company announcements. Listing changes + index reviews.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.jp.mainichi_economist
+  source_name: Mainichi Keizaishi (Weekly Economist)
+  url: https://weekly-economist.mainichi.jp/
+  adapter_type: scraper
+  jurisdiction: JP
+  language: ja
+  cost_tier: paid
+  update_cadence: weekly
+  event_types_covered:
+  - earnings_report
+  - ma_announcement
+  - executive_change
+  - macro_data_release
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: Mainichi's weekly business magazine. Analytical rather than breaking.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.jp.metis_press
+  source_name: Ministry of Economy, Trade and Industry (METI) — Press
+  url: https://www.meti.go.jp/english/press/
+  adapter_type: rss
+  jurisdiction: JP
+  language: en
+  cost_tier: free
+  update_cadence: ad_hoc
+  event_types_covered:
+  - sector_regulation
+  - macro_data_release
+  - contract_award
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: 0
+  notes: METI industrial policy announcements. Subsidies, export controls, sector strategy.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.jp.mof_press
+  source_name: Ministry of Finance (Japan) — Press
+  url: https://www.mof.go.jp/english/index.htm
+  adapter_type: rss
+  jurisdiction: JP
+  language: en
+  cost_tier: free
+  update_cadence: ad_hoc
+  event_types_covered:
+  - macro_data_release
+  - sector_regulation
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: 0
+  notes: Fiscal policy, FX intervention announcements, debt auctions.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.jp.nikkei_business_daily
+  source_name: Nikkei Business Daily (JP-language)
+  url: https://www.nikkei.com/
+  adapter_type: scraper
+  jurisdiction: JP
+  language: ja
+  cost_tier: paid
+  update_cadence: realtime
+  event_types_covered:
+  - earnings_report
+  - ma_announcement
+  - executive_change
+  - sell_side_rating_change
+  - macro_data_release
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: -120
+  notes: Japan's business daily, JP-language flagship. Distinct from universal.nikkei_asia_english. Leads English wires.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.jp.quick_news
+  source_name: QUICK — Nikkei market data service
+  url: https://corporate.quick.co.jp/
+  adapter_type: api
+  jurisdiction: JP
+  language: ja
+  cost_tier: paid
+  update_cadence: realtime
+  event_types_covered:
+  - earnings_report
+  - ma_announcement
+  - executive_change
+  - sell_side_rating_change
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: -60
+  notes: QUICK is Nikkei's market data/news terminal, Japanese equivalent of Bloomberg for JP desks.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.jp.stat_cpi
+  source_name: Statistics Bureau Japan — CPI
+  url: https://www.stat.go.jp/english/data/cpi/
+  adapter_type: scraper
+  jurisdiction: JP
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered: *id001
+  edge_weight_prior: 1.0
+  typical_lead_time_vs_english_minutes: 0
+  notes: Monthly CPI release.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
+- source_id: geo.jp.toyo_keizai
+  source_name: Toyo Keizai Online
+  url: https://toyokeizai.net/
+  adapter_type: rss
+  jurisdiction: JP
+  language: ja
+  cost_tier: metered
+  update_cadence: daily
+  event_types_covered:
+  - earnings_report
+  - ma_announcement
+  - executive_change
+  - macro_data_release
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: -60
+  notes: Long-form business weekly + daily online. Strong on corporate strategy analysis.
+  lineage:
+    authored_by: phase_a_opus
+    authored_at: '2026-04-21T12:20:40Z'
