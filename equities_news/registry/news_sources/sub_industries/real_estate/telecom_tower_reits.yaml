@@ -1,0 +1,17 @@
+- source_id: sub_industry.real_estate.telecom_tower_reits.wireless_estimator
+  source_name: Wireless Estimator
+  url: https://wirelessestimator.com/news/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - contract_award
+  - production_update
+  edge_weight_prior: 0.65
+  typical_lead_time_vs_english_minutes: 60
+  notes: Cell-tower construction + lease industry. AMT, CCI, SBAC tenant signings.
+  lineage:
+    authored_by: phase_b_real_estate_opus
+    authored_at: '2026-04-21T14:34:05Z'

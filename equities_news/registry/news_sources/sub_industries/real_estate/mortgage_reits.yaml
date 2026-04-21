@@ -1,0 +1,32 @@
+- source_id: sub_industry.real_estate.mortgage_reits.embs_prepay
+  source_name: eMBS Prepayment Speeds
+  url: https://www.embs.com/
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: paid
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: 0
+  notes: eMBS agency-MBS prepayment speeds. Monthly CPR for NLY, AGNC duration/convexity.
+  lineage:
+    authored_by: phase_b_real_estate_opus
+    authored_at: '2026-04-21T14:34:05Z'
+- source_id: sub_industry.real_estate.mortgage_reits.fed_mbs_operations
+  source_name: NY Fed — MBS Operations
+  url: https://www.newyorkfed.org/markets/ambs
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: 0
+  notes: NY Fed MBS purchases + portfolio runoff. Direct price signal for NLY, AGNC, MFA.
+  lineage:
+    authored_by: phase_b_real_estate_opus
+    authored_at: '2026-04-21T14:34:05Z'

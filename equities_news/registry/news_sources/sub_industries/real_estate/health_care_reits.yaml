@@ -1,0 +1,17 @@
+- source_id: sub_industry.real_estate.health_care_reits.cms_reimbursement
+  source_name: CMS — Nursing Facility Payment
+  url: https://www.cms.gov/Medicare/Medicare-Fee-for-Service-Payment/SNFPPS
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: ad_hoc
+  event_types_covered:
+  - regulatory_action
+  - sector_regulation
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: 0
+  notes: CMS skilled-nursing reimbursement rules. Annual SNF-PPS proposed rule + final rule drive OHI, NHI, LTC, MPW.
+  lineage:
+    authored_by: phase_b_real_estate_opus
+    authored_at: '2026-04-21T14:34:05Z'

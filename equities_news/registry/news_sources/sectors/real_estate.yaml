@@ -1,0 +1,343 @@
+- source_id: sector.real_estate.bisnow
+  source_name: Bisnow
+  url: https://www.bisnow.com/national
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - ma_announcement
+  - executive_change
+  - contract_award
+  edge_weight_prior: 0.6
+  typical_lead_time_vs_english_minutes: 30
+  notes: City-by-city CRE briefings. Tenant moves + development approvals.
+  lineage:
+    authored_by: phase_b_real_estate_opus
+    authored_at: '2026-04-21T14:34:05Z'
+- source_id: sector.real_estate.case_shiller_hpi
+  source_name: S&P CoreLogic Case-Shiller HPI
+  url: https://www.spglobal.com/spdji/en/indices/indicators/sp-corelogic-case-shiller-home-price-indices/
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: Case-Shiller HPI — two-month lag. Moves INVH, AMH, NLY, AGNC on trend change.
+  lineage:
+    authored_by: phase_b_real_estate_opus
+    authored_at: '2026-04-21T14:34:05Z'
+- source_id: sector.real_estate.census_new_residential
+  source_name: Census — New Residential Construction
+  url: https://www.census.gov/construction/nrc/index.html
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: 0
+  notes: Starts + permits + completions. ~18th monthly. Moves INVH, AMH, MAA, AVB + homebuilders.
+  lineage:
+    authored_by: phase_b_real_estate_opus
+    authored_at: '2026-04-21T14:34:05Z'
+- source_id: sector.real_estate.commercial_observer
+  source_name: Commercial Observer
+  url: https://commercialobserver.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: metered
+  update_cadence: daily
+  event_types_covered:
+  - ma_announcement
+  - executive_change
+  - contract_award
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: NYC-heavy CRE publication. Deep lender + owner relationships. Strong scoops on SLG, BXP, VNO, AvalonBay.
+  lineage:
+    authored_by: phase_b_real_estate_opus
+    authored_at: '2026-04-21T14:34:05Z'
+- source_id: sector.real_estate.costar_analytics
+  source_name: CoStar Analytics
+  url: https://product.costar.com/home/news
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: paid
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: 0
+  notes: CoStar market reports — office, industrial, retail, multifamily. Vacancy + asking rent benchmarks.
+  lineage:
+    authored_by: phase_b_real_estate_opus
+    authored_at: '2026-04-21T14:34:05Z'
+- source_id: sector.real_estate.costar_news
+  source_name: CoStar Group — News
+  url: https://www.costar.com/News
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - ma_announcement
+  - contract_award
+  - macro_data_release
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: CoStar news side. Market-level transaction data + leasing activity.
+  lineage:
+    authored_by: phase_b_real_estate_opus
+    authored_at: '2026-04-21T14:34:05Z'
+- source_id: sector.real_estate.fed_sloos
+  source_name: Federal Reserve — Senior Loan Officer Survey
+  url: https://www.federalreserve.gov/data/sloos.htm
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: 0
+  notes: Fed quarterly SLOOS — CRE lending conditions. Advance indicator for office/industrial/multifamily. Moves BXP, VNO,
+    SLG.
+  lineage:
+    authored_by: phase_b_real_estate_opus
+    authored_at: '2026-04-21T14:34:05Z'
+- source_id: sector.real_estate.fhfa_press
+  source_name: FHFA — Media
+  url: https://www.fhfa.gov/news/news-releases
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - regulatory_action
+  - sector_regulation
+  - macro_data_release
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: 0
+  notes: Federal Housing Finance Agency. Conforming loan limits, GSE capital rules, FHFA HPI. Moves NLY, AGNC, mortgage REITs.
+  lineage:
+    authored_by: phase_b_real_estate_opus
+    authored_at: '2026-04-21T14:34:05Z'
+- source_id: sector.real_estate.globest
+  source_name: GlobeSt
+  url: https://www.globest.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - ma_announcement
+  - executive_change
+  - contract_award
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: ALM-owned commercial real estate daily. National deals + leasing activity.
+  lineage:
+    authored_by: phase_b_real_estate_opus
+    authored_at: '2026-04-21T14:34:05Z'
+- source_id: sector.real_estate.green_street_news
+  source_name: Green Street — News
+  url: https://www.greenstreet.com/news
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: paid
+  update_cadence: weekly
+  event_types_covered:
+  - sell_side_rating_change
+  - macro_data_release
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: 0
+  notes: Green Street Advisors — gold-standard REIT research. NAV premium/discount published daily, headline press free.
+  lineage:
+    authored_by: phase_b_real_estate_opus
+    authored_at: '2026-04-21T14:34:05Z'
+- source_id: sector.real_estate.hud_press
+  source_name: HUD — Press Releases
+  url: https://www.hud.gov/press
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - regulatory_action
+  - sector_regulation
+  edge_weight_prior: 0.65
+  typical_lead_time_vs_english_minutes: 0
+  notes: Housing and Urban Development. FHA programs + multifamily housing rules.
+  lineage:
+    authored_by: phase_b_real_estate_opus
+    authored_at: '2026-04-21T14:34:05Z'
+- source_id: sector.real_estate.inside_re
+  source_name: Inside Real Estate
+  url: https://insidere.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - ma_announcement
+  - executive_change
+  edge_weight_prior: 0.5
+  typical_lead_time_vs_english_minutes: 120
+  notes: Residential brokerage industry trade.
+  lineage:
+    authored_by: phase_b_real_estate_opus
+    authored_at: '2026-04-21T14:34:05Z'
+- source_id: sector.real_estate.kastle_barometer
+  source_name: Kastle Back to Work Barometer
+  url: https://www.kastle.com/safety-wellness/getting-america-back-to-work/
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: Kastle Systems office-occupancy proxy. Weekly average across 10 US cities. Moves BXP, SLG, VNO, DEI, CUZ.
+  lineage:
+    authored_by: phase_b_real_estate_opus
+    authored_at: '2026-04-21T14:34:05Z'
+- source_id: sector.real_estate.nar_existing_home_sales
+  source_name: NAR — Existing Home Sales
+  url: https://www.nar.realtor/research-and-statistics/housing-statistics/existing-home-sales
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: 0
+  notes: NAR monthly existing home sales. Drives residential REITs + mortgage REITs. ~25th each month.
+  lineage:
+    authored_by: phase_b_real_estate_opus
+    authored_at: '2026-04-21T14:34:05Z'
+- source_id: sector.real_estate.nareit_news
+  source_name: NAREIT — News
+  url: https://www.reit.com/news
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - sector_regulation
+  - macro_data_release
+  - executive_change
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: 0
+  notes: National Association of Real Estate Investment Trusts. FTSE NAREIT index commentary + T-Tracker quarterly data.
+  lineage:
+    authored_by: phase_b_real_estate_opus
+    authored_at: '2026-04-21T14:34:05Z'
+- source_id: sector.real_estate.rca_msci_news
+  source_name: RCA Analytics (MSCI) — Press
+  url: https://www.msci.com/www/research-report/real-capital-analytics
+  adapter_type: scraper
+  jurisdiction: XX
+  language: en
+  cost_tier: paid
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: 0
+  notes: MSCI Real Capital Analytics — global transaction volume + price indices. Monthly reports.
+  lineage:
+    authored_by: phase_b_real_estate_opus
+    authored_at: '2026-04-21T14:34:05Z'
+- source_id: sector.real_estate.rebusinessonline
+  source_name: REBusinessOnline
+  url: https://rebusinessonline.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - ma_announcement
+  - contract_award
+  - executive_change
+  edge_weight_prior: 0.55
+  typical_lead_time_vs_english_minutes: 120
+  notes: Regional CRE news aggregator. Secondary-market deal coverage.
+  lineage:
+    authored_by: phase_b_real_estate_opus
+    authored_at: '2026-04-21T14:34:05Z'
+- source_id: sector.real_estate.sp_global_re
+  source_name: S&P Global Market Intelligence — Real Estate
+  url: https://www.spglobal.com/marketintelligence/en/industries/real-estate
+  adapter_type: scraper
+  jurisdiction: XX
+  language: en
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - macro_data_release
+  - ma_announcement
+  - sell_side_rating_change
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: 0
+  notes: Formerly SNL Real Estate. Deep REIT-level data + rating changes.
+  lineage:
+    authored_by: phase_b_real_estate_opus
+    authored_at: '2026-04-21T14:34:05Z'
+- source_id: sector.real_estate.ssa_self_storage
+  source_name: Self Storage Association — News
+  url: https://www.selfstorage.org/News
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  - production_update
+  edge_weight_prior: 0.6
+  typical_lead_time_vs_english_minutes: 60
+  notes: Self-storage industry data. Moves PSA, EXR, LSI, CUBE.
+  lineage:
+    authored_by: phase_b_real_estate_opus
+    authored_at: '2026-04-21T14:34:05Z'
+- source_id: sector.real_estate.the_real_deal
+  source_name: The Real Deal
+  url: https://therealdeal.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - ma_announcement
+  - executive_change
+  - contract_award
+  edge_weight_prior: 0.65
+  typical_lead_time_vs_english_minutes: 0
+  notes: NYC/Miami/LA/Chicago real-estate daily. Residential + commercial deal scoops.
+  lineage:
+    authored_by: phase_b_real_estate_opus
+    authored_at: '2026-04-21T14:34:05Z'
