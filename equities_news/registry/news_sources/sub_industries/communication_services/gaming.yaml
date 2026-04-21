@@ -1,0 +1,37 @@
+- source_id: sub_industry.communication_services.gaming.gamesindustry_biz
+  source_name: GamesIndustry.biz
+  url: https://www.gamesindustry.biz/
+  adapter_type: rss
+  jurisdiction: XX
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - product_launch
+  - executive_change
+  - ma_announcement
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: Gaming industry trade. Launch performance, layoffs, studio acquisitions. Moves EA, TTWO, UBI, EMBRAC, 9697 Capcom,
+    3765 GungHo, 9766 Konami.
+  lineage:
+    authored_by: phase_b_communication_services_opus
+    authored_at: '2026-04-21T14:15:55Z'
+- source_id: sub_industry.communication_services.gaming.steamdb
+  source_name: SteamDB
+  url: https://steamdb.info/news/
+  adapter_type: scraper
+  jurisdiction: XX
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - product_launch
+  - macro_data_release
+  edge_weight_prior: 0.65
+  typical_lead_time_vs_english_minutes: 0
+  notes: Steam concurrent-player + top-seller data. Leading indicator for EA, TTWO, UBI, 7974 Nintendo, 3659 Nexon, 9684 Square
+    Enix.
+  lineage:
+    authored_by: phase_b_communication_services_opus
+    authored_at: '2026-04-21T14:15:55Z'

@@ -1,0 +1,398 @@
+- source_id: sector.communication_services.ad_age
+  source_name: Ad Age
+  url: https://adage.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: metered
+  update_cadence: daily
+  event_types_covered:
+  - contract_award
+  - executive_change
+  - product_launch
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: Advertising industry flagship. Account wins/losses for WPP, OMC, IPG, PUB, DN. Agency-holding-co M&A tracker.
+  lineage:
+    authored_by: phase_b_communication_services_opus
+    authored_at: '2026-04-21T14:15:55Z'
+- source_id: sector.communication_services.arcep_publications
+  source_name: ARCEP — Publications
+  url: https://en.arcep.fr/news/press-releases.html
+  adapter_type: rss
+  jurisdiction: FR
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - regulatory_action
+  - sector_regulation
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: French telecoms regulator. Moves ORAN, ILIAD (private), TEF (via SCT).
+  lineage:
+    authored_by: phase_b_communication_services_opus
+    authored_at: '2026-04-21T14:15:55Z'
+- source_id: sector.communication_services.axios_media_pro
+  source_name: Axios Media
+  url: https://www.axios.com/media
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - executive_change
+  - ma_announcement
+  - regulatory_action
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: Sara Fischer media newsletter + streaming vertical. Strong sourcing into ad-tech + streaming C-suite.
+  lineage:
+    authored_by: phase_b_communication_services_opus
+    authored_at: '2026-04-21T14:15:55Z'
+- source_id: sector.communication_services.box_office_mojo
+  source_name: Box Office Mojo
+  url: https://www.boxofficemojo.com/
+  adapter_type: scraper
+  jurisdiction: XX
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - macro_data_release
+  - product_launch
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: IMDb-owned theatrical box-office tracker. Weekend opening + international rollouts. Moves DIS, WBD, PARA, AMC, CNK.
+  lineage:
+    authored_by: phase_b_communication_services_opus
+    authored_at: '2026-04-21T14:15:55Z'
+- source_id: sector.communication_services.bundesnetzagentur
+  source_name: Bundesnetzagentur — Pressemitteilungen
+  url: https://www.bundesnetzagentur.de/EN/Home/home_node.html
+  adapter_type: scraper
+  jurisdiction: DE
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - regulatory_action
+  - sector_regulation
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: German federal network agency. Moves DTE, Freenet, United Internet on spectrum + wholesale rulings.
+  lineage:
+    authored_by: phase_b_communication_services_opus
+    authored_at: '2026-04-21T14:15:55Z'
+- source_id: sector.communication_services.deadline
+  source_name: Deadline Hollywood
+  url: https://deadline.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - executive_change
+  - ma_announcement
+  - contract_award
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: Deadline — fast-turnaround Hollywood + streaming news. Penske-owned sister of Variety. Scoop-heavy.
+  lineage:
+    authored_by: phase_b_communication_services_opus
+    authored_at: '2026-04-21T14:15:55Z'
+- source_id: sector.communication_services.digiday
+  source_name: Digiday
+  url: https://digiday.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: metered
+  update_cadence: daily
+  event_types_covered:
+  - contract_award
+  - executive_change
+  - product_launch
+  - regulatory_action
+  edge_weight_prior: 0.65
+  typical_lead_time_vs_english_minutes: 0
+  notes: Digital media + marketing industry. Post-cookie tracking, retail media, creator-economy coverage.
+  lineage:
+    authored_by: phase_b_communication_services_opus
+    authored_at: '2026-04-21T14:15:55Z'
+- source_id: sector.communication_services.fcc_headlines
+  source_name: FCC — Headlines
+  url: https://www.fcc.gov/news-events/headlines
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: ad_hoc
+  event_types_covered:
+  - regulatory_action
+  - sector_regulation
+  - ma_announcement
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: 0
+  notes: US Federal Communications Commission. Spectrum auctions, merger approvals, Net Neutrality. Moves TMUS, VZ, T, CMCSA,
+    CHTR, DISH.
+  lineage:
+    authored_by: phase_b_communication_services_opus
+    authored_at: '2026-04-21T14:15:55Z'
+- source_id: sector.communication_services.fierce_telecom
+  source_name: Fierce Telecom
+  url: https://www.fierce-network.com/telecom
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - contract_award
+  - product_launch
+  - ma_announcement
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: Wireline + wholesale telecom. Fiber-to-the-home expansion, cable-vs-telco battles. Moves CMCSA, CHTR, CABO, LUMN,
+    T.
+  lineage:
+    authored_by: phase_b_communication_services_opus
+    authored_at: '2026-04-21T14:15:55Z'
+- source_id: sector.communication_services.fierce_wireless
+  source_name: Fierce Wireless
+  url: https://www.fierce-network.com/wireless
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - contract_award
+  - product_launch
+  - regulatory_action
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: US wireless industry news. Spectrum, handset launches, tower economics. Moves TMUS, VZ, T, ATEX, GSAT, ASTS.
+  lineage:
+    authored_by: phase_b_communication_services_opus
+    authored_at: '2026-04-21T14:15:55Z'
+- source_id: sector.communication_services.hollywood_reporter
+  source_name: The Hollywood Reporter
+  url: https://www.hollywoodreporter.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: metered
+  update_cadence: daily
+  event_types_covered:
+  - executive_change
+  - ma_announcement
+  - contract_award
+  - product_launch
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: Entertainment-industry flagship. Scoops on executive moves + content-deal talks before SEC disclosure. Moves DIS,
+    WBD, PARA, NFLX, LYV, TKO.
+  lineage:
+    authored_by: phase_b_communication_services_opus
+    authored_at: '2026-04-21T14:15:55Z'
+- source_id: sector.communication_services.iab_news
+  source_name: IAB — News
+  url: https://www.iab.com/news/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  - sector_regulation
+  edge_weight_prior: 0.65
+  typical_lead_time_vs_english_minutes: 0
+  notes: Interactive Advertising Bureau. Quarterly/annual internet ad-revenue report — directly moves META, GOOGL, PINS, SNAP
+    consensus estimates.
+  lineage:
+    authored_by: phase_b_communication_services_opus
+    authored_at: '2026-04-21T14:15:55Z'
+- source_id: sector.communication_services.light_reading
+  source_name: Light Reading
+  url: https://www.lightreading.com/
+  adapter_type: rss
+  jurisdiction: XX
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - contract_award
+  - product_launch
+  - ma_announcement
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 30
+  notes: Telecom infrastructure trade — 5G, fibre, wholesale capex. Moves VZ, T, TMUS, DTE, VOD on vendor announcements.
+  lineage:
+    authored_by: phase_b_communication_services_opus
+    authored_at: '2026-04-21T14:15:55Z'
+- source_id: sector.communication_services.mediapost
+  source_name: MediaPost
+  url: https://www.mediapost.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - contract_award
+  - executive_change
+  - product_launch
+  edge_weight_prior: 0.6
+  typical_lead_time_vs_english_minutes: 60
+  notes: Daily ad-industry briefings. Programmatic + CTV coverage relevant to TTD, MGNI, PUBM, DV.
+  lineage:
+    authored_by: phase_b_communication_services_opus
+    authored_at: '2026-04-21T14:15:55Z'
+- source_id: sector.communication_services.mic_japan
+  source_name: MIC Japan — News
+  url: https://www.soumu.go.jp/english/index.html
+  adapter_type: scraper
+  jurisdiction: JP
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - regulatory_action
+  - sector_regulation
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: Ministry of Internal Affairs and Communications. NTT Law reform, tariff rulings. Moves 9432 NTT, 9433 KDDI, 9434
+    SoftBank Corp.
+  lineage:
+    authored_by: phase_b_communication_services_opus
+    authored_at: '2026-04-21T14:15:55Z'
+- source_id: sector.communication_services.mobile_world_live
+  source_name: Mobile World Live
+  url: https://www.mobileworldlive.com/
+  adapter_type: rss
+  jurisdiction: XX
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - contract_award
+  - product_launch
+  - ma_announcement
+  - regulatory_action
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: GSMA-linked global mobile-industry news. Strong on international spectrum auctions + operator M&A (ORAN, TEF, VOD,
+    TELIA, TEL2, 9432 NTT).
+  lineage:
+    authored_by: phase_b_communication_services_opus
+    authored_at: '2026-04-21T14:15:55Z'
+- source_id: sector.communication_services.nielsen_press
+  source_name: Nielsen — Press
+  url: https://www.nielsen.com/news-center/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  edge_weight_prior: 0.6
+  typical_lead_time_vs_english_minutes: 0
+  notes: Nielsen TV + streaming ratings. The Gauge monthly streaming share. Moves DIS, NFLX, WBD, PARA, ROKU.
+  lineage:
+    authored_by: phase_b_communication_services_opus
+    authored_at: '2026-04-21T14:15:55Z'
+- source_id: sector.communication_services.ofcom_news
+  source_name: Ofcom — News
+  url: https://www.ofcom.org.uk/news-centre
+  adapter_type: rss
+  jurisdiction: GB
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - regulatory_action
+  - sector_regulation
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: 0
+  notes: UK telecoms + broadcasting regulator. Wholesale access pricing, spectrum awards. Moves VOD, BT-A, ITV, INF.
+  lineage:
+    authored_by: phase_b_communication_services_opus
+    authored_at: '2026-04-21T14:15:55Z'
+- source_id: sector.communication_services.puck_news
+  source_name: Puck News
+  url: https://puck.news/
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - executive_change
+  - ma_announcement
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: Newsletter-first, paid. Strong on media C-suite gossip (Matt Belloni, Dylan Byers). Frequently leads Variety/Deadline
+    on M&A rumours.
+  lineage:
+    authored_by: phase_b_communication_services_opus
+    authored_at: '2026-04-21T14:15:55Z'
+- source_id: sector.communication_services.telegeography
+  source_name: TeleGeography
+  url: https://www2.telegeography.com/telegeography-publications-news-alerts
+  adapter_type: rss
+  jurisdiction: XX
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - contract_award
+  - production_update
+  edge_weight_prior: 0.6
+  typical_lead_time_vs_english_minutes: 0
+  notes: Subsea cable + wholesale capacity market intelligence. Slower cadence but authoritative on international traffic.
+  lineage:
+    authored_by: phase_b_communication_services_opus
+    authored_at: '2026-04-21T14:15:55Z'
+- source_id: sector.communication_services.thewrap
+  source_name: TheWrap
+  url: https://www.thewrap.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: metered
+  update_cadence: daily
+  event_types_covered:
+  - executive_change
+  - ma_announcement
+  - contract_award
+  edge_weight_prior: 0.6
+  typical_lead_time_vs_english_minutes: 60
+  notes: Entertainment + media news + analysis. Slower than Variety/Deadline but broader.
+  lineage:
+    authored_by: phase_b_communication_services_opus
+    authored_at: '2026-04-21T14:15:55Z'
+- source_id: sector.communication_services.variety
+  source_name: Variety
+  url: https://variety.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: metered
+  update_cadence: daily
+  event_types_covered:
+  - executive_change
+  - ma_announcement
+  - contract_award
+  - product_launch
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: 'Penske-owned entertainment trade. Strong on subscription / streaming beat. Historical pattern: NFLX churn leaks
+    via Variety/Deadline.'
+  lineage:
+    authored_by: phase_b_communication_services_opus
+    authored_at: '2026-04-21T14:15:55Z'

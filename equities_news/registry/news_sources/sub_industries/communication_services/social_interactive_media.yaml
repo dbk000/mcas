@@ -1,0 +1,34 @@
+- source_id: sub_industry.communication_services.social_interactive_media.magna_global_forecast
+  source_name: Magna Global — Forecasts
+  url: https://magnaglobal.com/publications/
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: paid
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  - sector_regulation
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: IPG-owned Magna Global — twice-yearly ad-spend forecast. Moves META, GOOGL, PINS consensus on release day.
+  lineage:
+    authored_by: phase_b_communication_services_opus
+    authored_at: '2026-04-21T14:15:55Z'
+- source_id: sub_industry.communication_services.social_interactive_media.sensor_tower_blog
+  source_name: Sensor Tower — Blog
+  url: https://sensortower.com/blog
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  - product_launch
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: 0
+  notes: App-intelligence firm. MAU/DAU estimates for META, SNAP, PINS, MTCH, BMBL, RBLX, RDDT. Quarterly app-revenue reports.
+  lineage:
+    authored_by: phase_b_communication_services_opus
+    authored_at: '2026-04-21T14:15:55Z'

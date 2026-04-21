@@ -1,0 +1,36 @@
+- source_id: sub_industry.communication_services.streaming_video.antenna_blog
+  source_name: Antenna — Newsroom
+  url: https://www.antenna.live/newsroom
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: paid
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: 0
+  notes: Antenna — SVOD subscriber-trend analytics. Net-add + churn estimates ahead of official reporting for NFLX, DIS, WBD,
+    PARA.
+  lineage:
+    authored_by: phase_b_communication_services_opus
+    authored_at: '2026-04-21T14:15:55Z'
+- source_id: sub_industry.communication_services.streaming_video.the_streamable
+  source_name: The Streamable
+  url: https://thestreamable.com/news
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - product_launch
+  - contract_award
+  - commodity_price_event
+  edge_weight_prior: 0.6
+  typical_lead_time_vs_english_minutes: 60
+  notes: Streaming-service tracker. Price changes, content-library rotation, regional rollouts for NFLX, DIS, WBD, PARA, SPOT,
+    ROKU, FUBO.
+  lineage:
+    authored_by: phase_b_communication_services_opus
+    authored_at: '2026-04-21T14:15:55Z'
