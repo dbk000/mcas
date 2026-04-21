@@ -1,0 +1,35 @@
+- source_id: sub_industry.consumer_staples.beverages_alcoholic.drinks_international
+  source_name: Drinks International
+  url: https://drinksint.com/
+  adapter_type: rss
+  jurisdiction: XX
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - product_launch
+  - ma_announcement
+  edge_weight_prior: 0.6
+  typical_lead_time_vs_english_minutes: 60
+  notes: Spirits + wine-trade global publication. Annual brand rankings influence premiumisation narrative.
+  lineage:
+    authored_by: phase_b_consumer_staples_opus
+    authored_at: '2026-04-21T14:25:09Z'
+- source_id: sub_industry.consumer_staples.beverages_alcoholic.iwsr_insights
+  source_name: IWSR — Insights
+  url: https://www.theiwsr.com/news-insights/
+  adapter_type: scraper
+  jurisdiction: XX
+  language: en
+  cost_tier: paid
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  - commodity_price_event
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: 0
+  notes: IWSR Drinks Market Analysis. Global volume + value forecasts. Moves DEO, BUD, STZ, HEIA, CARL B, 2502 Asahi, 2503
+    Kirin.
+  lineage:
+    authored_by: phase_b_consumer_staples_opus
+    authored_at: '2026-04-21T14:25:09Z'

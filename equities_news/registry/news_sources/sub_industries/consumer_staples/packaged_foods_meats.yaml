@@ -1,0 +1,34 @@
+- source_id: sub_industry.consumer_staples.packaged_foods_meats.consumeredge_scanner
+  source_name: ConsumerEdge — Newsroom
+  url: https://consumeredge.com/newsroom/
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: paid
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: ConsumerEdge weekly scanner insights. Measurement Inc. competitor to Circana. Moves KHC, MDLZ, GIS, CPB, CAG, K consensus.
+  lineage:
+    authored_by: phase_b_consumer_staples_opus
+    authored_at: '2026-04-21T14:25:09Z'
+- source_id: sub_industry.consumer_staples.packaged_foods_meats.food_institute
+  source_name: The Food Institute
+  url: https://foodinstitute.com/focus/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - product_launch
+  - ma_announcement
+  - commodity_price_event
+  edge_weight_prior: 0.55
+  typical_lead_time_vs_english_minutes: 60
+  notes: Member-newsletter packaging industry trends.
+  lineage:
+    authored_by: phase_b_consumer_staples_opus
+    authored_at: '2026-04-21T14:25:09Z'

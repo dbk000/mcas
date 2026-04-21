@@ -1,0 +1,35 @@
+- source_id: sub_industry.consumer_staples.agricultural_products_services.dtn_progressive_farmer
+  source_name: DTN Progressive Farmer
+  url: https://www.dtnpf.com/agriculture/web/ag/news
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - commodity_price_event
+  - production_update
+  - macro_data_release
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: Daily US grain/livestock markets + weather. Moves ADM, BG, ANDE, MOS/NTR-adjacent, TSN, PPC.
+  lineage:
+    authored_by: phase_b_consumer_staples_opus
+    authored_at: '2026-04-21T14:25:09Z'
+- source_id: sub_industry.consumer_staples.agricultural_products_services.usda_nass_crop_progress
+  source_name: USDA NASS — Crop Progress
+  url: https://www.nass.usda.gov/Publications/National_Crop_Progress/
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  - production_update
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: 0
+  notes: Weekly US crop-progress Monday 4pm ET. Planting/harvest pace — moves grain futures + ag-processor margins.
+  lineage:
+    authored_by: phase_b_consumer_staples_opus
+    authored_at: '2026-04-21T14:25:09Z'

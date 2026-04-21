@@ -1,0 +1,342 @@
+- source_id: sector.consumer_staples.ams_marketnews
+  source_name: USDA AMS — Market News
+  url: https://www.ams.usda.gov/market-news
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - commodity_price_event
+  - macro_data_release
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: USDA Agricultural Marketing Service. Daily livestock + dairy + grain prices. Moves HRL, TSN, PPC, DAR, CALM margins.
+  lineage:
+    authored_by: phase_b_consumer_staples_opus
+    authored_at: '2026-04-21T14:25:09Z'
+- source_id: sector.consumer_staples.beer_institute
+  source_name: Beer Institute — Shipments
+  url: https://www.beerinstitute.org/
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: Weekly US beer shipments. Leading indicator for TAP, BUD, SAM, STZ Modelo side.
+  lineage:
+    authored_by: phase_b_consumer_staples_opus
+    authored_at: '2026-04-21T14:25:09Z'
+- source_id: sector.consumer_staples.beverage_daily
+  source_name: Beverage Daily
+  url: https://www.beveragedaily.com/
+  adapter_type: rss
+  jurisdiction: XX
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - product_launch
+  - commodity_price_event
+  - regulatory_action
+  edge_weight_prior: 0.65
+  typical_lead_time_vs_english_minutes: 30
+  notes: William Reed beverage publication. Category trends across alcoholic + non-alcoholic.
+  lineage:
+    authored_by: phase_b_consumer_staples_opus
+    authored_at: '2026-04-21T14:25:09Z'
+- source_id: sector.consumer_staples.bevnet
+  source_name: BevNet
+  url: https://www.bevnet.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - product_launch
+  - ma_announcement
+  - executive_change
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: Beverage industry trade — non-alcoholic. Launches, retail distribution wins, acquisitions. Moves KO, PEP, MNST, KDP,
+    CELH, COCO, FIZZ, SAM.
+  lineage:
+    authored_by: phase_b_consumer_staples_opus
+    authored_at: '2026-04-21T14:25:09Z'
+- source_id: sector.consumer_staples.circana_press
+  source_name: Circana — Press
+  url: https://www.circana.com/newsroom/press-releases/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: 0
+  notes: Circana (merged IRI + NPD). POS + panel data proxy. Monthly reports on packaged-goods dollar-share cited by sell-side.
+  lineage:
+    authored_by: phase_b_consumer_staples_opus
+    authored_at: '2026-04-21T14:25:09Z'
+- source_id: sector.consumer_staples.drinks_business
+  source_name: The Drinks Business
+  url: https://www.thedrinksbusiness.com/
+  adapter_type: rss
+  jurisdiction: XX
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - product_launch
+  - ma_announcement
+  - commodity_price_event
+  - regulatory_action
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: Global wine + spirits trade. Premiumisation trends, China duty impact. Moves DEO, STZ, BFB, RI, RCO, CPR, ABI, BUD,
+    HEIA, CARL B.
+  lineage:
+    authored_by: phase_b_consumer_staples_opus
+    authored_at: '2026-04-21T14:25:09Z'
+- source_id: sector.consumer_staples.fda_tobacco_products
+  source_name: FDA — Center for Tobacco Products
+  url: https://www.fda.gov/tobacco-products/news-events-tobacco-products
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: ad_hoc
+  event_types_covered:
+  - regulatory_action
+  - sector_regulation
+  - product_approval
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: 0
+  notes: FDA CTP. Menthol rulemaking, PMTA approvals/denials, e-cig enforcement. Primary mover for PM, MO, BTI, TPB.
+  lineage:
+    authored_by: phase_b_consumer_staples_opus
+    authored_at: '2026-04-21T14:25:09Z'
+- source_id: sector.consumer_staples.food_business_news
+  source_name: Food Business News
+  url: https://www.foodbusinessnews.net/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - product_launch
+  - ma_announcement
+  - executive_change
+  - regulatory_action
+  - production_update
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 30
+  notes: Sosland Publishing. Grain-to-shelf coverage. Strong on ingredient (MKC, INGR, ADM, BG) + packaged food ops updates.
+  lineage:
+    authored_by: phase_b_consumer_staples_opus
+    authored_at: '2026-04-21T14:25:09Z'
+- source_id: sector.consumer_staples.food_dive
+  source_name: Food Dive
+  url: https://www.fooddive.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - product_launch
+  - ma_announcement
+  - executive_change
+  - regulatory_action
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: Food industry trade press. Acquisitions, new-product launches, regulatory moves. Moves GIS, K, CAG, CPB, MDLZ, HRL,
+    TSN, POST, KHC.
+  lineage:
+    authored_by: phase_b_consumer_staples_opus
+    authored_at: '2026-04-21T14:25:09Z'
+- source_id: sector.consumer_staples.food_navigator
+  source_name: Food Navigator
+  url: https://www.foodnavigator.com/
+  adapter_type: rss
+  jurisdiction: XX
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - product_launch
+  - regulatory_action
+  - executive_change
+  edge_weight_prior: 0.65
+  typical_lead_time_vs_english_minutes: 30
+  notes: William Reed food-innovation coverage. Ingredient + health-claims regulation. European bias.
+  lineage:
+    authored_by: phase_b_consumer_staples_opus
+    authored_at: '2026-04-21T14:25:09Z'
+- source_id: sector.consumer_staples.just_drinks
+  source_name: Just Drinks
+  url: https://www.just-drinks.com/
+  adapter_type: rss
+  jurisdiction: XX
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - ma_announcement
+  - product_launch
+  - regulatory_action
+  edge_weight_prior: 0.65
+  typical_lead_time_vs_english_minutes: 30
+  notes: GlobalData sister of Just-Food, beverages. UK + European bias.
+  lineage:
+    authored_by: phase_b_consumer_staples_opus
+    authored_at: '2026-04-21T14:25:09Z'
+- source_id: sector.consumer_staples.just_food
+  source_name: Just Food
+  url: https://www.just-food.com/
+  adapter_type: rss
+  jurisdiction: XX
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - ma_announcement
+  - product_launch
+  - executive_change
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 30
+  notes: GlobalData food-industry publication. European + UK bias. Moves ULVR, NESN, DANONE, TSCO, SBRY, JMT, AD (Ahold).
+  lineage:
+    authored_by: phase_b_consumer_staples_opus
+    authored_at: '2026-04-21T14:25:09Z'
+- source_id: sector.consumer_staples.nrf_news
+  source_name: National Retail Federation — News
+  url: https://nrf.com/media-center/press-releases
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  - sector_regulation
+  edge_weight_prior: 0.6
+  typical_lead_time_vs_english_minutes: 60
+  notes: NRF monthly sales data + forecasts. Cross-sector retail signal including staples-adjacent.
+  lineage:
+    authored_by: phase_b_consumer_staples_opus
+    authored_at: '2026-04-21T14:25:09Z'
+- source_id: sector.consumer_staples.plma_news
+  source_name: PLMA — News
+  url: https://plma.com/press
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  - product_launch
+  edge_weight_prior: 0.55
+  typical_lead_time_vs_english_minutes: 60
+  notes: Private Label Manufacturers Association. Annual private-label share data — headwind signal for branded packaged foods.
+  lineage:
+    authored_by: phase_b_consumer_staples_opus
+    authored_at: '2026-04-21T14:25:09Z'
+- source_id: sector.consumer_staples.progressive_grocer
+  source_name: Progressive Grocer
+  url: https://progressivegrocer.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - contract_award
+  - product_launch
+  - executive_change
+  edge_weight_prior: 0.65
+  typical_lead_time_vs_english_minutes: 60
+  notes: Grocery retail trade. Private-label trends, store-format wars. Moves KR, ACI, SFM, CASY, GO, DG, DLTR.
+  lineage:
+    authored_by: phase_b_consumer_staples_opus
+    authored_at: '2026-04-21T14:25:09Z'
+- source_id: sector.consumer_staples.supermarket_news
+  source_name: Supermarket News
+  url: https://www.supermarketnews.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - contract_award
+  - product_launch
+  - executive_change
+  - ma_announcement
+  edge_weight_prior: 0.65
+  typical_lead_time_vs_english_minutes: 60
+  notes: Informa grocery trade. Store openings, category-share shifts.
+  lineage:
+    authored_by: phase_b_consumer_staples_opus
+    authored_at: '2026-04-21T14:25:09Z'
+- source_id: sector.consumer_staples.tobacco_reporter
+  source_name: Tobacco Reporter
+  url: https://tobaccoreporter.com/
+  adapter_type: rss
+  jurisdiction: XX
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - regulatory_action
+  - product_launch
+  - ma_announcement
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: Global tobacco industry trade. FDA CTP actions, EU TPD revisions. Moves PM, MO, BTI, IMB, 2914 JT, TPB.
+  lineage:
+    authored_by: phase_b_consumer_staples_opus
+    authored_at: '2026-04-21T14:25:09Z'
+- source_id: sector.consumer_staples.usda_ers_publications
+  source_name: USDA ERS — Publications
+  url: https://www.ers.usda.gov/publications/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: USDA Economic Research Service. Food CPI forecasts, farm income, SNAP participation. Drives KR, DG, DLTR + agri-processors
+    (ADM, BG, TSN).
+  lineage:
+    authored_by: phase_b_consumer_staples_opus
+    authored_at: '2026-04-21T14:25:09Z'
+- source_id: sector.consumer_staples.usda_wasde
+  source_name: USDA WASDE Report
+  url: https://www.usda.gov/oce/commodity/wasde
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  - commodity_price_event
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: 0
+  notes: World Agricultural Supply and Demand Estimates — monthly (~12th). Moves grains, livestock, soy. Direct input for
+    ADM, BG, ANDE, TSN, PPC margins.
+  lineage:
+    authored_by: phase_b_consumer_staples_opus
+    authored_at: '2026-04-21T14:25:09Z'
