@@ -1,0 +1,795 @@
+- source_id: sector.consumer_discretionary.acea_registrations
+  source_name: ACEA — EU Passenger Car Registrations
+  url: https://www.acea.auto/pc-registrations/
+  adapter_type: scraper
+  jurisdiction: XX
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: 0
+  notes: European Automobile Manufacturers Assoc. Monthly EU + EFTA + UK new-car registrations.
+  lineage:
+    authored_by: phase_b_consumer_discretionary_opus
+    authored_at: '2026-04-21T19:34:29Z'
+- source_id: sector.consumer_discretionary.altagamma
+  source_name: Altagamma — Luxury Market Monitor
+  url: https://altagamma.it/en/news-luxury/
+  adapter_type: scraper
+  jurisdiction: IT
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: Altagamma + Bain luxury-goods report (Spring + Fall). Defines luxury-sector narrative for LVMH/Kering/Richemont.
+  lineage:
+    authored_by: phase_b_consumer_discretionary_opus
+    authored_at: '2026-04-21T19:34:29Z'
+- source_id: sector.consumer_discretionary.automotive_news
+  source_name: Automotive News
+  url: https://www.autonews.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - production_update
+  - executive_change
+  - recall
+  - ma_announcement
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: -30
+  notes: Crain's auto-industry trade. Daily sales + production coverage for GM/F/STLA/TSLA. Headlines free.
+  lineage:
+    authored_by: phase_b_consumer_discretionary_opus
+    authored_at: '2026-04-21T19:34:29Z'
+- source_id: sector.consumer_discretionary.bloomberg_retail
+  source_name: Bloomberg — Retail
+  url: https://www.bloomberg.com/industries/consumer-retail
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: paid
+  update_cadence: realtime
+  event_types_covered:
+  - ma_announcement
+  - executive_change
+  - material_disclosure
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: -15
+  notes: Bloomberg retail desk. Breaks retail M&A + activist campaigns ahead of wires.
+  lineage:
+    authored_by: phase_b_consumer_discretionary_opus
+    authored_at: '2026-04-21T19:34:29Z'
+- source_id: sector.consumer_discretionary.business_of_fashion
+  source_name: The Business of Fashion
+  url: https://www.businessoffashion.com/
+  adapter_type: rss
+  jurisdiction: GB
+  language: en
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - ma_announcement
+  - executive_change
+  - material_disclosure
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: BoF. Global fashion-industry analysis. Strong on European luxury + China + creative-director moves.
+  lineage:
+    authored_by: phase_b_consumer_discretionary_opus
+    authored_at: '2026-04-21T19:34:29Z'
+- source_id: sector.consumer_discretionary.calculated_risk
+  source_name: Calculated Risk
+  url: https://www.calculatedriskblog.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - macro_data_release
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: Bill McBride. Housing-starts + existing-home-sales commentary. Widely-cited by homebuilder PMs.
+  lineage:
+    authored_by: phase_b_consumer_discretionary_opus
+    authored_at: '2026-04-21T19:34:29Z'
+- source_id: sector.consumer_discretionary.cnbc_retail
+  source_name: CNBC — Retail
+  url: https://www.cnbc.com/retail/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: realtime
+  event_types_covered:
+  - material_disclosure
+  - executive_change
+  - ma_announcement
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 30
+  notes: CNBC retail desk. Good on earnings day commentary + consumer-demand macro narrative.
+  lineage:
+    authored_by: phase_b_consumer_discretionary_opus
+    authored_at: '2026-04-21T19:34:29Z'
+- source_id: sector.consumer_discretionary.cnevpost
+  source_name: CnEVPost
+  url: https://cnevpost.com/
+  adapter_type: rss
+  jurisdiction: XX
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - production_update
+  - product_launch
+  - material_disclosure
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: -60
+  notes: China EV coverage. Weekly insurance-registration data — leading indicator for NIO, LI, XPEV, BYD.
+  lineage:
+    authored_by: phase_b_consumer_discretionary_opus
+    authored_at: '2026-04-21T19:34:29Z'
+- source_id: sector.consumer_discretionary.coresight_research
+  source_name: Coresight Research
+  url: https://coresight.com/research/
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: paid
+  update_cadence: weekly
+  event_types_covered:
+  - material_disclosure
+  - sell_side_rating_change
+  - ma_announcement
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: Deborah Weinswig. Retail-industry research + weekly Retail Radar. Widely-cited by retail PMs.
+  lineage:
+    authored_by: phase_b_consumer_discretionary_opus
+    authored_at: '2026-04-21T19:34:29Z'
+- source_id: sector.consumer_discretionary.cruise_critic
+  source_name: Cruise Critic
+  url: https://www.cruisecritic.com/news/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - product_launch
+  - material_disclosure
+  edge_weight_prior: 0.55
+  typical_lead_time_vs_english_minutes: 60
+  notes: Consumer cruise news. Booking-curve commentary. RCL, CCL, NCLH, VIK demand signals.
+  lineage:
+    authored_by: phase_b_consumer_discretionary_opus
+    authored_at: '2026-04-21T19:34:29Z'
+- source_id: sector.consumer_discretionary.digital_commerce_360
+  source_name: Digital Commerce 360
+  url: https://www.digitalcommerce360.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - material_disclosure
+  - ma_announcement
+  edge_weight_prior: 0.6
+  typical_lead_time_vs_english_minutes: 30
+  notes: E-commerce trade. Top-1000 US online retailers ranking + industry data.
+  lineage:
+    authored_by: phase_b_consumer_discretionary_opus
+    authored_at: '2026-04-21T19:34:29Z'
+- source_id: sector.consumer_discretionary.eater
+  source_name: Eater
+  url: https://www.eater.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - product_launch
+  - material_disclosure
+  edge_weight_prior: 0.5
+  typical_lead_time_vs_english_minutes: 120
+  notes: Vox Media restaurant consumer coverage. Occasional scoops on chain menu changes + expansion.
+  lineage:
+    authored_by: phase_b_consumer_discretionary_opus
+    authored_at: '2026-04-21T19:34:29Z'
+- source_id: sector.consumer_discretionary.electrek
+  source_name: Electrek
+  url: https://electrek.co/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: realtime
+  event_types_covered:
+  - product_launch
+  - production_update
+  - material_disclosure
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: EV news. Fred Lambert. TSLA delivery/production scoops. Moves TSLA, RIVN, LCID, NIO sentiment.
+  lineage:
+    authored_by: phase_b_consumer_discretionary_opus
+    authored_at: '2026-04-21T19:34:29Z'
+- source_id: sector.consumer_discretionary.gambling_compliance
+  source_name: GamblingCompliance (Vixio)
+  url: https://www.vixio.com/news/gambling-compliance
+  adapter_type: scraper
+  jurisdiction: GB
+  language: en
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - regulatory_action
+  - material_disclosure
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: 0
+  notes: Vixio (formerly GamblingCompliance). Regulatory + licence news across US + EU iGaming + sports betting.
+  lineage:
+    authored_by: phase_b_consumer_discretionary_opus
+    authored_at: '2026-04-21T19:34:29Z'
+- source_id: sector.consumer_discretionary.global_blue
+  source_name: Global Blue — Tax Free Shopping
+  url: https://corporate.globalblue.com/press-releases/
+  adapter_type: scraper
+  jurisdiction: CH
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: Global Blue tax-free spending data. China-outbound-tourist proxy. Moves European luxury narrative.
+  lineage:
+    authored_by: phase_b_consumer_discretionary_opus
+    authored_at: '2026-04-21T19:34:29Z'
+- source_id: sector.consumer_discretionary.home_builder_mag
+  source_name: Builder Magazine
+  url: https://www.builderonline.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - material_disclosure
+  - executive_change
+  edge_weight_prior: 0.6
+  typical_lead_time_vs_english_minutes: 60
+  notes: US homebuilder industry trade. Builder 100 rankings, land acquisitions, executive moves.
+  lineage:
+    authored_by: phase_b_consumer_discretionary_opus
+    authored_at: '2026-04-21T19:34:29Z'
+- source_id: sector.consumer_discretionary.hotel_news_now
+  source_name: CoStar — Hotel News Now
+  url: https://www.costar.com/article/topic/hotels
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - ma_announcement
+  - executive_change
+  - material_disclosure
+  edge_weight_prior: 0.65
+  typical_lead_time_vs_english_minutes: 30
+  notes: CoStar hotels news. Deal flow, new-build pipelines, conversion activity.
+  lineage:
+    authored_by: phase_b_consumer_discretionary_opus
+    authored_at: '2026-04-21T19:34:29Z'
+- source_id: sector.consumer_discretionary.igaming_business
+  source_name: iGaming Business
+  url: https://igamingbusiness.com/
+  adapter_type: rss
+  jurisdiction: GB
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - regulatory_action
+  - product_launch
+  - ma_announcement
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 30
+  notes: iGaming trade. State-level US sports-betting launches. Moves DKNG, FLUT, PENN, CZR.
+  lineage:
+    authored_by: phase_b_consumer_discretionary_opus
+    authored_at: '2026-04-21T19:34:29Z'
+- source_id: sector.consumer_discretionary.insideevs
+  source_name: InsideEVs
+  url: https://insideevs.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - product_launch
+  - production_update
+  edge_weight_prior: 0.65
+  typical_lead_time_vs_english_minutes: 30
+  notes: EV news + sales tracker. Monthly US EV sales + share data.
+  lineage:
+    authored_by: phase_b_consumer_discretionary_opus
+    authored_at: '2026-04-21T19:34:29Z'
+- source_id: sector.consumer_discretionary.jama
+  source_name: JAMA — Japan Auto Makers Assoc
+  url: https://www.jama-english.jp/press/
+  adapter_type: scraper
+  jurisdiction: JP
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - production_update
+  - macro_data_release
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: 0
+  notes: Japan Auto Makers Assoc. Monthly production + export statistics for Toyota, Honda, Nissan, Suzuki.
+  lineage:
+    authored_by: phase_b_consumer_discretionary_opus
+    authored_at: '2026-04-21T19:34:29Z'
+- source_id: sector.consumer_discretionary.jato_dynamics
+  source_name: JATO Dynamics
+  url: https://www.jato.com/insights/
+  adapter_type: scraper
+  jurisdiction: GB
+  language: en
+  cost_tier: paid
+  update_cadence: weekly
+  event_types_covered:
+  - production_update
+  - macro_data_release
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: Global auto-sales + registration data. EU monthly sales by model. Moves EU OEMs.
+  lineage:
+    authored_by: phase_b_consumer_discretionary_opus
+    authored_at: '2026-04-21T19:34:29Z'
+- source_id: sector.consumer_discretionary.jing_daily
+  source_name: Jing Daily
+  url: https://jingdaily.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - material_disclosure
+  - product_launch
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: China luxury-consumer market. Key for LVMH/Kering/Richemont/Burberry China-tourism thesis + tier-2 city expansion.
+  lineage:
+    authored_by: phase_b_consumer_discretionary_opus
+    authored_at: '2026-04-21T19:34:29Z'
+- source_id: sector.consumer_discretionary.kba
+  source_name: KBA — German Auto Registrations
+  url: https://www.kba.de/EN/Home/home_node.html
+  adapter_type: scraper
+  jurisdiction: DE
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: 0
+  notes: Kraftfahrt-Bundesamt. Monthly German vehicle registrations. Direct read for BMW, VW, MBG.
+  lineage:
+    authored_by: phase_b_consumer_discretionary_opus
+    authored_at: '2026-04-21T19:34:29Z'
+- source_id: sector.consumer_discretionary.les_echos_luxe
+  source_name: Les Echos — Luxe
+  url: https://www.lesechos.fr/industrie-services/mode-luxe
+  adapter_type: scraper
+  jurisdiction: FR
+  language: fr
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - ma_announcement
+  - executive_change
+  - material_disclosure
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: -60
+  notes: Les Echos luxury desk. French-language first on LVMH, Kering, Hermes news. ~60 min lead vs English wires.
+  lineage:
+    authored_by: phase_b_consumer_discretionary_opus
+    authored_at: '2026-04-21T19:34:29Z'
+- source_id: sector.consumer_discretionary.macau_ggr
+  source_name: DICJ — Macau Monthly GGR
+  url: https://www.dicj.gov.mo/web/en/information/DadosEstat_mensal/2024/index.html
+  adapter_type: scraper
+  jurisdiction: XX
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: 0
+  notes: Macau Gaming Inspection Bureau monthly Gross Gaming Revenue. Direct earnings input for LVS, WYNN, MGM, MLCO, 27,
+    1128, 2282.
+  lineage:
+    authored_by: phase_b_consumer_discretionary_opus
+    authored_at: '2026-04-21T19:34:29Z'
+- source_id: sector.consumer_discretionary.manheim_index
+  source_name: Manheim — Used Vehicle Value Index
+  url: https://publish.manheim.com/en/services/consulting/used-vehicle-value-index.html
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - commodity_price_event
+  - macro_data_release
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: Cox Automotive used-vehicle price index. Moves CVNA, KMX, AN, LAD used-car-price narrative.
+  lineage:
+    authored_by: phase_b_consumer_discretionary_opus
+    authored_at: '2026-04-21T19:34:29Z'
+- source_id: sector.consumer_discretionary.marketplace_pulse
+  source_name: Marketplace Pulse
+  url: https://www.marketplacepulse.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - material_disclosure
+  - product_launch
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: Juozas Kaziukenas. Amazon marketplace + e-commerce data. Moves AMZN, ETSY, EBAY, CHWY, W narrative.
+  lineage:
+    authored_by: phase_b_consumer_discretionary_opus
+    authored_at: '2026-04-21T19:34:29Z'
+- source_id: sector.consumer_discretionary.mastercard_spendingpulse
+  source_name: Mastercard — SpendingPulse
+  url: https://www.mastercard.com/news/media/press-releases/
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: 0
+  notes: SpendingPulse weekly + monthly US retail sales. Ahead of Census retail release.
+  lineage:
+    authored_by: phase_b_consumer_discretionary_opus
+    authored_at: '2026-04-21T19:34:29Z'
+- source_id: sector.consumer_discretionary.modern_retail
+  source_name: Modern Retail
+  url: https://www.modernretail.co/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - product_launch
+  - material_disclosure
+  - ma_announcement
+  edge_weight_prior: 0.65
+  typical_lead_time_vs_english_minutes: 30
+  notes: DTC + e-commerce retail news. Strong on direct-to-consumer brand strategy + Amazon marketplace dynamics.
+  lineage:
+    authored_by: phase_b_consumer_discretionary_opus
+    authored_at: '2026-04-21T19:34:29Z'
+- source_id: sector.consumer_discretionary.nahb
+  source_name: NAHB — Housing Market Index
+  url: https://www.nahb.org/news-and-economics/
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: 0
+  notes: National Assoc of Home Builders. Monthly HMI + housing-starts + permits. Moves LEN, DHI, PHM, NVR, KBH.
+  lineage:
+    authored_by: phase_b_consumer_discretionary_opus
+    authored_at: '2026-04-21T19:34:29Z'
+- source_id: sector.consumer_discretionary.nations_restaurant_news
+  source_name: Nation's Restaurant News
+  url: https://www.nrn.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - executive_change
+  - product_launch
+  - material_disclosure
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: Informa restaurant trade. Top 500 chain rankings + LTO (limited-time-offer) product launches.
+  lineage:
+    authored_by: phase_b_consumer_discretionary_opus
+    authored_at: '2026-04-21T19:34:29Z'
+- source_id: sector.consumer_discretionary.nevada_gcb
+  source_name: Nevada — Gaming Control Board
+  url: https://gaming.nv.gov/index.aspx?page=149
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: 0
+  notes: Nevada GCB monthly gaming revenue reports. Vegas Strip performance moves WYNN, LVS, MGM, CZR.
+  lineage:
+    authored_by: phase_b_consumer_discretionary_opus
+    authored_at: '2026-04-21T19:34:29Z'
+- source_id: sector.consumer_discretionary.qsr_magazine
+  source_name: QSR Magazine
+  url: https://www.qsrmagazine.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - product_launch
+  - executive_change
+  edge_weight_prior: 0.6
+  typical_lead_time_vs_english_minutes: 60
+  notes: Quick-service restaurant trade. QSR 50 rankings + franchise-unit economics.
+  lineage:
+    authored_by: phase_b_consumer_discretionary_opus
+    authored_at: '2026-04-21T19:34:29Z'
+- source_id: sector.consumer_discretionary.redbook_retail_sales
+  source_name: Redbook — US Retail Sales
+  url: https://www.redbookresearch.com/
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: paid
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: Johnson Redbook weekly US retail same-store-sales. Tuesday release. Preview of chain-store trends.
+  lineage:
+    authored_by: phase_b_consumer_discretionary_opus
+    authored_at: '2026-04-21T19:34:29Z'
+- source_id: sector.consumer_discretionary.restaurant_business
+  source_name: Restaurant Business Online
+  url: https://www.restaurantbusinessonline.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - executive_change
+  - product_launch
+  - ma_announcement
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: Informa restaurant trade. Same-store-sales leads + franchisee news for MCD, SBUX, CMG, YUM.
+  lineage:
+    authored_by: phase_b_consumer_discretionary_opus
+    authored_at: '2026-04-21T19:34:29Z'
+- source_id: sector.consumer_discretionary.retail_dive
+  source_name: Retail Dive
+  url: https://www.retaildive.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - executive_change
+  - ma_announcement
+  - product_launch
+  - material_disclosure
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: Retail industry daily. Broad coverage of US retail M&A, executive moves, store openings/closings.
+  lineage:
+    authored_by: phase_b_consumer_discretionary_opus
+    authored_at: '2026-04-21T19:34:29Z'
+- source_id: sector.consumer_discretionary.retail_week
+  source_name: Retail Week
+  url: https://www.retail-week.com/
+  adapter_type: scraper
+  jurisdiction: GB
+  language: en
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - ma_announcement
+  - executive_change
+  - product_launch
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: UK retail industry trade. Covers NXT, KGF, MKS, JD., FRAS, DOCS, AO., BME retail-scene.
+  lineage:
+    authored_by: phase_b_consumer_discretionary_opus
+    authored_at: '2026-04-21T19:34:29Z'
+- source_id: sector.consumer_discretionary.reuters_autos
+  source_name: Reuters — Autos
+  url: https://www.reuters.com/business/autos-transportation/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: realtime
+  event_types_covered:
+  - production_update
+  - regulatory_action
+  - recall
+  - ma_announcement
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: 0
+  notes: 'Reuters auto desk. Official wire: tariffs, UAW strikes, NHTSA recalls.'
+  lineage:
+    authored_by: phase_b_consumer_discretionary_opus
+    authored_at: '2026-04-21T19:34:29Z'
+- source_id: sector.consumer_discretionary.reuters_retail
+  source_name: Reuters — Retail
+  url: https://www.reuters.com/business/retail-consumer/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: realtime
+  event_types_covered:
+  - ma_announcement
+  - regulatory_action
+  - executive_change
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: 0
+  notes: Reuters retail + consumer desk. Official wire coverage of earnings, M&A, activist moves.
+  lineage:
+    authored_by: phase_b_consumer_discretionary_opus
+    authored_at: '2026-04-21T19:34:29Z'
+- source_id: sector.consumer_discretionary.seatrade_cruise
+  source_name: Seatrade Cruise News
+  url: https://www.seatrade-cruise.com/news
+  adapter_type: rss
+  jurisdiction: GB
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - product_launch
+  - ma_announcement
+  edge_weight_prior: 0.6
+  typical_lead_time_vs_english_minutes: 0
+  notes: Cruise-industry trade. New-ship orders, port calls, executive changes.
+  lineage:
+    authored_by: phase_b_consumer_discretionary_opus
+    authored_at: '2026-04-21T19:34:29Z'
+- source_id: sector.consumer_discretionary.skift
+  source_name: Skift — Travel Industry
+  url: https://skift.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - ma_announcement
+  - executive_change
+  - material_disclosure
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: -30
+  notes: Travel-industry trade. Moves BKNG, EXPE, ABNB, MAR, HLT on demand commentary + executive changes.
+  lineage:
+    authored_by: phase_b_consumer_discretionary_opus
+    authored_at: '2026-04-21T19:34:29Z'
+- source_id: sector.consumer_discretionary.str_hotels
+  source_name: STR — Smith Travel Research
+  url: https://str.com/data-insights-blog
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: paid
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: 0
+  notes: STR — weekly US hotel RevPAR / occupancy data. Direct hotel-sector demand print. Moves MAR, HLT, H, WH, CHH.
+  lineage:
+    authored_by: phase_b_consumer_discretionary_opus
+    authored_at: '2026-04-21T19:34:29Z'
+- source_id: sector.consumer_discretionary.telsey_previews
+  source_name: Telsey Advisory Group
+  url: https://www.telseygroup.com/research/
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: restricted
+  update_cadence: weekly
+  event_types_covered:
+  - sell_side_rating_change
+  - material_disclosure
+  edge_weight_prior: 0.6
+  typical_lead_time_vs_english_minutes: 60
+  notes: Dana Telsey retail research. Respected retail previews ahead of earnings. Usually via X.
+  lineage:
+    authored_by: phase_b_consumer_discretionary_opus
+    authored_at: '2026-04-21T19:34:29Z'
+- source_id: sector.consumer_discretionary.teslarati
+  source_name: Teslarati
+  url: https://www.teslarati.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - product_launch
+  - production_update
+  edge_weight_prior: 0.55
+  typical_lead_time_vs_english_minutes: 60
+  notes: Tesla-focused blog. Factory intel + delivery-quarter commentary. Retail-sentiment driver.
+  lineage:
+    authored_by: phase_b_consumer_discretionary_opus
+    authored_at: '2026-04-21T19:34:29Z'
+- source_id: sector.consumer_discretionary.vogue_business
+  source_name: Vogue Business
+  url: https://www.voguebusiness.com/
+  adapter_type: rss
+  jurisdiction: GB
+  language: en
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - product_launch
+  - executive_change
+  - material_disclosure
+  edge_weight_prior: 0.65
+  typical_lead_time_vs_english_minutes: 30
+  notes: Conde Nast fashion-business publication. Strong on luxury (MC.PA, RMS.PA, KER.PA) retail + creative changes.
+  lineage:
+    authored_by: phase_b_consumer_discretionary_opus
+    authored_at: '2026-04-21T19:34:29Z'
+- source_id: sector.consumer_discretionary.wwd
+  source_name: WWD — Women's Wear Daily
+  url: https://wwd.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - executive_change
+  - ma_announcement
+  - product_launch
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: -30
+  notes: Fairchild Media fashion trade. Scoops executive changes at LVMH/Kering/LULU/NKE/RL. Paid but headlines free.
+  lineage:
+    authored_by: phase_b_consumer_discretionary_opus
+    authored_at: '2026-04-21T19:34:29Z'

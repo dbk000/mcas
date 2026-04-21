@@ -1,0 +1,50 @@
+- source_id: sub_industry.consumer_discretionary.automobile_manufacturers.edmunds_forecasts
+  source_name: Edmunds — Auto Forecasts
+  url: https://www.edmunds.com/industry/press/
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: Edmunds monthly SAAR + transaction-price forecasts. Released ~25th of month, ahead of OEM sales.
+  lineage:
+    authored_by: phase_b_consumer_discretionary_opus
+    authored_at: '2026-04-21T19:34:29Z'
+- source_id: sub_industry.consumer_discretionary.automobile_manufacturers.nhtsa_recalls
+  source_name: NHTSA — Recall Database
+  url: https://www.nhtsa.gov/recalls
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - recall
+  - regulatory_action
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: 0
+  notes: US National Highway Traffic Safety Administration. Recall announcements. Direct share-price driver on major campaigns.
+  lineage:
+    authored_by: phase_b_consumer_discretionary_opus
+    authored_at: '2026-04-21T19:34:29Z'
+- source_id: sub_industry.consumer_discretionary.automobile_manufacturers.wards_auto
+  source_name: Wards Intelligence
+  url: https://www.wardsintelligence.com/news
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: paid
+  update_cadence: weekly
+  event_types_covered:
+  - production_update
+  - macro_data_release
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: Wards auto-industry data. Monthly SAAR + inventory days-supply + production forecasts.
+  lineage:
+    authored_by: phase_b_consumer_discretionary_opus
+    authored_at: '2026-04-21T19:34:29Z'

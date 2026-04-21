@@ -1,0 +1,48 @@
+- source_id: sub_industry.consumer_discretionary.homebuilding.census_housing_starts
+  source_name: Census — New Residential Construction
+  url: https://www.census.gov/construction/nrc/
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: 0
+  notes: US Census monthly housing-starts + permits + completions. Mid-month release. Direct LEN/DHI/PHM/NVR/KBH driver.
+  lineage:
+    authored_by: phase_b_consumer_discretionary_opus
+    authored_at: '2026-04-21T19:34:29Z'
+- source_id: sub_industry.consumer_discretionary.homebuilding.lumber_futures_cme
+  source_name: CME — Lumber Futures
+  url: https://www.cmegroup.com/markets/agriculture/lumber-and-softs/random-length-lumber.html
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - commodity_price_event
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: CME Lumber futures. Key homebuilder input cost. Moves margins for LEN, DHI, PHM on sustained moves.
+  lineage:
+    authored_by: phase_b_consumer_discretionary_opus
+    authored_at: '2026-04-21T19:34:29Z'
+- source_id: sub_industry.consumer_discretionary.homebuilding.nar_existing_home_sales
+  source_name: NAR — Existing Home Sales
+  url: https://www.nar.realtor/research-and-statistics/housing-statistics
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: Nat'l Assoc of Realtors monthly existing-home sales + median price. Demand gauge for homebuilders.
+  lineage:
+    authored_by: phase_b_consumer_discretionary_opus
+    authored_at: '2026-04-21T19:34:29Z'

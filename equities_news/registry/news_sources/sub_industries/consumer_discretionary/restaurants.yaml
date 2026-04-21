@@ -1,0 +1,50 @@
+- source_id: sub_industry.consumer_discretionary.restaurants.blackbox_intelligence
+  source_name: Black Box Intelligence
+  url: https://blackboxintelligence.com/insights/
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: paid
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: Black Box monthly restaurant same-store sales + traffic. Most-cited industry benchmark.
+  lineage:
+    authored_by: phase_b_consumer_discretionary_opus
+    authored_at: '2026-04-21T19:34:29Z'
+- source_id: sub_industry.consumer_discretionary.restaurants.technomic
+  source_name: Technomic — Restaurant Industry Reports
+  url: https://www.technomic.com/newsroom
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: paid
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  - material_disclosure
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: Technomic restaurant-industry research. Top 500 rankings + segment performance.
+  lineage:
+    authored_by: phase_b_consumer_discretionary_opus
+    authored_at: '2026-04-21T19:34:29Z'
+- source_id: sub_industry.consumer_discretionary.restaurants.usda_food_price_index
+  source_name: USDA — Food Price Outlook
+  url: https://www.ers.usda.gov/data-products/food-price-outlook/
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  - commodity_price_event
+  edge_weight_prior: 0.65
+  typical_lead_time_vs_english_minutes: 0
+  notes: USDA food-at-home + food-away-from-home CPI forecasts. Input-cost driver for restaurant margins.
+  lineage:
+    authored_by: phase_b_consumer_discretionary_opus
+    authored_at: '2026-04-21T19:34:29Z'

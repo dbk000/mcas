@@ -1,0 +1,51 @@
+- source_id: sub_industry.consumer_discretionary.luxury_apparel.amf_france
+  source_name: AMF — French Market Regulator
+  url: https://www.amf-france.org/en
+  adapter_type: scraper
+  jurisdiction: FR
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - material_disclosure
+  - regulatory_filing
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: -60
+  notes: Autorité des marchés financiers. French listings file here first. 30-60 min lead for LVMH, Kering, Hermes vs English
+    wires.
+  lineage:
+    authored_by: phase_b_consumer_discretionary_opus
+    authored_at: '2026-04-21T19:34:29Z'
+- source_id: sub_industry.consumer_discretionary.luxury_apparel.bain_luxury_study
+  source_name: Bain — Luxury Study
+  url: https://www.bain.com/insights/topics/luxury-goods-worldwide-market-study/
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: 0
+  notes: Bain + Altagamma Luxury Study (Spring + Fall). Defines luxury sector-growth narrative.
+  lineage:
+    authored_by: phase_b_consumer_discretionary_opus
+    authored_at: '2026-04-21T19:34:29Z'
+- source_id: sub_industry.consumer_discretionary.luxury_apparel.laconceria
+  source_name: La Conceria
+  url: https://www.laconceria.it/en/
+  adapter_type: rss
+  jurisdiction: IT
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - commodity_price_event
+  - material_disclosure
+  edge_weight_prior: 0.55
+  typical_lead_time_vs_english_minutes: 0
+  notes: Italian leather-industry trade. Raw-hide price + tannery supply for luxury leather goods.
+  lineage:
+    authored_by: phase_b_consumer_discretionary_opus
+    authored_at: '2026-04-21T19:34:29Z'
