@@ -1,0 +1,49 @@
+- source_id: sub_industry.health_care.medical_devices.fda_510k
+  source_name: FDA — 510(k) Clearances
+  url: https://www.accessdata.fda.gov/scripts/cdrh/cfdocs/cfpmn/pmn.cfm
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - regulatory_action
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: 0
+  notes: FDA 510(k) premarket notification database. Primary record for device clearances. Moves MDT, BSX, SYK, ISRG, EW,
+    ALGN, DXCM.
+  lineage:
+    authored_by: phase_b_health_care_opus
+    authored_at: '2026-04-21T20:00:58Z'
+- source_id: sub_industry.health_care.medical_devices.fda_pma
+  source_name: FDA — PMA Approvals
+  url: https://www.accessdata.fda.gov/scripts/cdrh/cfdocs/cfpma/pma.cfm
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - regulatory_action
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: 0
+  notes: FDA Premarket Approval database — Class III high-risk devices (ISRG da Vinci, EW SAPIEN, BSX WATCHMAN).
+  lineage:
+    authored_by: phase_b_health_care_opus
+    authored_at: '2026-04-21T20:00:58Z'
+- source_id: sub_industry.health_care.medical_devices.mdr_eu
+  source_name: EU — MDR CE Marking Updates
+  url: https://ec.europa.eu/tools/eudamed/
+  adapter_type: scraper
+  jurisdiction: EU
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - regulatory_action
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: EUDAMED — EU Medical Device Regulation database. CE marking + notified body designations.
+  lineage:
+    authored_by: phase_b_health_care_opus
+    authored_at: '2026-04-21T20:00:58Z'

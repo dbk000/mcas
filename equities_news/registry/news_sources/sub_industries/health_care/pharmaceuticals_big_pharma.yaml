@@ -1,0 +1,53 @@
+- source_id: sub_industry.health_care.pharmaceuticals_big_pharma.bloomberg_pharma
+  source_name: Bloomberg — Pharmaceuticals
+  url: https://www.bloomberg.com/markets/sectors/health-care
+  adapter_type: scraper
+  jurisdiction: XX
+  language: en
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - ma_announcement
+  - material_disclosure
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: 0
+  notes: Bloomberg pharma desk. Breaking news leadership on large-cap pharma.
+  lineage:
+    authored_by: phase_b_health_care_opus
+    authored_at: '2026-04-21T20:00:58Z'
+- source_id: sub_industry.health_care.pharmaceuticals_big_pharma.ft_pharma
+  source_name: Financial Times — Pharmaceuticals
+  url: https://www.ft.com/pharmaceuticals
+  adapter_type: scraper
+  jurisdiction: GB
+  language: en
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - ma_announcement
+  - sector_regulation
+  - executive_change
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: -15
+  notes: FT pharma. Often first EU big-pharma leaks before official RNS (AZN, GSK, NOVN, ROG, NOVO, SAN).
+  lineage:
+    authored_by: phase_b_health_care_opus
+    authored_at: '2026-04-21T20:00:58Z'
+- source_id: sub_industry.health_care.pharmaceuticals_big_pharma.reuters_pharma
+  source_name: Reuters — Pharmaceuticals
+  url: https://www.reuters.com/business/healthcare-pharmaceuticals/
+  adapter_type: rss
+  jurisdiction: XX
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - ma_announcement
+  - executive_change
+  - regulatory_action
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: 0
+  notes: Reuters pharma desk. Real-time wire on big-pharma M&A and regulatory events.
+  lineage:
+    authored_by: phase_b_health_care_opus
+    authored_at: '2026-04-21T20:00:58Z'

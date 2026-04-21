@@ -1,0 +1,69 @@
+- source_id: sub_industry.health_care.biotechnology_clinical_stage.adam_feuerstein_x
+  source_name: Adam Feuerstein (STAT) — X Feed
+  url: https://twitter.com/adamfeuerstein
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: realtime
+  event_types_covered:
+  - material_disclosure
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: -10
+  notes: Adam Feuerstein X feed — near-realtime biotech commentary. Often tweets breakdown of FDA action within minutes of
+    release.
+  lineage:
+    authored_by: phase_b_health_care_opus
+    authored_at: '2026-04-21T20:00:58Z'
+- source_id: sub_industry.health_care.biotechnology_clinical_stage.ctg_updates
+  source_name: ClinicalTrials.gov — Study Record Updates
+  url: https://clinicaltrials.gov/ct2/results/displayOptImmediate?term=&type=Intr&rslt=&recrs=d&rfreq=changed
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - material_disclosure
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: 0
+  notes: CTG real-time study-status changes (recruitment holds, completion, terminations). Detects enrollment problems + partial-stop
+    signals.
+  lineage:
+    authored_by: phase_b_health_care_opus
+    authored_at: '2026-04-21T20:00:58Z'
+- source_id: sub_industry.health_care.biotechnology_clinical_stage.endpts_premium
+  source_name: Endpoints Premium — Clinical-Stage Biotech
+  url: https://endpts.com/premium/
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - material_disclosure
+  - executive_change
+  - ma_announcement
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: -30
+  notes: Endpoints Premium paid tier. Deeper clinical-stage coverage. Pre-revenue biotech M&A + trial readout scoops.
+  lineage:
+    authored_by: phase_b_health_care_opus
+    authored_at: '2026-04-21T20:00:58Z'
+- source_id: sub_industry.health_care.biotechnology_clinical_stage.stat_plus
+  source_name: STAT+ Biotech
+  url: https://www.statnews.com/stat-plus/
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - material_disclosure
+  - regulatory_action
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: 0
+  notes: STAT+ paid tier. Adam Feuerstein clinical-stage biotech analysis + trial readout previews.
+  lineage:
+    authored_by: phase_b_health_care_opus
+    authored_at: '2026-04-21T20:00:58Z'

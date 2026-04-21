@@ -1,0 +1,867 @@
+- source_id: sector.health_care.aacr_annual
+  source_name: AACR — Annual Meeting
+  url: https://www.aacr.org/meeting/aacr-annual-meeting/
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: ad_hoc
+  event_types_covered:
+  - material_disclosure
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: 0
+  notes: American Association for Cancer Research annual meeting (April). Early-stage oncology translational data.
+  lineage:
+    authored_by: phase_b_health_care_opus
+    authored_at: '2026-04-21T20:00:58Z'
+- source_id: sector.health_care.aha_scientific
+  source_name: AHA — Scientific Sessions
+  url: https://professional.heart.org/en/meetings/scientific-sessions
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: ad_hoc
+  event_types_covered:
+  - material_disclosure
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: 0
+  notes: American Heart Association Scientific Sessions (November). Cardiology catalysts. Moves LLY tirzepatide, NOVO semaglutide,
+    AMGN repatha, ESPR bempedoic.
+  lineage:
+    authored_by: phase_b_health_care_opus
+    authored_at: '2026-04-21T20:00:58Z'
+- source_id: sector.health_care.asco_meetings
+  source_name: ASCO — Meeting Library
+  url: https://meetings.asco.org/
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: ad_hoc
+  event_types_covered:
+  - material_disclosure
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: 0
+  notes: American Society of Clinical Oncology — annual meeting (June, Chicago) + GI + GU + Breast symposia. Oncology Phase
+    3 catalysts. Pre-meeting abstract drop moves MRK, BMY, AZN, GILD, JNJ, LLY oncology pipelines.
+  lineage:
+    authored_by: phase_b_health_care_opus
+    authored_at: '2026-04-21T20:00:58Z'
+- source_id: sector.health_care.ash_annual
+  source_name: ASH — Annual Meeting
+  url: https://www.hematology.org/meetings/annual-meeting
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: ad_hoc
+  event_types_covered:
+  - material_disclosure
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: 0
+  notes: American Society of Hematology annual meeting (December). Hematology catalysts. Moves BMY, VRTX, BMRN, BLUE, CRSP
+    cell/gene therapy programs.
+  lineage:
+    authored_by: phase_b_health_care_opus
+    authored_at: '2026-04-21T20:00:58Z'
+- source_id: sector.health_care.beckers_hospital
+  source_name: Becker's Hospital Review
+  url: https://www.beckershospitalreview.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - ma_announcement
+  - executive_change
+  - product_launch
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: Becker's Hospital Review — hospital ops + finance trade. Daily hospital-operator coverage.
+  lineage:
+    authored_by: phase_b_health_care_opus
+    authored_at: '2026-04-21T20:00:58Z'
+- source_id: sector.health_care.bio_it_world
+  source_name: Bio-IT World
+  url: https://www.bio-itworld.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - product_launch
+  - ma_announcement
+  edge_weight_prior: 0.55
+  typical_lead_time_vs_english_minutes: 120
+  notes: Bio-IT World — informatics + data-driven biotech. Coverage of VEEV, SDGR, RXRX, CERT.
+  lineage:
+    authored_by: phase_b_health_care_opus
+    authored_at: '2026-04-21T20:00:58Z'
+- source_id: sector.health_care.bio_org
+  source_name: BIO — Industry Announcements
+  url: https://www.bio.org/press-releases
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - sector_regulation
+  edge_weight_prior: 0.6
+  typical_lead_time_vs_english_minutes: 0
+  notes: Biotechnology Innovation Organization — trade association. Policy + BIO conferences (BIO Convention, BIO Europe,
+    BIO-Asia).
+  lineage:
+    authored_by: phase_b_health_care_opus
+    authored_at: '2026-04-21T20:00:58Z'
+- source_id: sector.health_care.biopharma_catalyst
+  source_name: BioPharma Catalyst
+  url: https://www.biopharmcatalyst.com/
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - material_disclosure
+  - regulatory_action
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: 0
+  notes: BioPharmCatalyst — FDA PDUFA calendar + clinical trial readout calendar. Primary reference for biotech event timing.
+  lineage:
+    authored_by: phase_b_health_care_opus
+    authored_at: '2026-04-21T20:00:58Z'
+- source_id: sector.health_care.biopharma_dive
+  source_name: BioPharma Dive
+  url: https://www.biopharmadive.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - ma_announcement
+  - material_disclosure
+  - regulatory_action
+  - executive_change
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: Daily biotech/pharma trade publication. Complements FierceBiotech with deeper analytical pieces.
+  lineage:
+    authored_by: phase_b_health_care_opus
+    authored_at: '2026-04-21T20:00:58Z'
+- source_id: sector.health_care.biospace
+  source_name: BioSpace
+  url: https://www.biospace.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - ma_announcement
+  - executive_change
+  - material_disclosure
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: BioSpace — biotech industry news + jobs + deal news. Aggregator of company press releases.
+  lineage:
+    authored_by: phase_b_health_care_opus
+    authored_at: '2026-04-21T20:00:58Z'
+- source_id: sector.health_care.clinicaltrials_gov
+  source_name: ClinicalTrials.gov
+  url: https://clinicaltrials.gov/
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - material_disclosure
+  - regulatory_action
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: 0
+  notes: NIH-hosted global clinical trial registry. Protocol + results posting + trial status changes. Primary factual record
+    for Phase 2/3 trial progress.
+  lineage:
+    authored_by: phase_b_health_care_opus
+    authored_at: '2026-04-21T20:00:58Z'
+- source_id: sector.health_care.cms_newsroom
+  source_name: CMS — Newsroom
+  url: https://www.cms.gov/newsroom
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - regulatory_action
+  - sector_regulation
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: 0
+  notes: Centers for Medicare & Medicaid Services. Advance Notice + Final Rate announcements for MA bid cycle. Direct driver
+    of UNH, HUM, CI, ELV, MOH, CNC, CLOV earnings.
+  lineage:
+    authored_by: phase_b_health_care_opus
+    authored_at: '2026-04-21T20:00:58Z'
+- source_id: sector.health_care.ema_chmp
+  source_name: EMA — CHMP Opinions
+  url: https://www.ema.europa.eu/en/committees/chmp/chmp-meeting-highlights
+  adapter_type: scraper
+  jurisdiction: EU
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - regulatory_action
+  edge_weight_prior: 0.95
+  typical_lead_time_vs_english_minutes: 0
+  notes: Committee for Medicinal Products for Human Use. Monthly opinion on marketing authorisations — direct EU approval
+    driver.
+  lineage:
+    authored_by: phase_b_health_care_opus
+    authored_at: '2026-04-21T20:00:58Z'
+- source_id: sector.health_care.ema_news
+  source_name: EMA — News
+  url: https://www.ema.europa.eu/en/news
+  adapter_type: rss
+  jurisdiction: EU
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - regulatory_action
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: 0
+  notes: European Medicines Agency. CHMP monthly meeting highlights (usually Friday after meeting week). PRAC safety reviews.
+    Moves NOVN, ROG, NOVO, AZN, GSK, SAN, BAYN.
+  lineage:
+    authored_by: phase_b_health_care_opus
+    authored_at: '2026-04-21T20:00:58Z'
+- source_id: sector.health_care.endpoints_news
+  source_name: Endpoints News
+  url: https://endpts.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - ma_announcement
+  - material_disclosure
+  - executive_change
+  - regulatory_action
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: -30
+  notes: Endpoints News (endpts.com) — leading biotech scoop venue, Premium + Pharma+ tiers. Pharma M&A leaks to Endpoints/STAT/FT
+    first, official RNS/8-K follows. Often 30-60min ahead of official.
+  lineage:
+    authored_by: phase_b_health_care_opus
+    authored_at: '2026-04-21T20:00:58Z'
+- source_id: sector.health_care.esmo_congress
+  source_name: ESMO — Congress
+  url: https://www.esmo.org/meetings
+  adapter_type: scraper
+  jurisdiction: EU
+  language: en
+  cost_tier: free
+  update_cadence: ad_hoc
+  event_types_covered:
+  - material_disclosure
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: 0
+  notes: European Society for Medical Oncology — annual congress (September). Parallel to ASCO for EU oncology disclosure.
+  lineage:
+    authored_by: phase_b_health_care_opus
+    authored_at: '2026-04-21T20:00:58Z'
+- source_id: sector.health_care.eu_ctr
+  source_name: EU Clinical Trials Register
+  url: https://www.clinicaltrialsregister.eu/
+  adapter_type: scraper
+  jurisdiction: EU
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - material_disclosure
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: EU-CTR / EudraCT — EU clinical trial registry. Complements ClinicalTrials.gov for EU-sited studies.
+  lineage:
+    authored_by: phase_b_health_care_opus
+    authored_at: '2026-04-21T20:00:58Z'
+- source_id: sector.health_care.evaluate_vantage
+  source_name: Evaluate Vantage
+  url: https://www.evaluate.com/vantage
+  adapter_type: rss
+  jurisdiction: GB
+  language: en
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - ma_announcement
+  - material_disclosure
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: Evaluate — pharma deal + pipeline analytics. Free Vantage articles + paid data. Consensus peak-sales forecasts.
+  lineage:
+    authored_by: phase_b_health_care_opus
+    authored_at: '2026-04-21T20:00:58Z'
+- source_id: sector.health_care.fda_adcom_calendar
+  source_name: FDA — Advisory Committee Calendar
+  url: https://www.fda.gov/advisory-committees/advisory-committee-calendar
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - regulatory_action
+  - material_disclosure
+  edge_weight_prior: 0.95
+  typical_lead_time_vs_english_minutes: 0
+  notes: FDA AdCom meeting calendar + briefing documents. AdComm briefing docs publish at noon ET day-before meeting — widely-watched
+    by biotech traders.
+  lineage:
+    authored_by: phase_b_health_care_opus
+    authored_at: '2026-04-21T20:00:58Z'
+- source_id: sector.health_care.fda_device_recalls
+  source_name: FDA — Medical Device Recalls
+  url: https://www.fda.gov/medical-devices/medical-device-recalls
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - regulatory_action
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: 0
+  notes: FDA Class I/II/III device recalls + 483 letters + warning letters. Moves MDT, BSX, SYK, ISRG, BDX.
+  lineage:
+    authored_by: phase_b_health_care_opus
+    authored_at: '2026-04-21T20:00:58Z'
+- source_id: sector.health_care.fda_drug_approvals
+  source_name: FDA — Drug Approvals & Databases
+  url: https://www.fda.gov/drugs/drug-approvals-and-databases
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - regulatory_action
+  edge_weight_prior: 0.95
+  typical_lead_time_vs_english_minutes: 0
+  notes: FDA drug approvals + Orange Book + 505(b)(2) approvals. CDER Drug Approval Reports. Definitive source for NDA/BLA
+    decisions.
+  lineage:
+    authored_by: phase_b_health_care_opus
+    authored_at: '2026-04-21T20:00:58Z'
+- source_id: sector.health_care.fda_newsroom
+  source_name: FDA — Newsroom
+  url: https://www.fda.gov/news-events/fda-newsroom
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - regulatory_action
+  - material_disclosure
+  edge_weight_prior: 0.95
+  typical_lead_time_vs_english_minutes: 0
+  notes: Official FDA press releases. Drug + device approvals, rejections, recalls. Primary market-moving venue for US-listed
+    pharma/biotech.
+  lineage:
+    authored_by: phase_b_health_care_opus
+    authored_at: '2026-04-21T20:00:58Z'
+- source_id: sector.health_care.fierce_healthcare
+  source_name: Fierce Healthcare
+  url: https://www.fiercehealthcare.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - ma_announcement
+  - executive_change
+  - sector_regulation
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: Fierce Healthcare — payer + provider daily. Medicare Advantage + Medicaid MCO coverage.
+  lineage:
+    authored_by: phase_b_health_care_opus
+    authored_at: '2026-04-21T20:00:58Z'
+- source_id: sector.health_care.fiercebiotech
+  source_name: FierceBiotech
+  url: https://www.fiercebiotech.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - ma_announcement
+  - regulatory_action
+  - executive_change
+  - material_disclosure
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: 0
+  notes: Daily biotech news. Clinical trial readouts + funding rounds + FDA action. Primary venue alongside Endpoints for
+    biotech scoops.
+  lineage:
+    authored_by: phase_b_health_care_opus
+    authored_at: '2026-04-21T20:00:58Z'
+- source_id: sector.health_care.fiercepharma
+  source_name: FiercePharma
+  url: https://www.fiercepharma.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - ma_announcement
+  - executive_change
+  - product_launch
+  - regulatory_action
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: 0
+  notes: Daily pharma industry news. Breaking deal coverage, pipeline moves, commercial launch tracking. Strong on big pharma
+    (LLY, JNJ, MRK, PFE, ABBV).
+  lineage:
+    authored_by: phase_b_health_care_opus
+    authored_at: '2026-04-21T20:00:58Z'
+- source_id: sector.health_care.gen_engnews
+  source_name: Genetic Engineering & Biotechnology News
+  url: https://www.genengnews.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - material_disclosure
+  - product_launch
+  edge_weight_prior: 0.65
+  typical_lead_time_vs_english_minutes: 60
+  notes: GEN — biotech trade with academic lean. Coverage of gene + cell therapy (CRSP, NTLA, EDIT, BEAM, VERV, BLUE).
+  lineage:
+    authored_by: phase_b_health_care_opus
+    authored_at: '2026-04-21T20:00:58Z'
+- source_id: sector.health_care.genomeweb
+  source_name: GenomeWeb
+  url: https://www.genomeweb.com/
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - product_launch
+  - ma_announcement
+  - executive_change
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: GenomeWeb — life-sciences tools + diagnostics trade. Strong on TMO, DHR, A, ILMN, TXG, TWST, PACB, ONT.
+  lineage:
+    authored_by: phase_b_health_care_opus
+    authored_at: '2026-04-21T20:00:58Z'
+- source_id: sector.health_care.health_affairs
+  source_name: Health Affairs — News
+  url: https://www.healthaffairs.org/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: paid
+  update_cadence: weekly
+  event_types_covered:
+  - sector_regulation
+  edge_weight_prior: 0.6
+  typical_lead_time_vs_english_minutes: 120
+  notes: Health Affairs — peer-reviewed health policy journal. Academic analyses cited by regulators.
+  lineage:
+    authored_by: phase_b_health_care_opus
+    authored_at: '2026-04-21T20:00:58Z'
+- source_id: sector.health_care.health_canada
+  source_name: Health Canada — News
+  url: https://www.canada.ca/en/health-canada/news.html
+  adapter_type: rss
+  jurisdiction: CA
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - regulatory_action
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: Health Canada drug/device approvals. Secondary market relative to FDA/EMA.
+  lineage:
+    authored_by: phase_b_health_care_opus
+    authored_at: '2026-04-21T20:00:58Z'
+- source_id: sector.health_care.healthcare_dive
+  source_name: Healthcare Dive
+  url: https://www.healthcaredive.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - ma_announcement
+  - executive_change
+  - sector_regulation
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: Healthcare Dive — daily healthcare trade publication. Aggregates payer + provider + policy news.
+  lineage:
+    authored_by: phase_b_health_care_opus
+    authored_at: '2026-04-21T20:00:58Z'
+- source_id: sector.health_care.inside_health_policy
+  source_name: Inside Health Policy
+  url: https://insidehealthpolicy.com/
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - sector_regulation
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: Inside Health Policy — Washington regulatory tracking. CMS rule-making + FDA policy nuance.
+  lineage:
+    authored_by: phase_b_health_care_opus
+    authored_at: '2026-04-21T20:00:58Z'
+- source_id: sector.health_care.jama
+  source_name: JAMA — Journal of the American Medical Association
+  url: https://jamanetwork.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: paid
+  update_cadence: weekly
+  event_types_covered:
+  - material_disclosure
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: 0
+  notes: JAMA — AMA peer-reviewed journal. Full-data publication venue for large cardiology + oncology trials.
+  lineage:
+    authored_by: phase_b_health_care_opus
+    authored_at: '2026-04-21T20:00:58Z'
+- source_id: sector.health_care.jpm_healthcare
+  source_name: JPMorgan Healthcare Conference
+  url: https://www.jpmorgan.com/healthcare-conference
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: ad_hoc
+  event_types_covered:
+  - material_disclosure
+  - ma_announcement
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: 0
+  notes: JPMorgan Healthcare Conference (San Francisco, January). Annual pharma/biotech flagship. Company strategy presentations
+    + M&A announcements concentrated in week.
+  lineage:
+    authored_by: phase_b_health_care_opus
+    authored_at: '2026-04-21T20:00:58Z'
+- source_id: sector.health_care.lancet
+  source_name: The Lancet
+  url: https://www.thelancet.com/
+  adapter_type: rss
+  jurisdiction: GB
+  language: en
+  cost_tier: paid
+  update_cadence: weekly
+  event_types_covered:
+  - material_disclosure
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: 0
+  notes: The Lancet — top-tier UK medical journal. Often embargoed alongside major EU conferences.
+  lineage:
+    authored_by: phase_b_health_care_opus
+    authored_at: '2026-04-21T20:00:58Z'
+- source_id: sector.health_care.mass_device
+  source_name: MassDevice
+  url: https://www.massdevice.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - ma_announcement
+  - product_launch
+  - regulatory_action
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: MassDevice — medical device industry trade. Deal coverage + device approvals. Complements MedTech Dive.
+  lineage:
+    authored_by: phase_b_health_care_opus
+    authored_at: '2026-04-21T20:00:58Z'
+- source_id: sector.health_care.mddi_online
+  source_name: MD+DI — Medical Design & Outsourcing
+  url: https://www.mddionline.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - product_launch
+  - ma_announcement
+  edge_weight_prior: 0.6
+  typical_lead_time_vs_english_minutes: 60
+  notes: MD+DI (Medical Design & Outsourcing). Medical device design + manufacturing trade.
+  lineage:
+    authored_by: phase_b_health_care_opus
+    authored_at: '2026-04-21T20:00:58Z'
+- source_id: sector.health_care.medcity_news
+  source_name: MedCity News
+  url: https://medcitynews.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - ma_announcement
+  - executive_change
+  - product_launch
+  edge_weight_prior: 0.6
+  typical_lead_time_vs_english_minutes: 60
+  notes: MedCity News — digital health + medical device trade.
+  lineage:
+    authored_by: phase_b_health_care_opus
+    authored_at: '2026-04-21T20:00:58Z'
+- source_id: sector.health_care.medrxiv
+  source_name: medRxiv
+  url: https://www.medrxiv.org/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - material_disclosure
+  edge_weight_prior: 0.6
+  typical_lead_time_vs_english_minutes: -60
+  notes: medRxiv — medical preprint server. Pre-peer-review findings often posted before formal publication.
+  lineage:
+    authored_by: phase_b_health_care_opus
+    authored_at: '2026-04-21T20:00:58Z'
+- source_id: sector.health_care.medtech_dive
+  source_name: MedTech Dive
+  url: https://www.medtechdive.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - ma_announcement
+  - regulatory_action
+  - product_launch
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: MedTech Dive — daily medical device trade. FDA 510(k) + PMA approvals + device recalls. Strong on MDT, BSX, SYK,
+    ISRG, EW, ALGN, DXCM, PODD.
+  lineage:
+    authored_by: phase_b_health_care_opus
+    authored_at: '2026-04-21T20:00:58Z'
+- source_id: sector.health_care.mhra_news
+  source_name: MHRA — News
+  url: https://www.gov.uk/government/organisations/medicines-and-healthcare-products-regulatory-agency
+  adapter_type: scraper
+  jurisdiction: GB
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - regulatory_action
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: 0
+  notes: UK Medicines and Healthcare products Regulatory Agency. Post-Brexit standalone UK approvals. Moves AZN, GSK, HIK,
+    CTEC.
+  lineage:
+    authored_by: phase_b_health_care_opus
+    authored_at: '2026-04-21T20:00:58Z'
+- source_id: sector.health_care.modern_healthcare
+  source_name: Modern Healthcare
+  url: https://www.modernhealthcare.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - ma_announcement
+  - executive_change
+  - sector_regulation
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: Modern Healthcare — provider + payer trade. Hospital system consolidation, payer strategy, regulatory response. Moves
+    UNH, CI, HUM, ELV, HCA, THC, UHS.
+  lineage:
+    authored_by: phase_b_health_care_opus
+    authored_at: '2026-04-21T20:00:58Z'
+- source_id: sector.health_care.nature_medicine
+  source_name: Nature Medicine
+  url: https://www.nature.com/nm/
+  adapter_type: rss
+  jurisdiction: GB
+  language: en
+  cost_tier: paid
+  update_cadence: weekly
+  event_types_covered:
+  - material_disclosure
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: 0
+  notes: Nature Medicine — high-impact biomedical research. Phase 1/2 data + translational science.
+  lineage:
+    authored_by: phase_b_health_care_opus
+    authored_at: '2026-04-21T20:00:58Z'
+- source_id: sector.health_care.nejm
+  source_name: The New England Journal of Medicine
+  url: https://www.nejm.org/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: paid
+  update_cadence: weekly
+  event_types_covered:
+  - material_disclosure
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: 0
+  notes: NEJM — highest-impact medical journal. Phase 3 trial full-data publications. Embargo windows often coincide with
+    ASCO/AHA/ESC.
+  lineage:
+    authored_by: phase_b_health_care_opus
+    authored_at: '2026-04-21T20:00:58Z'
+- source_id: sector.health_care.nmpa_news
+  source_name: NMPA — News
+  url: https://www.nmpa.gov.cn/
+  adapter_type: scraper
+  jurisdiction: CN
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - regulatory_action
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: 60
+  notes: National Medical Products Administration China. Chinese drug approvals. Moves BGNE, LEGN, and HK-listed biopharma.
+  lineage:
+    authored_by: phase_b_health_care_opus
+    authored_at: '2026-04-21T20:00:58Z'
+- source_id: sector.health_care.phrma
+  source_name: PhRMA — Press
+  url: https://www.phrma.org/news
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - sector_regulation
+  edge_weight_prior: 0.55
+  typical_lead_time_vs_english_minutes: 0
+  notes: Pharmaceutical Research and Manufacturers of America. Industry position on IRA drug pricing, Medicare negotiation.
+  lineage:
+    authored_by: phase_b_health_care_opus
+    authored_at: '2026-04-21T20:00:58Z'
+- source_id: sector.health_care.pink_sheet_citeline
+  source_name: Pink Sheet (Citeline)
+  url: https://pink.citeline.com/
+  adapter_type: scraper
+  jurisdiction: XX
+  language: en
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - regulatory_action
+  - sector_regulation
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: 0
+  notes: Pink Sheet (Citeline, formerly Informa Pharma Intelligence). Regulatory + policy focus. Strong on FDA/EMA process
+    nuance.
+  lineage:
+    authored_by: phase_b_health_care_opus
+    authored_at: '2026-04-21T20:00:58Z'
+- source_id: sector.health_care.pmda_news
+  source_name: PMDA — News
+  url: https://www.pmda.go.jp/english/about-pmda/0004.html
+  adapter_type: scraper
+  jurisdiction: JP
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - regulatory_action
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: 0
+  notes: Pharmaceuticals and Medical Devices Agency Japan. Key for JP pharma (4502 Takeda, 4503 Astellas, 4568 Daiichi, 4519
+    Chugai, 4528 Ono).
+  lineage:
+    authored_by: phase_b_health_care_opus
+    authored_at: '2026-04-21T20:00:58Z'
+- source_id: sector.health_care.scrip_informa
+  source_name: Scrip (Informa Pharma Intelligence)
+  url: https://scrip.pharmaintelligence.informa.com/
+  adapter_type: scraper
+  jurisdiction: XX
+  language: en
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - ma_announcement
+  - executive_change
+  - regulatory_action
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: 0
+  notes: Scrip — Informa Pharma Intelligence premium subscription. International pharma trade covering EU + JP + US.
+  lineage:
+    authored_by: phase_b_health_care_opus
+    authored_at: '2026-04-21T20:00:58Z'
+- source_id: sector.health_care.stat_news
+  source_name: STAT News
+  url: https://www.statnews.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - ma_announcement
+  - material_disclosure
+  - regulatory_action
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: -15
+  notes: STAT News + STAT+ (paid). Pharma/biotech journalism with deep sources. Adam Feuerstein + Matthew Herper coverage
+    moves biotech prices.
+  lineage:
+    authored_by: phase_b_health_care_opus
+    authored_at: '2026-04-21T20:00:58Z'
+- source_id: sector.health_care.tga_news
+  source_name: TGA — News
+  url: https://www.tga.gov.au/news-room
+  adapter_type: scraper
+  jurisdiction: AU
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - regulatory_action
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: Therapeutic Goods Administration Australia. Moves CSL, RHC, MSB.
+  lineage:
+    authored_by: phase_b_health_care_opus
+    authored_at: '2026-04-21T20:00:58Z'

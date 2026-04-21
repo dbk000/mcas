@@ -1,0 +1,49 @@
+- source_id: sub_industry.health_care.managed_care.cms_advance_notice
+  source_name: CMS — Medicare Advantage Advance Notice + Rate Announcement
+  url: https://www.cms.gov/medicare/payment/medicare-advantage-rates-statistics
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: ad_hoc
+  event_types_covered:
+  - sector_regulation
+  edge_weight_prior: 0.95
+  typical_lead_time_vs_english_minutes: 0
+  notes: CMS MA Advance Notice (early February) + Final Rate Announcement (early April). Directly moves UNH, HUM, CI, ELV,
+    MOH, CNC, CLOV 2-8%.
+  lineage:
+    authored_by: phase_b_health_care_opus
+    authored_at: '2026-04-21T20:00:58Z'
+- source_id: sub_industry.health_care.managed_care.cms_stars
+  source_name: CMS — MA Star Ratings
+  url: https://www.cms.gov/medicare/quality/part-c-d-performance-data
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: ad_hoc
+  event_types_covered:
+  - sector_regulation
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: 0
+  notes: CMS Star Ratings release (October). MA plan quality scores affecting 2-yr-forward bonus payments. Big HUM + UNH swing.
+  lineage:
+    authored_by: phase_b_health_care_opus
+    authored_at: '2026-04-21T20:00:58Z'
+- source_id: sub_industry.health_care.managed_care.kff
+  source_name: Kaiser Family Foundation
+  url: https://www.kff.org/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - sector_regulation
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: Kaiser Family Foundation — health policy analyses. Medicaid unwind + ACA enrollment tracking.
+  lineage:
+    authored_by: phase_b_health_care_opus
+    authored_at: '2026-04-21T20:00:58Z'
