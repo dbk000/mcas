@@ -1,0 +1,50 @@
+- source_id: sub_industry.information_technology.semiconductors_equipment.semi_book_to_bill
+  source_name: SEMI — Worldwide Billings / Book-to-Bill
+  url: https://www.semi.org/en/industry-groups/global-industry-groups/semiconductor-industry-analytics
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: SEMI Worldwide Silicon Wafer shipments + fab equipment book-to-bill. Forward indicator.
+  lineage:
+    authored_by: phase_b_information_technology_opus
+    authored_at: '2026-04-21T15:16:24Z'
+- source_id: sub_industry.information_technology.semiconductors_equipment.semi_org
+  source_name: SEMI — Industry News
+  url: https://www.semi.org/en/news-media-press
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - material_disclosure
+  - product_launch
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: SEMI industry association. Quarterly billings report + SEMICON conference drops.
+  lineage:
+    authored_by: phase_b_information_technology_opus
+    authored_at: '2026-04-21T15:16:24Z'
+- source_id: sub_industry.information_technology.semiconductors_equipment.vlsi_research
+  source_name: VLSIresearch
+  url: https://www.vlsiresearch.com/public/news
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: paid
+  update_cadence: weekly
+  event_types_covered:
+  - production_update
+  - material_disclosure
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: 0
+  notes: VLSIresearch — capex + equipment shipments for ASML, AMAT, LRCX, KLAC, TEL, SCREEN, Advantest.
+  lineage:
+    authored_by: phase_b_information_technology_opus
+    authored_at: '2026-04-21T15:16:24Z'

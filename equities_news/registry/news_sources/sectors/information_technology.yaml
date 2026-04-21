@@ -1,0 +1,693 @@
+- source_id: sector.information_technology.apple_newsroom
+  source_name: Apple Newsroom
+  url: https://www.apple.com/newsroom/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - product_launch
+  - material_disclosure
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: 0
+  notes: Apple official press releases. Earnings + product launches (iPhone, Mac, Vision) originate here.
+  lineage:
+    authored_by: phase_b_information_technology_opus
+    authored_at: '2026-04-21T15:16:24Z'
+- source_id: sector.information_technology.ars_technica
+  source_name: Ars Technica
+  url: https://arstechnica.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - product_launch
+  - cyber_incident
+  - material_disclosure
+  edge_weight_prior: 0.6
+  typical_lead_time_vs_english_minutes: 60
+  notes: Long-form tech journalism. Good on Apple, semis, security.
+  lineage:
+    authored_by: phase_b_information_technology_opus
+    authored_at: '2026-04-21T15:16:24Z'
+- source_id: sector.information_technology.arxiv_cs
+  source_name: arXiv — cs.AI / cs.LG listing
+  url: https://arxiv.org/list/cs.AI/recent
+  adapter_type: rss
+  jurisdiction: XX
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - product_launch
+  edge_weight_prior: 0.5
+  typical_lead_time_vs_english_minutes: 180
+  notes: Preprint server. Occasional breakthrough papers drive retail/institutional narrative. Signal-to-noise low.
+  lineage:
+    authored_by: phase_b_information_technology_opus
+    authored_at: '2026-04-21T15:16:24Z'
+- source_id: sector.information_technology.aws_news
+  source_name: AWS — What's New
+  url: https://aws.amazon.com/new/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: realtime
+  event_types_covered:
+  - product_launch
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: AWS What's New feed. re:Invent launches. Signal for AWS-dependent cloud-native names.
+  lineage:
+    authored_by: phase_b_information_technology_opus
+    authored_at: '2026-04-21T15:16:24Z'
+- source_id: sector.information_technology.bleepingcomputer
+  source_name: BleepingComputer
+  url: https://www.bleepingcomputer.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - cyber_incident
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: Ransomware + breach news. Frequent scoops on victim-disclosed incidents.
+  lineage:
+    authored_by: phase_b_information_technology_opus
+    authored_at: '2026-04-21T15:16:24Z'
+- source_id: sector.information_technology.bloomberg_technology
+  source_name: Bloomberg Technology
+  url: https://www.bloomberg.com/technology
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: paid
+  update_cadence: realtime
+  event_types_covered:
+  - ma_announcement
+  - executive_change
+  - product_launch
+  - material_disclosure
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: -15
+  notes: Bloomberg technology desk. Breaks NVDA/AAPL/MSFT macro + M&A stories frequently.
+  lineage:
+    authored_by: phase_b_information_technology_opus
+    authored_at: '2026-04-21T15:16:24Z'
+- source_id: sector.information_technology.canalys_newsroom
+  source_name: Canalys — Newsroom
+  url: https://www.canalys.com/newsroom
+  adapter_type: rss
+  jurisdiction: GB
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - material_disclosure
+  edge_weight_prior: 0.65
+  typical_lead_time_vs_english_minutes: 0
+  notes: Cloud + PC + smartphone market-share tracker. Good on AAPL iPhone share, cloud vendor ranks.
+  lineage:
+    authored_by: phase_b_information_technology_opus
+    authored_at: '2026-04-21T15:16:24Z'
+- source_id: sector.information_technology.cnbc_tech
+  source_name: CNBC — Technology
+  url: https://www.cnbc.com/technology/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: realtime
+  event_types_covered:
+  - ma_announcement
+  - executive_change
+  - material_disclosure
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: CNBC tech desk. Earnings-day commentary + interviews with big-tech CEOs.
+  lineage:
+    authored_by: phase_b_information_technology_opus
+    authored_at: '2026-04-21T15:16:24Z'
+- source_id: sector.information_technology.crn
+  source_name: CRN
+  url: https://www.crn.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - product_launch
+  - executive_change
+  - contract_award
+  edge_weight_prior: 0.65
+  typical_lead_time_vs_english_minutes: 30
+  notes: Channel-partner news. Relevant for CDW, INGM, ARW, AVT, SNX, TD Synnex, PLUS, SCSC.
+  lineage:
+    authored_by: phase_b_information_technology_opus
+    authored_at: '2026-04-21T15:16:24Z'
+- source_id: sector.information_technology.dark_reading
+  source_name: Dark Reading
+  url: https://www.darkreading.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - cyber_incident
+  - product_launch
+  - regulatory_action
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: Informa security publication. Breach + vendor news that moves PANW, CRWD, ZS, FTNT, CHKP.
+  lineage:
+    authored_by: phase_b_information_technology_opus
+    authored_at: '2026-04-21T15:16:24Z'
+- source_id: sector.information_technology.digitimes
+  source_name: DIGITIMES
+  url: https://www.digitimes.com/
+  adapter_type: scraper
+  jurisdiction: XX
+  language: en
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - production_update
+  - product_launch
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: -60
+  notes: Taiwan-based. Supply-chain scoops across TSMC/foundry, display, PC ODMs. Moves TSM, ASML, ODM supply signals.
+  lineage:
+    authored_by: phase_b_information_technology_opus
+    authored_at: '2026-04-21T15:16:24Z'
+- source_id: sector.information_technology.eetimes
+  source_name: EE Times
+  url: https://www.eetimes.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - product_launch
+  - production_update
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 30
+  notes: Electronic Engineering Times. Chip design + equipment industry. Good for IDM/fabless coverage.
+  lineage:
+    authored_by: phase_b_information_technology_opus
+    authored_at: '2026-04-21T15:16:24Z'
+- source_id: sector.information_technology.forrester_press
+  source_name: Forrester — Press Room
+  url: https://www.forrester.com/press-room/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - sell_side_rating_change
+  - material_disclosure
+  edge_weight_prior: 0.6
+  typical_lead_time_vs_english_minutes: 60
+  notes: Forrester Wave reports + tech-spend forecasts. Parallel to Gartner MQ coverage.
+  lineage:
+    authored_by: phase_b_information_technology_opus
+    authored_at: '2026-04-21T15:16:24Z'
+- source_id: sector.information_technology.gartner_newsroom
+  source_name: Gartner — Newsroom
+  url: https://www.gartner.com/en/newsroom
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - sell_side_rating_change
+  - material_disclosure
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: Gartner Magic Quadrant + Hype Cycle + IT spend forecasts. Moves enterprise IT names on publication.
+  lineage:
+    authored_by: phase_b_information_technology_opus
+    authored_at: '2026-04-21T15:16:24Z'
+- source_id: sector.information_technology.google_blog
+  source_name: The Keyword — Google Blog
+  url: https://blog.google/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - product_launch
+  - material_disclosure
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: 0
+  notes: Google / Alphabet official blog. Workspace, Cloud, Gemini drops. Google I/O anchor.
+  lineage:
+    authored_by: phase_b_information_technology_opus
+    authored_at: '2026-04-21T15:16:24Z'
+- source_id: sector.information_technology.huggingface_blog
+  source_name: Hugging Face Blog
+  url: https://huggingface.co/blog
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - product_launch
+  - material_disclosure
+  edge_weight_prior: 0.65
+  typical_lead_time_vs_english_minutes: 0
+  notes: Hugging Face open-source AI news. Model drops. Informs market about open-source vs closed-model dynamics.
+  lineage:
+    authored_by: phase_b_information_technology_opus
+    authored_at: '2026-04-21T15:16:24Z'
+- source_id: sector.information_technology.idc_press
+  source_name: IDC — Press Releases
+  url: https://www.idc.com/getdoc.jsp?containerId=IDC_P38346
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - material_disclosure
+  - sell_side_rating_change
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: Quarterly server + PC shipment tracker. HDD/SSD split, smartphone shipments. Moves HPE, DELL, LNVGY, CSCO.
+  lineage:
+    authored_by: phase_b_information_technology_opus
+    authored_at: '2026-04-21T15:16:24Z'
+- source_id: sector.information_technology.ieee_spectrum
+  source_name: IEEE Spectrum
+  url: https://spectrum.ieee.org/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - product_launch
+  - material_disclosure
+  edge_weight_prior: 0.55
+  typical_lead_time_vs_english_minutes: 180
+  notes: IEEE publication. R&D-leaning. Useful for quantum, AI chip architectures.
+  lineage:
+    authored_by: phase_b_information_technology_opus
+    authored_at: '2026-04-21T15:16:24Z'
+- source_id: sector.information_technology.infoq
+  source_name: InfoQ
+  url: https://www.infoq.com/
+  adapter_type: rss
+  jurisdiction: XX
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - product_launch
+  - material_disclosure
+  edge_weight_prior: 0.5
+  typical_lead_time_vs_english_minutes: 120
+  notes: Enterprise software architecture. Occasional earnings-prep signals for enterprise-infra names.
+  lineage:
+    authored_by: phase_b_information_technology_opus
+    authored_at: '2026-04-21T15:16:24Z'
+- source_id: sector.information_technology.jpr_research
+  source_name: Jon Peddie Research
+  url: https://www.jonpeddie.com/press-releases/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - material_disclosure
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: Quarterly GPU shipment data (add-in-board + integrated). Direct channel-check for NVDA/AMD/INTC graphics.
+  lineage:
+    authored_by: phase_b_information_technology_opus
+    authored_at: '2026-04-21T15:16:24Z'
+- source_id: sector.information_technology.krebsonsecurity
+  source_name: KrebsOnSecurity
+  url: https://krebsonsecurity.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - cyber_incident
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: -30
+  notes: Brian Krebs. Scoops high-impact breaches + supply-chain attacks. Moves affected vendors pre-disclosure.
+  lineage:
+    authored_by: phase_b_information_technology_opus
+    authored_at: '2026-04-21T15:16:24Z'
+- source_id: sector.information_technology.microsoft_newsroom
+  source_name: Microsoft — News
+  url: https://news.microsoft.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - product_launch
+  - ma_announcement
+  - material_disclosure
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: 0
+  notes: Microsoft official news + Ignite / Build announcements. Satya Nadella keynote beats.
+  lineage:
+    authored_by: phase_b_information_technology_opus
+    authored_at: '2026-04-21T15:16:24Z'
+- source_id: sector.information_technology.nvidia_blogs
+  source_name: NVIDIA Blogs / GTC
+  url: https://blogs.nvidia.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - product_launch
+  - material_disclosure
+  - executive_change
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: 0
+  notes: NVIDIA developer blog + GTC / Computex announcements. Jensen Huang keynote drops originate here.
+  lineage:
+    authored_by: phase_b_information_technology_opus
+    authored_at: '2026-04-21T15:16:24Z'
+- source_id: sector.information_technology.protocol_business_insider
+  source_name: Business Insider — Tech
+  url: https://www.businessinsider.com/sai
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: metered
+  update_cadence: daily
+  event_types_covered:
+  - ma_announcement
+  - executive_change
+  - material_disclosure
+  edge_weight_prior: 0.6
+  typical_lead_time_vs_english_minutes: 60
+  notes: Enterprise + consumer tech coverage. Occasional scoops on meta/aapl layoffs, exec moves.
+  lineage:
+    authored_by: phase_b_information_technology_opus
+    authored_at: '2026-04-21T15:16:24Z'
+- source_id: sector.information_technology.reuters_technology
+  source_name: Reuters Technology
+  url: https://www.reuters.com/technology/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: realtime
+  event_types_covered:
+  - ma_announcement
+  - regulatory_action
+  - executive_change
+  - material_disclosure
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: 0
+  notes: 'Reuters tech desk. Official wire: antitrust, EU regulation, chip export control.'
+  lineage:
+    authored_by: phase_b_information_technology_opus
+    authored_at: '2026-04-21T15:16:24Z'
+- source_id: sector.information_technology.risky_biz
+  source_name: Risky Business
+  url: https://risky.biz/
+  adapter_type: rss
+  jurisdiction: AU
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - cyber_incident
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: Patrick Gray's weekly security podcast + newsletter. Breach commentary, APT intelligence.
+  lineage:
+    authored_by: phase_b_information_technology_opus
+    authored_at: '2026-04-21T15:16:24Z'
+- source_id: sector.information_technology.securityweek
+  source_name: SecurityWeek
+  url: https://www.securityweek.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - cyber_incident
+  - product_launch
+  edge_weight_prior: 0.6
+  typical_lead_time_vs_english_minutes: 60
+  notes: Security industry trade. Wide coverage of vendor announcements + CVE disclosures.
+  lineage:
+    authored_by: phase_b_information_technology_opus
+    authored_at: '2026-04-21T15:16:24Z'
+- source_id: sector.information_technology.semianalysis
+  source_name: SemiAnalysis
+  url: https://semianalysis.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: paid
+  update_cadence: weekly
+  event_types_covered:
+  - material_disclosure
+  - product_launch
+  - production_update
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: 0
+  notes: Dylan Patel. Deep semi + AI infra research. Moves NVDA, AMD, TSMC, HBM suppliers.
+  lineage:
+    authored_by: phase_b_information_technology_opus
+    authored_at: '2026-04-21T15:16:24Z'
+- source_id: sector.information_technology.semiwiki
+  source_name: SemiWiki
+  url: https://semiwiki.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - product_launch
+  - material_disclosure
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: Semiconductor design ecosystem community. EDA + IP + foundry analysis.
+  lineage:
+    authored_by: phase_b_information_technology_opus
+    authored_at: '2026-04-21T15:16:24Z'
+- source_id: sector.information_technology.siliconangle
+  source_name: SiliconANGLE
+  url: https://siliconangle.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - product_launch
+  - material_disclosure
+  edge_weight_prior: 0.55
+  typical_lead_time_vs_english_minutes: 60
+  notes: Enterprise IT / cloud publication. Informative for vendor-announcement monitoring.
+  lineage:
+    authored_by: phase_b_information_technology_opus
+    authored_at: '2026-04-21T15:16:24Z'
+- source_id: sector.information_technology.stratechery
+  source_name: Stratechery
+  url: https://stratechery.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - material_disclosure
+  - product_launch
+  - executive_change
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 60
+  notes: Ben Thompson. Strategic analysis of AAPL / MSFT / GOOG / META / NVDA. Widely-cited by buy-side.
+  lineage:
+    authored_by: phase_b_information_technology_opus
+    authored_at: '2026-04-21T15:16:24Z'
+- source_id: sector.information_technology.techcrunch
+  source_name: TechCrunch
+  url: https://techcrunch.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: realtime
+  event_types_covered:
+  - product_launch
+  - ma_announcement
+  - capital_raise
+  edge_weight_prior: 0.6
+  typical_lead_time_vs_english_minutes: 30
+  notes: Venture + early-stage + product launches. Volume is high; signal-to-noise is medium.
+  lineage:
+    authored_by: phase_b_information_technology_opus
+    authored_at: '2026-04-21T15:16:24Z'
+- source_id: sector.information_technology.the_information
+  source_name: The Information
+  url: https://www.theinformation.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - ma_announcement
+  - executive_change
+  - product_launch
+  - material_disclosure
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: -30
+  notes: Scoop-driven enterprise-tech publication. First to break many big-tech M&A + executive moves.
+  lineage:
+    authored_by: phase_b_information_technology_opus
+    authored_at: '2026-04-21T15:16:24Z'
+- source_id: sector.information_technology.the_register
+  source_name: The Register
+  url: https://www.theregister.com/
+  adapter_type: rss
+  jurisdiction: GB
+  language: en
+  cost_tier: free
+  update_cadence: realtime
+  event_types_covered:
+  - product_launch
+  - executive_change
+  - material_disclosure
+  - cyber_incident
+  edge_weight_prior: 0.65
+  typical_lead_time_vs_english_minutes: 30
+  notes: UK enterprise-IT publication. Strong on outages, EMEA vendor news, cloud.
+  lineage:
+    authored_by: phase_b_information_technology_opus
+    authored_at: '2026-04-21T15:16:24Z'
+- source_id: sector.information_technology.thenewstack
+  source_name: The New Stack
+  url: https://thenewstack.io/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - product_launch
+  - material_disclosure
+  edge_weight_prior: 0.55
+  typical_lead_time_vs_english_minutes: 60
+  notes: Cloud-native/DevOps/Kubernetes news. Signals for DDOG, MDB, ESTC, GTLB, HCP.
+  lineage:
+    authored_by: phase_b_information_technology_opus
+    authored_at: '2026-04-21T15:16:24Z'
+- source_id: sector.information_technology.therecord
+  source_name: The Record by Recorded Future
+  url: https://therecord.media/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - cyber_incident
+  - regulatory_action
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: Recorded Future's publication. Nation-state + APT coverage. Moves sector on disclosed campaigns.
+  lineage:
+    authored_by: phase_b_information_technology_opus
+    authored_at: '2026-04-21T15:16:24Z'
+- source_id: sector.information_technology.tomshardware
+  source_name: Tom's Hardware
+  url: https://www.tomshardware.com/news
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - product_launch
+  - production_update
+  edge_weight_prior: 0.55
+  typical_lead_time_vs_english_minutes: 60
+  notes: CPU/GPU launches + benchmark coverage. Moves retail sentiment on NVDA/AMD/INTC.
+  lineage:
+    authored_by: phase_b_information_technology_opus
+    authored_at: '2026-04-21T15:16:24Z'
+- source_id: sector.information_technology.trendforce
+  source_name: TrendForce
+  url: https://www.trendforce.com/news
+  adapter_type: scraper
+  jurisdiction: XX
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - commodity_price_event
+  - production_update
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: 0
+  notes: Memory/display/panel pricing + capacity cycle. Moves MU, SNDK, KIOXIA supply/demand narrative.
+  lineage:
+    authored_by: phase_b_information_technology_opus
+    authored_at: '2026-04-21T15:16:24Z'
+- source_id: sector.information_technology.venturebeat
+  source_name: VentureBeat
+  url: https://venturebeat.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - product_launch
+  - capital_raise
+  - material_disclosure
+  edge_weight_prior: 0.55
+  typical_lead_time_vs_english_minutes: 60
+  notes: AI + enterprise tech. Strong AI-model launch coverage. Complements TechCrunch.
+  lineage:
+    authored_by: phase_b_information_technology_opus
+    authored_at: '2026-04-21T15:16:24Z'
+- source_id: sector.information_technology.zdnet
+  source_name: ZDNet
+  url: https://www.zdnet.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - product_launch
+  - material_disclosure
+  - cyber_incident
+  edge_weight_prior: 0.55
+  typical_lead_time_vs_english_minutes: 60
+  notes: Ziff Davis enterprise/IT news. General-interest coverage; complements trade specialists.
+  lineage:
+    authored_by: phase_b_information_technology_opus
+    authored_at: '2026-04-21T15:16:24Z'

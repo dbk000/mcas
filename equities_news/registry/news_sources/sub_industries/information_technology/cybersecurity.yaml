@@ -1,0 +1,66 @@
+- source_id: sub_industry.information_technology.cybersecurity.cisa_known_exploited
+  source_name: CISA — Known Exploited Vulnerabilities
+  url: https://www.cisa.gov/known-exploited-vulnerabilities-catalog
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - cyber_incident
+  - regulatory_action
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: 0
+  notes: CISA KEV catalog. Mandatory-patch list for US federal agencies. Direct bid-driver for affected vendors.
+  lineage:
+    authored_by: phase_b_information_technology_opus
+    authored_at: '2026-04-21T15:16:24Z'
+- source_id: sub_industry.information_technology.cybersecurity.mandiant_threat_intel
+  source_name: Mandiant (Google) — Threat Intelligence Blog
+  url: https://cloud.google.com/blog/topics/threat-intelligence
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - cyber_incident
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: 0
+  notes: Mandiant research + IR reports. Incident-response case studies + state-actor attribution.
+  lineage:
+    authored_by: phase_b_information_technology_opus
+    authored_at: '2026-04-21T15:16:24Z'
+- source_id: sub_industry.information_technology.cybersecurity.mitre_cve_nvd
+  source_name: NIST NVD — CVE Feed
+  url: https://nvd.nist.gov/vuln/data-feeds
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - cyber_incident
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: NIST National Vulnerability Database. Daily CVE publications. Moves sector on critical CVSS scores.
+  lineage:
+    authored_by: phase_b_information_technology_opus
+    authored_at: '2026-04-21T15:16:24Z'
+- source_id: sub_industry.information_technology.cybersecurity.rsa_conference
+  source_name: RSA Conference — News & Presentations
+  url: https://www.rsaconference.com/library
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - product_launch
+  - material_disclosure
+  edge_weight_prior: 0.65
+  typical_lead_time_vs_english_minutes: 0
+  notes: RSA Conference (annual, May). Vendor keynote + product launch window. High signal during conf week.
+  lineage:
+    authored_by: phase_b_information_technology_opus
+    authored_at: '2026-04-21T15:16:24Z'

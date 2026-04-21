@@ -1,0 +1,36 @@
+- source_id: sub_industry.information_technology.it_services.bse_corp_announce
+  source_name: BSE — Corporate Announcements (Indian IT)
+  url: https://www.bseindia.com/corporates/ann.html
+  adapter_type: scraper
+  jurisdiction: IN
+  language: en
+  cost_tier: free
+  update_cadence: realtime
+  event_types_covered:
+  - material_disclosure
+  - product_launch
+  - executive_change
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: -120
+  notes: Bombay Stock Exchange announcements. Indian IT services (INFY, WIT, TCS equivalents) file here first — 2h lead on
+    US 6-K.
+  lineage:
+    authored_by: phase_b_information_technology_opus
+    authored_at: '2026-04-21T15:16:24Z'
+- source_id: sub_industry.information_technology.it_services.everest_group
+  source_name: Everest Group — PEAK Matrix
+  url: https://www.everestgrp.com/research/
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - material_disclosure
+  - sell_side_rating_change
+  edge_weight_prior: 0.65
+  typical_lead_time_vs_english_minutes: 0
+  notes: Everest Group PEAK Matrix for IT services + BPO. Competitive positioning for ACN, INFY, TCS, WIT, CTSH, CGI.
+  lineage:
+    authored_by: phase_b_information_technology_opus
+    authored_at: '2026-04-21T15:16:24Z'

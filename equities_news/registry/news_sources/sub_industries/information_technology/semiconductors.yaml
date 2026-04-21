@@ -1,0 +1,66 @@
+- source_id: sub_industry.information_technology.semiconductors.sia_billings
+  source_name: SIA — Global Semiconductor Billings
+  url: https://www.semiconductors.org/news/
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: Semiconductor Industry Association monthly billings. 3mo moving average. Macro-semi demand gauge.
+  lineage:
+    authored_by: phase_b_information_technology_opus
+    authored_at: '2026-04-21T15:16:24Z'
+- source_id: sub_industry.information_technology.semiconductors.steam_survey
+  source_name: Steam — Hardware & Software Survey
+  url: https://store.steampowered.com/hwsurvey
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  edge_weight_prior: 0.65
+  typical_lead_time_vs_english_minutes: 0
+  notes: Steam monthly hardware survey. GPU share across RTX generations. Channel-check for NVDA/AMD consumer GPU.
+  lineage:
+    authored_by: phase_b_information_technology_opus
+    authored_at: '2026-04-21T15:16:24Z'
+- source_id: sub_industry.information_technology.semiconductors.tsmc_monthly_revenue
+  source_name: TSMC — Monthly Revenue
+  url: https://investor.tsmc.com/english/encrypt/files/encrypt_file/reports/
+  adapter_type: scraper
+  jurisdiction: XX
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - production_update
+  - material_disclosure
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: 0
+  notes: TSMC monthly revenue release (~10th each month). Leading indicator for whole semi food chain — moves NVDA, AMD, AVGO,
+    ASML.
+  lineage:
+    authored_by: phase_b_information_technology_opus
+    authored_at: '2026-04-21T15:16:24Z'
+- source_id: sub_industry.information_technology.semiconductors.wsts_forecast
+  source_name: WSTS — Semiconductor Market Forecast
+  url: https://www.wsts.org/
+  adapter_type: scraper
+  jurisdiction: XX
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  edge_weight_prior: 0.65
+  typical_lead_time_vs_english_minutes: 0
+  notes: World Semiconductor Trade Statistics — semi-annual growth forecast. Wide-sector reference.
+  lineage:
+    authored_by: phase_b_information_technology_opus
+    authored_at: '2026-04-21T15:16:24Z'
