@@ -1,0 +1,150 @@
+2026-04-22 16:43:58 [INFO] loaded enums from ../../registry/namespace_rules.yaml (keys: ['exchange', 'holdings_feed_format', 'primary_market_cap_tier', 'rebalance_frequency_prospectus', 'replication_method', 'vehicle_type'])
+2026-04-22 16:43:59 [INFO] workbook: 68 sponsor sheets, overview=present, total rows=2563
+2026-04-22 16:43:59 [INFO] after schema check: 0 issues
+2026-04-22 16:43:59 [INFO] after coverage check: 0 issues
+2026-04-22 16:43:59 [INFO] Σ AUM_USD = $10.89T (ICI ref $11.00T)
+2026-04-22 16:43:59 [INFO] after sanity check: 0 issues
+2026-04-22 16:43:59 [INFO] URL verification: holdings=2563 (100%), sponsor_page_sample=128 (5%), prospectus_sample=128 (5%)
+2026-04-22 16:45:55 [WARNING] Connection pool is full, discarding connection: www.invesco.com. Connection pool size: 10
+2026-04-22 16:46:44 [WARNING] Connection pool is full, discarding connection: www.proshares.com. Connection pool size: 10
+2026-04-22 16:46:44 [WARNING] Connection pool is full, discarding connection: www.proshares.com. Connection pool size: 10
+2026-04-22 16:46:44 [WARNING] Connection pool is full, discarding connection: www.proshares.com. Connection pool size: 10
+2026-04-22 16:46:44 [WARNING] Connection pool is full, discarding connection: www.proshares.com. Connection pool size: 10
+2026-04-22 16:46:45 [WARNING] Connection pool is full, discarding connection: www.proshares.com. Connection pool size: 10
+2026-04-22 16:46:45 [WARNING] Connection pool is full, discarding connection: www.proshares.com. Connection pool size: 10
+2026-04-22 16:46:45 [WARNING] Connection pool is full, discarding connection: www.proshares.com. Connection pool size: 10
+2026-04-22 16:46:46 [WARNING] Connection pool is full, discarding connection: www.proshares.com. Connection pool size: 10
+2026-04-22 16:46:46 [WARNING] Connection pool is full, discarding connection: www.proshares.com. Connection pool size: 10
+2026-04-22 16:46:47 [WARNING] Connection pool is full, discarding connection: www.proshares.com. Connection pool size: 10
+2026-04-22 16:46:57 [WARNING] Connection pool is full, discarding connection: www.ftportfolios.com. Connection pool size: 10
+2026-04-22 16:46:57 [WARNING] Connection pool is full, discarding connection: www.ftportfolios.com. Connection pool size: 10
+2026-04-22 16:46:58 [WARNING] Connection pool is full, discarding connection: www.ftportfolios.com. Connection pool size: 10
+2026-04-22 16:46:58 [WARNING] Connection pool is full, discarding connection: www.ftportfolios.com. Connection pool size: 10
+2026-04-22 16:46:58 [WARNING] Connection pool is full, discarding connection: www.ftportfolios.com. Connection pool size: 10
+2026-04-22 16:46:59 [WARNING] Connection pool is full, discarding connection: www.ftportfolios.com. Connection pool size: 10
+2026-04-22 16:46:59 [WARNING] Connection pool is full, discarding connection: www.ftportfolios.com. Connection pool size: 10
+2026-04-22 16:46:59 [WARNING] Connection pool is full, discarding connection: www.ftportfolios.com. Connection pool size: 10
+2026-04-22 16:47:00 [WARNING] Connection pool is full, discarding connection: www.ftportfolios.com. Connection pool size: 10
+2026-04-22 16:47:00 [WARNING] Connection pool is full, discarding connection: www.ftportfolios.com. Connection pool size: 10
+2026-04-22 16:47:00 [WARNING] Connection pool is full, discarding connection: www.ftportfolios.com. Connection pool size: 10
+2026-04-22 16:47:01 [WARNING] Connection pool is full, discarding connection: www.ftportfolios.com. Connection pool size: 10
+2026-04-22 16:47:01 [WARNING] Connection pool is full, discarding connection: www.ftportfolios.com. Connection pool size: 10
+2026-04-22 16:47:02 [WARNING] Connection pool is full, discarding connection: www.ftportfolios.com. Connection pool size: 10
+2026-04-22 16:47:02 [WARNING] Connection pool is full, discarding connection: www.ftportfolios.com. Connection pool size: 10
+2026-04-22 16:47:02 [WARNING] Connection pool is full, discarding connection: www.ftportfolios.com. Connection pool size: 10
+2026-04-22 16:47:03 [WARNING] Connection pool is full, discarding connection: www.ftportfolios.com. Connection pool size: 10
+2026-04-22 16:47:04 [WARNING] Connection pool is full, discarding connection: www.ftportfolios.com. Connection pool size: 10
+2026-04-22 16:47:04 [WARNING] Connection pool is full, discarding connection: www.ftportfolios.com. Connection pool size: 10
+2026-04-22 16:47:05 [WARNING] Connection pool is full, discarding connection: www.ftportfolios.com. Connection pool size: 10
+2026-04-22 16:47:05 [WARNING] Connection pool is full, discarding connection: www.ftportfolios.com. Connection pool size: 10
+2026-04-22 16:47:08 [WARNING] Connection pool is full, discarding connection: www.ftportfolios.com. Connection pool size: 10
+2026-04-22 16:47:32 [WARNING] Connection pool is full, discarding connection: am.jpmorgan.com. Connection pool size: 10
+2026-04-22 16:47:32 [WARNING] Connection pool is full, discarding connection: am.jpmorgan.com. Connection pool size: 10
+2026-04-22 16:47:57 [WARNING] Connection pool is full, discarding connection: graniteshares.com. Connection pool size: 10
+2026-04-22 16:47:58 [WARNING] Connection pool is full, discarding connection: graniteshares.com. Connection pool size: 10
+2026-04-22 16:49:09 [INFO] Holdings_Feed_URL: 2290 pass, 273 fail (100% required)
+2026-04-22 16:49:20 [INFO] Sponsor_Page_URL sample: 119 pass, 9 fail (rate 93.0%; gate 95%)
+2026-04-22 16:49:58 [INFO] Prospectus_URL sample: 126 pass, 2 fail (rate 98.4%; gate 95%)
+2026-04-22 16:49:58 [INFO] after URL check: 282 issues
+2026-04-22 16:49:58 [ERROR] FAIL: 282 issues
+[other_sponsors!Holdings_Feed_URL:row106] URL 'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=1976877&type=N-1A&dateb=&owner=include&count=40' failed HEAD (status=None)
+[state_street!Holdings_Feed_URL:row5] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-XLK.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row6] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-SPLG.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row7] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-XLF.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row8] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-BIL.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row9] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-XLV.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row10] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-SPYG.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row11] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-XLE.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row12] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-SPYV.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row16] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-XLI.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row15] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-XLC.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row17] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-SDY.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row22] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-SPEM.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row13] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-SPDW.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row27] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-SPSB.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row29] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-XLRE.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row23] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-SPTL.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row28] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-JNK.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row39] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-FEZ.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row14] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-XLY.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row41] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-CWB.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row43] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-SHM.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row37] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-XLB.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row40] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-SLYV.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row25] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-SPIB.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row31] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-SPTI.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row35] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-SPMB.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row18] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-XLU.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row38] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-SJNK.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row58] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-KBE.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row47] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-TOTL.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row45] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-SLYG.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row26] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-SPAB.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row64] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-EFIV.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row36] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-SPTS.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row24] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-SPTM.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row52] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-MDYG.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row69] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-RWO.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row56] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-EBND.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row67] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-XSD.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row73] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-KIE.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row70] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-SPLB.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row55] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-KOMP.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row44] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-TFI.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row57] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-SPYX.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row65] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-TIPX.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row20] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-SPMD.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row78] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-ONEY.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row76] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-LGLV.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row62] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-XME.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row83] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-XLSR.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row86] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-ULST.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row51] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-MDYV.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row88] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-RLY.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row66] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-QUS.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row21] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-SPSM.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row60] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-RWR.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row92] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-DWX.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row93] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-VLU.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row19] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-XLP.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row87] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-GII.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row63] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-SPBO.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row77] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-PSK.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row74] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-QEFA.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row82] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-EDIV.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row72] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-SPIP.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row80] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-EWX.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row42] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-KRE.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row85] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-NANR.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row61] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-CWI.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row104] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-DGT.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row33] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-SPHY.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row96] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-EFAX.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row49] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-HYMB.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row98] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-IBND.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row109] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-WDIV.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row106] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-SHE.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row100] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-BWZ.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row34] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-XBI.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row54] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-XOP.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row46] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-BILS.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row81] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-GWX.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row111] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-XES.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row115] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-QWLD.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row116] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-LOWC.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row118] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-MMTM.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row108] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-XHE.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row32] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-SPYD.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row89] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-KCE.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row123] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-XITK.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row75] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-XNTK.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row53] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-FLRN.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row95] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-GMF.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row128] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-INKM.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row119] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-XTL.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row103] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-EMHC.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row107] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-GAL.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row94] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-XRT.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row101] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-ALLW.xlsx' failed HEAD (status=404)
+[state_street!Holdings_Feed_URL:row125] URL 'https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-XHS.xlsx' failed HEAD (status=404)
+... and 182 more

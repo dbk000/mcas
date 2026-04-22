@@ -1,0 +1,586 @@
+# Sponsor URL templates — Phase 0 Holdings_Feed_URL construction.
+#
+# For each known sponsor, lists up to N candidate URL patterns that expose
+# (a) the fund's public landing page (for sponsor_page_url) and (b) the
+# daily holdings feed (the file Phase 4 would ingest). metadata_enrich.py
+# substitutes {TICKER} / {ticker_lower} and HEAD-checks each pattern until
+# one returns 200 or 302. Templates are ordered most-specific first.
+#
+# Fields per sponsor:
+#   fund_page       — list of URL templates for the sponsor's fund landing page
+#   holdings_feed   — list of URL templates for the daily holdings file
+#   holdings_format — expected format of the first successful holdings URL
+#                     (csv / xlsx / json / html_table / pdf / other)
+#   notes           — human-readable gotchas / ambiguities
+#
+# Placeholders:
+#   {TICKER}        — uppercase raw ticker (BRK.B etc.)
+#   {ticker_lower}  — lowercase raw ticker
+#   {TICKER_CLEAN}  — uppercase with dots/special chars stripped (BRK.B -> BRKB)
+#   {ticker_clean_lower} — lowercase + cleaned
+#
+# Governance: additions require a commit message prefix
+# "registry: sponsor templates {sponsor_slug} ...".
+
+version: 1
+frozen_at: 2026-04-22
+
+templates:
+
+  ishares:
+    fund_page:
+      - "https://www.ishares.com/us/products/search?filter=ticker:{TICKER}"
+    holdings_feed:
+      - "https://www.ishares.com/us/products/search?style=etf&filter=ticker:{TICKER}"
+    holdings_format: xlsx
+    notes: |
+      iShares real holdings URLs require product_id lookup. The search page
+      reliably redirects to the fund page and exposes a "Download holdings"
+      button. Phase 4 will parse the fund page for the per-fund product_id
+      to hit the AJAX endpoint. For Phase 0 we only need a verified URL
+      that the enrichment HEAD-check can reach — the search URL meets
+      that bar.
+
+  vanguard:
+    fund_page:
+      - "https://investor.vanguard.com/investment-products/etfs/profile/{ticker_lower}"
+    holdings_feed:
+      - "https://investor.vanguard.com/investment-products/etfs/profile/{ticker_lower}"
+    holdings_format: html_table
+    notes: |
+      Vanguard exposes holdings through their profile page. The "portfolio"
+      tab lists top holdings; full CSV is available via their advisor portal
+      which requires sign-in. Phase 4 will use the public profile page.
+
+  state_street:
+    fund_page:
+      - "https://www.ssga.com/us/en/intermediary/etfs/{TICKER}"
+    holdings_feed:
+      - "https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-{TICKER}.xlsx"
+      - "https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-{ticker_lower}.xlsx"
+    holdings_format: xlsx
+    notes: |
+      SSGA SPDR daily holdings follow a canonical naming pattern on their
+      CDN. Some funds (e.g. legacy NYSE SPDR) may use a different path —
+      fall back to the fund page and let Phase 4 scrape.
+
+  invesco:
+    fund_page:
+      - "https://www.invesco.com/us/financial-products/etfs/product-detail?audienceType=Investor&ticker={TICKER}"
+    holdings_feed:
+      - "https://www.invesco.com/us/financial-products/etfs/product-detail?audienceType=Investor&ticker={TICKER}"
+    holdings_format: html_table
+    notes: |
+      Invesco's holdings CSV requires a contentId resolved via their JSON
+      REST endpoint. For Phase 0 we catalogue the product-detail page URL;
+      Phase 1 will author the JSON-endpoint adapter.
+
+  schwab:
+    fund_page:
+      - "https://www.schwabassetmanagement.com/products/{TICKER}"
+    holdings_feed:
+      - "https://www.schwabassetmanagement.com/products/{TICKER}"
+    holdings_format: html_table
+    notes: |
+      Schwab uses server-side rendered product pages with a holdings tab.
+      The CSV download is gated behind a JS click; Phase 4 will render
+      the page headless or reverse the JSON endpoint.
+
+  first_trust:
+    fund_page:
+      - "https://www.ftportfolios.com/Retail/Etf/EtfSummary.aspx?Ticker={TICKER}"
+    holdings_feed:
+      - "https://www.ftportfolios.com/Retail/Etf/EtfHoldings.aspx?Ticker={TICKER}"
+    holdings_format: html_table
+    notes: |
+      First Trust holdings page is server-rendered HTML with a table. Daily
+      update cadence disclosed explicitly in the page header.
+
+  wisdomtree:
+    fund_page:
+      - "https://www.wisdomtree.com/investments/etfs/equity/{ticker_lower}"
+      - "https://www.wisdomtree.com/investments/etfs/fixed-income/{ticker_lower}"
+      - "https://www.wisdomtree.com/investments/etfs/currency/{ticker_lower}"
+      - "https://www.wisdomtree.com/investments/etfs/alternative/{ticker_lower}"
+    holdings_feed:
+      - "https://www.wisdomtree.com/investments/etfs/equity/{ticker_lower}"
+    holdings_format: html_table
+    notes: |
+      WisdomTree URL structure splits equity / fixed-income / alternative.
+      Must try each root. Phase 4 will resolve exact category from the
+      N-CEN fund name keywords (bond, currency, etc.).
+
+  proshares:
+    fund_page:
+      - "https://www.proshares.com/our-etfs/strategic/{ticker_lower}"
+      - "https://www.proshares.com/our-etfs/leveraged-and-inverse/{ticker_lower}"
+    holdings_feed:
+      - "https://www.proshares.com/our-etfs/strategic/{ticker_lower}"
+      - "https://www.proshares.com/our-etfs/leveraged-and-inverse/{ticker_lower}"
+    holdings_format: html_table
+    notes: |
+      ProShares splits strategic / leveraged-inverse URL roots. The
+      fund_page check will 404 on the wrong category — we accept either.
+
+  direxion:
+    fund_page:
+      - "https://www.direxion.com/product/{ticker_lower}"
+      - "https://www.direxion.com/strategy/{ticker_lower}"
+    holdings_feed:
+      - "https://www.direxion.com/holdings/{TICKER}.csv"
+      - "https://www.direxion.com/product/{ticker_lower}"
+    holdings_format: csv
+    notes: |
+      Direxion exposes per-ticker holdings CSVs at a predictable path.
+
+  global_x:
+    fund_page:
+      - "https://www.globalxetfs.com/funds/{ticker_lower}/"
+    holdings_feed:
+      - "https://www.globalxetfs.com/funds/{ticker_lower}/"
+    holdings_format: html_table
+    notes: |
+      Global X holdings are served as an HTML table on the fund page with
+      a CSV download link behind JS. Page URL is stable and canonical.
+
+  ark:
+    fund_page:
+      - "https://www.ark-funds.com/funds/{ticker_lower}/"
+    holdings_feed:
+      - "https://www.ark-funds.com/wp-content/uploads/funds-etf-csv/ARK_{TICKER}_HOLDINGS.csv"
+      - "https://www.ark-funds.com/funds/{ticker_lower}/"
+    holdings_format: csv
+    notes: |
+      ARK publishes a CSV per fund at a predictable wp-content path. Some
+      funds (ARKG, ARKK, ARKW, ARKQ, ARKF, ARKX, PRNT, IZRL) follow this;
+      newer active thematic funds may use different paths.
+
+  vaneck:
+    fund_page:
+      - "https://www.vaneck.com/us/en/investments/{ticker_lower}/"
+      - "https://www.vaneck.com/us/en/investments/{ticker_lower}-etf/"
+    holdings_feed:
+      - "https://www.vaneck.com/us/en/investments/{ticker_lower}/"
+    holdings_format: html_table
+    notes: |
+      VanEck URLs are ticker-only (no slug) with optional "-etf" suffix.
+
+  pacer:
+    fund_page:
+      - "https://www.paceretfs.com/products/{TICKER}"
+      - "https://www.paceretfs.com/products/{ticker_lower}"
+    holdings_feed:
+      - "https://www.paceretfs.com/products/{TICKER}"
+    holdings_format: html_table
+    notes: |
+      Pacer product pages expose an XLS download under "Fund Documents".
+
+  jpmorgan:
+    fund_page:
+      - "https://am.jpmorgan.com/us/en/asset-management/adv/products/{ticker_lower}-0"
+      - "https://am.jpmorgan.com/us/en/asset-management/adv/products/{ticker_lower}"
+    holdings_feed:
+      - "https://am.jpmorgan.com/us/en/asset-management/adv/products/{ticker_lower}-0"
+    holdings_format: html_table
+
+  goldman_sachs:
+    fund_page:
+      - "https://www.gsam.com/content/gsam/us/en/advisors/fund-center/etf-fund-finder/{ticker_lower}.html"
+    holdings_feed:
+      - "https://www.gsam.com/content/gsam/us/en/advisors/fund-center/etf-fund-finder/{ticker_lower}.html"
+    holdings_format: html_table
+
+  pimco:
+    fund_page:
+      - "https://www.pimco.com/en-us/investments/etf/{ticker_lower}"
+    holdings_feed:
+      - "https://www.pimco.com/en-us/investments/etf/{ticker_lower}"
+    holdings_format: html_table
+
+  innovator:
+    fund_page:
+      - "https://www.innovatoretfs.com/define/?ticker={TICKER}"
+      - "https://www.innovatoretfs.com/etf/?ticker={TICKER}"
+    holdings_feed:
+      - "https://www.innovatoretfs.com/define/?ticker={TICKER}"
+    holdings_format: html_table
+
+  defiance:
+    fund_page:
+      - "https://www.defianceetfs.com/{ticker_lower}/"
+    holdings_feed:
+      - "https://www.defianceetfs.com/{ticker_lower}/"
+    holdings_format: html_table
+
+  tidal:
+    fund_page:
+      - "https://etfs.tidalfinancialgroup.com/{ticker_lower}"
+      - "https://www.tidalfg.com/etf/{ticker_lower}"
+    holdings_feed:
+      - "https://etfs.tidalfinancialgroup.com/{ticker_lower}"
+    holdings_format: html_table
+    notes: |
+      Tidal operates Listed Funds Trust; per-fund sites often on issuer-
+      specific domains. Phase 4 will author per-subadviser adapters.
+
+  krane:
+    fund_page:
+      - "https://kraneshares.com/{ticker_lower}/"
+    holdings_feed:
+      - "https://kraneshares.com/{ticker_lower}/"
+    holdings_format: html_table
+
+  amplify:
+    fund_page:
+      - "https://amplifyetfs.com/{ticker_lower}/"
+    holdings_feed:
+      - "https://amplifyetfs.com/{ticker_lower}/"
+    holdings_format: html_table
+
+  alps:
+    fund_page:
+      - "https://www.alpsfunds.com/funds/{ticker_lower}"
+    holdings_feed:
+      - "https://www.alpsfunds.com/funds/{ticker_lower}"
+    holdings_format: html_table
+
+  roundhill:
+    fund_page:
+      - "https://www.roundhillinvestments.com/etf/{ticker_lower}/"
+    holdings_feed:
+      - "https://www.roundhillinvestments.com/etf/{ticker_lower}/"
+    holdings_format: html_table
+
+  graniteshares:
+    fund_page:
+      - "https://graniteshares.com/institutional/us/en-us/etfs/{ticker_lower}/"
+    holdings_feed:
+      - "https://graniteshares.com/institutional/us/en-us/etfs/{ticker_lower}/"
+    holdings_format: html_table
+
+  yieldmax:
+    fund_page:
+      - "https://www.yieldmaxetfs.com/our-etfs/{ticker_lower}/"
+    holdings_feed:
+      - "https://www.yieldmaxetfs.com/our-etfs/{ticker_lower}/"
+    holdings_format: html_table
+
+  simplify:
+    fund_page:
+      - "https://www.simplify.us/etfs/{ticker_lower}-{slug_generic}"
+      - "https://www.simplify.us/etfs/{ticker_lower}"
+    holdings_feed:
+      - "https://www.simplify.us/etfs/{ticker_lower}"
+    holdings_format: html_table
+
+  dimensional:
+    fund_page:
+      - "https://us.dimensional.com/funds/{ticker_lower}"
+    holdings_feed:
+      - "https://us.dimensional.com/funds/{ticker_lower}"
+    holdings_format: html_table
+
+  nuveen:
+    fund_page:
+      - "https://www.nuveen.com/en-us/exchange-traded-funds/{ticker_lower}"
+    holdings_feed:
+      - "https://www.nuveen.com/en-us/exchange-traded-funds/{ticker_lower}"
+    holdings_format: html_table
+
+  pgim:
+    fund_page:
+      - "https://www.pgim.com/investments/etfs/product-profile/{ticker_lower}"
+    holdings_feed:
+      - "https://www.pgim.com/investments/etfs/product-profile/{ticker_lower}"
+    holdings_format: html_table
+
+  franklin_templeton:
+    fund_page:
+      - "https://www.franklintempleton.com/investments/options/exchange-traded-funds/products/{ticker_lower}"
+      - "https://www.franklintempleton.com/investments/options/exchange-traded-funds/products/{TICKER}"
+    holdings_feed:
+      - "https://www.franklintempleton.com/investments/options/exchange-traded-funds/products/{ticker_lower}"
+    holdings_format: html_table
+
+  fidelity:
+    fund_page:
+      - "https://fundresearch.fidelity.com/etfs/summary/{TICKER}"
+    holdings_feed:
+      - "https://fundresearch.fidelity.com/etfs/composition/{TICKER}"
+    holdings_format: html_table
+    notes: |
+      Fidelity's research portal serves both transparent and active ANT
+      funds. Proxy-basket check must verify per-fund that the composition
+      page exposes true holdings (not "Tracking Basket" language).
+
+  columbia:
+    fund_page:
+      - "https://www.columbiathreadneedleus.com/investment-products/exchange-traded-funds/{ticker_lower}"
+    holdings_feed:
+      - "https://www.columbiathreadneedleus.com/investment-products/exchange-traded-funds/{ticker_lower}"
+    holdings_format: html_table
+
+  hartford:
+    fund_page:
+      - "https://www.hartfordfunds.com/etf/{ticker_lower}.html"
+    holdings_feed:
+      - "https://www.hartfordfunds.com/etf/{ticker_lower}.html"
+    holdings_format: html_table
+
+  xtrackers:
+    fund_page:
+      - "https://etfus.dws.com/en-us/{TICKER}-{slug_generic}/"
+      - "https://etfus.dws.com/en-us/{TICKER}/"
+    holdings_feed:
+      - "https://etfus.dws.com/en-us/{TICKER}/"
+    holdings_format: html_table
+
+  american_century:
+    fund_page:
+      - "https://corporate.americancentury.com/etf-products/{ticker_lower}.html"
+    holdings_feed:
+      - "https://corporate.americancentury.com/etf-products/{ticker_lower}.html"
+    holdings_format: html_table
+
+  victory_capital:
+    fund_page:
+      - "https://www.vcm.com/etfs/{ticker_lower}"
+      - "https://www.victoryshares.com/etf/{ticker_lower}"
+    holdings_feed:
+      - "https://www.vcm.com/etfs/{ticker_lower}"
+    holdings_format: html_table
+
+  virtus:
+    fund_page:
+      - "https://www.virtus.com/products/{ticker_lower}"
+    holdings_feed:
+      - "https://www.virtus.com/products/{ticker_lower}"
+    holdings_format: html_table
+
+  aptus:
+    fund_page:
+      - "https://www.aptusetfs.com/{ticker_lower}/"
+    holdings_feed:
+      - "https://www.aptusetfs.com/{ticker_lower}/"
+    holdings_format: html_table
+
+  bondbloxx:
+    fund_page:
+      - "https://bondbloxxetf.com/products/{ticker_lower}/"
+    holdings_feed:
+      - "https://bondbloxxetf.com/products/{ticker_lower}/"
+    holdings_format: html_table
+
+  blackrock:
+    fund_page:
+      - "https://www.blackrock.com/us/individual/products/search?filter=productRange~ETF,ticker~{TICKER}"
+    holdings_feed:
+      - "https://www.blackrock.com/us/individual/products/search?filter=productRange~ETF,ticker~{TICKER}"
+    holdings_format: html_table
+    notes: |
+      Non-iShares BlackRock ETFs (e.g. legacy SPDRs now branded BlackRock)
+      share the corporate site. Search URL resolves to fund page.
+
+  northern_trust:
+    fund_page:
+      - "https://www.flexshares.com/etf/{TICKER}"
+    holdings_feed:
+      - "https://www.flexshares.com/etf/{TICKER}"
+    holdings_format: html_table
+
+  bny_mellon:
+    fund_page:
+      - "https://im.bnymellon.com/us/en/intermediary/products/etfs/{ticker_lower}.html"
+    holdings_feed:
+      - "https://im.bnymellon.com/us/en/intermediary/products/etfs/{ticker_lower}.html"
+    holdings_format: html_table
+
+  t_rowe_price:
+    fund_page:
+      - "https://www.troweprice.com/financial-intermediary/us/en/investments/etfs/{ticker_lower}.html"
+    holdings_feed:
+      - "https://www.troweprice.com/financial-intermediary/us/en/investments/etfs/{ticker_lower}.html"
+    holdings_format: html_table
+    notes: |
+      T. Rowe Price runs BOTH transparent and ActiveShares (ANT) ETFs.
+      The active ANT line (e.g. TCAF, TEQI) carries "Tracking Basket"
+      disclosure — should be caught by the proxy-basket per-fund check.
+
+  calamos:
+    fund_page:
+      - "https://www.calamos.com/etfs/{ticker_lower}/"
+    holdings_feed:
+      - "https://www.calamos.com/etfs/{ticker_lower}/"
+    holdings_format: html_table
+
+  alliancebernstein:
+    fund_page:
+      - "https://www.alliancebernstein.com/corporate/en/products/etfs/{ticker_lower}.html"
+    holdings_feed:
+      - "https://www.alliancebernstein.com/corporate/en/products/etfs/{ticker_lower}.html"
+    holdings_format: html_table
+
+  john_hancock:
+    fund_page:
+      - "https://www.jhinvestments.com/etf/{ticker_lower}"
+    holdings_feed:
+      - "https://www.jhinvestments.com/etf/{ticker_lower}"
+    holdings_format: html_table
+
+  janus_henderson:
+    fund_page:
+      - "https://www.janushenderson.com/en-us/investor/etf/{ticker_lower}"
+    holdings_feed:
+      - "https://www.janushenderson.com/en-us/investor/etf/{ticker_lower}"
+    holdings_format: html_table
+
+  sprott:
+    fund_page:
+      - "https://sprottetfs.com/etf/{ticker_lower}/"
+    holdings_feed:
+      - "https://sprottetfs.com/etf/{ticker_lower}/"
+    holdings_format: html_table
+
+  macquarie:
+    fund_page:
+      - "https://delawarefunds.com/etfs/{ticker_lower}"
+    holdings_feed:
+      - "https://delawarefunds.com/etfs/{ticker_lower}"
+    holdings_format: html_table
+
+  neos:
+    fund_page:
+      - "https://neosfunds.com/{ticker_lower}/"
+    holdings_feed:
+      - "https://neosfunds.com/{ticker_lower}/"
+    holdings_format: html_table
+
+  harbor:
+    fund_page:
+      - "https://www.harborcapital.com/product/{ticker_lower}"
+    holdings_feed:
+      - "https://www.harborcapital.com/product/{ticker_lower}"
+    holdings_format: html_table
+
+  abrdn:
+    fund_page:
+      - "https://www.abrdn.com/en-us/investor/fund-centre/fund-details/etf/{ticker_lower}"
+    holdings_feed:
+      - "https://www.abrdn.com/en-us/investor/fund-centre/fund-details/etf/{ticker_lower}"
+    holdings_format: html_table
+
+  tortoise:
+    fund_page:
+      - "https://www.tortoiseecofin.com/strategy/{ticker_lower}/"
+    holdings_feed:
+      - "https://www.tortoiseecofin.com/strategy/{ticker_lower}/"
+    holdings_format: html_table
+
+  alger:
+    fund_page:
+      - "https://www.alger.com/funds/etfs/{ticker_lower}"
+    holdings_feed:
+      - "https://www.alger.com/funds/etfs/{ticker_lower}"
+    holdings_format: html_table
+
+  madison:
+    fund_page:
+      - "https://www.madisonfunds.com/products/etfs/{ticker_lower}"
+    holdings_feed:
+      - "https://www.madisonfunds.com/products/etfs/{ticker_lower}"
+    holdings_format: html_table
+
+  alpha_architect:
+    fund_page:
+      - "https://etfsite.alphaarchitect.com/{ticker_lower}/"
+    holdings_feed:
+      - "https://etfsite.alphaarchitect.com/{ticker_lower}/"
+    holdings_format: html_table
+
+  strive:
+    fund_page:
+      - "https://www.strivefunds.com/{ticker_lower}"
+      - "https://www.strivefunds.com/etfs/{ticker_lower}"
+    holdings_feed:
+      - "https://www.strivefunds.com/{ticker_lower}"
+    holdings_format: html_table
+
+  baron:
+    fund_page:
+      - "https://www.baronfunds.com/etf/{ticker_lower}"
+    holdings_feed:
+      - "https://www.baronfunds.com/etf/{ticker_lower}"
+    holdings_format: html_table
+
+  themes:
+    fund_page:
+      - "https://www.themesetfs.com/etf/{ticker_lower}/"
+    holdings_feed:
+      - "https://www.themesetfs.com/etf/{ticker_lower}/"
+    holdings_format: html_table
+
+  engine_no_1:
+    fund_page:
+      - "https://engine1.com/etfs/{ticker_lower}/"
+    holdings_feed:
+      - "https://engine1.com/etfs/{ticker_lower}/"
+    holdings_format: html_table
+
+  blackstone:
+    fund_page:
+      - "https://www.blackstone.com/our-businesses/credit-and-insurance/publicly-traded-securities/"
+    holdings_feed:
+      - "https://www.blackstone.com/our-businesses/credit-and-insurance/publicly-traded-securities/"
+    holdings_format: html_table
+
+  federated:
+    fund_page:
+      - "https://www.federatedhermes.com/us/products/exchange-traded-funds/{ticker_lower}.do"
+    holdings_feed:
+      - "https://www.federatedhermes.com/us/products/exchange-traded-funds/{ticker_lower}.do"
+    holdings_format: html_table
+
+  neuberger_berman:
+    fund_page:
+      - "https://www.nb.com/en/us/products/mutual-funds/exchange-traded-funds/{ticker_lower}"
+    holdings_feed:
+      - "https://www.nb.com/en/us/products/mutual-funds/exchange-traded-funds/{ticker_lower}"
+    holdings_format: html_table
+
+  mfs:
+    fund_page:
+      - "https://www.mfs.com/en-us/intermediary-investor/investment-solutions/etfs/{ticker_lower}.html"
+    holdings_feed:
+      - "https://www.mfs.com/en-us/intermediary-investor/investment-solutions/etfs/{ticker_lower}.html"
+    holdings_format: html_table
+
+  ubs:
+    fund_page:
+      - "https://etracs.ubs.com/product/detail/index/symbol/{TICKER}"
+    holdings_feed:
+      - "https://etracs.ubs.com/product/detail/index/symbol/{TICKER}"
+    holdings_format: html_table
+
+  principal:
+    fund_page:
+      - "https://www.principal.com/investments/invest-in-a-fund/funds-prospectuses-and-reports/etfs/{ticker_lower}"
+    holdings_feed:
+      - "https://www.principal.com/investments/invest-in-a-fund/funds-prospectuses-and-reports/etfs/{ticker_lower}"
+    holdings_format: html_table
+
+  # --- Multi-sponsor series trusts with no single canonical domain ---
+  # For funds in these trusts, the primary fund_page URL must be resolved
+  # by the per-fund subadviser's own website. metadata_enrich.py falls
+  # back to an EDGAR search URL when no pattern resolves.
+
+  unaffiliated_generic:
+    fund_page:
+      - "https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK={cik}&type=N-1A&dateb=&owner=include&count=40"
+    holdings_feed:
+      - "https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK={cik}&type=N-1A&dateb=&owner=include&count=40"
+    holdings_format: html_table
+    notes: |
+      Fallback for funds whose sponsor does not have a per-ticker URL in
+      this registry. The SEC EDGAR company page is always resolvable and
+      links to the most recent N-1A and 497 filings (which include the
+      summary prospectus). Phase 1 will author per-subadviser templates.

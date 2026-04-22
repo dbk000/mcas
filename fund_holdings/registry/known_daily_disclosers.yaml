@@ -1,0 +1,92 @@
+# Sponsors known to publish full daily holdings for their US-listed ETFs
+# under Rule 6c-11 transparent-basket disclosure. Used by §4.1.3 "Secondary
+# test" in PHASE_0_TASKBOARD.md as a pre-filter shortcut: if the fund page
+# carries a recent (≤2 business days) date-stamp AND the sponsor is in this
+# set, treat as daily-compliant without further prospectus inspection.
+#
+# Inclusion criterion: sponsor has at least one US-listed open-end ETF that
+# publishes full positions daily on its public website (no login, no paid
+# feed). Sponsors exclusively using proxy-basket disclosure (ActiveShares,
+# Blue Tractor, Precidian, Natixis, Gabelli, T. Rowe Price active ANTs,
+# Fidelity active ANTs) are OUT of this set.
+#
+# Note on Fidelity: passive / transparent Fidelity ETFs (FZROX is a mutual
+# fund not ETF; FHLC, FXAIX are mutual funds; but Fidelity MSCI sector ETFs
+# like FTEC etc. are transparent-basket ETFs) ARE included. Fidelity's
+# active ANT funds (FBCG, FMIL, FMAG etc.) are OUT. The per-fund proxy-basket
+# check in §4.1.3 disambiguates — this YAML only rules on the sponsor's
+# default disclosure posture.
+#
+# Governance: this file is readable by candidate_list.py + metadata_enrich.py.
+# Authoring changes require a commit message prefix "registry: disclosers ...".
+
+version: 1
+frozen_at: 2026-04-22
+
+# Canonical sponsor slugs (lowercase, underscore-joined). The slug form must
+# match the `Sponsor` column after normalisation in candidate_list.py.
+known_daily_disclosers:
+  - ishares                       # BlackRock's ETF arm
+  - vanguard
+  - state_street                  # SPDR / SSGA
+  - invesco
+  - schwab                        # Charles Schwab Investment Management
+  - first_trust
+  - wisdomtree
+  - proshares                     # leveraged / inverse, but holdings daily
+  - direxion                      # leveraged / inverse, but holdings daily
+  - global_x
+  - ark                           # ARK Invest — transparent-active, daily holdings
+  - vaneck
+  - pacer
+  - jpmorgan                      # JPMorgan Asset Management (JEPI, JEPQ, etc.)
+  - goldman_sachs                 # Goldman Sachs Asset Management
+  - pimco                         # transparent-basket bond ETFs
+  - innovator
+  - defiance
+  - tidal                         # Tidal / Toroso platform for smaller issuers
+  - krane                         # KraneShares
+  - amplify
+  - alps
+  - roundhill
+  - graniteshares
+  - yieldmax                      # high-yield derivative-income wrappers
+  - simplify
+  - blackrock                     # BlackRock-branded (non-iShares) passive/bond ETFs
+  - dimensional                   # DFA transparent ETFs (post-2020 conversions)
+  - nuveen                        # includes TIAA-CREF ETFs
+  - pgim                          # Prudential Global Investment Management
+  - franklin_templeton
+  - fidelity                      # transparent-basket funds only; see header note
+  - columbia
+  - hartford
+  - xtrackers                     # DWS Xtrackers (formerly Deutsche)
+  - american_century
+  - victory_capital
+  - virtus
+  - aptus
+  - bondbloxx
+  - f_t                           # F/T Portfolios (alias of first_trust in some feeds)
+
+# Sponsors explicitly KNOWN to use proxy-basket (ANT) disclosure for the
+# majority of their ETF line. Funds from these sponsors are EXCLUDED unless
+# the specific fund is verified to use full daily disclosure. This list
+# augments the §4.1.3 proxy-basket exclusion test.
+ant_sponsors_excluded:
+  - precidian                     # Precidian Investments — ActiveShares licensor
+  - blue_tractor                  # Blue Tractor Group — Shielded Alpha wrapper
+  - natixis                       # Natixis Investment Managers active ANTs
+  - gabelli                       # Gabelli Funds active ANTs
+  - nationwide                    # Nationwide active ANTs (Precidian model)
+  - american_century_ants         # American Century active ANTs (Precidian)
+  - legg_mason_ants               # legacy Legg Mason ANTs
+  - t_rowe_price_active           # T. Rowe Price active ANTs (Precidian)
+  - fidelity_active               # Fidelity active ANTs (Blue Tractor / Fidelity model)
+
+# Ambiguous sponsors — have BOTH transparent and ANT funds. Per-fund check
+# is mandatory. Sponsor-level daily-discloser shortcut does NOT apply.
+ambiguous_sponsors:
+  - fidelity                      # active ANTs AND passive transparent
+  - american_century              # transparent AND ANT product lines
+  - nationwide                    # transparent AND ANT
+  - jpmorgan                      # transparent; keep here in case of future ANT launches

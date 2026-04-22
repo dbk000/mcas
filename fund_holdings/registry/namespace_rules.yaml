@@ -1,0 +1,114 @@
+# Fund-holdings namespace rules — Phase 0 bootstrap.
+# Adapted from equities_news/registry/namespace_rules.yaml (news-source keyed)
+# to fund-keyed identifiers. Governance review + Lineage stamp required on
+# any change.
+#
+# Rule of the registry: every fund_id slug lives in exactly one namespace.
+# A slug outside these namespaces fails merge-time validation.
+#
+# Namespaces:
+#   fund.{sponsor_slug}.{ticker_slug}    — per-fund, one-to-one with a US-listed ETF
+#   sponsor.{sponsor_slug}               — per-sponsor policy/metadata surface
+
+version: 1
+frozen_at: 2026-04-22
+
+# Slug component regex — each dot-separated segment. Lowercase letters,
+# digits, underscore. No hyphens (URL ambiguity). 1-64 chars per segment.
+slug_component_regex: "^[a-z0-9][a-z0-9_]{0,63}$"
+max_total_id_length: 200
+
+# Ticker-slug regex — tickers can contain letters, digits, and (rarely) a
+# period for class designations (e.g. BRK.B). The SLUG form strips the dot
+# so BRK.B -> brk_b. Raw ticker preserved in the Ticker column.
+ticker_slug_regex: "^[a-z0-9][a-z0-9_]{0,15}$"
+
+# Namespace prefix routing — used by downstream consistency checker.
+namespaces:
+  fund:
+    prefix: fund
+    depth: 3                # fund.{sponsor_slug}.{ticker_slug}
+    phase: 0
+    writable_by: [phase_0_fund_bible_cc, phase_0_fund_bible_human]
+  sponsor:
+    prefix: sponsor
+    depth: 2                # sponsor.{sponsor_slug}
+    phase: 1                # populated later; Phase 0 only emits fund.* entries
+    writable_by: [phase_1_fund_source_cc, phase_1_fund_source_human]
+
+# Required fields on every fund.* entry (subset of the 32-col bible schema
+# that must be present to consider a row non-fabricated). Matches the
+# load-bearing set in §7.2 of the taskboard.
+required_fields:
+  - ticker
+  - fund_name
+  - sponsor
+  - exchange
+  - inception_date
+  - vehicle_type
+  - replication_method
+  - holdings_feed_url
+  - holdings_feed_format
+  - lineage
+
+# Lineage sub-schema — required on every entry.
+lineage_required_fields:
+  - authored_by
+  - authored_at
+
+lineage_optional_fields:
+  - verified_by
+  - verified_at
+
+# Enum constraints — must match values accepted by schema_check.py.
+enums:
+  exchange:
+    - nyse_arca
+    - nasdaq
+    - cboe_bzx
+  vehicle_type:
+    - equity_index
+    - equity_active
+    - equity_factor
+    - fixed_income
+    - commodity
+    - multi_asset
+    - currency
+    - other
+  replication_method:
+    - full_replication
+    - sampled_replication
+    - synthetic
+    - active
+  rebalance_frequency_prospectus:
+    - daily
+    - monthly
+    - quarterly
+    - semi_annual
+    - annual
+    - as_needed
+    - continuous
+    - "null"
+  holdings_feed_format:
+    - csv
+    - xlsx
+    - json
+    - html_table
+    - pdf
+    - edgar_fallback            # Phase 0 transitional: SEC EDGAR index used
+                                # when sponsor template unavailable. Phase 1
+                                # must replace with a real sponsor feed URL.
+    - other
+  primary_market_cap_tier:
+    - mega
+    - large
+    - mid
+    - small
+    - micro
+    - mixed
+    - n_a
+
+# Tiering — per-fund overrides outrank sponsor-level defaults.
+resolver_tier_weights:
+  sponsor: 1
+  fund: 2

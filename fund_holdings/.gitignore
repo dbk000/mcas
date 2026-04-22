@@ -1,0 +1,14 @@
+# Raw N-CEN bundles + extracted TSVs — ~200MB per quarter; reproducible
+# via SEC downloads (see candidate_list.py).
+source_authoring/phase_0/raw_ncen/
+
+# Staging / temp files produced during schema_check.
+source_authoring/phase_0/tmp/
+
+# Excel staging file — only the final fund_bible_v1.xlsx is committed.
+ground_truth/fund_bible_v1.xlsx.tmp
+
+# Historical pre-remediation snapshot of phase_0.jsonl — recovered from
+# metadata_enrich.py output prior to fixup_urls.py + remediate_broken_urls.py.
+# Superseded by the committed phase_0.jsonl.
+source_authoring/phase_0/logs/phase_0_preremediate.jsonl

@@ -1,0 +1,216 @@
+2026-04-22 16:23:10 [INFO] loaded 67 sponsor URL templates
+2026-04-22 16:23:10 [INFO] candidates to enrich: 2565
+2026-04-22 16:23:21 [INFO] progress: 23/2565 (2.2/s, eta 1152s, excluded=0)
+2026-04-22 16:23:31 [INFO] progress: 55/2565 (2.7/s, eta 932s, excluded=0)
+2026-04-22 16:23:41 [INFO] progress: 87/2565 (2.9/s, eta 866s, excluded=0)
+2026-04-22 16:23:51 [INFO] progress: 142/2565 (3.5/s, eta 690s, excluded=0)
+2026-04-22 16:24:03 [INFO] progress: 183/2565 (3.4/s, eta 694s, excluded=0)
+2026-04-22 16:24:13 [INFO] progress: 198/2565 (3.1/s, eta 757s, excluded=0)
+2026-04-22 16:24:24 [INFO] progress: 222/2565 (3.0/s, eta 775s, excluded=0)
+2026-04-22 16:24:34 [INFO] progress: 275/2565 (3.3/s, eta 696s, excluded=0)
+2026-04-22 16:25:20 [INFO] progress: 283/2565 (2.2/s, eta 1043s, excluded=0)
+2026-04-22 16:25:25 [WARNING] Connection pool is full, discarding connection: funds.alphaarchitect.com. Connection pool size: 10
+2026-04-22 16:25:25 [WARNING] Connection pool is full, discarding connection: funds.alphaarchitect.com. Connection pool size: 10
+2026-04-22 16:25:26 [WARNING] Connection pool is full, discarding connection: funds.alphaarchitect.com. Connection pool size: 10
+2026-04-22 16:25:26 [WARNING] Connection pool is full, discarding connection: funds.alphaarchitect.com. Connection pool size: 10
+2026-04-22 16:25:26 [WARNING] Connection pool is full, discarding connection: funds.alphaarchitect.com. Connection pool size: 10
+2026-04-22 16:25:26 [WARNING] Connection pool is full, discarding connection: funds.alphaarchitect.com. Connection pool size: 10
+2026-04-22 16:25:27 [WARNING] Connection pool is full, discarding connection: funds.alphaarchitect.com. Connection pool size: 10
+2026-04-22 16:25:27 [WARNING] Connection pool is full, discarding connection: funds.alphaarchitect.com. Connection pool size: 10
+2026-04-22 16:25:30 [INFO] progress: 305/2565 (2.2/s, eta 1034s, excluded=0)
+2026-04-22 16:25:40 [INFO] progress: 322/2565 (2.2/s, eta 1042s, excluded=0)
+2026-04-22 16:25:50 [INFO] progress: 343/2565 (2.1/s, eta 1036s, excluded=0)
+2026-04-22 16:26:00 [INFO] progress: 359/2565 (2.1/s, eta 1044s, excluded=0)
+2026-04-22 16:26:09 [WARNING] Connection pool is full, discarding connection: www.victoryshares.com. Connection pool size: 10
+2026-04-22 16:26:10 [WARNING] Connection pool is full, discarding connection: www.victoryshares.com. Connection pool size: 10
+2026-04-22 16:26:10 [INFO] progress: 385/2565 (2.1/s, eta 1019s, excluded=0)
+2026-04-22 16:26:14 [WARNING] Connection pool is full, discarding connection: www.victoryshares.com. Connection pool size: 10
+2026-04-22 16:26:20 [INFO] progress: 422/2565 (2.2/s, eta 966s, excluded=0)
+2026-04-22 16:26:21 [WARNING] Connection pool is full, discarding connection: www.victoryshares.com. Connection pool size: 10
+2026-04-22 16:26:26 [WARNING] Connection pool is full, discarding connection: www.victoryshares.com. Connection pool size: 10
+2026-04-22 16:26:30 [INFO] progress: 467/2565 (2.3/s, eta 900s, excluded=0)
+2026-04-22 16:26:40 [WARNING] Connection pool is full, discarding connection: www.victoryshares.com. Connection pool size: 10
+2026-04-22 16:26:41 [INFO] progress: 518/2565 (2.5/s, eta 832s, excluded=0)
+2026-04-22 16:26:51 [INFO] progress: 558/2565 (2.5/s, eta 794s, excluded=0)
+2026-04-22 16:27:01 [INFO] progress: 601/2565 (2.6/s, eta 754s, excluded=0)
+2026-04-22 16:27:05 [WARNING] Connection pool is full, discarding connection: www.invesco.com. Connection pool size: 10
+2026-04-22 16:27:06 [WARNING] Connection pool is full, discarding connection: www.invesco.com. Connection pool size: 10
+2026-04-22 16:27:08 [WARNING] Connection pool is full, discarding connection: www.victoryshares.com. Connection pool size: 10
+2026-04-22 16:27:11 [INFO] progress: 650/2565 (2.7/s, eta 710s, excluded=0)
+2026-04-22 16:27:12 [WARNING] Connection pool is full, discarding connection: www.ftportfolios.com. Connection pool size: 10
+2026-04-22 16:27:12 [WARNING] Connection pool is full, discarding connection: www.ftportfolios.com. Connection pool size: 10
+2026-04-22 16:27:13 [WARNING] Connection pool is full, discarding connection: www.ftportfolios.com. Connection pool size: 10
+2026-04-22 16:27:14 [WARNING] Connection pool is full, discarding connection: www.ftportfolios.com. Connection pool size: 10
+2026-04-22 16:27:15 [WARNING] Connection pool is full, discarding connection: www.ftportfolios.com. Connection pool size: 10
+2026-04-22 16:27:22 [WARNING] Connection pool is full, discarding connection: www.victoryshares.com. Connection pool size: 10
+2026-04-22 16:27:22 [INFO] progress: 673/2565 (2.7/s, eta 709s, excluded=0)
+2026-04-22 16:27:26 [WARNING] Connection pool is full, discarding connection: www.victoryshares.com. Connection pool size: 10
+2026-04-22 16:27:34 [INFO] progress: 684/2565 (2.6/s, eta 725s, excluded=0)
+2026-04-22 16:27:44 [INFO] progress: 693/2565 (2.5/s, eta 741s, excluded=0)
+2026-04-22 16:27:46 [WARNING] Connection pool is full, discarding connection: www.proshares.com. Connection pool size: 10
+2026-04-22 16:27:55 [INFO] progress: 705/2565 (2.5/s, eta 751s, excluded=0)
+2026-04-22 16:27:56 [WARNING] Connection pool is full, discarding connection: www.proshares.com. Connection pool size: 10
+2026-04-22 16:27:56 [WARNING] Connection pool is full, discarding connection: www.proshares.com. Connection pool size: 10
+2026-04-22 16:28:05 [INFO] progress: 713/2565 (2.4/s, eta 766s, excluded=0)
+2026-04-22 16:28:09 [WARNING] Connection pool is full, discarding connection: www.proshares.com. Connection pool size: 10
+2026-04-22 16:28:10 [WARNING] Connection pool is full, discarding connection: www.proshares.com. Connection pool size: 10
+2026-04-22 16:28:10 [WARNING] Connection pool is full, discarding connection: www.proshares.com. Connection pool size: 10
+2026-04-22 16:28:11 [WARNING] Connection pool is full, discarding connection: www.proshares.com. Connection pool size: 10
+2026-04-22 16:28:12 [WARNING] Connection pool is full, discarding connection: www.proshares.com. Connection pool size: 10
+2026-04-22 16:28:12 [WARNING] Connection pool is full, discarding connection: www.proshares.com. Connection pool size: 10
+2026-04-22 16:28:12 [WARNING] Connection pool is full, discarding connection: www.proshares.com. Connection pool size: 10
+2026-04-22 16:28:12 [WARNING] Connection pool is full, discarding connection: www.proshares.com. Connection pool size: 10
+2026-04-22 16:28:12 [WARNING] Connection pool is full, discarding connection: www.proshares.com. Connection pool size: 10
+2026-04-22 16:28:12 [WARNING] Connection pool is full, discarding connection: www.proshares.com. Connection pool size: 10
+2026-04-22 16:28:13 [WARNING] Connection pool is full, discarding connection: www.proshares.com. Connection pool size: 10
+2026-04-22 16:28:13 [WARNING] Connection pool is full, discarding connection: www.proshares.com. Connection pool size: 10
+2026-04-22 16:28:13 [WARNING] Connection pool is full, discarding connection: www.proshares.com. Connection pool size: 10
+2026-04-22 16:28:15 [INFO] progress: 732/2565 (2.4/s, eta 764s, excluded=0)
+2026-04-22 16:28:16 [WARNING] Connection pool is full, discarding connection: www.proshares.com. Connection pool size: 10
+2026-04-22 16:28:26 [INFO] progress: 764/2565 (2.4/s, eta 744s, excluded=0)
+2026-04-22 16:28:28 [WARNING] Connection pool is full, discarding connection: www.proshares.com. Connection pool size: 10
+2026-04-22 16:28:29 [WARNING] Connection pool is full, discarding connection: www.proshares.com. Connection pool size: 10
+2026-04-22 16:28:30 [WARNING] Connection pool is full, discarding connection: www.proshares.com. Connection pool size: 10
+2026-04-22 16:28:30 [WARNING] Connection pool is full, discarding connection: www.proshares.com. Connection pool size: 10
+2026-04-22 16:28:30 [WARNING] Connection pool is full, discarding connection: www.proshares.com. Connection pool size: 10
+2026-04-22 16:28:30 [WARNING] Connection pool is full, discarding connection: www.proshares.com. Connection pool size: 10
+2026-04-22 16:28:30 [WARNING] Connection pool is full, discarding connection: www.proshares.com. Connection pool size: 10
+2026-04-22 16:28:32 [WARNING] Connection pool is full, discarding connection: www.proshares.com. Connection pool size: 10
+2026-04-22 16:28:36 [INFO] progress: 823/2565 (2.5/s, eta 689s, excluded=0)
+2026-04-22 16:28:46 [INFO] progress: 839/2565 (2.5/s, eta 691s, excluded=0)
+2026-04-22 16:28:57 [INFO] progress: 861/2565 (2.5/s, eta 687s, excluded=0)
+2026-04-22 16:29:08 [INFO] progress: 880/2565 (2.5/s, eta 684s, excluded=0)
+2026-04-22 16:29:18 [INFO] progress: 896/2565 (2.4/s, eta 685s, excluded=0)
+2026-04-22 16:29:28 [INFO] progress: 968/2565 (2.6/s, eta 623s, excluded=0)
+2026-04-22 16:29:38 [INFO] progress: 1007/2565 (2.6/s, eta 600s, excluded=0)
+2026-04-22 16:29:48 [INFO] progress: 1027/2565 (2.6/s, eta 596s, excluded=0)
+2026-04-22 16:29:54 [WARNING] Connection pool is full, discarding connection: www.ftportfolios.com. Connection pool size: 10
+2026-04-22 16:29:56 [WARNING] Connection pool is full, discarding connection: www.ftportfolios.com. Connection pool size: 10
+2026-04-22 16:29:59 [INFO] progress: 1054/2565 (2.6/s, eta 586s, excluded=0)
+2026-04-22 16:30:00 [WARNING] Connection pool is full, discarding connection: www.ftportfolios.com. Connection pool size: 10
+2026-04-22 16:30:02 [WARNING] Connection pool is full, discarding connection: www.ftportfolios.com. Connection pool size: 10
+2026-04-22 16:30:02 [WARNING] Connection pool is full, discarding connection: www.pgim.com. Connection pool size: 10
+2026-04-22 16:30:02 [WARNING] Connection pool is full, discarding connection: www.ftportfolios.com. Connection pool size: 10
+2026-04-22 16:30:02 [WARNING] Connection pool is full, discarding connection: www.ftportfolios.com. Connection pool size: 10
+2026-04-22 16:30:03 [WARNING] Connection pool is full, discarding connection: www.ftportfolios.com. Connection pool size: 10
+2026-04-22 16:30:04 [WARNING] Connection pool is full, discarding connection: www.ftportfolios.com. Connection pool size: 10
+2026-04-22 16:30:04 [WARNING] Connection pool is full, discarding connection: www.ftportfolios.com. Connection pool size: 10
+2026-04-22 16:30:04 [WARNING] Connection pool is full, discarding connection: www.ftportfolios.com. Connection pool size: 10
+2026-04-22 16:30:07 [WARNING] Connection pool is full, discarding connection: www.ftportfolios.com. Connection pool size: 10
+2026-04-22 16:30:09 [WARNING] Connection pool is full, discarding connection: www.ftportfolios.com. Connection pool size: 10
+2026-04-22 16:30:10 [INFO] progress: 1072/2565 (2.6/s, eta 584s, excluded=0)
+2026-04-22 16:30:11 [WARNING] Connection pool is full, discarding connection: www.ftportfolios.com. Connection pool size: 10
+2026-04-22 16:30:12 [WARNING] Connection pool is full, discarding connection: www.ftportfolios.com. Connection pool size: 10
+2026-04-22 16:30:14 [WARNING] Connection pool is full, discarding connection: www.ftportfolios.com. Connection pool size: 10
+2026-04-22 16:30:20 [INFO] progress: 1097/2565 (2.5/s, eta 575s, excluded=0)
+2026-04-22 16:30:31 [INFO] progress: 1129/2565 (2.6/s, eta 560s, excluded=0)
+2026-04-22 16:30:41 [INFO] progress: 1186/2565 (2.6/s, eta 523s, excluded=0)
+2026-04-22 16:30:51 [INFO] progress: 1228/2565 (2.7/s, eta 501s, excluded=0)
+2026-04-22 16:31:01 [INFO] progress: 1264/2565 (2.7/s, eta 484s, excluded=0)
+2026-04-22 16:31:12 [INFO] progress: 1288/2565 (2.7/s, eta 477s, excluded=0)
+2026-04-22 16:31:22 [INFO] progress: 1311/2565 (2.7/s, eta 470s, excluded=0)
+2026-04-22 16:31:32 [INFO] progress: 1343/2565 (2.7/s, eta 456s, excluded=0)
+2026-04-22 16:31:43 [INFO] progress: 1366/2565 (2.7/s, eta 450s, excluded=0)
+2026-04-22 16:31:53 [INFO] progress: 1384/2565 (2.6/s, eta 446s, excluded=0)
+2026-04-22 16:32:03 [INFO] progress: 1403/2565 (2.6/s, eta 441s, excluded=0)
+2026-04-22 16:32:14 [INFO] progress: 1421/2565 (2.6/s, eta 437s, excluded=0)
+2026-04-22 16:32:24 [INFO] progress: 1445/2565 (2.6/s, eta 429s, excluded=0)
+2026-04-22 16:32:34 [INFO] progress: 1489/2565 (2.6/s, eta 407s, excluded=0)
+2026-04-22 16:32:44 [INFO] progress: 1525/2565 (2.7/s, eta 391s, excluded=0)
+2026-04-22 16:32:49 [WARNING] Connection pool is full, discarding connection: www.invesco.com. Connection pool size: 10
+2026-04-22 16:32:49 [WARNING] Connection pool is full, discarding connection: www.invesco.com. Connection pool size: 10
+2026-04-22 16:32:50 [WARNING] Connection pool is full, discarding connection: www.invesco.com. Connection pool size: 10
+2026-04-22 16:32:54 [INFO] progress: 1593/2565 (2.7/s, eta 356s, excluded=0)
+2026-04-22 16:33:05 [INFO] progress: 1645/2565 (2.8/s, eta 332s, excluded=0)
+2026-04-22 16:33:15 [INFO] progress: 1667/2565 (2.8/s, eta 325s, excluded=0)
+2026-04-22 16:33:25 [INFO] progress: 1719/2565 (2.8/s, eta 302s, excluded=0)
+2026-04-22 16:33:35 [INFO] progress: 1751/2565 (2.8/s, eta 290s, excluded=0)
+2026-04-22 16:33:45 [INFO] progress: 1786/2565 (2.8/s, eta 276s, excluded=0)
+2026-04-22 16:33:55 [INFO] progress: 1813/2565 (2.8/s, eta 267s, excluded=0)
+2026-04-22 16:34:05 [INFO] progress: 1851/2565 (2.8/s, eta 252s, excluded=0)
+2026-04-22 16:34:16 [INFO] progress: 1866/2565 (2.8/s, eta 249s, excluded=0)
+2026-04-22 16:34:26 [INFO] progress: 1882/2565 (2.8/s, eta 245s, excluded=0)
+2026-04-22 16:34:32 [WARNING] Connection pool is full, discarding connection: www.ftportfolios.com. Connection pool size: 10
+2026-04-22 16:34:34 [WARNING] Connection pool is full, discarding connection: www.ftportfolios.com. Connection pool size: 10
+2026-04-22 16:34:35 [WARNING] Connection pool is full, discarding connection: www.ftportfolios.com. Connection pool size: 10
+2026-04-22 16:34:35 [WARNING] Connection pool is full, discarding connection: www.ftportfolios.com. Connection pool size: 10
+2026-04-22 16:34:36 [WARNING] Connection pool is full, discarding connection: www.ftportfolios.com. Connection pool size: 10
+2026-04-22 16:34:37 [INFO] progress: 1898/2565 (2.8/s, eta 241s, excluded=0)
+2026-04-22 16:34:38 [WARNING] Connection pool is full, discarding connection: www.ftportfolios.com. Connection pool size: 10
+2026-04-22 16:34:38 [WARNING] Connection pool is full, discarding connection: www.ftportfolios.com. Connection pool size: 10
+2026-04-22 16:34:38 [WARNING] Connection pool is full, discarding connection: www.ftportfolios.com. Connection pool size: 10
+2026-04-22 16:34:41 [WARNING] Connection pool is full, discarding connection: www.ftportfolios.com. Connection pool size: 10
+2026-04-22 16:34:41 [WARNING] Connection pool is full, discarding connection: www.ftportfolios.com. Connection pool size: 10
+2026-04-22 16:34:42 [WARNING] Connection pool is full, discarding connection: www.ftportfolios.com. Connection pool size: 10
+2026-04-22 16:34:42 [WARNING] Connection pool is full, discarding connection: www.ftportfolios.com. Connection pool size: 10
+2026-04-22 16:34:43 [WARNING] Connection pool is full, discarding connection: www.ftportfolios.com. Connection pool size: 10
+2026-04-22 16:34:43 [WARNING] Connection pool is full, discarding connection: www.ftportfolios.com. Connection pool size: 10
+2026-04-22 16:34:43 [WARNING] Connection pool is full, discarding connection: www.ftportfolios.com. Connection pool size: 10
+2026-04-22 16:34:44 [WARNING] Connection pool is full, discarding connection: www.ftportfolios.com. Connection pool size: 10
+2026-04-22 16:34:46 [WARNING] Connection pool is full, discarding connection: www.ftportfolios.com. Connection pool size: 10
+2026-04-22 16:34:46 [WARNING] Connection pool is full, discarding connection: bondbloxxetf.com. Connection pool size: 10
+2026-04-22 16:34:46 [WARNING] Connection pool is full, discarding connection: www.ftportfolios.com. Connection pool size: 10
+2026-04-22 16:34:46 [WARNING] Connection pool is full, discarding connection: www.ftportfolios.com. Connection pool size: 10
+2026-04-22 16:34:47 [WARNING] Connection pool is full, discarding connection: bondbloxxetf.com. Connection pool size: 10
+2026-04-22 16:34:47 [INFO] progress: 1948/2565 (2.8/s, eta 220s, excluded=0)
+2026-04-22 16:34:47 [WARNING] Connection pool is full, discarding connection: www.ftportfolios.com. Connection pool size: 10
+2026-04-22 16:34:47 [WARNING] Connection pool is full, discarding connection: bondbloxxetf.com. Connection pool size: 10
+2026-04-22 16:34:48 [WARNING] Connection pool is full, discarding connection: bondbloxxetf.com. Connection pool size: 10
+2026-04-22 16:34:49 [WARNING] Connection pool is full, discarding connection: www.ftportfolios.com. Connection pool size: 10
+2026-04-22 16:34:57 [INFO] progress: 1985/2565 (2.8/s, eta 206s, excluded=0)
+2026-04-22 16:35:08 [INFO] progress: 2009/2565 (2.8/s, eta 198s, excluded=0)
+2026-04-22 16:35:18 [INFO] progress: 2018/2565 (2.8/s, eta 197s, excluded=0)
+2026-04-22 16:35:29 [INFO] progress: 2039/2565 (2.8/s, eta 190s, excluded=0)
+2026-04-22 16:35:31 [WARNING] Connection pool is full, discarding connection: www.ftportfolios.com. Connection pool size: 10
+2026-04-22 16:35:39 [INFO] progress: 2049/2565 (2.7/s, eta 188s, excluded=0)
+2026-04-22 16:35:49 [WARNING] Connection pool is full, discarding connection: www.nuveen.com. Connection pool size: 10
+2026-04-22 16:35:49 [WARNING] Connection pool is full, discarding connection: www.nuveen.com. Connection pool size: 10
+2026-04-22 16:35:49 [INFO] progress: 2061/2565 (2.7/s, eta 185s, excluded=0)
+2026-04-22 16:35:50 [WARNING] Connection pool is full, discarding connection: www.nuveen.com. Connection pool size: 10
+2026-04-22 16:35:50 [WARNING] Connection pool is full, discarding connection: www.nuveen.com. Connection pool size: 10
+2026-04-22 16:36:04 [INFO] progress: 2081/2565 (2.7/s, eta 179s, excluded=0)
+2026-04-22 16:36:14 [INFO] progress: 2088/2565 (2.7/s, eta 179s, excluded=0)
+2026-04-22 16:36:26 [INFO] progress: 2102/2565 (2.6/s, eta 175s, excluded=0)
+2026-04-22 16:36:37 [INFO] progress: 2112/2565 (2.6/s, eta 173s, excluded=0)
+2026-04-22 16:36:47 [INFO] progress: 2146/2565 (2.6/s, eta 159s, excluded=0)
+2026-04-22 16:36:57 [INFO] progress: 2186/2565 (2.6/s, eta 143s, excluded=0)
+2026-04-22 16:37:07 [INFO] progress: 2221/2565 (2.7/s, eta 129s, excluded=0)
+2026-04-22 16:37:17 [INFO] progress: 2246/2565 (2.7/s, eta 120s, excluded=0)
+2026-04-22 16:37:28 [INFO] progress: 2264/2565 (2.6/s, eta 113s, excluded=0)
+2026-04-22 16:37:38 [INFO] progress: 2278/2565 (2.6/s, eta 109s, excluded=0)
+2026-04-22 16:37:48 [INFO] progress: 2299/2565 (2.6/s, eta 101s, excluded=0)
+2026-04-22 16:37:59 [INFO] progress: 2321/2565 (2.6/s, eta 93s, excluded=0)
+2026-04-22 16:38:09 [INFO] progress: 2355/2565 (2.6/s, eta 80s, excluded=0)
+2026-04-22 16:38:19 [INFO] progress: 2397/2565 (2.6/s, eta 63s, excluded=0)
+2026-04-22 16:38:27 [WARNING] Connection pool is full, discarding connection: www.invesco.com. Connection pool size: 10
+2026-04-22 16:38:29 [INFO] progress: 2460/2565 (2.7/s, eta 39s, excluded=0)
+2026-04-22 16:38:39 [INFO] progress: 2516/2565 (2.7/s, eta 18s, excluded=0)
+2026-04-22 16:38:55 [WARNING] Connection pool is full, discarding connection: www.flexshares.com. Connection pool size: 10
+2026-04-22 16:38:56 [WARNING] Connection pool is full, discarding connection: www.flexshares.com. Connection pool size: 10
+2026-04-22 16:38:56 [WARNING] Connection pool is full, discarding connection: www.flexshares.com. Connection pool size: 10
+2026-04-22 16:38:56 [WARNING] Connection pool is full, discarding connection: www.flexshares.com. Connection pool size: 10
+2026-04-22 16:38:58 [INFO] progress: 2536/2565 (2.7/s, eta 10s, excluded=0)
+2026-04-22 16:39:10 [INFO] progress: 2537/2565 (2.6/s, eta 10s, excluded=0)
+2026-04-22 16:39:12 [WARNING] Connection pool is full, discarding connection: www.flexshares.com. Connection pool size: 10
+2026-04-22 16:39:12 [WARNING] Connection pool is full, discarding connection: www.flexshares.com. Connection pool size: 10
+2026-04-22 16:39:13 [WARNING] Connection pool is full, discarding connection: www.flexshares.com. Connection pool size: 10
+2026-04-22 16:39:13 [WARNING] Connection pool is full, discarding connection: www.flexshares.com. Connection pool size: 10
+2026-04-22 16:39:13 [WARNING] Connection pool is full, discarding connection: www.flexshares.com. Connection pool size: 10
+2026-04-22 16:39:14 [WARNING] Connection pool is full, discarding connection: www.flexshares.com. Connection pool size: 10
+2026-04-22 16:39:14 [WARNING] Connection pool is full, discarding connection: www.flexshares.com. Connection pool size: 10
+2026-04-22 16:39:15 [WARNING] Connection pool is full, discarding connection: www.flexshares.com. Connection pool size: 10
+2026-04-22 16:39:15 [WARNING] Connection pool is full, discarding connection: www.flexshares.com. Connection pool size: 10
+2026-04-22 16:39:15 [WARNING] Connection pool is full, discarding connection: www.flexshares.com. Connection pool size: 10
+2026-04-22 16:39:15 [WARNING] Connection pool is full, discarding connection: www.flexshares.com. Connection pool size: 10
+2026-04-22 16:39:15 [WARNING] Connection pool is full, discarding connection: www.flexshares.com. Connection pool size: 10
+2026-04-22 16:39:16 [WARNING] Connection pool is full, discarding connection: www.flexshares.com. Connection pool size: 10
+2026-04-22 16:39:16 [WARNING] Connection pool is full, discarding connection: www.flexshares.com. Connection pool size: 10
+2026-04-22 16:39:16 [WARNING] Connection pool is full, discarding connection: www.flexshares.com. Connection pool size: 10
+2026-04-22 16:39:16 [WARNING] Connection pool is full, discarding connection: www.flexshares.com. Connection pool size: 10
+2026-04-22 16:39:16 [WARNING] Connection pool is full, discarding connection: www.flexshares.com. Connection pool size: 10
+2026-04-22 16:39:17 [WARNING] Connection pool is full, discarding connection: www.flexshares.com. Connection pool size: 10
+2026-04-22 16:39:17 [WARNING] Connection pool is full, discarding connection: www.flexshares.com. Connection pool size: 10
+2026-04-22 16:39:20 [INFO] progress: 2561/2565 (2.6/s, eta 1s, excluded=0)
+2026-04-22 16:39:21 [INFO] progress: 2565/2565 (2.6/s, eta 0s, excluded=0)
+2026-04-22 16:39:21 [INFO] done. 2565 enriched, 0 excluded
+2026-04-22 16:39:21 [INFO] exclusion reasons:
