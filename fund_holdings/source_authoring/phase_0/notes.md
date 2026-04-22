@@ -246,3 +246,107 @@ pytest -v ../../tests/test_fund_bible_schema.py
 
 Total end-to-end runtime: ~20-25 min dominated by metadata_enrich.py
 HTTP HEAD checks.
+
+---
+
+# Phase 0 Remediation (2026-04-22, session 2)
+
+Author: phase_0_remediation_cc (Claude Code, Opus 4.7)
+
+The v1 authoring session above produced a bible with 1,715 of 2,563 funds
+(66.9%) pointing at SEC EDGAR search URLs with
+`Holdings_Feed_Format = edgar_fallback`. The remediation rewrote those
+rows in place and removed every fund whose real Holdings_Feed_URL
+couldn't be discovered, per `PHASE_0_REMEDIATION_TASKBOARD.md`.
+
+## 12. Why v1 failed and how remediation fixed it
+
+Two structural failures in v1:
+
+1. **Per-fund template-guessing.** v1 constructed Holdings_Feed_URL by
+   template-substituting a ticker into a sponsor URL pattern. This works
+   for sponsors with stable per-ticker patterns (Vanguard's
+   `/profile/{ticker}`, Direxion's `/holdings/{TICKER}.csv`) but fails
+   for sponsors like iShares where the real URL needs a numeric
+   `product_id` that's not derivable from ticker. For iShares alone
+   this sank 349 funds.
+
+2. **Verification was status-based, not content-based.** v1's gate was
+   "HEAD check returns 200/302/405". An SEC EDGAR search URL returns 200,
+   so 1,715 placeholder URLs passed. The fix is §7.2's GET + parse +
+   ≥10-identifier-rows content check.
+
+The remediation replaces step 1 with **per-sponsor discovery** (a
+single product-index endpoint per sponsor returns URLs for all that
+sponsor's funds at once) and step 2 with **content verification on
+every row**.
+
+## 13. Discovery highlights
+
+- **iShares (solved, 333/349 funds):** a single HTML scrape of
+  `https://www.ishares.com/us/products/etf-investments` yields 522
+  `(ticker → product_id, slug)` anchor pairs. The per-fund holdings CSV
+  URL then follows
+  `/us/products/{product_id}/{slug}/1467271812596.ajax?fileType=csv&fileName={TICKER}_holdings&dataType=fund`
+  and returns structured holdings data. Map is persisted at
+  `source_authoring/phase_0/ishares_product_map.json`.
+- **Vanguard (solved, 80/80 funds):** `api.vanguard.com/rs/ire/01/ind/fund/{TICKER}/portfolio-holding/{stock|bond|balanced}.json`
+  — **Referer header MANDATORY** (without a vanguard.com Referer the API returns
+  HTTP 400). Vehicle_Type selects the right sub-endpoint.
+- **State Street (solved, 149/152):** direct XLSX at
+  `www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-{ticker_lower}.xlsx`.
+  The v1 template was correct but v1's HEAD check mistook some 404s
+  as reachable (every SSGA row in v1 had `edgar_fallback` format anyway
+  — unclear why v1 didn't use this working pattern).
+- **Blocked sponsors:** Invesco (WAF 406 regardless of Accept header),
+  Schwab / WisdomTree / Pacer (Akamai/Cloudflare 403). These are likely
+  bot-blocking on TLS fingerprint. Phase 1 should revisit with
+  `curl_cffi` or captured browser-TLS-replay tooling. Combined missed AUM:
+  ~$750B.
+
+## 14. Content-verification strictness gotcha
+
+`§7.2` requires ≥10 data rows. This legitimately excludes some real
+funds:
+
+- **iShares iBonds** (IBIF, IBTO, IBIC..., IBIL, IBTF, IBTO, IBTP, IBTQ):
+  narrow-maturity bond ladders holding 5-9 Treasury CPI notes. Real
+  funds, real holdings, but only 5-9 positions. 19 iShares rows failed
+  this way.
+- **Direxion leveraged/inverse ETFs** (QQQD, DRV, YANG, AMZU, TSLS,
+  etc.): hold 5-9 swap + money-market positions. 38 of 90 Direxion
+  funds failed this way.
+
+These are documented in `excluded_funds.yaml` so Phase 1 can reinstate
+them if we relax the threshold for narrow-universe fund types.
+
+## 15. Prospectus_URL handling
+
+Every v1 row had `Prospectus_URL` pointing at
+`sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK={cik}&type=497...`
+— the EDGAR filings search page (not a direct 497 PDF). §6.1 classifies
+this as REPLACE but §7.2 content verification applies ONLY to
+`Holdings_Feed_URL`. Remediation leaves Prospectus_URL as an EDGAR
+filings-listing URL (still a valid link to filings for each CIK) and
+defers upgrading to direct PDFs to Phase 1.
+
+## 16. Re-run recipe (remediation)
+
+```bash
+cd /home/darren/Desktop/MCAS/fund_holdings/source_authoring/phase_0
+# 1. Partition report
+python3 partition_analysis.py
+# 2. Bulk-probe sponsor patterns (writes sponsor_probes_result.jsonl)
+python3 sponsor_probes.py
+# 3. Enrich bible in place (writes fund_bible_v1.xlsx.tmp)
+python3 remediation_merge.py --workers 12
+# 4. Final gates (hermetic schema + live content verify)
+python3 final_gates.py --bible ../../ground_truth/fund_bible_v1.xlsx.tmp --workers 12
+# 5. Atomic rename and run pytest
+mv ../../ground_truth/fund_bible_v1.xlsx.tmp ../../ground_truth/fund_bible_v1.xlsx
+pytest -v ../../tests/test_fund_bible_schema.py
+```
+
+Total end-to-end runtime: ~5-10 min dominated by the §7.2 content-verify
+pass (one GET per row with per-host throttle + retry).
+

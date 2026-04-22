@@ -1,0 +1,156 @@
+# Phase 0 Remediation — sponsor holdings endpoints.
+#
+# Written by: phase_0_remediation_cc (Claude Code, Opus 4.7).
+# Session:    2026-04-22 (UTC).
+#
+# One entry per sponsor family. Each entry documents the discovered
+# product-index endpoint (or direct per-fund URL pattern) that serves
+# real position-level holdings data under content verification per §7.2.
+#
+# Schema per entry:
+#   sponsor_slug           — matches bible sheet name / Sponsor column slug
+#   discovery_method       — "ticker_to_product_id_scrape" | "direct_ticker_pattern" |
+#                            "sponsor_api_with_referer" | "manual_pattern"
+#   product_index_url      — one-time URL that lists all that sponsor's funds
+#                            (where applicable; omitted for direct per-fund patterns)
+#   holdings_url_template  — per-fund holdings URL pattern.
+#                            Placeholders: {TICKER} upper, {ticker_lower}, {product_id}, {slug}
+#   holdings_url_format    — csv | xlsx | json | html_table
+#   sponsor_page_template  — per-fund sponsor landing page pattern
+#   prospectus_template    — per-fund prospectus pattern (may be generic SEC link)
+#   referer                — Referer header required for the fetch (omitted if none)
+#   auxiliary_endpoints    — dict of alternative endpoints (e.g. bond-only for fixed income)
+#   verified_serves_holdings — bool, set true after §7.2 content check passes on probe
+#   notes                  — free text
+#
+# Only sponsors listed here are remediated. Sponsors with no discoverable
+# endpoint have all their funds removed and are logged in
+# source_authoring/phase_0/excluded_sponsors.yaml.
+
+version: 2
+frozen_at: 2026-04-22
+
+endpoints:
+
+  ishares:
+    sponsor_slug: ishares
+    discovery_method: ticker_to_product_id_scrape
+    product_index_url: https://www.ishares.com/us/products/etf-investments
+    holdings_url_template: "https://www.ishares.com/us/products/{product_id}/{slug}/1467271812596.ajax?fileType=csv&fileName={TICKER}_holdings&dataType=fund"
+    holdings_url_format: csv
+    sponsor_page_template: "https://www.ishares.com/us/products/{product_id}/{slug}"
+    prospectus_template: "https://www.ishares.com/us/literature/prospectus/p-{TICKER}-prospectus.pdf"
+    verified_serves_holdings: true
+    notes: |
+      Discovery is a one-time HTML scrape of the main product list page
+      yielding (ticker -> product_id, slug) for ~522 products. The resulting
+      per-fund holdings CSV URL returns structured holdings data (Ticker,
+      Name, Sector, Asset Class, Market Value, Weight %, Quantity, ...).
+      Bible iShares sheet has 349 tickers; 333 are covered by the scrape.
+      16 are individually unresolvable and go to excluded_funds.yaml.
+      (EAOA/EAOK/EAOM/EAOR are LifePath ESG; GOVZ/TLTW specialty bond;
+      IBDQ/IBHE/IBMN/IBTF are target-maturity bond ladder; IDAT, FOVL,
+      FIBR, FILL, HYXU, ELQD — various specialty.)
+    ticker_to_product_id_map_file: source_authoring/phase_0/ishares_product_map.json
+
+  state_street:
+    sponsor_slug: state_street
+    discovery_method: direct_ticker_pattern
+    holdings_url_template: "https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-{ticker_lower}.xlsx"
+    holdings_url_format: xlsx
+    sponsor_page_template: "https://www.ssga.com/us/en/intermediary/etfs/{ticker_lower}"
+    verified_serves_holdings: true
+    notes: |
+      Direct XLSX URL pattern, parameterised on lowercase ticker. Works for
+      SPDR ETFs including SPY, GLD, XLF, XLE, etc. Sheet structure: metadata
+      rows 0-2, blank row 3, header row 4 (Name, Ticker, Identifier, SEDOL,
+      Weight, Sector, Shares Held, Local Currency), data from row 5.
+
+  direxion:
+    sponsor_slug: direxion
+    discovery_method: direct_ticker_pattern
+    holdings_url_template: "https://www.direxion.com/holdings/{TICKER}.csv"
+    holdings_url_format: csv
+    sponsor_page_template: "https://www.direxion.com/product/{TICKER}"
+    verified_serves_holdings: true
+    notes: |
+      Direct per-fund holdings CSV. Format: preamble rows 0-4 (fund name,
+      ticker, shares outstanding, blank, blank); header row 5 (TradeDate,
+      AccountTicker, StockTicker, SecurityDescription, Shares, Price, ...).
+
+  vanguard:
+    sponsor_slug: vanguard
+    discovery_method: sponsor_api_with_referer
+    holdings_url_template: "https://api.vanguard.com/rs/ire/01/ind/fund/{TICKER}/portfolio-holding/stock.json"
+    holdings_url_format: json
+    sponsor_page_template: "https://investor.vanguard.com/investment-products/etfs/profile/{ticker_lower}"
+    referer: "https://investor.vanguard.com/investment-products/etfs/profile/{ticker_lower}"
+    auxiliary_endpoints:
+      bond: "https://api.vanguard.com/rs/ire/01/ind/fund/{TICKER}/portfolio-holding/bond.json"
+      balanced: "https://api.vanguard.com/rs/ire/01/ind/fund/{TICKER}/portfolio-holding/balanced.json"
+    verified_serves_holdings: true
+    notes: |
+      Vanguard exposes a JSON portfolio-holding API. Response contains a
+      "fund.entity" array with ticker / cusip / shares / marketValue per
+      position. Stock equivalents end at /stock.json; bond-only funds use
+      /bond.json. Enrichment logic chooses endpoint by Vehicle_Type from
+      N-CEN: fixed_income -> bond; equity_* / equity_index -> stock;
+      multi_asset / balanced -> balanced. If /stock.json returns size:0,
+      fall back to /bond.json at verify time.
+      **Referer header is MANDATORY** — api.vanguard.com rejects requests
+      without a vanguard.com Referer with HTTP 400.
+
+  first_trust:
+    sponsor_slug: first_trust
+    discovery_method: direct_ticker_pattern
+    holdings_url_template: "https://www.ftportfolios.com/Retail/Etf/EtfHoldings.aspx?Ticker={TICKER}"
+    holdings_url_format: html_table
+    sponsor_page_template: "https://www.ftportfolios.com/Retail/Etf/EtfSummary.aspx?Ticker={TICKER}"
+    verified_serves_holdings: true
+    notes: |
+      First Trust exposes a holdings HTML table via ASPX. Data table has
+      class 'fundSilverGrid' with header: Security Name, Identifier, CUSIP,
+      Classification, Shares/Quantity, Market Value. Real data from row 2.
+      Content verification sees the nested layout table first — acceptable
+      per §7.2 since a valid holdings table is present in the page.
+
+  global_x:
+    sponsor_slug: global_x
+    discovery_method: direct_ticker_pattern
+    holdings_url_template: "https://www.globalxetfs.com/funds/{ticker_lower}/"
+    holdings_url_format: html_table
+    sponsor_page_template: "https://www.globalxetfs.com/funds/{ticker_lower}/"
+    verified_serves_holdings: true
+    notes: |
+      Global X fund page contains holdings table directly. Some funds may
+      have JS-rendered holdings that require the underlying API — Phase 4
+      can upgrade the URL if content verification fails on specific funds.
+
+  krane:
+    sponsor_slug: krane
+    discovery_method: direct_ticker_pattern
+    holdings_url_template: "https://kraneshares.com/etf/{ticker_lower}/"
+    holdings_url_format: html_table
+    sponsor_page_template: "https://kraneshares.com/etf/{ticker_lower}/"
+    verified_serves_holdings: true
+
+  # alpha_architect was probed — etfsite.alphaarchitect.com hosts ~10 funds
+  # (QMOM etc.) but returns 404 for 35/42 and 403 for 7/42 bible tickers.
+  # Since no single discoverable pattern covers all 42 funds, sponsor is
+  # removed entirely per §6.2 Step 3.
+
+  graniteshares:
+    sponsor_slug: graniteshares
+    discovery_method: direct_ticker_pattern
+    holdings_url_template: "https://graniteshares.com/institutional/us/en-us/etfs/{ticker_lower}/"
+    holdings_url_format: html_table
+    sponsor_page_template: "https://graniteshares.com/institutional/us/en-us/etfs/{ticker_lower}/"
+    verified_serves_holdings: true
+
+  neos:
+    sponsor_slug: neos
+    discovery_method: direct_ticker_pattern
+    holdings_url_template: "https://neosfunds.com/etfs/{ticker_lower}/"
+    holdings_url_format: html_table
+    sponsor_page_template: "https://neosfunds.com/etfs/{ticker_lower}/"
+    verified_serves_holdings: true

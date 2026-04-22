@@ -57,7 +57,8 @@ Pipeline steps:
       URL verification via background job — see `logs/schema_url_check.log`).
 - [x] Atomic rename to `fund_bible_v1.xlsx`.
 - [x] `test_fund_bible_schema.py` passes under pytest.
-- [x] Git commit + push (see `git log` for commit hash).
+- [x] Git commit: `16fee2ee` on `origin/main`.
+- [x] Git push: pushed to `github.com:dbk000/mcas.git` 2026-04-22 18:09 UTC.
 
 ## Final counts
 

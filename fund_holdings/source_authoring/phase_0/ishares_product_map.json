@@ -1,0 +1,2612 @@
+{
+  "IGLB": {
+    "product_id": "239423",
+    "slug": "ishares-10-year-credit-bond-etf",
+    "href": "/us/products/239423/ishares-10-year-credit-bond-etf"
+  },
+  "ILTB": {
+    "product_id": "239424",
+    "slug": "ishares-core-longterm-us-bond-etf",
+    "href": "/us/products/239424/ishares-core-longterm-us-bond-etf"
+  },
+  "QLTA": {
+    "product_id": "239431",
+    "slug": "ishares-aaa-a-rated-corporate-bond-etf",
+    "href": "/us/products/239431/ishares-aaa-a-rated-corporate-bond-etf"
+  },
+  "DVYA": {
+    "product_id": "239443",
+    "slug": "ishares-asiapacific-dividend-etf",
+    "href": "/us/products/239443/ishares-asiapacific-dividend-etf"
+  },
+  "STIP": {
+    "product_id": "239450",
+    "slug": "ishares-05-year-tips-bond-etf",
+    "href": "/us/products/239450/ishares-05-year-tips-bond-etf"
+  },
+  "IGSB": {
+    "product_id": "239451",
+    "slug": "ishares-13-year-credit-bond-etf",
+    "href": "/us/products/239451/ishares-13-year-credit-bond-etf"
+  },
+  "SHY": {
+    "product_id": "239452",
+    "slug": "ishares-13-year-treasury-bond-etf",
+    "href": "/us/products/239452/ishares-13-year-treasury-bond-etf"
+  },
+  "TLH": {
+    "product_id": "239453",
+    "slug": "ishares-1020-year-treasury-bond-etf",
+    "href": "/us/products/239453/ishares-1020-year-treasury-bond-etf"
+  },
+  "TLT": {
+    "product_id": "239454",
+    "slug": "ishares-20-year-treasury-bond-etf",
+    "href": "/us/products/239454/ishares-20-year-treasury-bond-etf"
+  },
+  "IEI": {
+    "product_id": "239455",
+    "slug": "ishares-37-year-treasury-bond-etf",
+    "href": "/us/products/239455/ishares-37-year-treasury-bond-etf"
+  },
+  "IEF": {
+    "product_id": "239456",
+    "slug": "ishares-710-year-treasury-bond-etf",
+    "href": "/us/products/239456/ishares-710-year-treasury-bond-etf"
+  },
+  "AGZ": {
+    "product_id": "239457",
+    "slug": "ishares-agency-bond-etf",
+    "href": "/us/products/239457/ishares-agency-bond-etf"
+  },
+  "AGG": {
+    "product_id": "239458",
+    "slug": "ishares-core-total-us-bond-market-etf",
+    "href": "/us/products/239458/ishares-core-total-us-bond-market-etf"
+  },
+  "CMBS": {
+    "product_id": "239459",
+    "slug": "ishares-cmbs-etf",
+    "href": "/us/products/239459/ishares-cmbs-etf"
+  },
+  "USIG": {
+    "product_id": "239460",
+    "slug": "ishares-credit-bond-etf",
+    "href": "/us/products/239460/ishares-credit-bond-etf"
+  },
+  "GNMA": {
+    "product_id": "239461",
+    "slug": "ishares-gnma-bond-etf",
+    "href": "/us/products/239461/ishares-gnma-bond-etf"
+  },
+  "GBF": {
+    "product_id": "239462",
+    "slug": "ishares-governmentcredit-bond-etf",
+    "href": "/us/products/239462/ishares-governmentcredit-bond-etf"
+  },
+  "IGIB": {
+    "product_id": "239463",
+    "slug": "ishares-intermediate-credit-bond-etf",
+    "href": "/us/products/239463/ishares-intermediate-credit-bond-etf"
+  },
+  "GVI": {
+    "product_id": "239464",
+    "slug": "ishares-intermediate-governmentcredit-bond-etf",
+    "href": "/us/products/239464/ishares-intermediate-governmentcredit-bond-etf"
+  },
+  "MBB": {
+    "product_id": "239465",
+    "slug": "ishares-mbs-etf",
+    "href": "/us/products/239465/ishares-mbs-etf"
+  },
+  "SHV": {
+    "product_id": "239466",
+    "slug": "ishares-short-treasury-bond-etf",
+    "href": "/us/products/239466/ishares-short-treasury-bond-etf"
+  },
+  "TIP": {
+    "product_id": "239467",
+    "slug": "ishares-tips-bond-etf",
+    "href": "/us/products/239467/ishares-tips-bond-etf"
+  },
+  "GOVT": {
+    "product_id": "239468",
+    "slug": "ishares-us-treasury-bond-etf",
+    "href": "/us/products/239468/ishares-us-treasury-bond-etf"
+  },
+  "ICF": {
+    "product_id": "239482",
+    "slug": "ishares-cohen-steers-reit-etf",
+    "href": "/us/products/239482/ishares-cohen-steers-reit-etf"
+  },
+  "IDV": {
+    "product_id": "239499",
+    "slug": "ishares-international-select-dividend-etf",
+    "href": "/us/products/239499/ishares-international-select-dividend-etf"
+  },
+  "DVY": {
+    "product_id": "239500",
+    "slug": "ishares-select-dividend-etf",
+    "href": "/us/products/239500/ishares-select-dividend-etf"
+  },
+  "IYT": {
+    "product_id": "239501",
+    "slug": "ishares-transportation-average-etf",
+    "href": "/us/products/239501/ishares-transportation-average-etf"
+  },
+  "ITA": {
+    "product_id": "239502",
+    "slug": "ishares-us-aerospace-defense-etf",
+    "href": "/us/products/239502/ishares-us-aerospace-defense-etf"
+  },
+  "IYM": {
+    "product_id": "239503",
+    "slug": "ishares-us-basic-materials-etf",
+    "href": "/us/products/239503/ishares-us-basic-materials-etf"
+  },
+  "IAI": {
+    "product_id": "239504",
+    "slug": "ishares-us-brokerdealers-etf",
+    "href": "/us/products/239504/ishares-us-brokerdealers-etf"
+  },
+  "IYK": {
+    "product_id": "239505",
+    "slug": "ishares-us-consumer-staples-etf",
+    "href": "/us/products/239505/ishares-us-consumer-staples-etf"
+  },
+  "IYC": {
+    "product_id": "239506",
+    "slug": "ishares-us-consumer-discretionary-etf",
+    "href": "/us/products/239506/ishares-us-consumer-discretionary-etf"
+  },
+  "IYE": {
+    "product_id": "239507",
+    "slug": "ishares-us-energy-etf",
+    "href": "/us/products/239507/ishares-us-energy-etf"
+  },
+  "IYF": {
+    "product_id": "239508",
+    "slug": "ishares-us-financials-etf",
+    "href": "/us/products/239508/ishares-us-financials-etf"
+  },
+  "IYG": {
+    "product_id": "239509",
+    "slug": "ishares-us-financial-services-etf",
+    "href": "/us/products/239509/ishares-us-financial-services-etf"
+  },
+  "IHF": {
+    "product_id": "239510",
+    "slug": "ishares-us-healthcare-providers-etf",
+    "href": "/us/products/239510/ishares-us-healthcare-providers-etf"
+  },
+  "IYH": {
+    "product_id": "239511",
+    "slug": "ishares-us-healthcare-etf",
+    "href": "/us/products/239511/ishares-us-healthcare-etf"
+  },
+  "ITB": {
+    "product_id": "239512",
+    "slug": "ishares-us-home-construction-etf",
+    "href": "/us/products/239512/ishares-us-home-construction-etf"
+  },
+  "IYY": {
+    "product_id": "239513",
+    "slug": "ishares-dow-jones-us-etf",
+    "href": "/us/products/239513/ishares-dow-jones-us-etf"
+  },
+  "IYJ": {
+    "product_id": "239514",
+    "slug": "ishares-us-industrials-etf",
+    "href": "/us/products/239514/ishares-us-industrials-etf"
+  },
+  "IAK": {
+    "product_id": "239515",
+    "slug": "ishares-us-insurance-etf",
+    "href": "/us/products/239515/ishares-us-insurance-etf"
+  },
+  "IHI": {
+    "product_id": "239516",
+    "slug": "ishares-us-medical-devices-etf",
+    "href": "/us/products/239516/ishares-us-medical-devices-etf"
+  },
+  "IEO": {
+    "product_id": "239517",
+    "slug": "ishares-us-oil-gas-exploration-production-etf",
+    "href": "/us/products/239517/ishares-us-oil-gas-exploration-production-etf"
+  },
+  "IEZ": {
+    "product_id": "239518",
+    "slug": "ishares-us-oil-equipment-services-etf",
+    "href": "/us/products/239518/ishares-us-oil-equipment-services-etf"
+  },
+  "IHE": {
+    "product_id": "239519",
+    "slug": "ishares-us-pharmaceuticals-etf",
+    "href": "/us/products/239519/ishares-us-pharmaceuticals-etf"
+  },
+  "IYR": {
+    "product_id": "239520",
+    "slug": "ishares-us-real-estate-etf",
+    "href": "/us/products/239520/ishares-us-real-estate-etf"
+  },
+  "IAT": {
+    "product_id": "239521",
+    "slug": "ishares-us-regional-banks-etf",
+    "href": "/us/products/239521/ishares-us-regional-banks-etf"
+  },
+  "IYW": {
+    "product_id": "239522",
+    "slug": "ishares-us-technology-etf",
+    "href": "/us/products/239522/ishares-us-technology-etf"
+  },
+  "IYZ": {
+    "product_id": "239523",
+    "slug": "ishares-us-telecommunications-etf",
+    "href": "/us/products/239523/ishares-us-telecommunications-etf"
+  },
+  "IDU": {
+    "product_id": "239524",
+    "slug": "ishares-us-utilities-etf",
+    "href": "/us/products/239524/ishares-us-utilities-etf"
+  },
+  "CEMB": {
+    "product_id": "239525",
+    "slug": "ishares-emerging-markets-corporate-bond-etf",
+    "href": "/us/products/239525/ishares-emerging-markets-corporate-bond-etf"
+  },
+  "DVYE": {
+    "product_id": "239526",
+    "slug": "ishares-emerging-markets-dividend-etf",
+    "href": "/us/products/239526/ishares-emerging-markets-dividend-etf"
+  },
+  "EMHY": {
+    "product_id": "239527",
+    "slug": "ishares-emerging-markets-high-yield-bond-etf",
+    "href": "/us/products/239527/ishares-emerging-markets-high-yield-bond-etf"
+  },
+  "LEMB": {
+    "product_id": "239528",
+    "slug": "ishares-emerging-markets-local-currency-bond-etf",
+    "href": "/us/products/239528/ishares-emerging-markets-local-currency-bond-etf"
+  },
+  "FLOT": {
+    "product_id": "239534",
+    "slug": "ishares-floating-rate-bond-etf",
+    "href": "/us/products/239534/ishares-floating-rate-bond-etf"
+  },
+  "FXI": {
+    "product_id": "239536",
+    "slug": "ishares-china-largecap-etf",
+    "href": "/us/products/239536/ishares-china-largecap-etf"
+  },
+  "IEUS": {
+    "product_id": "239537",
+    "slug": "ishares-developed-smallcap-ex-north-america-etf",
+    "href": "/us/products/239537/ishares-developed-smallcap-ex-north-america-etf"
+  },
+  "IFGL": {
+    "product_id": "239540",
+    "slug": "ishares-international-developed-real-estate-etf",
+    "href": "/us/products/239540/ishares-international-developed-real-estate-etf"
+  },
+  "REM": {
+    "product_id": "239543",
+    "slug": "ishares-mortgage-real-estate-capped-etf",
+    "href": "/us/products/239543/ishares-mortgage-real-estate-capped-etf"
+  },
+  "USRT": {
+    "product_id": "239544",
+    "slug": "ishares-real-estate-50-etf",
+    "href": "/us/products/239544/ishares-real-estate-50-etf"
+  },
+  "REZ": {
+    "product_id": "239545",
+    "slug": "ishares-residential-real-estate-capped-etf",
+    "href": "/us/products/239545/ishares-residential-real-estate-capped-etf"
+  },
+  "EUHY": {
+    "product_id": "239550",
+    "slug": "ishares-global-ex-usd-high-yield-corporate-bond-etf",
+    "href": "/us/products/239550/ishares-global-ex-usd-high-yield-corporate-bond-etf"
+  },
+  "GHYG": {
+    "product_id": "239551",
+    "slug": "ishares-global-high-yield-corporate-bond-etf",
+    "href": "/us/products/239551/ishares-global-high-yield-corporate-bond-etf"
+  },
+  "IAU": {
+    "product_id": "239561",
+    "slug": "ishares-gold-trust-fund",
+    "href": "/us/products/239561/ishares-gold-trust-fund"
+  },
+  "HDV": {
+    "product_id": "239563",
+    "slug": "ishares-high-dividend-etf",
+    "href": "/us/products/239563/ishares-high-dividend-etf"
+  },
+  "HYG": {
+    "product_id": "239565",
+    "slug": "ishares-iboxx-high-yield-corporate-bond-etf",
+    "href": "/us/products/239565/ishares-iboxx-high-yield-corporate-bond-etf"
+  },
+  "LQD": {
+    "product_id": "239566",
+    "slug": "ishares-iboxx-investment-grade-corporate-bond-etf",
+    "href": "/us/products/239566/ishares-iboxx-investment-grade-corporate-bond-etf"
+  },
+  "EMB": {
+    "product_id": "239572",
+    "slug": "ishares-jp-morgan-usd-emerging-markets-bond-etf",
+    "href": "/us/products/239572/ishares-jp-morgan-usd-emerging-markets-bond-etf"
+  },
+  "ILCB": {
+    "product_id": "239579",
+    "slug": "ishares-morningstar-largecap-etf",
+    "href": "/us/products/239579/ishares-morningstar-largecap-etf"
+  },
+  "ILCG": {
+    "product_id": "239580",
+    "slug": "ishares-morningstar-largecap-growth-etf",
+    "href": "/us/products/239580/ishares-morningstar-largecap-growth-etf"
+  },
+  "ILCV": {
+    "product_id": "239581",
+    "slug": "ishares-morningstar-largecap-value-etf",
+    "href": "/us/products/239581/ishares-morningstar-largecap-value-etf"
+  },
+  "IMCB": {
+    "product_id": "239582",
+    "slug": "ishares-morningstar-midcap-etf",
+    "href": "/us/products/239582/ishares-morningstar-midcap-etf"
+  },
+  "IMCG": {
+    "product_id": "239583",
+    "slug": "ishares-morningstar-midcap-growth-etf",
+    "href": "/us/products/239583/ishares-morningstar-midcap-growth-etf"
+  },
+  "IMCV": {
+    "product_id": "239584",
+    "slug": "ishares-morningstar-midcap-value-etf",
+    "href": "/us/products/239584/ishares-morningstar-midcap-value-etf"
+  },
+  "IYLD": {
+    "product_id": "239585",
+    "slug": "ishares-morningstar-multiasset-income-etf",
+    "href": "/us/products/239585/ishares-morningstar-multiasset-income-etf"
+  },
+  "ISCB": {
+    "product_id": "239586",
+    "slug": "ishares-morningstar-smallcap-etf",
+    "href": "/us/products/239586/ishares-morningstar-smallcap-etf"
+  },
+  "ISCG": {
+    "product_id": "239587",
+    "slug": "ishares-morningstar-smallcap-growth-etf",
+    "href": "/us/products/239587/ishares-morningstar-smallcap-growth-etf"
+  },
+  "ISCV": {
+    "product_id": "239588",
+    "slug": "ishares-morningstar-smallcap-value-etf",
+    "href": "/us/products/239588/ishares-morningstar-smallcap-value-etf"
+  },
+  "ACWX": {
+    "product_id": "239594",
+    "slug": "ishares-msci-acwi-ex-us-etf",
+    "href": "/us/products/239594/ishares-msci-acwi-ex-us-etf"
+  },
+  "ACWI": {
+    "product_id": "239600",
+    "slug": "ishares-msci-acwi-etf",
+    "href": "/us/products/239600/ishares-msci-acwi-etf"
+  },
+  "AAXJ": {
+    "product_id": "239601",
+    "slug": "ishares-msci-all-country-asia-ex-japan-etf",
+    "href": "/us/products/239601/ishares-msci-all-country-asia-ex-japan-etf"
+  },
+  "ACWV": {
+    "product_id": "239605",
+    "slug": "ishares-msci-all-country-world-minimum-volatility-etf",
+    "href": "/us/products/239605/ishares-msci-all-country-world-minimum-volatility-etf"
+  },
+  "EPU": {
+    "product_id": "239606",
+    "slug": "ishares-msci-all-peru-capped-etf",
+    "href": "/us/products/239606/ishares-msci-all-peru-capped-etf"
+  },
+  "EWA": {
+    "product_id": "239607",
+    "slug": "ishares-msci-australia-etf",
+    "href": "/us/products/239607/ishares-msci-australia-etf"
+  },
+  "EWO": {
+    "product_id": "239609",
+    "slug": "ishares-msci-austria-capped-etf",
+    "href": "/us/products/239609/ishares-msci-austria-capped-etf"
+  },
+  "EWK": {
+    "product_id": "239610",
+    "slug": "ishares-msci-belgium-capped-etf",
+    "href": "/us/products/239610/ishares-msci-belgium-capped-etf"
+  },
+  "EWZ": {
+    "product_id": "239612",
+    "slug": "ishares-msci-brazil-capped-etf",
+    "href": "/us/products/239612/ishares-msci-brazil-capped-etf"
+  },
+  "EWZS": {
+    "product_id": "239613",
+    "slug": "ishares-msci-brazil-smallcap-etf",
+    "href": "/us/products/239613/ishares-msci-brazil-smallcap-etf"
+  },
+  "BKF": {
+    "product_id": "239614",
+    "slug": "ishares-msci-bric-etf",
+    "href": "/us/products/239614/ishares-msci-bric-etf"
+  },
+  "EWC": {
+    "product_id": "239615",
+    "slug": "ishares-msci-canada-etf",
+    "href": "/us/products/239615/ishares-msci-canada-etf"
+  },
+  "ECH": {
+    "product_id": "239618",
+    "slug": "ishares-msci-chile-capped-etf",
+    "href": "/us/products/239618/ishares-msci-chile-capped-etf"
+  },
+  "MCHI": {
+    "product_id": "239619",
+    "slug": "ishares-msci-china-etf",
+    "href": "/us/products/239619/ishares-msci-china-etf"
+  },
+  "ECNS": {
+    "product_id": "239620",
+    "slug": "ishares-msci-china-smallcap-etf",
+    "href": "/us/products/239620/ishares-msci-china-smallcap-etf"
+  },
+  "EDEN": {
+    "product_id": "239621",
+    "slug": "ishares-msci-denmark-capped-etf",
+    "href": "/us/products/239621/ishares-msci-denmark-capped-etf"
+  },
+  "EFG": {
+    "product_id": "239622",
+    "slug": "ishares-msci-eafe-growth-etf",
+    "href": "/us/products/239622/ishares-msci-eafe-growth-etf"
+  },
+  "EFA": {
+    "product_id": "239623",
+    "slug": "ishares-msci-eafe-etf",
+    "href": "/us/products/239623/ishares-msci-eafe-etf"
+  },
+  "EFAV": {
+    "product_id": "239626",
+    "slug": "ishares-msci-eafe-minimum-volatility-etf",
+    "href": "/us/products/239626/ishares-msci-eafe-minimum-volatility-etf"
+  },
+  "SCZ": {
+    "product_id": "239627",
+    "slug": "ishares-msci-eafe-smallcap-etf",
+    "href": "/us/products/239627/ishares-msci-eafe-smallcap-etf"
+  },
+  "EFV": {
+    "product_id": "239628",
+    "slug": "ishares-msci-eafe-value-etf",
+    "href": "/us/products/239628/ishares-msci-eafe-value-etf"
+  },
+  "EEMA": {
+    "product_id": "239629",
+    "slug": "ishares-msci-emerging-markets-asia-etf",
+    "href": "/us/products/239629/ishares-msci-emerging-markets-asia-etf"
+  },
+  "EEM": {
+    "product_id": "239637",
+    "slug": "ishares-msci-emerging-markets-etf",
+    "href": "/us/products/239637/ishares-msci-emerging-markets-etf"
+  },
+  "EEMV": {
+    "product_id": "239641",
+    "slug": "ishares-msci-emerging-markets-minimum-volatility-etf",
+    "href": "/us/products/239641/ishares-msci-emerging-markets-minimum-volatility-etf"
+  },
+  "EEMS": {
+    "product_id": "239642",
+    "slug": "ishares-msci-emerging-markets-smallcap-etf",
+    "href": "/us/products/239642/ishares-msci-emerging-markets-smallcap-etf"
+  },
+  "EZU": {
+    "product_id": "239644",
+    "slug": "ishares-msci-emu-etf",
+    "href": "/us/products/239644/ishares-msci-emu-etf"
+  },
+  "EUFN": {
+    "product_id": "239645",
+    "slug": "ishares-msci-europe-financials-etf",
+    "href": "/us/products/239645/ishares-msci-europe-financials-etf"
+  },
+  "EFNL": {
+    "product_id": "239647",
+    "slug": "ishares-msci-finland-capped-etf",
+    "href": "/us/products/239647/ishares-msci-finland-capped-etf"
+  },
+  "EWQ": {
+    "product_id": "239648",
+    "slug": "ishares-msci-france-etf",
+    "href": "/us/products/239648/ishares-msci-france-etf"
+  },
+  "EWG": {
+    "product_id": "239650",
+    "slug": "ishares-msci-germany-etf",
+    "href": "/us/products/239650/ishares-msci-germany-etf"
+  },
+  "VEGI": {
+    "product_id": "239652",
+    "slug": "ishares-msci-global-agriculture-producers-etf",
+    "href": "/us/products/239652/ishares-msci-global-agriculture-producers-etf"
+  },
+  "POWR": {
+    "product_id": "239653",
+    "slug": "ishares-msci-global-energy-producers-etf",
+    "href": "/us/products/239653/ishares-msci-global-energy-producers-etf"
+  },
+  "RING": {
+    "product_id": "239654",
+    "slug": "ishares-msci-global-gold-miners-etf",
+    "href": "/us/products/239654/ishares-msci-global-gold-miners-etf"
+  },
+  "PICK": {
+    "product_id": "239655",
+    "slug": "ishares-msci-global-metals-mining-producers-etf",
+    "href": "/us/products/239655/ishares-msci-global-metals-mining-producers-etf"
+  },
+  "SLVP": {
+    "product_id": "239656",
+    "slug": "ishares-msci-global-silver-miners-etf",
+    "href": "/us/products/239656/ishares-msci-global-silver-miners-etf"
+  },
+  "EWH": {
+    "product_id": "239657",
+    "slug": "ishares-msci-hong-kong-etf",
+    "href": "/us/products/239657/ishares-msci-hong-kong-etf"
+  },
+  "INDA": {
+    "product_id": "239659",
+    "slug": "ishares-msci-india-etf",
+    "href": "/us/products/239659/ishares-msci-india-etf"
+  },
+  "SMIN": {
+    "product_id": "239660",
+    "slug": "ishares-msci-india-smallcap-etf",
+    "href": "/us/products/239660/ishares-msci-india-smallcap-etf"
+  },
+  "EIDO": {
+    "product_id": "239661",
+    "slug": "ishares-msci-indonesia-etf",
+    "href": "/us/products/239661/ishares-msci-indonesia-etf"
+  },
+  "EIRL": {
+    "product_id": "239662",
+    "slug": "ishares-msci-ireland-capped-etf",
+    "href": "/us/products/239662/ishares-msci-ireland-capped-etf"
+  },
+  "EIS": {
+    "product_id": "239663",
+    "slug": "ishares-msci-israel-capped-etf",
+    "href": "/us/products/239663/ishares-msci-israel-capped-etf"
+  },
+  "EWI": {
+    "product_id": "239664",
+    "slug": "ishares-msci-italy-capped-etf",
+    "href": "/us/products/239664/ishares-msci-italy-capped-etf"
+  },
+  "EWJ": {
+    "product_id": "239665",
+    "slug": "ishares-msci-japan-etf",
+    "href": "/us/products/239665/ishares-msci-japan-etf"
+  },
+  "SCJ": {
+    "product_id": "239666",
+    "slug": "ishares-msci-japan-smallcap-etf",
+    "href": "/us/products/239666/ishares-msci-japan-smallcap-etf"
+  },
+  "DSI": {
+    "product_id": "239667",
+    "slug": "ishares-msci-kld-400-social-etf",
+    "href": "/us/products/239667/ishares-msci-kld-400-social-etf"
+  },
+  "TOK": {
+    "product_id": "239668",
+    "slug": "ishares-msci-kokusai-etf",
+    "href": "/us/products/239668/ishares-msci-kokusai-etf"
+  },
+  "EWM": {
+    "product_id": "239669",
+    "slug": "ishares-msci-malaysia-etf",
+    "href": "/us/products/239669/ishares-msci-malaysia-etf"
+  },
+  "EWW": {
+    "product_id": "239670",
+    "slug": "ishares-msci-mexico-capped-etf",
+    "href": "/us/products/239670/ishares-msci-mexico-capped-etf"
+  },
+  "EWN": {
+    "product_id": "239671",
+    "slug": "ishares-msci-netherlands-etf",
+    "href": "/us/products/239671/ishares-msci-netherlands-etf"
+  },
+  "ENZL": {
+    "product_id": "239672",
+    "slug": "ishares-msci-new-zealand-capped-etf",
+    "href": "/us/products/239672/ishares-msci-new-zealand-capped-etf"
+  },
+  "ENOR": {
+    "product_id": "239673",
+    "slug": "ishares-msci-norway-capped-etf",
+    "href": "/us/products/239673/ishares-msci-norway-capped-etf"
+  },
+  "EPP": {
+    "product_id": "239674",
+    "slug": "ishares-msci-pacific-ex-japan-etf",
+    "href": "/us/products/239674/ishares-msci-pacific-ex-japan-etf"
+  },
+  "EPHE": {
+    "product_id": "239675",
+    "slug": "ishares-msci-philippines-etf",
+    "href": "/us/products/239675/ishares-msci-philippines-etf"
+  },
+  "EPOL": {
+    "product_id": "239676",
+    "slug": "ishares-msci-poland-capped-etf",
+    "href": "/us/products/239676/ishares-msci-poland-capped-etf"
+  },
+  "EWS": {
+    "product_id": "239678",
+    "slug": "ishares-msci-singapore-capped-etf",
+    "href": "/us/products/239678/ishares-msci-singapore-capped-etf"
+  },
+  "EZA": {
+    "product_id": "239680",
+    "slug": "ishares-msci-south-africa-etf",
+    "href": "/us/products/239680/ishares-msci-south-africa-etf"
+  },
+  "EWY": {
+    "product_id": "239681",
+    "slug": "ishares-msci-south-korea-capped-etf",
+    "href": "/us/products/239681/ishares-msci-south-korea-capped-etf"
+  },
+  "EWP": {
+    "product_id": "239683",
+    "slug": "ishares-msci-spain-capped-etf",
+    "href": "/us/products/239683/ishares-msci-spain-capped-etf"
+  },
+  "EWD": {
+    "product_id": "239684",
+    "slug": "ishares-msci-sweden-etf",
+    "href": "/us/products/239684/ishares-msci-sweden-etf"
+  },
+  "EWL": {
+    "product_id": "239685",
+    "slug": "ishares-msci-switzerland-capped-etf",
+    "href": "/us/products/239685/ishares-msci-switzerland-capped-etf"
+  },
+  "EWT": {
+    "product_id": "239686",
+    "slug": "ishares-msci-taiwan-etf",
+    "href": "/us/products/239686/ishares-msci-taiwan-etf"
+  },
+  "THD": {
+    "product_id": "239688",
+    "slug": "ishares-msci-thailand-capped-etf",
+    "href": "/us/products/239688/ishares-msci-thailand-capped-etf"
+  },
+  "TUR": {
+    "product_id": "239689",
+    "slug": "ishares-msci-turkey-etf",
+    "href": "/us/products/239689/ishares-msci-turkey-etf"
+  },
+  "EWU": {
+    "product_id": "239690",
+    "slug": "ishares-msci-united-kingdom-etf",
+    "href": "/us/products/239690/ishares-msci-united-kingdom-etf"
+  },
+  "EWUS": {
+    "product_id": "239691",
+    "slug": "ishares-msci-united-kingdom-smallcap-etf",
+    "href": "/us/products/239691/ishares-msci-united-kingdom-smallcap-etf"
+  },
+  "SUSA": {
+    "product_id": "239692",
+    "slug": "ishares-msci-usa-esg-select-etf",
+    "href": "/us/products/239692/ishares-msci-usa-esg-select-etf"
+  },
+  "EUSA": {
+    "product_id": "239693",
+    "slug": "ishares-msci-usa-etf",
+    "href": "/us/products/239693/ishares-msci-usa-etf"
+  },
+  "USMV": {
+    "product_id": "239695",
+    "slug": "ishares-msci-usa-minimum-volatility-etf",
+    "href": "/us/products/239695/ishares-msci-usa-minimum-volatility-etf"
+  },
+  "URTH": {
+    "product_id": "239696",
+    "slug": "ishares-msci-world-etf",
+    "href": "/us/products/239696/ishares-msci-world-etf"
+  },
+  "IBB": {
+    "product_id": "239699",
+    "slug": "ishares-biotechnology-etf",
+    "href": "/us/products/239699/ishares-biotechnology-etf"
+  },
+  "SOXX": {
+    "product_id": "239705",
+    "slug": "ishares-semiconductor-etf",
+    "href": "/us/products/239705/ishares-semiconductor-etf"
+  },
+  "IWF": {
+    "product_id": "239706",
+    "slug": "ishares-russell-1000-growth-etf",
+    "href": "/us/products/239706/ishares-russell-1000-growth-etf"
+  },
+  "IWB": {
+    "product_id": "239707",
+    "slug": "ishares-russell-1000-etf",
+    "href": "/us/products/239707/ishares-russell-1000-etf"
+  },
+  "IWD": {
+    "product_id": "239708",
+    "slug": "ishares-russell-1000-value-etf",
+    "href": "/us/products/239708/ishares-russell-1000-value-etf"
+  },
+  "IWO": {
+    "product_id": "239709",
+    "slug": "ishares-russell-2000-growth-etf",
+    "href": "/us/products/239709/ishares-russell-2000-growth-etf"
+  },
+  "IWM": {
+    "product_id": "239710",
+    "slug": "ishares-russell-2000-etf",
+    "href": "/us/products/239710/ishares-russell-2000-etf"
+  },
+  "IWN": {
+    "product_id": "239712",
+    "slug": "ishares-russell-2000-value-etf",
+    "href": "/us/products/239712/ishares-russell-2000-value-etf"
+  },
+  "IUSG": {
+    "product_id": "239713",
+    "slug": "ishares-core-sp-us-growth-etf",
+    "href": "/us/products/239713/ishares-core-sp-us-growth-etf"
+  },
+  "IWV": {
+    "product_id": "239714",
+    "slug": "ishares-russell-3000-etf",
+    "href": "/us/products/239714/ishares-russell-3000-etf"
+  },
+  "IUSV": {
+    "product_id": "239715",
+    "slug": "ishares-core-sp-us-value-etf",
+    "href": "/us/products/239715/ishares-core-sp-us-value-etf"
+  },
+  "IWC": {
+    "product_id": "239716",
+    "slug": "ishares-microcap-etf",
+    "href": "/us/products/239716/ishares-microcap-etf"
+  },
+  "IWP": {
+    "product_id": "239717",
+    "slug": "ishares-russell-midcap-growth-etf",
+    "href": "/us/products/239717/ishares-russell-midcap-growth-etf"
+  },
+  "IWR": {
+    "product_id": "239718",
+    "slug": "ishares-russell-midcap-etf",
+    "href": "/us/products/239718/ishares-russell-midcap-etf"
+  },
+  "IWS": {
+    "product_id": "239719",
+    "slug": "ishares-russell-midcap-value-etf",
+    "href": "/us/products/239719/ishares-russell-midcap-value-etf"
+  },
+  "IWY": {
+    "product_id": "239720",
+    "slug": "ishares-russell-top-200-growth-etf",
+    "href": "/us/products/239720/ishares-russell-top-200-growth-etf"
+  },
+  "IWL": {
+    "product_id": "239721",
+    "slug": "ishares-russell-top-200-etf",
+    "href": "/us/products/239721/ishares-russell-top-200-etf"
+  },
+  "IWX": {
+    "product_id": "239722",
+    "slug": "ishares-russell-top-200-value-etf",
+    "href": "/us/products/239722/ishares-russell-top-200-value-etf"
+  },
+  "OEF": {
+    "product_id": "239723",
+    "slug": "ishares-sp-100-etf",
+    "href": "/us/products/239723/ishares-sp-100-etf"
+  },
+  "ITOT": {
+    "product_id": "239724",
+    "slug": "ishares-core-sp-total-us-stock-market-etf",
+    "href": "/us/products/239724/ishares-core-sp-total-us-stock-market-etf"
+  },
+  "IVW": {
+    "product_id": "239725",
+    "slug": "ishares-sp-500-growth-etf",
+    "href": "/us/products/239725/ishares-sp-500-growth-etf"
+  },
+  "IVV": {
+    "product_id": "239726",
+    "slug": "ishares-core-sp-500-etf",
+    "href": "/us/products/239726/ishares-core-sp-500-etf"
+  },
+  "IVE": {
+    "product_id": "239728",
+    "slug": "ishares-sp-500-value-etf",
+    "href": "/us/products/239728/ishares-sp-500-value-etf"
+  },
+  "AOA": {
+    "product_id": "239729",
+    "slug": "ishares-aggressive-allocation-etf",
+    "href": "/us/products/239729/ishares-aggressive-allocation-etf"
+  },
+  "AIA": {
+    "product_id": "239730",
+    "slug": "ishares-asia-50-etf",
+    "href": "/us/products/239730/ishares-asia-50-etf"
+  },
+  "CMF": {
+    "product_id": "239731",
+    "slug": "ishares-california-amtfree-muni-bond-etf",
+    "href": "/us/products/239731/ishares-california-amtfree-muni-bond-etf"
+  },
+  "AOK": {
+    "product_id": "239733",
+    "slug": "ishares-conservative-allocation-etf",
+    "href": "/us/products/239733/ishares-conservative-allocation-etf"
+  },
+  "EMIF": {
+    "product_id": "239735",
+    "slug": "ishares-emerging-markets-infrastructure-etf",
+    "href": "/us/products/239735/ishares-emerging-markets-infrastructure-etf"
+  },
+  "IEV": {
+    "product_id": "239736",
+    "slug": "ishares-europe-etf",
+    "href": "/us/products/239736/ishares-europe-etf"
+  },
+  "IOO": {
+    "product_id": "239737",
+    "slug": "ishares-global-100-etf",
+    "href": "/us/products/239737/ishares-global-100-etf"
+  },
+  "ICLN": {
+    "product_id": "239738",
+    "slug": "ishares-global-clean-energy-etf",
+    "href": "/us/products/239738/ishares-global-clean-energy-etf"
+  },
+  "RXI": {
+    "product_id": "239739",
+    "slug": "ishares-global-consumer-discretionary-etf",
+    "href": "/us/products/239739/ishares-global-consumer-discretionary-etf"
+  },
+  "KXI": {
+    "product_id": "239740",
+    "slug": "ishares-global-consumer-staples-etf",
+    "href": "/us/products/239740/ishares-global-consumer-staples-etf"
+  },
+  "IXC": {
+    "product_id": "239741",
+    "slug": "ishares-global-energy-etf",
+    "href": "/us/products/239741/ishares-global-energy-etf"
+  },
+  "IXG": {
+    "product_id": "239742",
+    "slug": "ishares-global-financials-etf",
+    "href": "/us/products/239742/ishares-global-financials-etf"
+  },
+  "IXJ": {
+    "product_id": "239744",
+    "slug": "ishares-global-healthcare-etf",
+    "href": "/us/products/239744/ishares-global-healthcare-etf"
+  },
+  "EXI": {
+    "product_id": "239745",
+    "slug": "ishares-global-industrials-etf",
+    "href": "/us/products/239745/ishares-global-industrials-etf"
+  },
+  "IGF": {
+    "product_id": "239746",
+    "slug": "ishares-global-infrastructure-etf",
+    "href": "/us/products/239746/ishares-global-infrastructure-etf"
+  },
+  "MXI": {
+    "product_id": "239748",
+    "slug": "ishares-global-materials-etf",
+    "href": "/us/products/239748/ishares-global-materials-etf"
+  },
+  "IXN": {
+    "product_id": "239750",
+    "slug": "ishares-global-tech-etf",
+    "href": "/us/products/239750/ishares-global-tech-etf"
+  },
+  "IXP": {
+    "product_id": "239751",
+    "slug": "ishares-global-telecom-etf",
+    "href": "/us/products/239751/ishares-global-telecom-etf"
+  },
+  "WOOD": {
+    "product_id": "239752",
+    "slug": "ishares-global-timber-forestry-etf",
+    "href": "/us/products/239752/ishares-global-timber-forestry-etf"
+  },
+  "JXI": {
+    "product_id": "239753",
+    "slug": "ishares-global-utilities-etf",
+    "href": "/us/products/239753/ishares-global-utilities-etf"
+  },
+  "AOR": {
+    "product_id": "239756",
+    "slug": "ishares-growth-allocation-etf",
+    "href": "/us/products/239756/ishares-growth-allocation-etf"
+  },
+  "GSG": {
+    "product_id": "239757",
+    "slug": "ishares-sp-gsci-commodityindexed-trust-fund",
+    "href": "/us/products/239757/ishares-sp-gsci-commodityindexed-trust-fund"
+  },
+  "INDY": {
+    "product_id": "239758",
+    "slug": "ishares-india-50-etf",
+    "href": "/us/products/239758/ishares-india-50-etf"
+  },
+  "ILF": {
+    "product_id": "239761",
+    "slug": "ishares-latin-america-40-etf",
+    "href": "/us/products/239761/ishares-latin-america-40-etf"
+  },
+  "IJK": {
+    "product_id": "239762",
+    "slug": "ishares-sp-midcap-400-growth-etf",
+    "href": "/us/products/239762/ishares-sp-midcap-400-growth-etf"
+  },
+  "IJH": {
+    "product_id": "239763",
+    "slug": "ishares-core-sp-midcap-etf",
+    "href": "/us/products/239763/ishares-core-sp-midcap-etf"
+  },
+  "IJJ": {
+    "product_id": "239764",
+    "slug": "ishares-sp-midcap-400-value-etf",
+    "href": "/us/products/239764/ishares-sp-midcap-400-value-etf"
+  },
+  "AOM": {
+    "product_id": "239765",
+    "slug": "ishares-moderate-allocation-etf",
+    "href": "/us/products/239765/ishares-moderate-allocation-etf"
+  },
+  "MUB": {
+    "product_id": "239766",
+    "slug": "ishares-national-amtfree-muni-bond-etf",
+    "href": "/us/products/239766/ishares-national-amtfree-muni-bond-etf"
+  },
+  "NYF": {
+    "product_id": "239767",
+    "slug": "ishares-new-york-amtfree-muni-bond-etf",
+    "href": "/us/products/239767/ishares-new-york-amtfree-muni-bond-etf"
+  },
+  "IGE": {
+    "product_id": "239768",
+    "slug": "ishares-north-american-natural-resources-etf",
+    "href": "/us/products/239768/ishares-north-american-natural-resources-etf"
+  },
+  "IGM": {
+    "product_id": "239769",
+    "slug": "ishares-north-american-tech-etf",
+    "href": "/us/products/239769/ishares-north-american-tech-etf"
+  },
+  "IDGT": {
+    "product_id": "239770",
+    "slug": "ishares-north-american-techmultimedia-networking-etf",
+    "href": "/us/products/239770/ishares-north-american-techmultimedia-networking-etf"
+  },
+  "IGV": {
+    "product_id": "239771",
+    "slug": "ishares-north-american-techsoftware-etf",
+    "href": "/us/products/239771/ishares-north-american-techsoftware-etf"
+  },
+  "SUB": {
+    "product_id": "239772",
+    "slug": "ishares-shortterm-national-amtfree-muni-bond-etf",
+    "href": "/us/products/239772/ishares-shortterm-national-amtfree-muni-bond-etf"
+  },
+  "IJT": {
+    "product_id": "239773",
+    "slug": "ishares-sp-smallcap-600-growth-etf",
+    "href": "/us/products/239773/ishares-sp-smallcap-600-growth-etf"
+  },
+  "IJR": {
+    "product_id": "239774",
+    "slug": "ishares-core-sp-smallcap-etf",
+    "href": "/us/products/239774/ishares-core-sp-smallcap-etf"
+  },
+  "IJS": {
+    "product_id": "239775",
+    "slug": "ishares-sp-smallcap-600-value-etf",
+    "href": "/us/products/239775/ishares-sp-smallcap-600-value-etf"
+  },
+  "PFF": {
+    "product_id": "239826",
+    "slug": "ishares-us-preferred-stock-etf",
+    "href": "/us/products/239826/ishares-us-preferred-stock-etf"
+  },
+  "ISHG": {
+    "product_id": "239829",
+    "slug": "ishares-13-year-international-treasury-bond-etf",
+    "href": "/us/products/239829/ishares-13-year-international-treasury-bond-etf"
+  },
+  "IGOV": {
+    "product_id": "239830",
+    "slug": "ishares-international-treasury-bond-etf",
+    "href": "/us/products/239830/ishares-international-treasury-bond-etf"
+  },
+  "JPXN": {
+    "product_id": "239831",
+    "slug": "ishares-japan-largecap-etf",
+    "href": "/us/products/239831/ishares-japan-largecap-etf"
+  },
+  "NEAR": {
+    "product_id": "239854",
+    "slug": "ishares-short-maturity-bond-etf",
+    "href": "/us/products/239854/ishares-short-maturity-bond-etf"
+  },
+  "SLV": {
+    "product_id": "239855",
+    "slug": "ishares-silver-trust-fund",
+    "href": "/us/products/239855/ishares-silver-trust-fund"
+  },
+  "IXUS": {
+    "product_id": "244048",
+    "slug": "ishares-core-msci-total-international-stock-etf",
+    "href": "/us/products/244048/ishares-core-msci-total-international-stock-etf"
+  },
+  "IEFA": {
+    "product_id": "244049",
+    "slug": "ishares-core-msci-eafe-etf",
+    "href": "/us/products/244049/ishares-core-msci-eafe-etf"
+  },
+  "IEMG": {
+    "product_id": "244050",
+    "slug": "ishares-core-msci-emerging-markets-etf",
+    "href": "/us/products/244050/ishares-core-msci-emerging-markets-etf"
+  },
+  "ISTB": {
+    "product_id": "244051",
+    "slug": "ishares-core-shortterm-us-bond-etf",
+    "href": "/us/products/244051/ishares-core-shortterm-us-bond-etf"
+  },
+  "SIZE": {
+    "product_id": "251465",
+    "slug": "ishares-msci-usa-size-factor-etf",
+    "href": "/us/products/251465/ishares-msci-usa-size-factor-etf"
+  },
+  "MTUM": {
+    "product_id": "251614",
+    "slug": "ishares-msci-usa-momentum-factor-etf",
+    "href": "/us/products/251614/ishares-msci-usa-momentum-factor-etf"
+  },
+  "VLUE": {
+    "product_id": "251616",
+    "slug": "ishares-msci-usa-value-factor-etf",
+    "href": "/us/products/251616/ishares-msci-usa-value-factor-etf"
+  },
+  "QUAL": {
+    "product_id": "256101",
+    "slug": "ishares-msci-usa-quality-factor-etf",
+    "href": "/us/products/256101/ishares-msci-usa-quality-factor-etf"
+  },
+  "SLQD": {
+    "product_id": "258098",
+    "slug": "ishares-05-year-investment-grade-corporate-bond-etf",
+    "href": "/us/products/258098/ishares-05-year-investment-grade-corporate-bond-etf"
+  },
+  "SHYG": {
+    "product_id": "258100",
+    "slug": "ishares-05-year-high-yield-corporate-bond-etf",
+    "href": "/us/products/258100/ishares-05-year-high-yield-corporate-bond-etf"
+  },
+  "ICSH": {
+    "product_id": "258806",
+    "slug": "ishares-liquidity-income-etf",
+    "href": "/us/products/258806/ishares-liquidity-income-etf"
+  },
+  "HEFA": {
+    "product_id": "259622",
+    "slug": "ishares-currency-hedged-msci-eafe-etf",
+    "href": "/us/products/259622/ishares-currency-hedged-msci-eafe-etf"
+  },
+  "HEWJ": {
+    "product_id": "259624",
+    "slug": "ishares-currency-hedged-msci-japan-etf",
+    "href": "/us/products/259624/ishares-currency-hedged-msci-japan-etf"
+  },
+  "TFLO": {
+    "product_id": "260652",
+    "slug": "ishares-treasury-floating-rate-bond-etf",
+    "href": "/us/products/260652/ishares-treasury-floating-rate-bond-etf"
+  },
+  "BYLD": {
+    "product_id": "264127",
+    "slug": "ishares-yield-optimized-bond-etf",
+    "href": "/us/products/264127/ishares-yield-optimized-bond-etf"
+  },
+  "QAT": {
+    "product_id": "264273",
+    "slug": "ishares-msci-qatar-capped-etf",
+    "href": "/us/products/264273/ishares-msci-qatar-capped-etf"
+  },
+  "UAE": {
+    "product_id": "264275",
+    "slug": "ishares-msci-uae-capped-etf",
+    "href": "/us/products/264275/ishares-msci-uae-capped-etf"
+  },
+  "LQDH": {
+    "product_id": "264542",
+    "slug": "ishares-interest-rate-hedged-corporate-bond-etf",
+    "href": "/us/products/264542/ishares-interest-rate-hedged-corporate-bond-etf"
+  },
+  "HYGH": {
+    "product_id": "264544",
+    "slug": "ishares-interest-rate-hedged-high-yield-bond-etf",
+    "href": "/us/products/264544/ishares-interest-rate-hedged-high-yield-bond-etf"
+  },
+  "IUSB": {
+    "product_id": "264615",
+    "slug": "ishares-core-total-usd-bond-market-etf",
+    "href": "/us/products/264615/ishares-core-total-usd-bond-market-etf"
+  },
+  "IEUR": {
+    "product_id": "264617",
+    "slug": "ishares-core-msci-europe-etf",
+    "href": "/us/products/264617/ishares-core-msci-europe-etf"
+  },
+  "IPAC": {
+    "product_id": "264619",
+    "slug": "ishares-core-msci-pacific-etf",
+    "href": "/us/products/264619/ishares-core-msci-pacific-etf"
+  },
+  "DGRO": {
+    "product_id": "264623",
+    "slug": "ishares-core-dividend-growth-etf",
+    "href": "/us/products/264623/ishares-core-dividend-growth-etf"
+  },
+  "HEEM": {
+    "product_id": "268704",
+    "slug": "ishares-currency-hedged-msci-emerging-markets",
+    "href": "/us/products/268704/ishares-currency-hedged-msci-emerging-markets"
+  },
+  "HEZU": {
+    "product_id": "268708",
+    "slug": "ishares-currency-hedged-msci-emu-etf",
+    "href": "/us/products/268708/ishares-currency-hedged-msci-emu-etf"
+  },
+  "REET": {
+    "product_id": "268752",
+    "slug": "ishares-global-reit-etf",
+    "href": "/us/products/268752/ishares-global-reit-etf"
+  },
+  "COMT": {
+    "product_id": "270319",
+    "slug": "ishares-commodity-etf",
+    "href": "/us/products/270319/ishares-commodity-etf"
+  },
+  "CRBN": {
+    "product_id": "271054",
+    "slug": "ishares-msci-acwi-low-carbon-target-etf",
+    "href": "/us/products/271054/ishares-msci-acwi-low-carbon-target-etf"
+  },
+  "IMTM": {
+    "product_id": "271538",
+    "slug": "ishares-msci-international-developed-momentum-factor-etf",
+    "href": "/us/products/271538/ishares-msci-international-developed-momentum-factor-etf"
+  },
+  "IQLT": {
+    "product_id": "271540",
+    "slug": "ishares-msci-international-developed-quality-factor-etf",
+    "href": "/us/products/271540/ishares-msci-international-developed-quality-factor-etf"
+  },
+  "KSA": {
+    "product_id": "271542",
+    "slug": "ishares-msci-saudi-arabia-capped-etf",
+    "href": "/us/products/271542/ishares-msci-saudi-arabia-capped-etf"
+  },
+  "SYSB": {
+    "product_id": "271544",
+    "slug": "ishares-us-fixed-income-balanced-risk-etf",
+    "href": "/us/products/271544/ishares-us-fixed-income-balanced-risk-etf"
+  },
+  "MEAR": {
+    "product_id": "272112",
+    "slug": "ishares-short-maturity-municipal-bond-etf",
+    "href": "/us/products/272112/ishares-short-maturity-municipal-bond-etf"
+  },
+  "XT": {
+    "product_id": "272532",
+    "slug": "ishares-exponential-technologies-etf",
+    "href": "/us/products/272532/ishares-exponential-technologies-etf"
+  },
+  "ICVT": {
+    "product_id": "272819",
+    "slug": "ishares-convertible-bond-etf",
+    "href": "/us/products/272819/ishares-convertible-bond-etf"
+  },
+  "EMGF": {
+    "product_id": "272820",
+    "slug": "ishares-msci-emerging-multi-factor-etf",
+    "href": "/us/products/272820/ishares-msci-emerging-multi-factor-etf"
+  },
+  "GLOF": {
+    "product_id": "272821",
+    "slug": "ishares-msci-global-multi-factor-etf",
+    "href": "/us/products/272821/ishares-msci-global-multi-factor-etf"
+  },
+  "INTF": {
+    "product_id": "272822",
+    "slug": "ishares-msci-international-multi-factor-etf",
+    "href": "/us/products/272822/ishares-msci-international-multi-factor-etf"
+  },
+  "ISCF": {
+    "product_id": "272823",
+    "slug": "ishares-msci-international-small-cap-multi-factor-etf",
+    "href": "/us/products/272823/ishares-msci-international-small-cap-multi-factor-etf"
+  },
+  "LRGF": {
+    "product_id": "272824",
+    "slug": "ishares-msci-usa-multi-factor-etf",
+    "href": "/us/products/272824/ishares-msci-usa-multi-factor-etf"
+  },
+  "SMLF": {
+    "product_id": "272825",
+    "slug": "ishares-msci-usa-small-cap-multi-factor-etf",
+    "href": "/us/products/272825/ishares-msci-usa-small-cap-multi-factor-etf"
+  },
+  "CNYA": {
+    "product_id": "273318",
+    "slug": "ishares-msci-china-a-etf",
+    "href": "/us/products/273318/ishares-msci-china-a-etf"
+  },
+  "HAWX": {
+    "product_id": "273768",
+    "slug": "ishares-currency-hedged-msci-acwi-ex-us-etf",
+    "href": "/us/products/273768/ishares-currency-hedged-msci-acwi-ex-us-etf"
+  },
+  "HSCZ": {
+    "product_id": "273771",
+    "slug": "ishares-currency-hedged-msci-eafe-small-cap-etf",
+    "href": "/us/products/273771/ishares-currency-hedged-msci-eafe-small-cap-etf"
+  },
+  "IVLU": {
+    "product_id": "275382",
+    "slug": "ishares-msci-international-developed-value-factor-etf",
+    "href": "/us/products/275382/ishares-msci-international-developed-value-factor-etf"
+  },
+  "IGBH": {
+    "product_id": "275397",
+    "slug": "ishares-interest-rate-hedged-10-year-credit-bond-etf",
+    "href": "/us/products/275397/ishares-interest-rate-hedged-10-year-credit-bond-etf"
+  },
+  "IAGG": {
+    "product_id": "279626",
+    "slug": "ishares-international-aggregate-bond-etf",
+    "href": "/us/products/279626/ishares-international-aggregate-bond-etf"
+  },
+  "SDG": {
+    "product_id": "283378",
+    "slug": "ishares-msci-global-sustainable-development-goals-etf",
+    "href": "/us/products/283378/ishares-msci-global-sustainable-development-goals-etf"
+  },
+  "IGRO": {
+    "product_id": "283737",
+    "slug": "ishares-international-dividend-growth-etf",
+    "href": "/us/products/283737/ishares-international-dividend-growth-etf"
+  },
+  "ESGE": {
+    "product_id": "283777",
+    "slug": "ishares-esg-aware-msci-em-etf",
+    "href": "/us/products/283777/ishares-esg-aware-msci-em-etf"
+  },
+  "ESGD": {
+    "product_id": "283778",
+    "slug": "ishares-esg-aware-msci-eafe-etf",
+    "href": "/us/products/283778/ishares-esg-aware-msci-eafe-etf"
+  },
+  "FALN": {
+    "product_id": "283855",
+    "slug": "ishares-fallen-angels-usd-bond-etf",
+    "href": "/us/products/283855/ishares-fallen-angels-usd-bond-etf"
+  },
+  "HYXF": {
+    "product_id": "283857",
+    "slug": "ishares-esg-advanced-high-yield-corporate-bond-etf",
+    "href": "/us/products/283857/ishares-esg-advanced-high-yield-corporate-bond-etf"
+  },
+  "SMMV": {
+    "product_id": "284609",
+    "slug": "ishares-msci-usa-small-cap-min-vol-factor-etf",
+    "href": "/us/products/284609/ishares-msci-usa-small-cap-min-vol-factor-etf"
+  },
+  "IBDR": {
+    "product_id": "285027",
+    "slug": "ishares-ibonds-dec-2026-term-corporate-etf-fund",
+    "href": "/us/products/285027/ishares-ibonds-dec-2026-term-corporate-etf-fund"
+  },
+  "IMTB": {
+    "product_id": "285539",
+    "slug": "ishares-core-5-10-year-usd-bond-etf",
+    "href": "/us/products/285539/ishares-core-5-10-year-usd-bond-etf"
+  },
+  "ESGU": {
+    "product_id": "286007",
+    "slug": "ishares-esg-aware-msci-usa-etf",
+    "href": "/us/products/286007/ishares-esg-aware-msci-usa-etf"
+  },
+  "IDEV": {
+    "product_id": "286762",
+    "slug": "ishares-core-msci-international-developed-markets-etf",
+    "href": "/us/products/286762/ishares-core-msci-international-developed-markets-etf"
+  },
+  "SMMD": {
+    "product_id": "288024",
+    "slug": "ishares-russell-2500-etf",
+    "href": "/us/products/288024/ishares-russell-2500-etf"
+  },
+  "IGEB": {
+    "product_id": "288302",
+    "slug": "ishares-investment-grade-systematic-bond-etf",
+    "href": "/us/products/288302/ishares-investment-grade-systematic-bond-etf"
+  },
+  "HYDB": {
+    "product_id": "288478",
+    "slug": "ishares-high-yield-systematic-bond-etf",
+    "href": "/us/products/288478/ishares-high-yield-systematic-bond-etf"
+  },
+  "SUSC": {
+    "product_id": "288488",
+    "slug": "ishares-esg-aware-usd-corporate-bond-etf",
+    "href": "/us/products/288488/ishares-esg-aware-usd-corporate-bond-etf"
+  },
+  "SUSB": {
+    "product_id": "288490",
+    "slug": "ishares-esg-aware-1-5-year-usd-corporate-bond-etf",
+    "href": "/us/products/288490/ishares-esg-aware-1-5-year-usd-corporate-bond-etf"
+  },
+  "EMXC": {
+    "product_id": "288504",
+    "slug": "ishares-msci-emerging-markets-ex-china-etf",
+    "href": "/us/products/288504/ishares-msci-emerging-markets-ex-china-etf"
+  },
+  "IBDS": {
+    "product_id": "290315",
+    "slug": "ishares-ibonds-dec-2027-term-corporate-etf",
+    "href": "/us/products/290315/ishares-ibonds-dec-2027-term-corporate-etf"
+  },
+  "USHY": {
+    "product_id": "291299",
+    "slug": "ishares-broad-usd-high-yield-corporate-bond-etf",
+    "href": "/us/products/291299/ishares-broad-usd-high-yield-corporate-bond-etf"
+  },
+  "DIVB": {
+    "product_id": "291387",
+    "slug": "ishares-core-dividend-etf",
+    "href": "/us/products/291387/ishares-core-dividend-etf"
+  },
+  "IEDI": {
+    "product_id": "292414",
+    "slug": "ishares-u-s-consumer-focused-etf",
+    "href": "/us/products/292414/ishares-u-s-consumer-focused-etf"
+  },
+  "IETC": {
+    "product_id": "292425",
+    "slug": "ishares-u-s-tech-independence-focused-etf",
+    "href": "/us/products/292425/ishares-u-s-tech-independence-focused-etf"
+  },
+  "CMDY": {
+    "product_id": "292741",
+    "slug": "ishares-bloomberg-roll-select-commodity-strategy-etf",
+    "href": "/us/products/292741/ishares-bloomberg-roll-select-commodity-strategy-etf"
+  },
+  "IFRA": {
+    "product_id": "294315",
+    "slug": "ishares-u-s-infrastructure-etf",
+    "href": "/us/products/294315/ishares-u-s-infrastructure-etf"
+  },
+  "LQDI": {
+    "product_id": "294319",
+    "slug": "ishares-inflation-hedged-corporate-bond-etf",
+    "href": "/us/products/294319/ishares-inflation-hedged-corporate-bond-etf"
+  },
+  "ESML": {
+    "product_id": "296644",
+    "slug": "ishares-esg-aware-msci-usa-small-cap-etf",
+    "href": "/us/products/296644/ishares-esg-aware-msci-usa-small-cap-etf"
+  },
+  "ARTY": {
+    "product_id": "297905",
+    "slug": "ishares-future-ai-tech-etf",
+    "href": "/us/products/297905/ishares-future-ai-tech-etf"
+  },
+  "IBDT": {
+    "product_id": "304570",
+    "slug": "ishares-ibonds-dec-2028-term-corporate-etf",
+    "href": "/us/products/304570/ishares-ibonds-dec-2028-term-corporate-etf"
+  },
+  "EAGG": {
+    "product_id": "305252",
+    "slug": "ishares-esg-aware-u-s-aggregate-bond-etf",
+    "href": "/us/products/305252/ishares-esg-aware-u-s-aggregate-bond-etf"
+  },
+  "HYBB": {
+    "product_id": "305259",
+    "slug": "ishares-bb-rated-corporate-bond-etf",
+    "href": "/us/products/305259/ishares-bb-rated-corporate-bond-etf"
+  },
+  "BGRN": {
+    "product_id": "305296",
+    "slug": "ishares-usd-green-bond-etf",
+    "href": "/us/products/305296/ishares-usd-green-bond-etf"
+  },
+  "IAUM": {
+    "product_id": "306979",
+    "slug": "ishares-gold-trust-micro",
+    "href": "/us/products/306979/ishares-gold-trust-micro"
+  },
+  "EWJV": {
+    "product_id": "307263",
+    "slug": "ishares-msci-japan-value-etf",
+    "href": "/us/products/307263/ishares-msci-japan-value-etf"
+  },
+  "DYNF": {
+    "product_id": "307283",
+    "slug": "ishares-u-s-equity-factor-rotation-active-etf",
+    "href": "/us/products/307283/ishares-u-s-equity-factor-rotation-active-etf"
+  },
+  "IDRV": {
+    "product_id": "307332",
+    "slug": "ishares-self-driving-ev-and-tech-etf",
+    "href": "/us/products/307332/ishares-self-driving-ev-and-tech-etf"
+  },
+  "IHAK": {
+    "product_id": "307352",
+    "slug": "ishares-cybersecurity-and-tech-etf",
+    "href": "/us/products/307352/ishares-cybersecurity-and-tech-etf"
+  },
+  "IBMO": {
+    "product_id": "308047",
+    "slug": "ishares-ibonds-dec-2026-term-muni-bond-etf",
+    "href": "/us/products/308047/ishares-ibonds-dec-2026-term-muni-bond-etf"
+  },
+  "IBMP": {
+    "product_id": "308049",
+    "slug": "ishares-ibonds-dec-2027-term-muni-bond-etf",
+    "href": "/us/products/308049/ishares-ibonds-dec-2027-term-muni-bond-etf"
+  },
+  "IBMQ": {
+    "product_id": "308051",
+    "slug": "ishares-ibonds-dec-2028-term-muni-bond-etf",
+    "href": "/us/products/308051/ishares-ibonds-dec-2028-term-muni-bond-etf"
+  },
+  "SUSL": {
+    "product_id": "308574",
+    "slug": "ishares-esg-msci-usa-leaders-etf",
+    "href": "/us/products/308574/ishares-esg-msci-usa-leaders-etf"
+  },
+  "IDNA": {
+    "product_id": "308878",
+    "slug": "ishares-genomics-immunology-and-healthcare-etf",
+    "href": "/us/products/308878/ishares-genomics-immunology-and-healthcare-etf"
+  },
+  "IBDU": {
+    "product_id": "310035",
+    "slug": "ishares-ibonds-dec-2029-term-corporate-etf",
+    "href": "/us/products/310035/ishares-ibonds-dec-2029-term-corporate-etf"
+  },
+  "TECB": {
+    "product_id": "312046",
+    "slug": "ishares-u-s-tech-breakthrough-multisector-etf",
+    "href": "/us/products/312046/ishares-u-s-tech-breakthrough-multisector-etf"
+  },
+  "GARP": {
+    "product_id": "312212",
+    "slug": "ishares-msci-usa-quality-garp-etf",
+    "href": "/us/products/312212/ishares-msci-usa-quality-garp-etf"
+  },
+  "LDEM": {
+    "product_id": "312222",
+    "slug": "ishares-esg-msci-em-leaders-etf",
+    "href": "/us/products/312222/ishares-esg-msci-em-leaders-etf"
+  },
+  "IBTG": {
+    "product_id": "312457",
+    "slug": "ishares-ibonds-dec-2026-term-treasury-etf",
+    "href": "/us/products/312457/ishares-ibonds-dec-2026-term-treasury-etf"
+  },
+  "IBTH": {
+    "product_id": "312460",
+    "slug": "ishares-ibonds-dec-2027-term-treasury-etf",
+    "href": "/us/products/312460/ishares-ibonds-dec-2027-term-treasury-etf"
+  },
+  "IBTI": {
+    "product_id": "312463",
+    "slug": "ishares-ibonds-dec-2028-term-treasury-etf",
+    "href": "/us/products/312463/ishares-ibonds-dec-2028-term-treasury-etf"
+  },
+  "IBTJ": {
+    "product_id": "312466",
+    "slug": "ishares-ibonds-dec-2029-term-treasury-etf",
+    "href": "/us/products/312466/ishares-ibonds-dec-2029-term-treasury-etf"
+  },
+  "KWT": {
+    "product_id": "312763",
+    "slug": "ishares-msci-kuwait-etf",
+    "href": "/us/products/312763/ishares-msci-kuwait-etf"
+  },
+  "SGOV": {
+    "product_id": "314116",
+    "slug": "ishares-0-3-month-treasury-bond-etf",
+    "href": "/us/products/314116/ishares-0-3-month-treasury-bond-etf"
+  },
+  "DMXF": {
+    "product_id": "314362",
+    "slug": "ishares-esg-advanced-msci-eafe-etf",
+    "href": "/us/products/314362/ishares-esg-advanced-msci-eafe-etf"
+  },
+  "USXF": {
+    "product_id": "314365",
+    "slug": "ishares-esg-advanced-msci-usa-etf",
+    "href": "/us/products/314365/ishares-esg-advanced-msci-usa-etf"
+  },
+  "IBDV": {
+    "product_id": "314496",
+    "slug": "ishares-ibonds-dec-2030-term-corporate-etf",
+    "href": "/us/products/314496/ishares-ibonds-dec-2030-term-corporate-etf"
+  },
+  "EUSB": {
+    "product_id": "314499",
+    "slug": "ishares-esg-advanced-universal-usd-bond-etf",
+    "href": "/us/products/314499/ishares-esg-advanced-universal-usd-bond-etf"
+  },
+  "IBTK": {
+    "product_id": "314830",
+    "slug": "ishares-ibonds-dec-2030-term-treasury-etf",
+    "href": "/us/products/314830/ishares-ibonds-dec-2030-term-treasury-etf"
+  },
+  "XJH": {
+    "product_id": "315914",
+    "slug": "ishares-esg-select-screened-s-p-mid-cap-etf",
+    "href": "/us/products/315914/ishares-esg-select-screened-s-p-mid-cap-etf"
+  },
+  "XVV": {
+    "product_id": "315917",
+    "slug": "ishares-esg-select-screened-s-p-500-etf",
+    "href": "/us/products/315917/ishares-esg-select-screened-s-p-500-etf"
+  },
+  "XJR": {
+    "product_id": "315920",
+    "slug": "ishares-esg-select-screened-s-p-small-cap-etf",
+    "href": "/us/products/315920/ishares-esg-select-screened-s-p-small-cap-etf"
+  },
+  "BMED": {
+    "product_id": "316007",
+    "slug": "ishares-health-innovation-active-etf",
+    "href": "/us/products/316007/ishares-health-innovation-active-etf"
+  },
+  "EMXF": {
+    "product_id": "316020",
+    "slug": "ishares-esg-advanced-msci-em-etf",
+    "href": "/us/products/316020/ishares-esg-advanced-msci-em-etf"
+  },
+  "SVAL": {
+    "product_id": "316394",
+    "slug": "ishares-us-small-cap-value-factor-etf",
+    "href": "/us/products/316394/ishares-us-small-cap-value-factor-etf"
+  },
+  "IBHF": {
+    "product_id": "316512",
+    "slug": "ishares-ibonds-2026-term-high-yield-and-income-etf",
+    "href": "/us/products/316512/ishares-ibonds-2026-term-high-yield-and-income-etf"
+  },
+  "ISVL": {
+    "product_id": "317548",
+    "slug": "ishares-international-developed-small-cap-value-factor-etf",
+    "href": "/us/products/317548/ishares-international-developed-small-cap-value-factor-etf"
+  },
+  "INMU": {
+    "product_id": "317976",
+    "slug": "ishares-intermediate-muni-income-active-etf",
+    "href": "/us/products/317976/ishares-intermediate-muni-income-active-etf"
+  },
+  "SHYM": {
+    "product_id": "317978",
+    "slug": "ishares-short-duration-high-yield-muni-active-etf",
+    "href": "/us/products/317978/ishares-short-duration-high-yield-muni-active-etf"
+  },
+  "LCTU": {
+    "product_id": "318215",
+    "slug": "ishares-u-s-carbon-transition-readiness-aware-active-etf",
+    "href": "/us/products/318215/ishares-u-s-carbon-transition-readiness-aware-active-etf"
+  },
+  "LCTD": {
+    "product_id": "318216",
+    "slug": "ishares-world-ex-u-s-carbon-transition-readiness-aware-active-etf",
+    "href": "/us/products/318216/ishares-world-ex-u-s-carbon-transition-readiness-aware-active-etf"
+  },
+  "LQDB": {
+    "product_id": "318688",
+    "slug": "ishares-bbb-rated-corporate-bond-etf",
+    "href": "/us/products/318688/ishares-bbb-rated-corporate-bond-etf"
+  },
+  "IBDW": {
+    "product_id": "319154",
+    "slug": "ishares-ibonds-dec-2031-term-corporate-etf",
+    "href": "/us/products/319154/ishares-ibonds-dec-2031-term-corporate-etf"
+  },
+  "IBTL": {
+    "product_id": "319421",
+    "slug": "ishares-ibonds-dec-2031-term-treasury-etf",
+    "href": "/us/products/319421/ishares-ibonds-dec-2031-term-treasury-etf"
+  },
+  "IBHG": {
+    "product_id": "319422",
+    "slug": "ishares-ibonds-2027-term-high-yield-and-income-etf",
+    "href": "/us/products/319422/ishares-ibonds-2027-term-high-yield-and-income-etf"
+  },
+  "ESMV": {
+    "product_id": "321324",
+    "slug": "ishares-esg-optimized-msci-usa-min-vol-factor-etf",
+    "href": "/us/products/321324/ishares-esg-optimized-msci-usa-min-vol-factor-etf"
+  },
+  "THRO": {
+    "product_id": "325384",
+    "slug": "ishares-u-s-thematic-rotation-active-etf",
+    "href": "/us/products/325384/ishares-u-s-thematic-rotation-active-etf"
+  },
+  "TCHI": {
+    "product_id": "325390",
+    "slug": "ishares-msci-china-multisector-tech-etf",
+    "href": "/us/products/325390/ishares-msci-china-multisector-tech-etf"
+  },
+  "PABU": {
+    "product_id": "325725",
+    "slug": "ishares-paris-aligned-climate-optimized-msci-usa-etf",
+    "href": "/us/products/325725/ishares-paris-aligned-climate-optimized-msci-usa-etf"
+  },
+  "IBHH": {
+    "product_id": "326459",
+    "slug": "ishares-ibonds-2028-term-high-yield-and-income-etf",
+    "href": "/us/products/326459/ishares-ibonds-2028-term-high-yield-and-income-etf"
+  },
+  "IBHI": {
+    "product_id": "326462",
+    "slug": "ishares-ibonds-2029-term-high-yield-and-income-etf",
+    "href": "/us/products/326462/ishares-ibonds-2029-term-high-yield-and-income-etf"
+  },
+  "IBLC": {
+    "product_id": "326614",
+    "slug": "ishares-blockchain-and-tech-etf",
+    "href": "/us/products/326614/ishares-blockchain-and-tech-etf"
+  },
+  "AGRH": {
+    "product_id": "328180",
+    "slug": "ishares-interest-rate-hedged-u-s-aggregate-bond-etf",
+    "href": "/us/products/328180/ishares-interest-rate-hedged-u-s-aggregate-bond-etf"
+  },
+  "IBDX": {
+    "product_id": "328675",
+    "slug": "ishares-ibonds-dec-2032-term-corporate-etf",
+    "href": "/us/products/328675/ishares-ibonds-dec-2032-term-corporate-etf"
+  },
+  "IBTM": {
+    "product_id": "328944",
+    "slug": "ishares-ibonds-dec-2032-term-treasury-etf",
+    "href": "/us/products/328944/ishares-ibonds-dec-2032-term-treasury-etf"
+  },
+  "HYGW": {
+    "product_id": "329119",
+    "slug": "ishares-high-yield-corporate-bond-buywrite-strategy-etf",
+    "href": "/us/products/329119/ishares-high-yield-corporate-bond-buywrite-strategy-etf"
+  },
+  "LQDW": {
+    "product_id": "329120",
+    "slug": "ishares-investment-grade-corporate-bond-buywrite-strategy-etf",
+    "href": "/us/products/329120/ishares-investment-grade-corporate-bond-buywrite-strategy-etf"
+  },
+  "BPAY": {
+    "product_id": "329128",
+    "slug": "ishares-fintech-active-etf",
+    "href": "/us/products/329128/ishares-fintech-active-etf"
+  },
+  "IBRN": {
+    "product_id": "329137",
+    "slug": "ishares-neuroscience-and-healthcare-etf",
+    "href": "/us/products/329137/ishares-neuroscience-and-healthcare-etf"
+  },
+  "BEMB": {
+    "product_id": "329561",
+    "slug": "ishares-j-p-morgan-broad-usd-emerging-markets-bond-etf",
+    "href": "/us/products/329561/ishares-j-p-morgan-broad-usd-emerging-markets-bond-etf"
+  },
+  "ERET": {
+    "product_id": "329687",
+    "slug": "ishares-environmentally-aware-real-estate-etf",
+    "href": "/us/products/329687/ishares-environmentally-aware-real-estate-etf"
+  },
+  "BRLN": {
+    "product_id": "329872",
+    "slug": "ishares-floating-rate-loan-active-etf",
+    "href": "/us/products/329872/ishares-floating-rate-loan-active-etf"
+  },
+  "EFRA": {
+    "product_id": "330188",
+    "slug": "ishares-environmental-infrastructure-and-industrials-etf",
+    "href": "/us/products/330188/ishares-environmental-infrastructure-and-industrials-etf"
+  },
+  "CLOA": {
+    "product_id": "330488",
+    "slug": "ishares-aaa-clo-active-etf",
+    "href": "/us/products/330488/ishares-aaa-clo-active-etf"
+  },
+  "EGUS": {
+    "product_id": "330808",
+    "slug": "ishares-esg-aware-msci-usa-growth-etf",
+    "href": "/us/products/330808/ishares-esg-aware-msci-usa-growth-etf"
+  },
+  "EVUS": {
+    "product_id": "330809",
+    "slug": "ishares-esg-aware-msci-usa-value-etf",
+    "href": "/us/products/330809/ishares-esg-aware-msci-usa-value-etf"
+  },
+  "IVRS": {
+    "product_id": "330840",
+    "slug": "ishares-future-metaverse-tech-and-communications-etf",
+    "href": "/us/products/330840/ishares-future-metaverse-tech-and-communications-etf"
+  },
+  "ETEC": {
+    "product_id": "331244",
+    "slug": "ishares-breakthrough-environmental-solutions-etf",
+    "href": "/us/products/331244/ishares-breakthrough-environmental-solutions-etf"
+  },
+  "BINC": {
+    "product_id": "331752",
+    "slug": "ishares-flexible-income-active-etf",
+    "href": "/us/products/331752/ishares-flexible-income-active-etf"
+  },
+  "BLCV": {
+    "product_id": "331795",
+    "slug": "ishares-large-cap-value-active-etf",
+    "href": "/us/products/331795/ishares-large-cap-value-active-etf"
+  },
+  "IBMR": {
+    "product_id": "331834",
+    "slug": "ishares-ibonds-dec-2029-term-muni-bond-etf",
+    "href": "/us/products/331834/ishares-ibonds-dec-2029-term-muni-bond-etf"
+  },
+  "USCL": {
+    "product_id": "332075",
+    "slug": "ishares-climate-conscious-transition-msci-usa-etf",
+    "href": "/us/products/332075/ishares-climate-conscious-transition-msci-usa-etf"
+  },
+  "ICOP": {
+    "product_id": "332280",
+    "slug": "ishares-copper-and-metals-mining-etf",
+    "href": "/us/products/332280/ishares-copper-and-metals-mining-etf"
+  },
+  "ILIT": {
+    "product_id": "332281",
+    "slug": "ishares-lithium-miners-and-producers-etf",
+    "href": "/us/products/332281/ishares-lithium-miners-and-producers-etf"
+  },
+  "IBHJ": {
+    "product_id": "332287",
+    "slug": "ishares-ibonds-2030-term-high-yield-and-income-etf",
+    "href": "/us/products/332287/ishares-ibonds-2030-term-high-yield-and-income-etf"
+  },
+  "IBDY": {
+    "product_id": "332289",
+    "slug": "ishares-ibonds-dec-2033-term-corporate-etf",
+    "href": "/us/products/332289/ishares-ibonds-dec-2033-term-corporate-etf"
+  },
+  "IBTO": {
+    "product_id": "332291",
+    "slug": "ishares-ibonds-dec-2033-term-treasury-etf",
+    "href": "/us/products/332291/ishares-ibonds-dec-2033-term-treasury-etf"
+  },
+  "IVVM": {
+    "product_id": "332306",
+    "slug": "ishares-large-cap-moderate-quarterly-laddered-etf",
+    "href": "/us/products/332306/ishares-large-cap-moderate-quarterly-laddered-etf"
+  },
+  "IVVB": {
+    "product_id": "332307",
+    "slug": "ishares-large-cap-deep-quarterly-laddered-etf",
+    "href": "/us/products/332307/ishares-large-cap-deep-quarterly-laddered-etf"
+  },
+  "CALI": {
+    "product_id": "332497",
+    "slug": "ishares-short-term-california-muni-active-etf",
+    "href": "/us/products/332497/ishares-short-term-california-muni-active-etf"
+  },
+  "IBIT": {
+    "product_id": "333011",
+    "slug": "ishares-bitcoin-trust-etf",
+    "href": "/us/products/333011/ishares-bitcoin-trust-etf"
+  },
+  "IBIJ": {
+    "product_id": "333076",
+    "slug": "ishares-ibonds-oct-2033-term-tips-etf",
+    "href": "/us/products/333076/ishares-ibonds-oct-2033-term-tips-etf"
+  },
+  "IBII": {
+    "product_id": "333079",
+    "slug": "ishares-ibonds-oct-2032-term-tips-etf",
+    "href": "/us/products/333079/ishares-ibonds-oct-2032-term-tips-etf"
+  },
+  "IBIC": {
+    "product_id": "333118",
+    "slug": "ishares-ibonds-oct-2026-term-tips-etf",
+    "href": "/us/products/333118/ishares-ibonds-oct-2026-term-tips-etf"
+  },
+  "IBIH": {
+    "product_id": "333121",
+    "slug": "ishares-ibonds-oct-2031-term-tips-etf",
+    "href": "/us/products/333121/ishares-ibonds-oct-2031-term-tips-etf"
+  },
+  "IBIG": {
+    "product_id": "333128",
+    "slug": "ishares-ibonds-oct-2030-term-tips-etf",
+    "href": "/us/products/333128/ishares-ibonds-oct-2030-term-tips-etf"
+  },
+  "IBIE": {
+    "product_id": "333132",
+    "slug": "ishares-ibonds-oct-2028-term-tips-etf",
+    "href": "/us/products/333132/ishares-ibonds-oct-2028-term-tips-etf"
+  },
+  "IBID": {
+    "product_id": "333135",
+    "slug": "ishares-ibonds-oct-2027-term-tips-etf",
+    "href": "/us/products/333135/ishares-ibonds-oct-2027-term-tips-etf"
+  },
+  "IBIF": {
+    "product_id": "333141",
+    "slug": "ishares-ibonds-oct-2029-term-tips-etf",
+    "href": "/us/products/333141/ishares-ibonds-oct-2029-term-tips-etf"
+  },
+  "BALI": {
+    "product_id": "333207",
+    "slug": "ishares-u-s-large-cap-premium-income-active-etf",
+    "href": "/us/products/333207/ishares-u-s-large-cap-premium-income-active-etf"
+  },
+  "TMET": {
+    "product_id": "333404",
+    "slug": "ishares-transition-enabling-metals-etf",
+    "href": "/us/products/333404/ishares-transition-enabling-metals-etf"
+  },
+  "ITDB": {
+    "product_id": "333555",
+    "slug": "ishares-lifepath-target-date-2030-etf",
+    "href": "/us/products/333555/ishares-lifepath-target-date-2030-etf"
+  },
+  "ITDC": {
+    "product_id": "333558",
+    "slug": "ishares-lifepath-target-date-2035-etf",
+    "href": "/us/products/333558/ishares-lifepath-target-date-2035-etf"
+  },
+  "ITDD": {
+    "product_id": "333561",
+    "slug": "ishares-lifepath-target-date-2040-etf",
+    "href": "/us/products/333561/ishares-lifepath-target-date-2040-etf"
+  },
+  "ITDE": {
+    "product_id": "333564",
+    "slug": "ishares-lifepath-target-date-2045-etf",
+    "href": "/us/products/333564/ishares-lifepath-target-date-2045-etf"
+  },
+  "ITDF": {
+    "product_id": "333566",
+    "slug": "ishares-lifepath-target-date-2050-etf",
+    "href": "/us/products/333566/ishares-lifepath-target-date-2050-etf"
+  },
+  "ITDG": {
+    "product_id": "333570",
+    "slug": "ishares-lifepath-target-date-2055-etf",
+    "href": "/us/products/333570/ishares-lifepath-target-date-2055-etf"
+  },
+  "ITDH": {
+    "product_id": "333572",
+    "slug": "ishares-lifepath-target-date-2060-etf",
+    "href": "/us/products/333572/ishares-lifepath-target-date-2060-etf"
+  },
+  "ITDI": {
+    "product_id": "333575",
+    "slug": "ishares-lifepath-target-date-2065-etf",
+    "href": "/us/products/333575/ishares-lifepath-target-date-2065-etf"
+  },
+  "IRTR": {
+    "product_id": "333579",
+    "slug": "ishares-lifepath-retirement-etf",
+    "href": "/us/products/333579/ishares-lifepath-retirement-etf"
+  },
+  "BLCR": {
+    "product_id": "333889",
+    "slug": "ishares-large-cap-core-active-etf",
+    "href": "/us/products/333889/ishares-large-cap-core-active-etf"
+  },
+  "BRTR": {
+    "product_id": "334572",
+    "slug": "ishares-total-return-active-etf",
+    "href": "/us/products/334572/ishares-total-return-active-etf"
+  },
+  "PABD": {
+    "product_id": "335054",
+    "slug": "ishares-paris-aligned-climate-optimized-msci-world-ex-usa-etf",
+    "href": "/us/products/335054/ishares-paris-aligned-climate-optimized-msci-world-ex-usa-etf"
+  },
+  "IWMW": {
+    "product_id": "336263",
+    "slug": "ishares-russell-2000-buywrite-etf",
+    "href": "/us/products/336263/ishares-russell-2000-buywrite-etf"
+  },
+  "IVVW": {
+    "product_id": "336267",
+    "slug": "ishares-s-p-500-buywrite-etf",
+    "href": "/us/products/336267/ishares-s-p-500-buywrite-etf"
+  },
+  "IBAT": {
+    "product_id": "336296",
+    "slug": "ishares-energy-storage-materials-etf",
+    "href": "/us/products/336296/ishares-energy-storage-materials-etf"
+  },
+  "INRO": {
+    "product_id": "336430",
+    "slug": "ishares-u-s-industry-rotation-active-etf",
+    "href": "/us/products/336430/ishares-u-s-industry-rotation-active-etf"
+  },
+  "IBMS": {
+    "product_id": "337460",
+    "slug": "ishares-ibonds-dec-2030-term-muni-bond-etf",
+    "href": "/us/products/337460/ishares-ibonds-dec-2030-term-muni-bond-etf"
+  },
+  "IBIK": {
+    "product_id": "337462",
+    "slug": "ishares-ibonds-oct-2034-term-tips-etf",
+    "href": "/us/products/337462/ishares-ibonds-oct-2034-term-tips-etf"
+  },
+  "IBDZ": {
+    "product_id": "337465",
+    "slug": "ishares-ibonds-dec-2034-term-corporate-etf",
+    "href": "/us/products/337465/ishares-ibonds-dec-2034-term-corporate-etf"
+  },
+  "IBHK": {
+    "product_id": "337468",
+    "slug": "ishares-ibonds-2031-term-high-yield-and-income-etf",
+    "href": "/us/products/337468/ishares-ibonds-2031-term-high-yield-and-income-etf"
+  },
+  "BELT": {
+    "product_id": "337476",
+    "slug": "ishares-u-s-select-equity-active-etf",
+    "href": "/us/products/337476/ishares-u-s-select-equity-active-etf"
+  },
+  "BGRO": {
+    "product_id": "337538",
+    "slug": "ishares-large-cap-growth-active-etf",
+    "href": "/us/products/337538/ishares-large-cap-growth-active-etf"
+  },
+  "BRHY": {
+    "product_id": "337564",
+    "slug": "ishares-high-yield-active-etf",
+    "href": "/us/products/337564/ishares-high-yield-active-etf"
+  },
+  "ETHA": {
+    "product_id": "337614",
+    "slug": "ishares-ethereum-trust-etf",
+    "href": "/us/products/337614/ishares-ethereum-trust-etf"
+  },
+  "IBTP": {
+    "product_id": "337745",
+    "slug": "ishares-ibonds-dec-2034-term-treasury-etf",
+    "href": "/us/products/337745/ishares-ibonds-dec-2034-term-treasury-etf"
+  },
+  "IBGA": {
+    "product_id": "337747",
+    "slug": "ishares-ibonds-dec-2044-term-treasury-etf",
+    "href": "/us/products/337747/ishares-ibonds-dec-2044-term-treasury-etf"
+  },
+  "IBGK": {
+    "product_id": "337749",
+    "slug": "ishares-ibonds-dec-2054-term-treasury-etf",
+    "href": "/us/products/337749/ishares-ibonds-dec-2054-term-treasury-etf"
+  },
+  "MAXJ": {
+    "product_id": "337965",
+    "slug": "ishares-large-cap-max-buffer-jun-etf",
+    "href": "/us/products/337965/ishares-large-cap-max-buffer-jun-etf"
+  },
+  "MADE": {
+    "product_id": "337989",
+    "slug": "ishares-u-s-manufacturing-etf",
+    "href": "/us/products/337989/ishares-u-s-manufacturing-etf"
+  },
+  "CSHP": {
+    "product_id": "338251",
+    "slug": "ishares-enhanced-short-term-bond-active-etf",
+    "href": "/us/products/338251/ishares-enhanced-short-term-bond-active-etf"
+  },
+  "EQLT": {
+    "product_id": "338701",
+    "slug": "ishares-msci-emerging-markets-quality-factor-etf",
+    "href": "/us/products/338701/ishares-msci-emerging-markets-quality-factor-etf"
+  },
+  "EVLU": {
+    "product_id": "338704",
+    "slug": "ishares-msci-emerging-markets-value-factor-etf",
+    "href": "/us/products/338704/ishares-msci-emerging-markets-value-factor-etf"
+  },
+  "BIDD": {
+    "product_id": "338863",
+    "slug": "ishares-international-dividend-active-etf",
+    "href": "/us/products/338863/ishares-international-dividend-active-etf"
+  },
+  "BAI": {
+    "product_id": "339081",
+    "slug": "ishares-a-i-innovation-and-tech-active-etf",
+    "href": "/us/products/339081/ishares-a-i-innovation-and-tech-active-etf"
+  },
+  "TEK": {
+    "product_id": "339083",
+    "slug": "ishares-technology-opportunities-active-etf",
+    "href": "/us/products/339083/ishares-technology-opportunities-active-etf"
+  },
+  "SMAX": {
+    "product_id": "339266",
+    "slug": "ishares-large-cap-max-buffer-sep-etf",
+    "href": "/us/products/339266/ishares-large-cap-max-buffer-sep-etf"
+  },
+  "QNXT": {
+    "product_id": "339694",
+    "slug": "ishares-nasdaq-100-ex-top-30-etf",
+    "href": "/us/products/339694/ishares-nasdaq-100-ex-top-30-etf"
+  },
+  "QTOP": {
+    "product_id": "339775",
+    "slug": "ishares-nasdaq-top-30-stocks-etf",
+    "href": "/us/products/339775/ishares-nasdaq-top-30-stocks-etf"
+  },
+  "TOPT": {
+    "product_id": "339779",
+    "slug": "ishares-top-20-u-s-stocks-etf",
+    "href": "/us/products/339779/ishares-top-20-u-s-stocks-etf"
+  },
+  "LDRH": {
+    "product_id": "340126",
+    "slug": "ishares-ibonds-1-5-year-high-yield-and-income-ladder-etf",
+    "href": "/us/products/340126/ishares-ibonds-1-5-year-high-yield-and-income-ladder-etf"
+  },
+  "LDRI": {
+    "product_id": "340132",
+    "slug": "ishares-ibonds-1-5-year-tips-ladder-etf",
+    "href": "/us/products/340132/ishares-ibonds-1-5-year-tips-ladder-etf"
+  },
+  "LDRC": {
+    "product_id": "340159",
+    "slug": "ishares-ibonds-1-5-year-corporate-ladder-etf",
+    "href": "/us/products/340159/ishares-ibonds-1-5-year-corporate-ladder-etf"
+  },
+  "LDRT": {
+    "product_id": "340161",
+    "slug": "ishares-ibonds-1-5-year-treasury-ladder-etf",
+    "href": "/us/products/340161/ishares-ibonds-1-5-year-treasury-ladder-etf"
+  },
+  "ITDJ": {
+    "product_id": "340178",
+    "slug": "ishares-lifepath-target-date-2070-etf",
+    "href": "/us/products/340178/ishares-lifepath-target-date-2070-etf"
+  },
+  "CORO": {
+    "product_id": "340366",
+    "slug": "ishares-international-country-rotation-active-etf",
+    "href": "/us/products/340366/ishares-international-country-rotation-active-etf"
+  },
+  "DMAX": {
+    "product_id": "340392",
+    "slug": "ishares-large-cap-max-buffer-dec-etf",
+    "href": "/us/products/340392/ishares-large-cap-max-buffer-dec-etf"
+  },
+  "AQLT": {
+    "product_id": "340396",
+    "slug": "ishares-msci-global-quality-factor-etf",
+    "href": "/us/products/340396/ishares-msci-global-quality-factor-etf"
+  },
+  "TWOX": {
+    "product_id": "340800",
+    "slug": "ishares-large-cap-accelerated-outcome-etf",
+    "href": "/us/products/340800/ishares-large-cap-accelerated-outcome-etf"
+  },
+  "GMMF": {
+    "product_id": "341466",
+    "slug": "ishares-government-money-market-etf",
+    "href": "/us/products/341466/ishares-government-money-market-etf"
+  },
+  "PMMF": {
+    "product_id": "341467",
+    "slug": "ishares-prime-money-market-etf",
+    "href": "/us/products/341467/ishares-prime-money-market-etf"
+  },
+  "BCLO": {
+    "product_id": "341497",
+    "slug": "ishares-bbb-b-clo-active-etf",
+    "href": "/us/products/341497/ishares-bbb-b-clo-active-etf"
+  },
+  "HIMU": {
+    "product_id": "341516",
+    "slug": "ishares-high-yield-muni-active-etf",
+    "href": "/us/products/341516/ishares-high-yield-muni-active-etf"
+  },
+  "MMAX": {
+    "product_id": "341942",
+    "slug": "ishares-large-cap-max-buffer-mar-etf",
+    "href": "/us/products/341942/ishares-large-cap-max-buffer-mar-etf"
+  },
+  "ISMF": {
+    "product_id": "342102",
+    "slug": "ishares-managed-futures-active-etf",
+    "href": "/us/products/342102/ishares-managed-futures-active-etf"
+  },
+  "IBTQ": {
+    "product_id": "342105",
+    "slug": "ishares-ibonds-dec-2035-term-treasury-etf",
+    "href": "/us/products/342105/ishares-ibonds-dec-2035-term-treasury-etf"
+  },
+  "IBHL": {
+    "product_id": "342115",
+    "slug": "ishares-ibonds-2032-term-high-yield-and-income-etf",
+    "href": "/us/products/342115/ishares-ibonds-2032-term-high-yield-and-income-etf"
+  },
+  "IBCA": {
+    "product_id": "342119",
+    "slug": "ishares-ibonds-dec-2035-term-corporate-etf",
+    "href": "/us/products/342119/ishares-ibonds-dec-2035-term-corporate-etf"
+  },
+  "IBGB": {
+    "product_id": "342124",
+    "slug": "ishares-ibonds-dec-2045-term-treasury-etf",
+    "href": "/us/products/342124/ishares-ibonds-dec-2045-term-treasury-etf"
+  },
+  "IBGL": {
+    "product_id": "342146",
+    "slug": "ishares-ibonds-dec-2055-term-treasury-etf",
+    "href": "/us/products/342146/ishares-ibonds-dec-2055-term-treasury-etf"
+  },
+  "IBIL": {
+    "product_id": "342148",
+    "slug": "ishares-ibonds-oct-2035-term-tips-etf",
+    "href": "/us/products/342148/ishares-ibonds-oct-2035-term-tips-etf"
+  },
+  "IBMT": {
+    "product_id": "342151",
+    "slug": "ishares-ibonds-dec-2031-term-muni-bond-etf",
+    "href": "/us/products/342151/ishares-ibonds-dec-2031-term-muni-bond-etf"
+  },
+  "LMUB": {
+    "product_id": "342170",
+    "slug": "ishares-long-term-national-muni-bond-etf",
+    "href": "/us/products/342170/ishares-long-term-national-muni-bond-etf"
+  },
+  "WSML": {
+    "product_id": "342357",
+    "slug": "ishares-msci-world-small-cap-etf",
+    "href": "/us/products/342357/ishares-msci-world-small-cap-etf"
+  },
+  "TOPC": {
+    "product_id": "342676",
+    "slug": "ishares-s-p-500-3-capped-etf",
+    "href": "/us/products/342676/ishares-s-p-500-3-capped-etf"
+  },
+  "IDEF": {
+    "product_id": "343529",
+    "slug": "ishares-defense-industrials-active-etf",
+    "href": "/us/products/343529/ishares-defense-industrials-active-etf"
+  },
+  "GGOV": {
+    "product_id": "343573",
+    "slug": "ishares-global-government-bond-usd-hedged-active-etf",
+    "href": "/us/products/343573/ishares-global-government-bond-usd-hedged-active-etf"
+  },
+  "TEXN": {
+    "product_id": "344021",
+    "slug": "ishares-texas-equity-etf",
+    "href": "/us/products/344021/ishares-texas-equity-etf"
+  },
+  "XOEF": {
+    "product_id": "344551",
+    "slug": "ishares-s-p-500-ex-s-p-100-etf",
+    "href": "/us/products/344551/ishares-s-p-500-ex-s-p-100-etf"
+  },
+  "BILT": {
+    "product_id": "345073",
+    "slug": "ishares-infrastructure-active-etf",
+    "href": "/us/products/345073/ishares-infrastructure-active-etf"
+  },
+  "IDYN": {
+    "product_id": "345128",
+    "slug": "ishares-international-equity-factor-rotation-active-etf",
+    "href": "/us/products/345128/ishares-international-equity-factor-rotation-active-etf"
+  },
+  "BDYN": {
+    "product_id": "345325",
+    "slug": "ishares-dynamic-equity-active-etf",
+    "href": "/us/products/345325/ishares-dynamic-equity-active-etf"
+  },
+  "BDVL": {
+    "product_id": "345327",
+    "slug": "ishares-disciplined-volatility-equity-active-etf",
+    "href": "/us/products/345327/ishares-disciplined-volatility-equity-active-etf"
+  },
+  "TEND": {
+    "product_id": "345785",
+    "slug": "ishares-large-cap-10-target-buffer-dec-etf",
+    "href": "/us/products/345785/ishares-large-cap-10-target-buffer-dec-etf"
+  },
+  "STEN": {
+    "product_id": "345804",
+    "slug": "ishares-large-cap-10-target-buffer-sep-etf",
+    "href": "/us/products/345804/ishares-large-cap-10-target-buffer-sep-etf"
+  },
+  "TENJ": {
+    "product_id": "345807",
+    "slug": "ishares-large-cap-10-target-buffer-jun-etf",
+    "href": "/us/products/345807/ishares-large-cap-10-target-buffer-jun-etf"
+  },
+  "TENM": {
+    "product_id": "345811",
+    "slug": "ishares-large-cap-10-target-buffer-mar-etf",
+    "href": "/us/products/345811/ishares-large-cap-10-target-buffer-mar-etf"
+  },
+  "BREM": {
+    "product_id": "346525",
+    "slug": "ishares-emerging-markets-bond-active-etf",
+    "href": "/us/products/346525/ishares-emerging-markets-bond-active-etf"
+  },
+  "EUIG": {
+    "product_id": "346691",
+    "slug": "ishares-euro-investment-grade-corporate-bond-usd-hedged-etf",
+    "href": "/us/products/346691/ishares-euro-investment-grade-corporate-bond-usd-hedged-etf"
+  },
+  "ENHU": {
+    "product_id": "346694",
+    "slug": "ishares-enhanced-large-cap-core-active-etf",
+    "href": "/us/products/346694/ishares-enhanced-large-cap-core-active-etf"
+  },
+  "BALQ": {
+    "product_id": "346870",
+    "slug": "ishares-nasdaq-premium-income-active-etf",
+    "href": "/us/products/346870/ishares-nasdaq-premium-income-active-etf"
+  },
+  "IALT": {
+    "product_id": "346898",
+    "slug": "ishares-systematic-alternatives-active-etf",
+    "href": "/us/products/346898/ishares-systematic-alternatives-active-etf"
+  },
+  "SECU": {
+    "product_id": "347090",
+    "slug": "ishares-securitized-income-active-etf",
+    "href": "/us/products/347090/ishares-securitized-income-active-etf"
+  },
+  "ICPI": {
+    "product_id": "347171",
+    "slug": "ishares-0-1-year-tips-bond-etf",
+    "href": "/us/products/347171/ishares-0-1-year-tips-bond-etf"
+  },
+  "MBBA": {
+    "product_id": "347352",
+    "slug": "ishares-mortgage-backed-securities-active-etf",
+    "href": "/us/products/347352/ishares-mortgage-backed-securities-active-etf"
+  },
+  "BTOT": {
+    "product_id": "347943",
+    "slug": "ishares-total-usd-fixed-income-market-etf",
+    "href": "/us/products/347943/ishares-total-usd-fixed-income-market-etf"
+  },
+  "ETHB": {
+    "product_id": "348532",
+    "slug": "ishares-staked-ethereum-trust-etf",
+    "href": "/us/products/348532/ishares-staked-ethereum-trust-etf"
+  },
+  "ENHI": {
+    "product_id": "349384",
+    "slug": "ishares-enhanced-international-active-etf",
+    "href": "/us/products/349384/ishares-enhanced-international-active-etf"
+  },
+  "USLN": {
+    "product_id": "349395",
+    "slug": "ishares-broad-usd-floating-rate-loan-etf",
+    "href": "/us/products/349395/ishares-broad-usd-floating-rate-loan-etf"
+  },
+  "IBTR": {
+    "product_id": "350028",
+    "slug": "ishares-ibonds-dec-2036-term-treasury-etf",
+    "href": "/us/products/350028/ishares-ibonds-dec-2036-term-treasury-etf"
+  },
+  "IBGC": {
+    "product_id": "350030",
+    "slug": "ishares-ibonds-dec-2046-term-treasury-etf",
+    "href": "/us/products/350030/ishares-ibonds-dec-2046-term-treasury-etf"
+  },
+  "IBGM": {
+    "product_id": "350032",
+    "slug": "ishares-ibonds-dec-2056-term-treasury-etf",
+    "href": "/us/products/350032/ishares-ibonds-dec-2056-term-treasury-etf"
+  },
+  "IBIM": {
+    "product_id": "350034",
+    "slug": "ishares-ibonds-oct-2036-term-tips-etf",
+    "href": "/us/products/350034/ishares-ibonds-oct-2036-term-tips-etf"
+  },
+  "SQLT": {
+    "product_id": "350089",
+    "slug": "ishares-msci-usa-small-cap-quality-factor-etf",
+    "href": "/us/products/350089/ishares-msci-usa-small-cap-quality-factor-etf"
+  },
+  "IBHM": {
+    "product_id": "350096",
+    "slug": "ishares-ibonds-2033-term-high-yield-and-income-etf",
+    "href": "/us/products/350096/ishares-ibonds-2033-term-high-yield-and-income-etf"
+  },
+  "IBMV": {
+    "product_id": "350118",
+    "slug": "ishares-ibonds-dec-2033-term-muni-bond-etf",
+    "href": "/us/products/350118/ishares-ibonds-dec-2033-term-muni-bond-etf"
+  },
+  "IBCB": {
+    "product_id": "350212",
+    "slug": "ishares-ibonds-dec-2036-term-corporate-etf",
+    "href": "/us/products/350212/ishares-ibonds-dec-2036-term-corporate-etf"
+  },
+  "IBMU": {
+    "product_id": "350229",
+    "slug": "ishares-ibonds-dec-2032-term-muni-bond-etf",
+    "href": "/us/products/350229/ishares-ibonds-dec-2032-term-muni-bond-etf"
+  },
+  "IBMW": {
+    "product_id": "350231",
+    "slug": "ishares-ibonds-dec-2034-term-muni-bond-etf",
+    "href": "/us/products/350231/ishares-ibonds-dec-2034-term-muni-bond-etf"
+  },
+  "IBMX": {
+    "product_id": "350233",
+    "slug": "ishares-ibonds-dec-2035-term-muni-bond-etf",
+    "href": "/us/products/350233/ishares-ibonds-dec-2035-term-muni-bond-etf"
+  },
+  "MDIIX": {
+    "product_id": "227724",
+    "slug": "blackrock-international-index-class-a-fund",
+    "href": "/us/products/227724/blackrock-international-index-class-a-fund"
+  },
+  "BTMKX": {
+    "product_id": "227725",
+    "slug": "blackrock-international-index-class-k-fund",
+    "href": "/us/products/227725/blackrock-international-index-class-k-fund"
+  },
+  "MAIIX": {
+    "product_id": "227726",
+    "slug": "blackrock-international-index-inst-class-fund",
+    "href": "/us/products/227726/blackrock-international-index-inst-class-fund"
+  },
+  "MDSKX": {
+    "product_id": "227744",
+    "slug": "blackrock-small-cap-index-class-a-fund",
+    "href": "/us/products/227744/blackrock-small-cap-index-class-a-fund"
+  },
+  "BDBKX": {
+    "product_id": "227755",
+    "slug": "blackrock-small-cap-index-class-k-fund",
+    "href": "/us/products/227755/blackrock-small-cap-index-class-k-fund"
+  },
+  "MASKX": {
+    "product_id": "227756",
+    "slug": "blackrock-small-cap-index-institutional-class-fund",
+    "href": "/us/products/227756/blackrock-small-cap-index-institutional-class-fund"
+  },
+  "WFBIX": {
+    "product_id": "227787",
+    "slug": "blackrock-bond-index-class-k-fund",
+    "href": "/us/products/227787/blackrock-bond-index-class-k-fund"
+  },
+  "BMOIX": {
+    "product_id": "227788",
+    "slug": "blackrock-bond-index-fund-inst-class-fund",
+    "href": "/us/products/227788/blackrock-bond-index-fund-inst-class-fund"
+  },
+  "BMOAX": {
+    "product_id": "227790",
+    "slug": "blackrock-bond-index-fund-class-a-fund",
+    "href": "/us/products/227790/blackrock-bond-index-fund-class-a-fund"
+  },
+  "BDOAX": {
+    "product_id": "227831",
+    "slug": "blackrock-acwi-exus-index-fund-class-a-fund",
+    "href": "/us/products/227831/blackrock-acwi-exus-index-fund-class-a-fund"
+  },
+  "BDOKX": {
+    "product_id": "227832",
+    "slug": "blackrock-acwi-exus-index-fund-class-k-fund",
+    "href": "/us/products/227832/blackrock-acwi-exus-index-fund-class-k-fund"
+  },
+  "BDOIX": {
+    "product_id": "227833",
+    "slug": "blackrock-acwi-exus-index-fund-instl-class-fund",
+    "href": "/us/products/227833/blackrock-acwi-exus-index-fund-instl-class-fund"
+  },
+  "BRGKX": {
+    "product_id": "227859",
+    "slug": "blackrock-russell-1000-index-fund-class-k-fund",
+    "href": "/us/products/227859/blackrock-russell-1000-index-fund-class-k-fund"
+  },
+  "BRGNX": {
+    "product_id": "227860",
+    "slug": "blackrock-russell-1000-index-fund-inst-class-fund",
+    "href": "/us/products/227860/blackrock-russell-1000-index-fund-inst-class-fund"
+  },
+  "BRGAX": {
+    "product_id": "227861",
+    "slug": "blackrock-russell-1000-index-fund-class-a-fund",
+    "href": "/us/products/227861/blackrock-russell-1000-index-fund-class-a-fund"
+  },
+  "WFSPX": {
+    "product_id": "230317",
+    "slug": "blackrock-sp-500-stock-fund-class-k-fund",
+    "href": "/us/products/230317/blackrock-sp-500-stock-fund-class-k-fund"
+  },
+  "BSPIX": {
+    "product_id": "251378",
+    "slug": "blackrock-s-p-500-stock-fundinstl-class-fund",
+    "href": "/us/products/251378/blackrock-s-p-500-stock-fundinstl-class-fund"
+  },
+  "BSPAX": {
+    "product_id": "251379",
+    "slug": "blackrock-s-p-500-stock-fundclass-a-fund",
+    "href": "/us/products/251379/blackrock-s-p-500-stock-fundclass-a-fund"
+  },
+  "BSPSX": {
+    "product_id": "251601",
+    "slug": "blackrock-s-p-500-stock-fundservice-class-fund",
+    "href": "/us/products/251601/blackrock-s-p-500-stock-fundservice-class-fund"
+  },
+  "BRMIX": {
+    "product_id": "275311",
+    "slug": "blackrock-midcap-index-class-i-fund",
+    "href": "/us/products/275311/blackrock-midcap-index-class-i-fund"
+  },
+  "BRMKX": {
+    "product_id": "275312",
+    "slug": "blackrock-midcap-index-class-k-fund",
+    "href": "/us/products/275312/blackrock-midcap-index-class-k-fund"
+  },
+  "BARDX": {
+    "product_id": "276531",
+    "slug": "blackrock-developed-real-estate-index-fund-class-a",
+    "href": "/us/products/276531/blackrock-developed-real-estate-index-fund-class-a"
+  },
+  "BIRDX": {
+    "product_id": "276532",
+    "slug": "blackrock-developed-real-estate-index-fund-class-institutional",
+    "href": "/us/products/276532/blackrock-developed-real-estate-index-fund-class-institutional"
+  },
+  "BKRDX": {
+    "product_id": "276533",
+    "slug": "blackrock-developed-real-estate-index-fund-class-k",
+    "href": "/us/products/276533/blackrock-developed-real-estate-index-fund-class-k"
+  },
+  "BSMAX": {
+    "product_id": "276534",
+    "slug": "blackrock-small-mid-cap-index-fund-class-a",
+    "href": "/us/products/276534/blackrock-small-mid-cap-index-fund-class-a"
+  },
+  "BSMIX": {
+    "product_id": "276535",
+    "slug": "blackrock-small-mid-cap-index-fund-class-institutional",
+    "href": "/us/products/276535/blackrock-small-mid-cap-index-fund-class-institutional"
+  },
+  "BSMKX": {
+    "product_id": "276536",
+    "slug": "blackrock-small-mid-cap-index-fund-class-k",
+    "href": "/us/products/276536/blackrock-small-mid-cap-index-fund-class-k"
+  },
+  "BASMX": {
+    "product_id": "276537",
+    "slug": "blackrock-total-stock-index-fund-class-a",
+    "href": "/us/products/276537/blackrock-total-stock-index-fund-class-a"
+  },
+  "BITSX": {
+    "product_id": "276538",
+    "slug": "blackrock-total-stock-index-fund-class-institutional",
+    "href": "/us/products/276538/blackrock-total-stock-index-fund-class-institutional"
+  },
+  "BKTSX": {
+    "product_id": "276539",
+    "slug": "blackrock-total-stock-index-fund-class-k",
+    "href": "/us/products/276539/blackrock-total-stock-index-fund-class-k"
+  },
+  "BRMAX": {
+    "product_id": "280761",
+    "slug": "blackrock-mid-cap-index-fund-class-a",
+    "href": "/us/products/280761/blackrock-mid-cap-index-fund-class-a"
+  },
+  "BAIPX": {
+    "product_id": "282302",
+    "slug": "blackrock-short-term-inflation-protected-securities-index-class-a-fund",
+    "href": "/us/products/282302/blackrock-short-term-inflation-protected-securities-index-class-a-fund"
+  },
+  "BIIPX": {
+    "product_id": "282303",
+    "slug": "blackrock-short-term-inflation-protected-securities-index-class-institutional-fund",
+    "href": "/us/products/282303/blackrock-short-term-inflation-protected-securities-index-class-institutional-fund"
+  },
+  "BKIPX": {
+    "product_id": "282304",
+    "slug": "blackrock-short-term-inflation-protected-securities-index-class-k-fund",
+    "href": "/us/products/282304/blackrock-short-term-inflation-protected-securities-index-class-k-fund"
+  },
+  "BSPPX": {
+    "product_id": "298415",
+    "slug": "ishares-s-p-500-index-fund",
+    "href": "/us/products/298415/ishares-s-p-500-index-fund"
+  },
+  "BMOPX": {
+    "product_id": "298425",
+    "slug": "ishares-u-s-aggregate-bond-index-fund",
+    "href": "/us/products/298425/ishares-u-s-aggregate-bond-index-fund"
+  },
+  "BDBPX": {
+    "product_id": "298426",
+    "slug": "ishares-russell-2000-small-cap-index-fund",
+    "href": "/us/products/298426/ishares-russell-2000-small-cap-index-fund"
+  },
+  "BTMPX": {
+    "product_id": "298428",
+    "slug": "ishares-msci-eafe-international-index-fund",
+    "href": "/us/products/298428/ishares-msci-eafe-international-index-fund"
+  },
+  "BIDPX": {
+    "product_id": "306171",
+    "slug": "ishares-municipal-bond-index-fund",
+    "href": "/us/products/306171/ishares-municipal-bond-index-fund"
+  },
+  "BIDAX": {
+    "product_id": "306662",
+    "slug": "ishares-municipal-bond-index-fund",
+    "href": "/us/products/306662/ishares-municipal-bond-index-fund"
+  },
+  "BIDIX": {
+    "product_id": "306663",
+    "slug": "ishares-municipal-bond-index-fund",
+    "href": "/us/products/306663/ishares-municipal-bond-index-fund"
+  },
+  "BIDKX": {
+    "product_id": "306664",
+    "slug": "ishares-municipal-bond-index-fund",
+    "href": "/us/products/306664/ishares-municipal-bond-index-fund"
+  },
+  "BSPGX": {
+    "product_id": "308765",
+    "slug": "ishares-s-p-500-index-fund",
+    "href": "/us/products/308765/ishares-s-p-500-index-fund"
+  },
+  "BTMGX": {
+    "product_id": "332826",
+    "slug": "ishares-msci-eafe-international-index-fund",
+    "href": "/us/products/332826/ishares-msci-eafe-international-index-fund"
+  }
+}

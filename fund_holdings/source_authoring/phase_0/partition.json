@@ -1,0 +1,627 @@
+{
+  "total_rows": 2563,
+  "sponsor_row_count": {
+    "ishares": 349,
+    "other_sponsors": 236,
+    "invesco": 217,
+    "state_street": 152,
+    "tidal": 128,
+    "direxion": 90,
+    "proshares": 89,
+    "first_trust": 86,
+    "global_x": 83,
+    "vanguard": 80,
+    "fidelity": 61,
+    "vaneck": 53,
+    "franklin_templeton": 49,
+    "alpha_architect": 42,
+    "jpmorgan": 40,
+    "dimensional": 37,
+    "xtrackers": 34,
+    "schwab": 33,
+    "victory_capital": 33,
+    "blackrock": 32,
+    "calamos": 32,
+    "northern_trust": 29,
+    "bondbloxx": 27,
+    "graniteshares": 27,
+    "nuveen": 25,
+    "t_rowe_price": 25,
+    "krane": 24,
+    "pimco": 23,
+    "innovator": 22,
+    "alliancebernstein": 21,
+    "harbor": 21,
+    "pacer": 21,
+    "wisdomtree": 20,
+    "alps": 17,
+    "themes": 17,
+    "exchange_traded_concepts": 15,
+    "john_hancock": 15,
+    "capital_group": 13,
+    "columbia": 13,
+    "janus_henderson": 13,
+    "neuberger_berman": 13,
+    "pgim": 13,
+    "principal": 12,
+    "sprott": 12,
+    "tcw": 12,
+    "virtus": 11,
+    "bny_mellon": 10,
+    "hartford": 9,
+    "inspire": 9,
+    "touchstone": 9,
+    "doubleline": 8,
+    "neos": 8,
+    "allspring": 7,
+    "lazard": 7,
+    "strategy_shares": 7,
+    "unaffiliated_tradr": 7,
+    "abrdn": 6,
+    "frontier_asset": 6,
+    "gmo": 6,
+    "macquarie": 6,
+    "putnam": 6,
+    "alger": 5,
+    "goldman_sachs": 5,
+    "mfs": 5,
+    "russell_investments": 5,
+    "tema": 5,
+    "tortoise": 5,
+    "unaffiliated_oneascent": 5
+  },
+  "sponsor_url_replace": {
+    "ishares": 349,
+    "other_sponsors": 229,
+    "invesco": 3,
+    "state_street": 152,
+    "tidal": 128,
+    "proshares": 74,
+    "first_trust": 8,
+    "global_x": 1,
+    "vaneck": 53,
+    "alpha_architect": 42,
+    "xtrackers": 34,
+    "schwab": 33,
+    "victory_capital": 33,
+    "blackrock": 32,
+    "northern_trust": 29,
+    "bondbloxx": 26,
+    "graniteshares": 27,
+    "nuveen": 25,
+    "t_rowe_price": 25,
+    "pimco": 23,
+    "alliancebernstein": 21,
+    "harbor": 21,
+    "pacer": 21,
+    "wisdomtree": 20,
+    "alps": 17,
+    "themes": 17,
+    "exchange_traded_concepts": 15,
+    "john_hancock": 15,
+    "capital_group": 13,
+    "columbia": 13,
+    "janus_henderson": 13,
+    "neuberger_berman": 13,
+    "pgim": 13,
+    "principal": 12,
+    "sprott": 12,
+    "tcw": 12,
+    "virtus": 11,
+    "bny_mellon": 10,
+    "hartford": 9,
+    "inspire": 9,
+    "touchstone": 9,
+    "doubleline": 8,
+    "neos": 3,
+    "allspring": 7,
+    "lazard": 7,
+    "strategy_shares": 7,
+    "unaffiliated_tradr": 7,
+    "frontier_asset": 6,
+    "gmo": 6,
+    "macquarie": 6,
+    "putnam": 6,
+    "alger": 5,
+    "mfs": 5,
+    "russell_investments": 5,
+    "tema": 5,
+    "tortoise": 5,
+    "unaffiliated_oneascent": 5,
+    "direxion": 0,
+    "vanguard": 0,
+    "fidelity": 0,
+    "franklin_templeton": 0,
+    "jpmorgan": 0,
+    "dimensional": 0,
+    "calamos": 0,
+    "krane": 0,
+    "innovator": 0,
+    "abrdn": 0,
+    "goldman_sachs": 0
+  },
+  "per_sponsor_replace": {
+    "ishares": {
+      "FILL": 2388,
+      "REPLACE": 1396
+    },
+    "other_sponsors": {
+      "FILL": 1798,
+      "REPLACE": 923
+    },
+    "invesco": {
+      "FILL": 1487,
+      "REPLACE": 226
+    },
+    "state_street": {
+      "FILL": 1057,
+      "REPLACE": 458
+    },
+    "tidal": {
+      "FILL": 943,
+      "REPLACE": 512
+    },
+    "direxion": {
+      "FILL": 544,
+      "REPLACE": 180
+    },
+    "proshares": {
+      "FILL": 568,
+      "REPLACE": 311
+    },
+    "first_trust": {
+      "FILL": 619,
+      "REPLACE": 111
+    },
+    "global_x": {
+      "FILL": 556,
+      "REPLACE": 86
+    },
+    "vanguard": {
+      "FILL": 541,
+      "REPLACE": 80
+    },
+    "fidelity": {
+      "FILL": 439,
+      "REPLACE": 61
+    },
+    "vaneck": {
+      "FILL": 366,
+      "REPLACE": 212
+    },
+    "franklin_templeton": {
+      "FILL": 357,
+      "REPLACE": 49
+    },
+    "alpha_architect": {
+      "FILL": 319,
+      "REPLACE": 168
+    },
+    "jpmorgan": {
+      "FILL": 303,
+      "REPLACE": 40
+    },
+    "dimensional": {
+      "FILL": 293,
+      "REPLACE": 37
+    },
+    "xtrackers": {
+      "FILL": 235,
+      "REPLACE": 136
+    },
+    "schwab": {
+      "FILL": 227,
+      "REPLACE": 132
+    },
+    "victory_capital": {
+      "FILL": 236,
+      "REPLACE": 132
+    },
+    "blackrock": {
+      "FILL": 248,
+      "REPLACE": 128
+    },
+    "calamos": {
+      "FILL": 255,
+      "REPLACE": 32
+    },
+    "northern_trust": {
+      "FILL": 199,
+      "REPLACE": 116
+    },
+    "bondbloxx": {
+      "FILL": 185,
+      "REPLACE": 105
+    },
+    "graniteshares": {
+      "FILL": 192,
+      "REPLACE": 84
+    },
+    "nuveen": {
+      "FILL": 166,
+      "REPLACE": 100
+    },
+    "t_rowe_price": {
+      "FILL": 195,
+      "REPLACE": 100
+    },
+    "krane": {
+      "FILL": 166,
+      "REPLACE": 24
+    },
+    "pimco": {
+      "FILL": 168,
+      "REPLACE": 92
+    },
+    "innovator": {
+      "FILL": 160,
+      "REPLACE": 22
+    },
+    "alliancebernstein": {
+      "FILL": 160,
+      "REPLACE": 84
+    },
+    "harbor": {
+      "FILL": 161,
+      "REPLACE": 84
+    },
+    "pacer": {
+      "FILL": 144,
+      "REPLACE": 84
+    },
+    "wisdomtree": {
+      "FILL": 149,
+      "REPLACE": 80
+    },
+    "alps": {
+      "FILL": 117,
+      "REPLACE": 68
+    },
+    "themes": {
+      "FILL": 119,
+      "REPLACE": 68
+    },
+    "exchange_traded_concepts": {
+      "FILL": 107,
+      "REPLACE": 60
+    },
+    "john_hancock": {
+      "FILL": 113,
+      "REPLACE": 60
+    },
+    "capital_group": {
+      "FILL": 99,
+      "REPLACE": 52
+    },
+    "columbia": {
+      "FILL": 88,
+      "REPLACE": 52
+    },
+    "janus_henderson": {
+      "FILL": 102,
+      "REPLACE": 52
+    },
+    "neuberger_berman": {
+      "FILL": 101,
+      "REPLACE": 52
+    },
+    "pgim": {
+      "FILL": 100,
+      "REPLACE": 52
+    },
+    "principal": {
+      "FILL": 94,
+      "REPLACE": 48
+    },
+    "sprott": {
+      "FILL": 83,
+      "REPLACE": 48
+    },
+    "tcw": {
+      "FILL": 94,
+      "REPLACE": 48
+    },
+    "virtus": {
+      "FILL": 83,
+      "REPLACE": 44
+    },
+    "bny_mellon": {
+      "FILL": 74,
+      "REPLACE": 40
+    },
+    "hartford": {
+      "FILL": 66,
+      "REPLACE": 36
+    },
+    "inspire": {
+      "FILL": 65,
+      "REPLACE": 36
+    },
+    "touchstone": {
+      "FILL": 70,
+      "REPLACE": 36
+    },
+    "doubleline": {
+      "FILL": 61,
+      "REPLACE": 32
+    },
+    "neos": {
+      "FILL": 64,
+      "REPLACE": 17
+    },
+    "allspring": {
+      "FILL": 56,
+      "REPLACE": 28
+    },
+    "lazard": {
+      "FILL": 56,
+      "REPLACE": 28
+    },
+    "strategy_shares": {
+      "FILL": 50,
+      "REPLACE": 28
+    },
+    "unaffiliated_tradr": {
+      "FILL": 49,
+      "REPLACE": 28
+    },
+    "abrdn": {
+      "FILL": 44,
+      "REPLACE": 6
+    },
+    "frontier_asset": {
+      "FILL": 48,
+      "REPLACE": 24
+    },
+    "gmo": {
+      "FILL": 48,
+      "REPLACE": 24
+    },
+    "macquarie": {
+      "FILL": 46,
+      "REPLACE": 24
+    },
+    "putnam": {
+      "FILL": 45,
+      "REPLACE": 24
+    },
+    "alger": {
+      "FILL": 39,
+      "REPLACE": 20
+    },
+    "goldman_sachs": {
+      "FILL": 38,
+      "REPLACE": 5
+    },
+    "mfs": {
+      "FILL": 40,
+      "REPLACE": 20
+    },
+    "russell_investments": {
+      "FILL": 40,
+      "REPLACE": 20
+    },
+    "tema": {
+      "FILL": 40,
+      "REPLACE": 20
+    },
+    "tortoise": {
+      "FILL": 39,
+      "REPLACE": 20
+    },
+    "unaffiliated_oneascent": {
+      "FILL": 40,
+      "REPLACE": 20
+    }
+  },
+  "col_states": {
+    "#": {
+      "TRUST": 2563
+    },
+    "Ticker": {
+      "TRUST": 2563
+    },
+    "Fund_Name": {
+      "TRUST": 2563
+    },
+    "Sponsor": {
+      "TRUST": 2563
+    },
+    "Exchange": {
+      "TRUST": 2563
+    },
+    "Inception_Date": {
+      "FILL": 2563
+    },
+    "AUM_USD": {
+      "TRUST": 2563
+    },
+    "AUM_AsOf_Date": {
+      "TRUST": 2563
+    },
+    "Shares_Outstanding": {
+      "FILL": 2563
+    },
+    "Expense_Ratio_Bps": {
+      "FILL": 2563
+    },
+    "Vehicle_Type": {
+      "TRUST": 2563
+    },
+    "Vehicle_Subtype": {
+      "FILL": 1774,
+      "TRUST": 789
+    },
+    "Benchmark_Name": {
+      "FILL": 2563
+    },
+    "Benchmark_Provider": {
+      "TRUST": 1473,
+      "FILL": 1090
+    },
+    "Replication_Method": {
+      "TRUST": 2563
+    },
+    "Rebalance_Frequency_Prospectus": {
+      "TRUST": 2563
+    },
+    "Rebalance_Trigger_Rules": {
+      "FILL": 2563
+    },
+    "Creation_Unit_Size": {
+      "TRUST": 2563
+    },
+    "Holdings_Feed_URL": {
+      "REPLACE": 1715,
+      "OK_REPLACE": 848
+    },
+    "Holdings_Feed_Format": {
+      "REPLACE": 1715,
+      "OK_REPLACE": 848
+    },
+    "Holdings_Feed_Lag_Hours": {
+      "FILL": 2563
+    },
+    "Sponsor_Page_URL": {
+      "REPLACE": 1632,
+      "OK_REPLACE": 931
+    },
+    "Prospectus_URL": {
+      "REPLACE": 2563
+    },
+    "Has_Derivatives_Overlay": {
+      "TRUST": 2563
+    },
+    "Internal_Crossing_Disclosed": {
+      "TRUST": 2563
+    },
+    "Currency_Hedged": {
+      "TRUST": 2563
+    },
+    "Fund_Of_Funds": {
+      "TRUST": 2563
+    },
+    "Primary_Market_Cap_Tier": {
+      "TRUST": 2563
+    },
+    "Geographic_Focus": {
+      "TRUST": 2563
+    },
+    "Notes": {
+      "REPLACE_NOTE": 1715,
+      "TRUST": 848
+    },
+    "Lineage_Authored_By": {
+      "TRUST": 2563
+    },
+    "Lineage_Authored_At": {
+      "TRUST": 2563
+    }
+  },
+  "work_queue": [
+    "ishares",
+    "other_sponsors",
+    "state_street",
+    "tidal",
+    "proshares",
+    "vaneck",
+    "alpha_architect",
+    "xtrackers",
+    "schwab",
+    "victory_capital",
+    "blackrock",
+    "northern_trust",
+    "graniteshares",
+    "bondbloxx",
+    "nuveen",
+    "t_rowe_price",
+    "pimco",
+    "alliancebernstein",
+    "harbor",
+    "pacer",
+    "wisdomtree",
+    "alps",
+    "themes",
+    "exchange_traded_concepts",
+    "john_hancock",
+    "capital_group",
+    "columbia",
+    "janus_henderson",
+    "neuberger_berman",
+    "pgim",
+    "principal",
+    "sprott",
+    "tcw",
+    "virtus",
+    "bny_mellon",
+    "hartford",
+    "inspire",
+    "touchstone",
+    "first_trust",
+    "doubleline",
+    "allspring",
+    "lazard",
+    "strategy_shares",
+    "unaffiliated_tradr",
+    "frontier_asset",
+    "gmo",
+    "macquarie",
+    "putnam",
+    "alger",
+    "mfs",
+    "russell_investments",
+    "tema",
+    "tortoise",
+    "unaffiliated_oneascent",
+    "invesco",
+    "neos",
+    "global_x"
+  ],
+  "no_url_work_queue": [
+    "direxion",
+    "vanguard",
+    "fidelity",
+    "franklin_templeton",
+    "jpmorgan",
+    "dimensional",
+    "calamos",
+    "krane",
+    "innovator",
+    "abrdn",
+    "goldman_sachs"
+  ],
+  "headers": [
+    "#",
+    "Ticker",
+    "Fund_Name",
+    "Sponsor",
+    "Exchange",
+    "Inception_Date",
+    "AUM_USD",
+    "AUM_AsOf_Date",
+    "Shares_Outstanding",
+    "Expense_Ratio_Bps",
+    "Vehicle_Type",
+    "Vehicle_Subtype",
+    "Benchmark_Name",
+    "Benchmark_Provider",
+    "Replication_Method",
+    "Rebalance_Frequency_Prospectus",
+    "Rebalance_Trigger_Rules",
+    "Creation_Unit_Size",
+    "Holdings_Feed_URL",
+    "Holdings_Feed_Format",
+    "Holdings_Feed_Lag_Hours",
+    "Sponsor_Page_URL",
+    "Prospectus_URL",
+    "Has_Derivatives_Overlay",
+    "Internal_Crossing_Disclosed",
+    "Currency_Hedged",
+    "Fund_Of_Funds",
+    "Primary_Market_Cap_Tier",
+    "Geographic_Focus",
+    "Notes",
+    "Lineage_Authored_By",
+    "Lineage_Authored_At"
+  ]
+}
