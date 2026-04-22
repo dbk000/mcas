@@ -1,0 +1,1063 @@
+- source_id: sector.industrials.aar_weekly
+  source_name: Association of American Railroads — Weekly Rail Traffic
+  url: https://www.aar.org/data-center/rail-traffic-data/
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: 0
+  notes: AAR weekly carloads + intermodal (published Wed). Direct read on CSX, UNP, NSC volume + pricing. Leading indicator
+    for industrial-economy health.
+  lineage:
+    authored_by: phase_b_industrials_opus
+    authored_at: '2026-04-22T00:52:28Z'
+- source_id: sector.industrials.aci_airport
+  source_name: Airports Council International
+  url: https://aci.aero/news-events/latest-news/
+  adapter_type: rss
+  jurisdiction: XX
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  edge_weight_prior: 0.65
+  typical_lead_time_vs_english_minutes: 0
+  notes: ACI — airport trade body. Global airport passenger/cargo traffic monthly. Moves AENA, FRA.DE, ADP.PA, AIA NZ, 66
+    MTR adjacent.
+  lineage:
+    authored_by: phase_b_industrials_opus
+    authored_at: '2026-04-22T00:52:28Z'
+- source_id: sector.industrials.aia_press
+  source_name: AIA — Aerospace Industries Association
+  url: https://www.aia-aerospace.org/news/
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  - sector_regulation
+  edge_weight_prior: 0.65
+  typical_lead_time_vs_english_minutes: 0
+  notes: AIA — US aerospace trade group. Annual Facts + Figures, 5-year outlook. Policy advocacy.
+  lineage:
+    authored_by: phase_b_industrials_opus
+    authored_at: '2026-04-22T00:52:28Z'
+- source_id: sector.industrials.airlines4america
+  source_name: Airlines for America — A4A
+  url: https://www.airlines.org/news/
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  - sector_regulation
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: A4A US airline trade group. Weekly domestic passenger/cargo data. Legislative + ATC advocacy.
+  lineage:
+    authored_by: phase_b_industrials_opus
+    authored_at: '2026-04-22T00:52:28Z'
+- source_id: sector.industrials.ata_trucking
+  source_name: American Trucking Associations
+  url: https://www.trucking.org/news-insights
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  - sector_regulation
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: ATA — US trucking association. Monthly Truck Tonnage Index, driver shortage reports. Moves KNX, WERN, ARCB, ODFL,
+    SAIA, JBHT.
+  lineage:
+    authored_by: phase_b_industrials_opus
+    authored_at: '2026-04-22T00:52:28Z'
+- source_id: sector.industrials.aviation_week
+  source_name: Aviation Week Network
+  url: https://aviationweek.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - contract_award
+  - ma_announcement
+  - product_launch
+  - executive_change
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: 0
+  notes: Aviation Week & Space Technology — global aerospace/defense authority. Moves BA, LMT, RTX, NOC, GD, AIR.PA, BAE.L,
+    SAF.PA, LDO.MI.
+  lineage:
+    authored_by: phase_b_industrials_opus
+    authored_at: '2026-04-22T00:52:28Z'
+- source_id: sector.industrials.baltic_exchange
+  source_name: Baltic Exchange
+  url: https://www.balticexchange.com/en/news-and-events/news.html
+  adapter_type: scraper
+  jurisdiction: GB
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - commodity_price_event
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: 0
+  notes: Baltic Exchange — BDI, BCI, BPI, BDTI. Daily dry-bulk + tanker rates. Moves SB (Safe Bulkers), PANL, CMRE, SNI (Stolt),
+    HAUTO.
+  lineage:
+    authored_by: phase_b_industrials_opus
+    authored_at: '2026-04-22T00:52:28Z'
+- source_id: sector.industrials.bimco
+  source_name: BIMCO — News
+  url: https://www.bimco.org/news
+  adapter_type: rss
+  jurisdiction: XX
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  - sector_regulation
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: BIMCO — global shipping association. Quarterly market analysis (dry bulk, tanker, container).
+  lineage:
+    authored_by: phase_b_industrials_opus
+    authored_at: '2026-04-22T00:52:28Z'
+- source_id: sector.industrials.breaking_defense
+  source_name: Breaking Defense
+  url: https://breakingdefense.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - contract_award
+  - executive_change
+  - sector_regulation
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: 0
+  notes: Breaking Defense — daily Pentagon + Hill coverage. Strong on Army/Navy/Air Force program news. Moves LMT, RTX, NOC,
+    GD, LHX, HII.
+  lineage:
+    authored_by: phase_b_industrials_opus
+    authored_at: '2026-04-22T00:52:28Z'
+- source_id: sector.industrials.caa_uk
+  source_name: CAA UK — News
+  url: https://www.caa.co.uk/news/
+  adapter_type: rss
+  jurisdiction: GB
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - regulatory_action
+  - sector_regulation
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: UK Civil Aviation Authority — post-Brexit UK aviation regulator. RYA, EZJ, IAG, JET2 oversight.
+  lineage:
+    authored_by: phase_b_industrials_opus
+    authored_at: '2026-04-22T00:52:28Z'
+- source_id: sector.industrials.cass_freight
+  source_name: Cass Information Systems — Freight Index
+  url: https://www.cassinfo.com/freight-audit-payment/cass-transportation-indexes
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: 0
+  notes: Cass Freight Index — monthly US freight shipments + expenditures. Industrial-production proxy.
+  lineage:
+    authored_by: phase_b_industrials_opus
+    authored_at: '2026-04-22T00:52:28Z'
+- source_id: sector.industrials.cirium
+  source_name: Cirium
+  url: https://www.cirium.com/news/
+  adapter_type: scraper
+  jurisdiction: GB
+  language: en
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - macro_data_release
+  - ma_announcement
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: 0
+  notes: Cirium (LSEG) — fleet/schedule data authority. On-time performance, fleet turnover. Moves AER, FTAI, airline economics.
+  lineage:
+    authored_by: phase_b_industrials_opus
+    authored_at: '2026-04-22T00:52:28Z'
+- source_id: sector.industrials.construction_dive
+  source_name: Construction Dive
+  url: https://www.constructiondive.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - contract_award
+  - ma_announcement
+  edge_weight_prior: 0.65
+  typical_lead_time_vs_english_minutes: 0
+  notes: Construction Dive — daily E&C + homebuilding news. Free-tier read.
+  lineage:
+    authored_by: phase_b_industrials_opus
+    authored_at: '2026-04-22T00:52:28Z'
+- source_id: sector.industrials.construction_equipment
+  source_name: Construction Equipment
+  url: https://www.constructionequipment.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - product_launch
+  - macro_data_release
+  edge_weight_prior: 0.6
+  typical_lead_time_vs_english_minutes: 60
+  notes: Construction Equipment — trade mag for CAT/DE/CMI distributor ecosystem.
+  lineage:
+    authored_by: phase_b_industrials_opus
+    authored_at: '2026-04-22T00:52:28Z'
+- source_id: sector.industrials.defense_news
+  source_name: Defense News
+  url: https://www.defensenews.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - contract_award
+  - sector_regulation
+  - executive_change
+  - ma_announcement
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: 0
+  notes: Defense News (Sightline Media) — daily defense industry news. Program wins/losses, DoD budget cycle, international
+    arms sales.
+  lineage:
+    authored_by: phase_b_industrials_opus
+    authored_at: '2026-04-22T00:52:28Z'
+- source_id: sector.industrials.dod_contracts
+  source_name: DoD — Contract Announcements
+  url: https://www.defense.gov/News/Contracts/
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - contract_award
+  edge_weight_prior: 0.95
+  typical_lead_time_vs_english_minutes: 0
+  notes: 'DoD daily contract announcements (5pm ET). Structured feed: firm, amount, contract number. Primary market-moving
+    source for LMT, RTX, NOC, GD, BA, LHX, HII.'
+  lineage:
+    authored_by: phase_b_industrials_opus
+    authored_at: '2026-04-22T00:52:28Z'
+- source_id: sector.industrials.dod_press
+  source_name: DoD — News
+  url: https://www.defense.gov/News/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - contract_award
+  - sector_regulation
+  - regulatory_action
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: 0
+  notes: DoD press — program decisions, budget requests, Secretary/Service announcements. Primary US defense policy driver.
+  lineage:
+    authored_by: phase_b_industrials_opus
+    authored_at: '2026-04-22T00:52:28Z'
+- source_id: sector.industrials.drewry_wci
+  source_name: Drewry — World Container Index
+  url: https://www.drewry.co.uk/supply-chain-advisors/supply-chain-expertise/world-container-index-assessed-by-drewry
+  adapter_type: scraper
+  jurisdiction: GB
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - commodity_price_event
+  - macro_data_release
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: 0
+  notes: Drewry WCI — weekly global container spot rate. 8-route composite. Direct read on MAERSK, ZIM, HLAG.DE, 9104 Mitsui
+    OSK, 9101 NYK economics.
+  lineage:
+    authored_by: phase_b_industrials_opus
+    authored_at: '2026-04-22T00:52:28Z'
+- source_id: sector.industrials.easa_news
+  source_name: EASA — Newsroom
+  url: https://www.easa.europa.eu/en/newsroom-and-events
+  adapter_type: rss
+  jurisdiction: EU
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - regulatory_action
+  - product_approval
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: 0
+  notes: EASA — European aviation safety regulator. Type certifications for AIR.PA, MTU.DE, SAF.PA engines. MAX return-to-service
+    coordination with FAA.
+  lineage:
+    authored_by: phase_b_industrials_opus
+    authored_at: '2026-04-22T00:52:28Z'
+- source_id: sector.industrials.enr
+  source_name: Engineering News-Record
+  url: https://www.enr.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - contract_award
+  - ma_announcement
+  - executive_change
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: 0
+  notes: ENR (McGraw-Hill) — US construction industry authority. Top 400 Contractors, Top 200 Design Firms. Moves ACM, J,
+    FLR, KBR, EME, MTZ, PRIM, STRL.
+  lineage:
+    authored_by: phase_b_industrials_opus
+    authored_at: '2026-04-22T00:52:28Z'
+- source_id: sector.industrials.faa_news
+  source_name: FAA — Newsroom
+  url: https://www.faa.gov/newsroom
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - regulatory_action
+  - product_approval
+  - sector_regulation
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: 0
+  notes: FAA press — airworthiness directives, type certifications, safety actions. Major BA driver (MAX grounding, 787 production).
+    Moves BA, SPR, UAL, AAL, DAL, LUV.
+  lineage:
+    authored_by: phase_b_industrials_opus
+    authored_at: '2026-04-22T00:52:28Z'
+- source_id: sector.industrials.flightglobal
+  source_name: FlightGlobal
+  url: https://www.flightglobal.com/
+  adapter_type: rss
+  jurisdiction: GB
+  language: en
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - contract_award
+  - product_launch
+  - ma_announcement
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: 0
+  notes: FlightGlobal (DVV) — global aerospace + airline trade. Airshow order tracking (Paris, Farnborough, Dubai, Singapore).
+  lineage:
+    authored_by: phase_b_industrials_opus
+    authored_at: '2026-04-22T00:52:28Z'
+- source_id: sector.industrials.freightwaves
+  source_name: FreightWaves
+  url: https://www.freightwaves.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - macro_data_release
+  - ma_announcement
+  - executive_change
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: -15
+  notes: FreightWaves — real-time freight/trucking/supply-chain. SONAR data (tender rejections, spot rates). Moves ODFL, SAIA,
+    XPO, KNX, WERN, JBHT, ARCB, CHRW, LSTR.
+  lineage:
+    authored_by: phase_b_industrials_opus
+    authored_at: '2026-04-22T00:52:28Z'
+- source_id: sector.industrials.handelsblatt_industry
+  source_name: Handelsblatt — Unternehmen (industrial)
+  url: https://www.handelsblatt.com/unternehmen/industrie/
+  adapter_type: scraper
+  jurisdiction: DE
+  language: en
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - ma_announcement
+  - executive_change
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: -30
+  notes: Handelsblatt industry desk — scoop rate high for SIE.DE, RHM.DE, MTX.DE, LHA.DE, KGX.DE, DHL.DE.
+  lineage:
+    authored_by: phase_b_industrials_opus
+    authored_at: '2026-04-22T00:52:28Z'
+- source_id: sector.industrials.iata_news
+  source_name: IATA — Pressroom
+  url: https://www.iata.org/en/pressroom/
+  adapter_type: rss
+  jurisdiction: XX
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  - sector_regulation
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: 0
+  notes: IATA monthly Air Passenger Market Analysis + Financial Monitor. Global airline demand dashboard.
+  lineage:
+    authored_by: phase_b_industrials_opus
+    authored_at: '2026-04-22T00:52:28Z'
+- source_id: sector.industrials.icao_news
+  source_name: ICAO — Newsroom
+  url: https://www.icao.int/Newsroom/Pages/default.aspx
+  adapter_type: scraper
+  jurisdiction: XX
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - sector_regulation
+  - macro_data_release
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: ICAO — global civil aviation policy. CORSIA carbon scheme, traffic forecasts.
+  lineage:
+    authored_by: phase_b_industrials_opus
+    authored_at: '2026-04-22T00:52:28Z'
+- source_id: sector.industrials.imo_news
+  source_name: IMO — Media Centre
+  url: https://www.imo.org/en/MediaCentre/Pages/Default.aspx
+  adapter_type: scraper
+  jurisdiction: XX
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - sector_regulation
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: IMO — UN shipping regulator. IMO 2020 sulphur, EEXI/CII rules. Moves shipping fuel economics.
+  lineage:
+    authored_by: phase_b_industrials_opus
+    authored_at: '2026-04-22T00:52:28Z'
+- source_id: sector.industrials.industryweek
+  source_name: IndustryWeek
+  url: https://www.industryweek.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - executive_change
+  - ma_announcement
+  edge_weight_prior: 0.55
+  typical_lead_time_vs_english_minutes: 60
+  notes: IndustryWeek — broad US manufacturing coverage. Executive profiles, operational strategy.
+  lineage:
+    authored_by: phase_b_industrials_opus
+    authored_at: '2026-04-22T00:52:28Z'
+- source_id: sector.industrials.ism_manufacturing
+  source_name: ISM — Manufacturing PMI
+  url: https://www.ismworld.org/supply-management-news-and-reports/reports/ism-report-on-business/pmi/
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: 0
+  notes: ISM Manufacturing PMI monthly (1st business day 10am ET). Direct industrial-economy health signal. Moves machinery,
+    logistics, electrical-components names.
+  lineage:
+    authored_by: phase_b_industrials_opus
+    authored_at: '2026-04-22T00:52:28Z'
+- source_id: sector.industrials.ism_services
+  source_name: ISM — Services PMI
+  url: https://www.ismworld.org/supply-management-news-and-reports/reports/ism-report-on-business/services/
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: ISM Services PMI monthly (3rd business day). Commercial services + staffing demand indicator.
+  lineage:
+    authored_by: phase_b_industrials_opus
+    authored_at: '2026-04-22T00:52:28Z'
+- source_id: sector.industrials.janes
+  source_name: Janes
+  url: https://www.janes.com/
+  adapter_type: scraper
+  jurisdiction: GB
+  language: en
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - contract_award
+  - sector_regulation
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: 0
+  notes: Janes Defence Weekly — defense intelligence authority. Platform tracking + program analysis. Expensive.
+  lineage:
+    authored_by: phase_b_industrials_opus
+    authored_at: '2026-04-22T00:52:28Z'
+- source_id: sector.industrials.jmtba
+  source_name: JMTBA — Japan Machine Tool Builders' Association
+  url: https://www.jmtba.or.jp/english/
+  adapter_type: scraper
+  jurisdiction: JP
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: 0
+  notes: JMTBA monthly machine-tool orders (domestic + export). Leading indicator for 6954 Fanuc, 6301 Komatsu, 6141 DMG Mori,
+    6103 Okuma, 6135 Makino.
+  lineage:
+    authored_by: phase_b_industrials_opus
+    authored_at: '2026-04-22T00:52:28Z'
+- source_id: sector.industrials.joc
+  source_name: Journal of Commerce
+  url: https://www.joc.com/
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - commodity_price_event
+  - macro_data_release
+  - ma_announcement
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: 0
+  notes: JoC (S&P Global) — ocean + air cargo authority. Trans-Pacific rate index, port data. Primary source for MAERSK, ZIM,
+    MATX, HLAG.DE.
+  lineage:
+    authored_by: phase_b_industrials_opus
+    authored_at: '2026-04-22T00:52:28Z'
+- source_id: sector.industrials.jpx_tdnet_industrial
+  source_name: JPX — TDnet Disclosures (industrial-heavy filter)
+  url: https://www.release.tdnet.info/inbs/I_main_00.html
+  adapter_type: scraper
+  jurisdiction: JP
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - material_disclosure
+  - earnings_report
+  - contract_award
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: -60
+  notes: JPX TDnet — primary JP-listed disclosure feed. 7011, 7012, 7013, 6301, 6501, 6954 earnings land here first.
+  lineage:
+    authored_by: phase_b_industrials_opus
+    authored_at: '2026-04-22T00:52:28Z'
+- source_id: sector.industrials.leeham_news
+  source_name: Leeham News
+  url: https://leehamnews.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - product_launch
+  - executive_change
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: Leeham News — commercial aerospace analysis. Strong BA + AIR.PA coverage. Bjorn Fehrm engineering columns.
+  lineage:
+    authored_by: phase_b_industrials_opus
+    authored_at: '2026-04-22T00:52:28Z'
+- source_id: sector.industrials.les_echos_industrie
+  source_name: Les Echos — Industrie
+  url: https://www.lesechos.fr/industrie-services
+  adapter_type: scraper
+  jurisdiction: FR
+  language: en
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - ma_announcement
+  - executive_change
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: -30
+  notes: Les Echos industry section — AIR.PA, SAF.PA, HO.PA, LR.PA, SU.PA, DG.PA (Vinci), EN.PA Bouygues.
+  lineage:
+    authored_by: phase_b_industrials_opus
+    authored_at: '2026-04-22T00:52:28Z'
+- source_id: sector.industrials.lloyds_list
+  source_name: Lloyd's List
+  url: https://www.lloydslist.com/
+  adapter_type: scraper
+  jurisdiction: GB
+  language: en
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - ma_announcement
+  - executive_change
+  - sector_regulation
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: 0
+  notes: Lloyd's List — 280-year shipping authority (Informa). Port calls, casualties, M&A. Paid.
+  lineage:
+    authored_by: phase_b_industrials_opus
+    authored_at: '2026-04-22T00:52:28Z'
+- source_id: sector.industrials.logistics_mgmt
+  source_name: Logistics Management
+  url: https://www.logisticsmgmt.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - ma_announcement
+  - product_launch
+  edge_weight_prior: 0.6
+  typical_lead_time_vs_english_minutes: 60
+  notes: Logistics Management — 3PL + warehousing trade. LMI supply-chain confidence index monthly.
+  lineage:
+    authored_by: phase_b_industrials_opus
+    authored_at: '2026-04-22T00:52:28Z'
+- source_id: sector.industrials.nhtsa_recalls
+  source_name: NHTSA — Recalls
+  url: https://www.nhtsa.gov/recalls
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - recall
+  - regulatory_action
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: 0
+  notes: NHTSA recalls — truck/bus/trailer recalls for PCAR, CMI, CNH, AGCO, OSK, MTW, WNC, ALSN, TRN.
+  lineage:
+    authored_by: phase_b_industrials_opus
+    authored_at: '2026-04-22T00:52:28Z'
+- source_id: sector.industrials.nikkei_heavy_industry
+  source_name: Nikkei Asia — Industrial / Manufacturing
+  url: https://asia.nikkei.com/Business/Manufacturing
+  adapter_type: rss
+  jurisdiction: JP
+  language: en
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - ma_announcement
+  - executive_change
+  - contract_award
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: -60
+  notes: Nikkei Asia manufacturing/industrial section. JP-first on Mitsubishi/Mitsui/Sumitomo trading-house deals + heavy-industry
+    orders. Moves 8031, 8058, 8053, 8002, 7011, 7012, 7013, 6301, 6501, 6954.
+  lineage:
+    authored_by: phase_b_industrials_opus
+    authored_at: '2026-04-22T00:52:28Z'
+- source_id: sector.industrials.ntsb_news
+  source_name: NTSB — News Releases
+  url: https://www.ntsb.gov/news/Pages/default.aspx
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - regulatory_action
+  - litigation
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: 0
+  notes: NTSB accident investigations. Preliminary + final reports. Moves BA (737 MAX, door plug), airlines post-incident.
+  lineage:
+    authored_by: phase_b_industrials_opus
+    authored_at: '2026-04-22T00:52:28Z'
+- source_id: sector.industrials.osha_news
+  source_name: OSHA — News
+  url: https://www.osha.gov/news
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - regulatory_action
+  edge_weight_prior: 0.65
+  typical_lead_time_vs_english_minutes: 0
+  notes: OSHA enforcement actions + citations. Industrial safety + staffing services exposure.
+  lineage:
+    authored_by: phase_b_industrials_opus
+    authored_at: '2026-04-22T00:52:28Z'
+- source_id: sector.industrials.progressive_railroading
+  source_name: Progressive Railroading
+  url: https://www.progressiverailroading.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - ma_announcement
+  - executive_change
+  - contract_award
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: Progressive Railroading — US freight + passenger rail. Carload + intermodal data, Class I operator coverage. Moves
+    CSX, UNP, NSC, WAB, RBA.
+  lineage:
+    authored_by: phase_b_industrials_opus
+    authored_at: '2026-04-22T00:52:28Z'
+- source_id: sector.industrials.railway_gazette
+  source_name: Railway Gazette
+  url: https://www.railwaygazette.com/
+  adapter_type: rss
+  jurisdiction: GB
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - contract_award
+  - product_launch
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: Railway Gazette International — global rail news. Rolling-stock orders, signalling contracts. Moves WAB, ALO.PA,
+    SIE.DE, KBX.DE.
+  lineage:
+    authored_by: phase_b_industrials_opus
+    authored_at: '2026-04-22T00:52:28Z'
+- source_id: sector.industrials.runway_girl
+  source_name: Runway Girl Network
+  url: https://runwaygirlnetwork.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - product_launch
+  - contract_award
+  edge_weight_prior: 0.5
+  typical_lead_time_vs_english_minutes: 60
+  notes: Runway Girl — IFE/connectivity trade. Niche on cabin systems + inflight connectivity.
+  lineage:
+    authored_by: phase_b_industrials_opus
+    authored_at: '2026-04-22T00:52:28Z'
+- source_id: sector.industrials.sca
+  source_name: Shanghai Containerized Freight Index
+  url: https://en.sse.net.cn/indices/scfinew.jsp
+  adapter_type: scraper
+  jurisdiction: XX
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - commodity_price_event
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: 0
+  notes: SCFI — Shanghai export container rate index. Friday 5pm CT. Leading indicator for container line earnings.
+  lineage:
+    authored_by: phase_b_industrials_opus
+    authored_at: '2026-04-22T00:52:28Z'
+- source_id: sector.industrials.seatrade_maritime
+  source_name: Seatrade Maritime
+  url: https://www.seatrade-maritime.com/
+  adapter_type: rss
+  jurisdiction: GB
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - ma_announcement
+  - sector_regulation
+  edge_weight_prior: 0.65
+  typical_lead_time_vs_english_minutes: 0
+  notes: Seatrade Maritime — Informa shipping news. Cruise + tanker + container coverage.
+  lineage:
+    authored_by: phase_b_industrials_opus
+    authored_at: '2026-04-22T00:52:28Z'
+- source_id: sector.industrials.shephard_media
+  source_name: Shephard Media
+  url: https://www.shephardmedia.com/news/
+  adapter_type: rss
+  jurisdiction: GB
+  language: en
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - contract_award
+  - product_launch
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: Shephard Media — UK-based global defense trade. Naval/land/air subscriptions. Moves BAE.L, RHM.DE, Thales, Leonardo.
+  lineage:
+    authored_by: phase_b_industrials_opus
+    authored_at: '2026-04-22T00:52:28Z'
+- source_id: sector.industrials.simple_flying
+  source_name: Simple Flying
+  url: https://simpleflying.com/
+  adapter_type: rss
+  jurisdiction: GB
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - product_launch
+  - executive_change
+  edge_weight_prior: 0.55
+  typical_lead_time_vs_english_minutes: 60
+  notes: Simple Flying — consumer-aviation site. Fleet orders + route launches aggregation. Low signal-to-noise, breadth.
+  lineage:
+    authored_by: phase_b_industrials_opus
+    authored_at: '2026-04-22T00:52:28Z'
+- source_id: sector.industrials.sp_global_pmi
+  source_name: S&P Global PMI
+  url: https://www.pmi.spglobal.com/Public/Home/PressReleases
+  adapter_type: scraper
+  jurisdiction: XX
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: 0
+  notes: S&P Global flash + final PMIs for DE, FR, UK, JP, EU, US, global. Broad industrial-demand signal.
+  lineage:
+    authored_by: phase_b_industrials_opus
+    authored_at: '2026-04-22T00:52:28Z'
+- source_id: sector.industrials.splash247
+  source_name: Splash247
+  url: https://splash247.com/
+  adapter_type: rss
+  jurisdiction: SG
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - ma_announcement
+  - executive_change
+  - commodity_price_event
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: Splash247 — Asia-based shipping news. Free complement to Lloyd's List/TradeWinds.
+  lineage:
+    authored_by: phase_b_industrials_opus
+    authored_at: '2026-04-22T00:52:28Z'
+- source_id: sector.industrials.stb_news
+  source_name: STB — Surface Transportation Board News
+  url: https://www.stb.gov/news-communications/
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - regulatory_action
+  - sector_regulation
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: 0
+  notes: STB — US freight rail regulator. Service quality rulings, merger reviews (CP+KSU, STB oversight of CSX/NSC). Key
+    for Class I investment thesis.
+  lineage:
+    authored_by: phase_b_industrials_opus
+    authored_at: '2026-04-22T00:52:28Z'
+- source_id: sector.industrials.supplychaindive
+  source_name: Supply Chain Dive
+  url: https://www.supplychaindive.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - ma_announcement
+  - executive_change
+  - macro_data_release
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: Supply Chain Dive — logistics + 3PL news. Free-tier counterpart to JoC/Transport Topics.
+  lineage:
+    authored_by: phase_b_industrials_opus
+    authored_at: '2026-04-22T00:52:28Z'
+- source_id: sector.industrials.the_air_current
+  source_name: The Air Current
+  url: https://theaircurrent.com/
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: paid
+  update_cadence: weekly
+  event_types_covered:
+  - product_launch
+  - contract_award
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: -30
+  notes: The Air Current (Jon Ostrower) — commercial aerospace scoops. Frequently ahead of wires on 737 MAX/787 issues.
+  lineage:
+    authored_by: phase_b_industrials_opus
+    authored_at: '2026-04-22T00:52:28Z'
+- source_id: sector.industrials.the_war_zone
+  source_name: The War Zone
+  url: https://www.twz.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - contract_award
+  - product_launch
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: The War Zone (Recurrent Ventures) — defense/OSINT news. Scoops on new programs + capability reveals.
+  lineage:
+    authored_by: phase_b_industrials_opus
+    authored_at: '2026-04-22T00:52:28Z'
+- source_id: sector.industrials.tradewinds
+  source_name: TradeWinds
+  url: https://www.tradewindsnews.com/
+  adapter_type: scraper
+  jurisdiction: 'NO'
+  language: en
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - ma_announcement
+  - executive_change
+  - contract_award
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: 0
+  notes: TradeWinds (NHST) — global shipping daily. Fixture + S&P scoops. Moves MAERSK, ZIM, CMRE, SB, SNI, HAUTO, 9101, 9104,
+    9107.
+  lineage:
+    authored_by: phase_b_industrials_opus
+    authored_at: '2026-04-22T00:52:28Z'
+- source_id: sector.industrials.transport_topics
+  source_name: Transport Topics
+  url: https://www.ttnews.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - macro_data_release
+  - ma_announcement
+  - sector_regulation
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: Transport Topics — ATA trade publication. Top 100 trucking rankings, driver shortage, ELD/HoS coverage.
+  lineage:
+    authored_by: phase_b_industrials_opus
+    authored_at: '2026-04-22T00:52:28Z'
+- source_id: sector.industrials.tsa_throughput
+  source_name: TSA — Daily Passenger Throughput
+  url: https://www.tsa.gov/travel/passenger-volumes
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - macro_data_release
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: 0
+  notes: TSA daily US checkpoint throughput. Real-time airline demand proxy. Moves DAL, UAL, AAL, LUV, ALK, JBLU, ALGT, ULCC.
+  lineage:
+    authored_by: phase_b_industrials_opus
+    authored_at: '2026-04-22T00:52:28Z'
+- source_id: sector.industrials.waste360
+  source_name: Waste360
+  url: https://www.waste360.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - ma_announcement
+  - product_launch
+  edge_weight_prior: 0.65
+  typical_lead_time_vs_english_minutes: 0
+  notes: Waste360 — Informa waste management trade. Landfill + recycling rate reporting.
+  lineage:
+    authored_by: phase_b_industrials_opus
+    authored_at: '2026-04-22T00:52:28Z'
+- source_id: sector.industrials.waste_dive
+  source_name: Waste Dive
+  url: https://www.wastedive.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - ma_announcement
+  - sector_regulation
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: Waste Dive — daily waste/recycling trade. Moves WM, RSG, WCN, CLH, CWST.
+  lineage:
+    authored_by: phase_b_industrials_opus
+    authored_at: '2026-04-22T00:52:28Z'
+- source_id: sector.industrials.wsc_liner
+  source_name: World Shipping Council
+  url: https://www.worldshipping.org/news
+  adapter_type: scraper
+  jurisdiction: XX
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - sector_regulation
+  edge_weight_prior: 0.65
+  typical_lead_time_vs_english_minutes: 0
+  notes: WSC — container-line trade body. IMO/decarbonisation advocacy, port congestion reporting.
+  lineage:
+    authored_by: phase_b_industrials_opus
+    authored_at: '2026-04-22T00:52:28Z'

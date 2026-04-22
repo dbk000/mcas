@@ -1,0 +1,50 @@
+- source_id: sub_industry.industrials.marine_shipping.alphaliner
+  source_name: Alphaliner
+  url: https://alphaliner.axsmarine.com/PublicTop100/
+  adapter_type: scraper
+  jurisdiction: XX
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: Alphaliner Top 100 container carriers. Capacity + market-share tracking for MAERSK, HLAG.DE, ZIM, 1308 SITC.
+  lineage:
+    authored_by: phase_b_industrials_opus
+    authored_at: '2026-04-22T00:52:28Z'
+- source_id: sub_industry.industrials.marine_shipping.clarksons
+  source_name: Clarksons Research
+  url: https://sin.clarksons.net/
+  adapter_type: scraper
+  jurisdiction: GB
+  language: en
+  cost_tier: paid
+  update_cadence: weekly
+  event_types_covered:
+  - commodity_price_event
+  - macro_data_release
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: 0
+  notes: Clarksons — shipbroker/research. Orderbook + newbuild + scrap data. Authoritative source for shipping supply dynamics.
+  lineage:
+    authored_by: phase_b_industrials_opus
+    authored_at: '2026-04-22T00:52:28Z'
+- source_id: sub_industry.industrials.marine_shipping.vessels_value
+  source_name: VesselsValue
+  url: https://www.vesselsvalue.com/insights/
+  adapter_type: scraper
+  jurisdiction: GB
+  language: en
+  cost_tier: paid
+  update_cadence: weekly
+  event_types_covered:
+  - commodity_price_event
+  - macro_data_release
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: VesselsValue (Veson) — vessel asset valuations. S&P deal benchmarks. Moves CMRE, SB, PANL, SNI.
+  lineage:
+    authored_by: phase_b_industrials_opus
+    authored_at: '2026-04-22T00:52:28Z'

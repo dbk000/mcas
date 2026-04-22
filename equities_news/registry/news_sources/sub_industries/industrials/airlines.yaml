@@ -1,0 +1,66 @@
+- source_id: sub_industry.industrials.airlines.arc_data
+  source_name: ARC — Air-Ticket Transaction Data
+  url: https://www2.arccorp.com/insights-and-trends/
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: 0
+  notes: ARC — Airline Reporting Corp. Weekly US travel-agency ticket transactions. Revenue leading indicator.
+  lineage:
+    authored_by: phase_b_industrials_opus
+    authored_at: '2026-04-22T00:52:28Z'
+- source_id: sub_industry.industrials.airlines.bts_t100
+  source_name: BTS — T-100 Air Carrier Statistics
+  url: https://www.bts.gov/newsroom
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: BTS monthly T-100 carrier-level traffic. Domestic + international segment ASMs/RPMs for all US airlines.
+  lineage:
+    authored_by: phase_b_industrials_opus
+    authored_at: '2026-04-22T00:52:28Z'
+- source_id: sub_industry.industrials.airlines.dot_air_travel_consumer
+  source_name: DoT — Air Travel Consumer Report
+  url: https://www.transportation.gov/airconsumer/air-travel-consumer-reports
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  - regulatory_action
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: DoT monthly on-time + mishandled-bag + complaint rankings. Name-specific for DAL, UAL, AAL, LUV, ALK, JBLU, ALGT,
+    ULCC.
+  lineage:
+    authored_by: phase_b_industrials_opus
+    authored_at: '2026-04-22T00:52:28Z'
+- source_id: sub_industry.industrials.airlines.pydc
+  source_name: Paddle Your Own Kanoo
+  url: https://www.paddleyourownkanoo.com/
+  adapter_type: rss
+  jurisdiction: GB
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - executive_change
+  edge_weight_prior: 0.45
+  typical_lead_time_vs_english_minutes: 60
+  notes: Airline crew-focused niche. Labor action + cabin crew disputes.
+  lineage:
+    authored_by: phase_b_industrials_opus
+    authored_at: '2026-04-22T00:52:28Z'

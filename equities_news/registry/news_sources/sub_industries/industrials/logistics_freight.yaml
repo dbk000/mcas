@@ -1,0 +1,67 @@
+- source_id: sub_industry.industrials.logistics_freight.fmc_news
+  source_name: FMC — Federal Maritime Commission News
+  url: https://www.fmc.gov/news-resources/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - regulatory_action
+  - sector_regulation
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: FMC enforcement of Ocean Shipping Reform Act. Detention/demurrage rules + carrier conduct. Moves MAERSK, ZIM, HLAG.DE
+    exposure to US.
+  lineage:
+    authored_by: phase_b_industrials_opus
+    authored_at: '2026-04-22T00:52:28Z'
+- source_id: sub_industry.industrials.logistics_freight.fmcsa_safety
+  source_name: FMCSA — Safety Announcements
+  url: https://www.fmcsa.dot.gov/newsroom
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - regulatory_action
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: FMCSA — US trucking safety regulator. ELD/HoS rules, driver shortage policy, Clearinghouse enforcement.
+  lineage:
+    authored_by: phase_b_industrials_opus
+    authored_at: '2026-04-22T00:52:28Z'
+- source_id: sub_industry.industrials.logistics_freight.marad_data
+  source_name: MARAD — Maritime Administration
+  url: https://www.maritime.dot.gov/newsroom
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - sector_regulation
+  - macro_data_release
+  edge_weight_prior: 0.65
+  typical_lead_time_vs_english_minutes: 0
+  notes: MARAD — Jones Act enforcement, US-flag fleet data. Moves MATX, Kirby (KEX), US shipyards.
+  lineage:
+    authored_by: phase_b_industrials_opus
+    authored_at: '2026-04-22T00:52:28Z'
+- source_id: sub_industry.industrials.logistics_freight.ocean_freight_analytics
+  source_name: Xeneta — Ocean Freight Benchmarks
+  url: https://www.xeneta.com/resources
+  adapter_type: scraper
+  jurisdiction: 'NO'
+  language: en
+  cost_tier: paid
+  update_cadence: weekly
+  event_types_covered:
+  - commodity_price_event
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: Xeneta — contract + spot ocean rates. Near-real-time benchmarks for MAERSK, HLAG.DE, ZIM.
+  lineage:
+    authored_by: phase_b_industrials_opus
+    authored_at: '2026-04-22T00:52:28Z'

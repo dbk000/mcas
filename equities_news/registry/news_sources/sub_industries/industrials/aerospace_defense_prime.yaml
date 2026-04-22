@@ -1,0 +1,66 @@
+- source_id: sub_industry.industrials.aerospace_defense_prime.gao_reports
+  source_name: GAO — Defense Weapon Systems Assessments
+  url: https://www.gao.gov/reports-testimonies?topic%5B0%5D=17
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - regulatory_action
+  - material_disclosure
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: GAO annual Weapon Systems Assessment (May) — program cost/schedule status. F-35, Columbia-class, Sentinel ICBM coverage.
+  lineage:
+    authored_by: phase_b_industrials_opus
+    authored_at: '2026-04-22T00:52:28Z'
+- source_id: sub_industry.industrials.aerospace_defense_prime.sam_gov
+  source_name: SAM.gov — Federal Contract Opportunities
+  url: https://sam.gov/content/opportunities
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - contract_award
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: -60
+  notes: SAM.gov — official US federal contracting portal. Pre-award solicitations + awards. Leading DoD-contracts indicator.
+  lineage:
+    authored_by: phase_b_industrials_opus
+    authored_at: '2026-04-22T00:52:28Z'
+- source_id: sub_industry.industrials.aerospace_defense_prime.sipri_armsdb
+  source_name: SIPRI — Arms Industry Database
+  url: https://www.sipri.org/databases/armsindustry
+  adapter_type: scraper
+  jurisdiction: XX
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  edge_weight_prior: 0.6
+  typical_lead_time_vs_english_minutes: 0
+  notes: SIPRI annual Top 100 arms-producing companies. Peer benchmarking + market-share analysis.
+  lineage:
+    authored_by: phase_b_industrials_opus
+    authored_at: '2026-04-22T00:52:28Z'
+- source_id: sub_industry.industrials.aerospace_defense_prime.state_dmc
+  source_name: US State Dept — DSCA Major Arms Sales
+  url: https://www.dsca.mil/press-media/major-arms-sales
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - contract_award
+  - sector_regulation
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: 0
+  notes: DSCA FMS case notifications to Congress. Multi-billion deals for LMT, RTX, NOC, GD, BA. Export-license dependent.
+  lineage:
+    authored_by: phase_b_industrials_opus
+    authored_at: '2026-04-22T00:52:28Z'

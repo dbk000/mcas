@@ -1,0 +1,48 @@
+- source_id: sub_industry.industrials.machinery_heavy_equipment.aed_rental
+  source_name: AED — Associated Equipment Distributors
+  url: https://www.aednet.org/news/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  edge_weight_prior: 0.65
+  typical_lead_time_vs_english_minutes: 0
+  notes: AED — equipment dealer association. Distributor channel health for CAT/DE/CMI. URI/HRI/HERC rental backdrop.
+  lineage:
+    authored_by: phase_b_industrials_opus
+    authored_at: '2026-04-22T00:52:28Z'
+- source_id: sub_industry.industrials.machinery_heavy_equipment.aem_data
+  source_name: AEM — Association of Equipment Manufacturers
+  url: https://www.aem.org/news
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: AEM monthly ag + construction equipment shipments. Direct-demand signal for CAT, DE, AGCO, CNH, OSK.
+  lineage:
+    authored_by: phase_b_industrials_opus
+    authored_at: '2026-04-22T00:52:28Z'
+- source_id: sub_industry.industrials.machinery_heavy_equipment.oem_off_highway
+  source_name: OEM Off-Highway Magazine
+  url: https://www.oemoffhighway.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - product_launch
+  edge_weight_prior: 0.55
+  typical_lead_time_vs_english_minutes: 60
+  notes: OEM Off-Highway — drivetrain + component trade. Supplier-side view of CAT/DE/Komatsu supply chain.
+  lineage:
+    authored_by: phase_b_industrials_opus
+    authored_at: '2026-04-22T00:52:28Z'

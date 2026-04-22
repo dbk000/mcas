@@ -1,0 +1,34 @@
+- source_id: sub_industry.industrials.trading_houses_jp.jetro_news
+  source_name: JETRO — News
+  url: https://www.jetro.go.jp/en/news/
+  adapter_type: rss
+  jurisdiction: JP
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  - sector_regulation
+  edge_weight_prior: 0.6
+  typical_lead_time_vs_english_minutes: 60
+  notes: JETRO — Japan External Trade Organization. JP outbound investment + trade flows. Trading-house context.
+  lineage:
+    authored_by: phase_b_industrials_opus
+    authored_at: '2026-04-22T00:52:28Z'
+- source_id: sub_industry.industrials.trading_houses_jp.meti_trade_stats
+  source_name: METI — Trade Statistics
+  url: https://www.meti.go.jp/english/statistics/
+  adapter_type: scraper
+  jurisdiction: JP
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: METI monthly trade statistics. JP trading-house export/import drivers. Moves 8031 Mitsui, 8058 Mitsubishi, 8053 Sumitomo,
+    8002 Marubeni, 2768 Sojitz, 8001 Itochu.
+  lineage:
+    authored_by: phase_b_industrials_opus
+    authored_at: '2026-04-22T00:52:28Z'
