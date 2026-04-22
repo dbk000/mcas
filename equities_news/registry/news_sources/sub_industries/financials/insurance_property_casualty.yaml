@@ -1,0 +1,52 @@
+- source_id: sub_industry.financials.insurance_property_casualty.munich_re_natcat
+  source_name: Munich Re — NatCatSERVICE
+  url: https://www.munichre.com/en/solutions/reinsurance-property-casualty/natcatservice.html
+  adapter_type: scraper
+  jurisdiction: DE
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  - material_disclosure
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: 0
+  notes: Munich Re NatCatSERVICE — authoritative natural-catastrophe loss database. Annual Jan report drives reinsurance pricing
+    narrative.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sub_industry.financials.insurance_property_casualty.noaa_nhc
+  source_name: NOAA National Hurricane Center
+  url: https://www.nhc.noaa.gov/
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - material_disclosure
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: 0
+  notes: NOAA NHC — Atlantic + Pacific tropical cyclone advisories. Real-time landfall + intensity data. Direct driver of
+    P&C claims exposure (TRV, ALL, PGR, UVE, HCI, HRTG, ACIC).
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sub_industry.financials.insurance_property_casualty.swissre_sigma
+  source_name: Swiss Re Sigma
+  url: https://www.swissre.com/institute/research/sigma-research.html
+  adapter_type: scraper
+  jurisdiction: CH
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: 0
+  notes: Swiss Re Sigma — global insurance premium + cat-loss reports. Annual World Insurance issue + Natural Catastrophe
+    report.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'

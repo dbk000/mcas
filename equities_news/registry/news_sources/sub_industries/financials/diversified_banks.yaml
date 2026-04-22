@@ -1,0 +1,53 @@
+- source_id: sub_industry.financials.diversified_banks.ccar_dfast
+  source_name: Federal Reserve — CCAR / DFAST Results
+  url: https://www.federalreserve.gov/supervisionreg/stress-tests-capital-planning.htm
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - regulatory_action
+  - material_disclosure
+  edge_weight_prior: 0.95
+  typical_lead_time_vs_english_minutes: 0
+  notes: Annual Comprehensive Capital Analysis and Review + DFAST results (late June). Drives buyback/dividend capacity for
+    every US BHC. Major single event.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sub_industry.financials.diversified_banks.fdic_call_reports
+  source_name: FDIC Call Reports
+  url: https://www.fdic.gov/resources/bankers/call-reports/
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - material_disclosure
+  - macro_data_release
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: 0
+  notes: Quarterly Call Report filings for every FDIC-insured US bank. Primary source for bank-specific deposits, loans, capital,
+    NPLs.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sub_industry.financials.diversified_banks.fed_y9c
+  source_name: Federal Reserve — Y-9C / Y-9LP
+  url: https://www.federalreserve.gov/apps/mdrm/data-dictionary/search/series
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - material_disclosure
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: 0
+  notes: Bank Holding Company Y-9C consolidated financials (quarterly). Primary BHC-level statement source for JPM, BAC, WFC,
+    C, USB, TFC, PNC.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'

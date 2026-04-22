@@ -1,0 +1,33 @@
+- source_id: sub_industry.financials.asset_management_custody_banks.ici_fund_flows
+  source_name: ICI — Weekly Fund Flows
+  url: https://www.ici.org/research/stats
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: 0
+  notes: Investment Company Institute — weekly ETF + MF flow data. Direct read on asset-manager revenue trajectory (BLK, TROW,
+    IVZ, BEN, AMG, SDR).
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sub_industry.financials.asset_management_custody_banks.morningstar_flows
+  source_name: Morningstar — Fund Flow Research
+  url: https://www.morningstar.com/lp/asset-flows
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: paid
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: Morningstar Direct — global fund flows + Category Kings. Monthly + quarterly reports with manager rankings.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'

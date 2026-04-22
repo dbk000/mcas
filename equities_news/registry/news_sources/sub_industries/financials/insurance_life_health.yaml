@@ -1,0 +1,17 @@
+- source_id: sub_industry.financials.insurance_life_health.limra_press
+  source_name: LIMRA — News
+  url: https://www.limra.com/en/newsroom/news-releases/
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: LIMRA/LOMA — quarterly annuity + life insurance industry sales surveys. Direct read on MET, PRU, LNC, JXN, EQH, AFL,
+    GL, CNO revenue trajectory.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'

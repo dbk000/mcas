@@ -1,0 +1,1316 @@
+- source_id: sector.financials.am_best
+  source_name: AM Best — News
+  url: https://news.ambest.com/newscontent.aspx?AltSrc=108
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - sell_side_rating_change
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: 0
+  notes: AM Best — insurance industry ratings authority. P&C/life/reinsurance ratings. Moves TRV, ALL, CB, PGR, RNR, RGA.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sector.financials.american_banker
+  source_name: American Banker
+  url: https://www.americanbanker.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - ma_announcement
+  - executive_change
+  - sector_regulation
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: 0
+  notes: American Banker — daily US banking trade publication. Breaking regional bank M&A, exec moves, regulatory angle.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sector.financials.apra_news
+  source_name: APRA — News
+  url: https://www.apra.gov.au/news-and-publications
+  adapter_type: rss
+  jurisdiction: AU
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - regulatory_action
+  - sector_regulation
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: 0
+  notes: Australian Prudential Regulation Authority — Big 4 bank capital + mortgage stress. Moves CBA, WBC, NAB, ANZ, MQG,
+    SUN, IAG, QBE.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sector.financials.artemis_catbonds
+  source_name: Artemis — Catastrophe Bonds
+  url: https://www.artemis.bm/
+  adapter_type: rss
+  jurisdiction: BM
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - material_disclosure
+  - commodity_price_event
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: 0
+  notes: Artemis.bm — cat-bond + ILS pricing + new issuance. Primary source for cat-bond trigger events, hurricane/earthquake
+    tracking.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sector.financials.axios_financial
+  source_name: Axios Pro — Financial Services
+  url: https://www.axios.com/pro/financial-services
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - ma_announcement
+  - executive_change
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: Axios Pro Financial Services. Brief-form but well-sourced deal + personnel intel.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sector.financials.bafin_news
+  source_name: BaFin — News
+  url: https://www.bafin.de/EN/PublikationenDaten/Jahresbericht/jahresbericht_node_en.html
+  adapter_type: scraper
+  jurisdiction: DE
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - regulatory_action
+  - sector_regulation
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: German BaFin — DBK, CBK, ALV, MUV2 oversight. Wirecard-era credibility reforms.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sector.financials.banking_dive
+  source_name: Banking Dive
+  url: https://www.bankingdive.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - ma_announcement
+  - executive_change
+  - sector_regulation
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: Banking Dive — daily US banking trade. Free-tier counterpart to American Banker. Strong regional bank coverage.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sector.financials.bea_news
+  source_name: BEA — News Releases
+  url: https://www.bea.gov/news
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: US Bureau of Economic Analysis — GDP, PCE, personal income. Banks + insurers macro backdrop.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sector.financials.bis_press
+  source_name: BIS — Press
+  url: https://www.bis.org/list/press_releases/index.htm
+  adapter_type: rss
+  jurisdiction: XX
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - sector_regulation
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: 0
+  notes: Bank for International Settlements — Basel Committee standards. Basel III/IV endgame, systemic-risk buffers. Global
+    bank capital anchor.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sector.financials.boe_financial_stability
+  source_name: Bank of England — Financial Stability
+  url: https://www.bankofengland.co.uk/financial-stability-report
+  adapter_type: scraper
+  jurisdiction: GB
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - sector_regulation
+  - macro_data_release
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: 0
+  notes: BoE Financial Stability Report (2x/year) + PRA press. Moves HSBC, BARC, LLOY, NWG, STAN, Lloyds of London.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sector.financials.boj_statements
+  source_name: Bank of Japan — Statements
+  url: https://www.boj.or.jp/en/announcements/index.htm
+  adapter_type: rss
+  jurisdiction: JP
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - macro_data_release
+  - sector_regulation
+  edge_weight_prior: 0.95
+  typical_lead_time_vs_english_minutes: 0
+  notes: BoJ policy board decisions + YCC adjustments. Japanese mega-bank NIM + insurance-company yield-curve exposure driver.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sector.financials.cfpb_newsroom
+  source_name: CFPB — Newsroom
+  url: https://www.consumerfinance.gov/about-us/newsroom/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - regulatory_action
+  - sector_regulation
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: 0
+  notes: Consumer Financial Protection Bureau enforcement + rulemaking. Credit card late-fee cap, overdraft rules. Moves COF,
+    SYF, DFS, ALLY, BFH.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sector.financials.cftc_press
+  source_name: CFTC — Press Releases
+  url: https://www.cftc.gov/PressRoom/PressReleases
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - regulatory_action
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: 0
+  notes: CFTC press — futures/swaps/derivatives enforcement. Moves CME, ICE, CBOE, crypto enforcement.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sector.financials.coindesk
+  source_name: CoinDesk
+  url: https://www.coindesk.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - ma_announcement
+  - regulatory_action
+  - material_disclosure
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: CoinDesk — crypto industry daily. Exchange regulation, ETF flows, stablecoin policy. Moves COIN, XYZ, HOOD, MSTR
+    (tech), PYPL, Circle IPO-adjacent.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sector.financials.crowdfund_insider
+  source_name: Crowdfund Insider
+  url: https://www.crowdfundinsider.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - ma_announcement
+  - sector_regulation
+  edge_weight_prior: 0.55
+  typical_lead_time_vs_english_minutes: 60
+  notes: Crowdfund Insider — alt-finance + fintech funding rounds. Broad fintech + reg coverage.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sector.financials.dealreporter
+  source_name: Dealreporter
+  url: https://www.dealreporter.com/
+  adapter_type: scraper
+  jurisdiction: GB
+  language: en
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - ma_announcement
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: -60
+  notes: Dealreporter (ION) — M&A intelligence. Deal rumor + antitrust scoops. Often 1-2hr ahead of confirmed wires.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sector.financials.debtwire
+  source_name: Debtwire
+  url: https://www.debtwire.com/
+  adapter_type: scraper
+  jurisdiction: GB
+  language: en
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - ma_announcement
+  - material_disclosure
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: -30
+  notes: Debtwire (ION) — distressed + restructuring intel. Leads on bankruptcy + creditor-group formations.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sector.financials.direct_lending_deals
+  source_name: Direct Lending Deals
+  url: https://www.directlendingdeals.com/
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: paid
+  update_cadence: weekly
+  event_types_covered:
+  - ma_announcement
+  - material_disclosure
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: Direct Lending Deals — private credit trade. BDC + direct-lending fund activity. Moves ARES, OWL, BX, KKR, CG, GCMG.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sector.financials.eba_news
+  source_name: EBA — News & Press
+  url: https://www.eba.europa.eu/publications-and-media/news
+  adapter_type: rss
+  jurisdiction: EU
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - sector_regulation
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: 0
+  notes: European Banking Authority — EU-wide stress tests + technical standards + risk dashboard.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sector.financials.ecb_banking_supervision
+  source_name: ECB Banking Supervision — Press
+  url: https://www.bankingsupervision.europa.eu/press/pr/html/index.en.html
+  adapter_type: rss
+  jurisdiction: EU
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - regulatory_action
+  - sector_regulation
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: 0
+  notes: ECB Single Supervisory Mechanism — stress tests, Pillar 2 decisions, SREP requirements. Moves BNP, SAN, BBVA, ISP,
+    UCG, KBC, INGA, DBK, CBK, ALV.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sector.financials.ecb_press
+  source_name: ECB — Press Releases
+  url: https://www.ecb.europa.eu/press/pr/html/index.en.html
+  adapter_type: rss
+  jurisdiction: EU
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - sector_regulation
+  - macro_data_release
+  edge_weight_prior: 0.95
+  typical_lead_time_vs_english_minutes: 0
+  notes: ECB Governing Council decisions — policy rates + asset purchases. Every EU bank + insurer NIM driver.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sector.financials.eiopa_news
+  source_name: EIOPA — News
+  url: https://www.eiopa.europa.eu/news_en
+  adapter_type: scraper
+  jurisdiction: EU
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - sector_regulation
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: European Insurance and Occupational Pensions Authority — Solvency II reviews, insurance stress tests. Moves ALV,
+    MUV2, AXA, G.MI, ZURN, NN.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sector.financials.esma_news
+  source_name: ESMA — Press
+  url: https://www.esma.europa.eu/press-news/esma-news
+  adapter_type: rss
+  jurisdiction: EU
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - sector_regulation
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: European Securities and Markets Authority — market-structure rules + MiFID III + short-selling disclosures.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sector.financials.etf_com
+  source_name: ETF.com — News
+  url: https://www.etf.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - product_launch
+  - ma_announcement
+  edge_weight_prior: 0.65
+  typical_lead_time_vs_english_minutes: 0
+  notes: ETF.com — ETF industry trade. Flow data, new-launch tracking. Moves BLK/iShares, IVZ, WETF, VRTS.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sector.financials.euromoney
+  source_name: Euromoney
+  url: https://www.euromoney.com/
+  adapter_type: scraper
+  jurisdiction: GB
+  language: en
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - ma_announcement
+  - executive_change
+  - sector_regulation
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: Euromoney — global capital markets + FX trade. Awards for Excellence issue (Jul). Paid tier.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sector.financials.fca_news
+  source_name: FCA UK — News
+  url: https://www.fca.org.uk/news
+  adapter_type: rss
+  jurisdiction: GB
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - regulatory_action
+  - sector_regulation
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: 0
+  notes: Financial Conduct Authority — UK retail + wholesale conduct. Motor finance cases (LLOY, BARC), mis-selling, crypto
+    AR rules.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sector.financials.fdic_press
+  source_name: FDIC — Press Releases
+  url: https://www.fdic.gov/news/press-releases
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - regulatory_action
+  - sector_regulation
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: 0
+  notes: FDIC press releases — bank failures + resolutions + call-report changes. March-2023 SVB/FRC/SBNY moves were FDIC-delivered.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sector.financials.fdic_qbp
+  source_name: FDIC — Quarterly Banking Profile
+  url: https://www.fdic.gov/analysis/quarterly-banking-profile/
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: 0
+  notes: FDIC Quarterly Banking Profile — industry NII, deposits, loan quality, problem-bank list. Primary bank industry dashboard.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sector.financials.fed_h41
+  source_name: Federal Reserve — H.4.1 Factors Affecting Reserve Balances
+  url: https://www.federalreserve.gov/releases/h41/
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: 0
+  notes: Fed H.4.1 Thursdays 4:30pm ET — BTFP + discount window + BS size. Bank stress + liquidity read.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sector.financials.fed_h8
+  source_name: Federal Reserve — H.8 Assets and Liabilities of Commercial Banks
+  url: https://www.federalreserve.gov/releases/h8/
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: 0
+  notes: Fed H.8 weekly — US commercial bank loans + deposits + C&I lending. Direct read on bank lending cycle.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sector.financials.fed_press
+  source_name: Federal Reserve — Press Releases
+  url: https://www.federalreserve.gov/newsevents/pressreleases.htm
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - sector_regulation
+  - regulatory_action
+  - macro_data_release
+  edge_weight_prior: 0.95
+  typical_lead_time_vs_english_minutes: 0
+  notes: Fed press releases — FOMC decisions, supervisory actions, stress-test results. Primary macro driver for every bank
+    and insurer.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sector.financials.fed_sloos
+  source_name: Federal Reserve — Senior Loan Officer Opinion Survey
+  url: https://www.federalreserve.gov/data/sloos.htm
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: 0
+  notes: Quarterly SLOOS — bank lending standards + demand. Leading indicator for C&I + CRE credit cycle.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sector.financials.fhfa_news
+  source_name: Federal Housing Finance Agency — News
+  url: https://www.fhfa.gov/Media
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - sector_regulation
+  - macro_data_release
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: FHFA — Fannie/Freddie oversight + house-price index. Moves mortgage insurers MTG, ESNT, RDN, NMIH; mortgage banks
+    PFSI, RKT, UWMC.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sector.financials.financial_news_london
+  source_name: Financial News London
+  url: https://www.fnlondon.com/
+  adapter_type: scraper
+  jurisdiction: GB
+  language: en
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - ma_announcement
+  - executive_change
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: -15
+  notes: Financial News (WSJ-owned) — London buy-side + sell-side trade. Hedge-fund launches, deal flow, exec moves.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sector.financials.finextra
+  source_name: Finextra
+  url: https://www.finextra.com/
+  adapter_type: rss
+  jurisdiction: GB
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - ma_announcement
+  - product_launch
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: Finextra — global fintech + payments daily. UK/EU focus. ADYEN, WISE, Revolut, Starling, Monzo coverage.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sector.financials.finma_news
+  source_name: FINMA — News
+  url: https://www.finma.ch/en/news/
+  adapter_type: scraper
+  jurisdiction: CH
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - regulatory_action
+  - sector_regulation
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: 0
+  notes: Swiss FINMA — UBS post-CS integration, capital demands, AT1 write-down precedent. Moves UBSG, ZURN, SREN, SLHN, BAER.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sector.financials.finra_news
+  source_name: FINRA — News Center
+  url: https://www.finra.org/media-center/news-releases
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - regulatory_action
+  - sector_regulation
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: FINRA — broker-dealer enforcement + rule changes. Moves SCHW, IBKR, HOOD, MS wealth, JEF, RJF.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sector.financials.fitch_ratings
+  source_name: Fitch Ratings — News
+  url: https://www.fitchratings.com/research
+  adapter_type: scraper
+  jurisdiction: XX
+  language: en
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - sell_side_rating_change
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: 0
+  notes: Fitch Ratings — US sovereign downgrade 2023, EU bank reviews, insurance ratings.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sector.financials.fred_releases
+  source_name: FRED — Release Calendar
+  url: https://fred.stlouisfed.org/releases/calendar
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - macro_data_release
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: 0
+  notes: St. Louis Fed FRED — US macro release calendar. CPI, PCE, NFP timing relevant to every rate-sensitive name.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sector.financials.fsa_japan
+  source_name: JFSA — News
+  url: https://www.fsa.go.jp/en/news/
+  adapter_type: scraper
+  jurisdiction: JP
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - regulatory_action
+  - sector_regulation
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: 60
+  notes: Japan Financial Services Agency — banking/insurance/securities oversight. Moves 8306 MUFG, 8316 SMFG, 8411 Mizuho,
+    8604 Nomura, Japanese regional banks.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sector.financials.fsb_press
+  source_name: Financial Stability Board — Press
+  url: https://www.fsb.org/press/press-releases/
+  adapter_type: rss
+  jurisdiction: XX
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - sector_regulation
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: FSB — G-SIB list (annual Nov), resolution planning, NBFI monitoring.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sector.financials.funds_global
+  source_name: Funds Global
+  url: https://fundsglobalasia.com/
+  adapter_type: scraper
+  jurisdiction: XX
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - ma_announcement
+  - executive_change
+  edge_weight_prior: 0.6
+  typical_lead_time_vs_english_minutes: 0
+  notes: Funds Global Asia/EU — regional asset-management trade. Cross-border fund distribution.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sector.financials.hedge_fund_alert
+  source_name: Hedge Fund Alert
+  url: https://www.hfalert.com/
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: paid
+  update_cadence: weekly
+  event_types_covered:
+  - executive_change
+  - ma_announcement
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: Hedge Fund Alert / Green Street — hedge-fund launches, departures, seed capital.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sector.financials.hkma_press
+  source_name: HKMA — Press
+  url: https://www.hkma.gov.hk/eng/news-and-media/press-releases/
+  adapter_type: rss
+  jurisdiction: HK
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - sector_regulation
+  - macro_data_release
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: Hong Kong Monetary Authority — HKD peg, HK bank oversight. Moves HSBA, STAN, 2388 BOC HK, 23 BEA, Chinese financial
+    HK listings.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sector.financials.ifr_thomson
+  source_name: IFR — International Financing Review
+  url: https://www.ifre.com/
+  adapter_type: scraper
+  jurisdiction: GB
+  language: en
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - ma_announcement
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: 0
+  notes: IFR (LSEG) — primary debt + equity capital markets trade. New-issue pipeline, league tables, syndicate commentary.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sector.financials.ignites
+  source_name: Ignites
+  url: https://www.ignites.com/
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - ma_announcement
+  - executive_change
+  - sector_regulation
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: Ignites (FT Group) — US mutual fund + ETF industry trade. Fund launches, share-class changes, fee wars.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sector.financials.imf_press
+  source_name: IMF — Press
+  url: https://www.imf.org/en/News
+  adapter_type: rss
+  jurisdiction: XX
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - macro_data_release
+  - sector_regulation
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: IMF — WEO (Apr/Oct), Global Financial Stability Report, Article IV. EM bank sovereign-exposure driver.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sector.financials.institutional_investor
+  source_name: Institutional Investor
+  url: https://www.institutionalinvestor.com/
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - executive_change
+  - ma_announcement
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: Institutional Investor — asset-management + research trade. Alpha Awards, hedge-fund industry coverage.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sector.financials.insurance_business
+  source_name: Insurance Business
+  url: https://www.insurancebusinessmag.com/us/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - executive_change
+  - ma_announcement
+  edge_weight_prior: 0.6
+  typical_lead_time_vs_english_minutes: 60
+  notes: Insurance Business Magazine (KM Business Info) — US/AU/CA insurance industry daily. Broker + carrier coverage.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sector.financials.insurance_erm
+  source_name: InsuranceERM
+  url: https://www.insuranceerm.com/
+  adapter_type: scraper
+  jurisdiction: GB
+  language: en
+  cost_tier: paid
+  update_cadence: weekly
+  event_types_covered:
+  - sector_regulation
+  edge_weight_prior: 0.65
+  typical_lead_time_vs_english_minutes: 0
+  notes: InsuranceERM — enterprise risk + capital trade. Solvency II quantitative reviews, LDTI accounting.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sector.financials.insurance_insider
+  source_name: Insurance Insider
+  url: https://www.insuranceinsider.com/
+  adapter_type: scraper
+  jurisdiction: GB
+  language: en
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - ma_announcement
+  - executive_change
+  - regulatory_action
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: -30
+  notes: Insurance Insider — specialty + reinsurance trade. Lloyd's of London, Bermuda market, renewal commentary. Moves BRO,
+    WTW, MMC, AON, AJG, RNR, CB, TRV.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sector.financials.ipe_news
+  source_name: IPE — Investment & Pensions Europe
+  url: https://www.ipe.com/
+  adapter_type: scraper
+  jurisdiction: GB
+  language: en
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - ma_announcement
+  - executive_change
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: IPE — EU pensions + asset-management trade. Moves ABDN.L, MAN.L, DWS.DE, SDR.L.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sector.financials.markets_media
+  source_name: Markets Media
+  url: https://www.marketsmedia.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - product_launch
+  - ma_announcement
+  - sector_regulation
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: Markets Media — market structure + exchanges trade. NMS reform, T+1, 24/5 equity markets. Moves ICE, CME, CBOE, NDAQ,
+    LSEG, DB1.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sector.financials.mas_singapore
+  source_name: MAS Singapore — News
+  url: https://www.mas.gov.sg/news
+  adapter_type: rss
+  jurisdiction: SG
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - sector_regulation
+  - regulatory_action
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: Monetary Authority of Singapore — DBS, OCBC, UOB oversight + SG crypto (DPTSP) regime.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sector.financials.mergermarket
+  source_name: Mergermarket
+  url: https://www.mergermarket.com/
+  adapter_type: scraper
+  jurisdiction: GB
+  language: en
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - ma_announcement
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: -60
+  notes: Mergermarket (ION) — global M&A intel. League tables, pipeline of announced + potential deals.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sector.financials.moodys_news
+  source_name: Moody's — Ratings News
+  url: https://ratings.moodys.com/
+  adapter_type: scraper
+  jurisdiction: XX
+  language: en
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - sell_side_rating_change
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: 0
+  notes: Moody's Investors Service. Bank + insurance + sovereign rating changes, outlook moves. Direct CDS/bond + equity impact.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sector.financials.nydfs_press
+  source_name: NY Department of Financial Services — Press
+  url: https://www.dfs.ny.gov/reports_and_publications/press_releases
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - regulatory_action
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: NYDFS — NY state financial regulator. Crypto BitLicense decisions, enforcement. Moves COIN, PYPL, XYZ, SOFI, international
+    banks with NY branch.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sector.financials.occ_news
+  source_name: OCC — News Issuances
+  url: https://www.occ.gov/news-issuances/news-releases/index.html
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - regulatory_action
+  - sector_regulation
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: 0
+  notes: Office of the Comptroller of the Currency — enforcement actions + cease-and-desist + consent orders on national banks.
+    Moves JPM, BAC, WFC, C, USB, PNC, TFC.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sector.financials.ofr_research
+  source_name: Office of Financial Research
+  url: https://www.financialresearch.gov/
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: OFR — financial-stability research + repo/MMF data + financial stress index.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sector.financials.payments_dive
+  source_name: Payments Dive
+  url: https://www.paymentsdive.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - ma_announcement
+  - product_launch
+  - sector_regulation
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: Payments Dive — daily payments industry trade. V, MA, PYPL, FIS, FISV, GPN, CPAY, XYZ coverage + interchange policy.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sector.financials.pei_media
+  source_name: Private Equity International
+  url: https://www.privateequityinternational.com/
+  adapter_type: scraper
+  jurisdiction: GB
+  language: en
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - ma_announcement
+  - executive_change
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: PEI — Private Equity International trade. Fund launches, PERE, Infrastructure Investor, Secondaries Investor. Moves
+    BX, KKR, APO, CG, ARES, EQT, PGHN.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sector.financials.pensions_investments
+  source_name: Pensions & Investments
+  url: https://www.pionline.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - ma_announcement
+  - executive_change
+  - material_disclosure
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: 0
+  notes: Pensions & Investments — institutional asset-management trade. AUM tracking, pension mandates, manager moves. Moves
+    BLK, TROW, IVZ, BEN, AMG.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sector.financials.pitchbook_news
+  source_name: PitchBook News
+  url: https://pitchbook.com/news
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - ma_announcement
+  - material_disclosure
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: PitchBook (Morningstar) — PE/VC transaction database + commentary. Fund closes, secondaries, exits.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sector.financials.preqin_insights
+  source_name: Preqin Insights
+  url: https://www.preqin.com/insights
+  adapter_type: scraper
+  jurisdiction: GB
+  language: en
+  cost_tier: paid
+  update_cadence: weekly
+  event_types_covered:
+  - macro_data_release
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: Preqin — alternative assets data provider. Fund close data, performance quartiles, LP commitments.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sector.financials.pymnts_news
+  source_name: PYMNTS
+  url: https://www.pymnts.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - ma_announcement
+  - product_launch
+  - sector_regulation
+  edge_weight_prior: 0.65
+  typical_lead_time_vs_english_minutes: 60
+  notes: PYMNTS — daily payments + BNPL commentary. Regular interchange + CFPB coverage.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sector.financials.reinsurance_news
+  source_name: Reinsurance News
+  url: https://www.reinsurancenews.com/
+  adapter_type: rss
+  jurisdiction: GB
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - ma_announcement
+  - material_disclosure
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: 0
+  notes: Reinsurance News — free-tier reinsurance + ILS trade. 1/1, 4/1, 6/1, 7/1 renewal coverage.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sector.financials.risk_net
+  source_name: Risk.net
+  url: https://www.risk.net/
+  adapter_type: scraper
+  jurisdiction: GB
+  language: en
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - sector_regulation
+  - regulatory_action
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: 0
+  notes: Risk.net — regulatory + risk-management trade. Basel III/IV nuance, trading-book rules, op-risk.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sector.financials.sec_enforcement
+  source_name: SEC — Enforcement Press
+  url: https://www.sec.gov/news/pressreleases
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - regulatory_action
+  edge_weight_prior: 0.9
+  typical_lead_time_vs_english_minutes: 0
+  notes: SEC press — enforcement actions + rule proposals. SEC v. COIN, SEC v. BNBS, crypto-exchange cases, broker-dealer
+    + asset-manager enforcement.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sector.financials.secondaries_investor
+  source_name: Secondaries Investor
+  url: https://www.secondariesinvestor.com/
+  adapter_type: scraper
+  jurisdiction: GB
+  language: en
+  cost_tier: paid
+  update_cadence: weekly
+  event_types_covered:
+  - ma_announcement
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: Secondaries Investor (PEI) — PE secondaries trade. GP-led + LP continuation funds. Moves HLNE, AP, APO (ATLAS SP),
+    BX.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sector.financials.sp_ratings
+  source_name: S&P Global Ratings — News
+  url: https://www.spglobal.com/ratings/en/
+  adapter_type: scraper
+  jurisdiction: XX
+  language: en
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - sell_side_rating_change
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: 0
+  notes: S&P Global Ratings. Regional bank downgrade waves (2023), insurance stress reviews.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sector.financials.the_banker
+  source_name: The Banker
+  url: https://www.thebanker.com/
+  adapter_type: scraper
+  jurisdiction: GB
+  language: en
+  cost_tier: paid
+  update_cadence: weekly
+  event_types_covered:
+  - ma_announcement
+  - executive_change
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: The Banker (FT Group) — global banking monthly. Top 1000 World Banks ranking (July). Emerging-markets bank coverage.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sector.financials.the_block
+  source_name: The Block
+  url: https://www.theblock.co/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - ma_announcement
+  - regulatory_action
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: The Block — crypto/blockchain trade. Deeper-dive pieces on exchange + custody + DeFi. Moves COIN, HOOD.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sector.financials.the_deal
+  source_name: The Deal
+  url: https://www.thedeal.com/
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - ma_announcement
+  edge_weight_prior: 0.8
+  typical_lead_time_vs_english_minutes: -30
+  notes: The Deal — M&A + special-situations trade. Often 30min+ ahead of broad wires on deal announcements.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sector.financials.think_advisor
+  source_name: ThinkAdvisor
+  url: https://www.thinkadvisor.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - sector_regulation
+  - product_launch
+  edge_weight_prior: 0.6
+  typical_lead_time_vs_english_minutes: 60
+  notes: ThinkAdvisor — RIA + life/annuity trade. DOL fiduciary rules, annuity product launches. Moves MET, PRU, LNC, JXN,
+    AFL, GL.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sector.financials.traders_magazine
+  source_name: Traders Magazine
+  url: https://www.tradersmagazine.com/
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: weekly
+  event_types_covered:
+  - product_launch
+  - sector_regulation
+  edge_weight_prior: 0.6
+  typical_lead_time_vs_english_minutes: 60
+  notes: Traders Magazine — equity market structure + trading venues trade.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sector.financials.treasury_press
+  source_name: US Treasury — Press Releases
+  url: https://home.treasury.gov/news/press-releases
+  adapter_type: rss
+  jurisdiction: US
+  language: en
+  cost_tier: free
+  update_cadence: daily
+  event_types_covered:
+  - sector_regulation
+  - macro_data_release
+  - regulatory_action
+  edge_weight_prior: 0.85
+  typical_lead_time_vs_english_minutes: 0
+  notes: Treasury press — OFAC sanctions, FSOC actions, debt issuance. Rate-path + sanctions relevance to banks + payments.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sector.financials.waters_technology
+  source_name: Waters Technology
+  url: https://www.waterstechnology.com/
+  adapter_type: scraper
+  jurisdiction: GB
+  language: en
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - product_launch
+  - sector_regulation
+  edge_weight_prior: 0.65
+  typical_lead_time_vs_english_minutes: 0
+  notes: Waters Technology — data/capital markets technology trade. Moves MSCI, SPGI, MCO, FDS, FICO, MORN, TW, TRMB-adjacent.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'

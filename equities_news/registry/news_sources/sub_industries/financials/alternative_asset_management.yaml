@@ -1,0 +1,50 @@
+- source_id: sub_industry.financials.alternative_asset_management.buyouts_insider
+  source_name: Buyouts Insider
+  url: https://www.buyoutsinsider.com/
+  adapter_type: scraper
+  jurisdiction: US
+  language: en
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - ma_announcement
+  - executive_change
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: PEI — US mid-market buyouts + add-ons. LP commitments + fund closes.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sub_industry.financials.alternative_asset_management.infrastructure_investor
+  source_name: Infrastructure Investor
+  url: https://www.infrastructureinvestor.com/
+  adapter_type: scraper
+  jurisdiction: GB
+  language: en
+  cost_tier: paid
+  update_cadence: daily
+  event_types_covered:
+  - ma_announcement
+  edge_weight_prior: 0.75
+  typical_lead_time_vs_english_minutes: 0
+  notes: PEI — infrastructure PE + fund-raising. Moves BAM, BX Infra, KKR Infra, APO Infra, EQT Infra, ANTIN.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
+- source_id: sub_industry.financials.alternative_asset_management.pei_privatefundscfo
+  source_name: Private Funds CFO (PEI)
+  url: https://www.privatefundscfo.com/
+  adapter_type: scraper
+  jurisdiction: GB
+  language: en
+  cost_tier: paid
+  update_cadence: weekly
+  event_types_covered:
+  - material_disclosure
+  - executive_change
+  edge_weight_prior: 0.7
+  typical_lead_time_vs_english_minutes: 0
+  notes: PEI Group — alt-asset-manager operations + valuation methodology trade.
+  lineage:
+    authored_by: phase_b_financials_opus
+    authored_at: '2026-04-22T00:23:09Z'
