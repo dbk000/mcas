@@ -1,0 +1,37 @@
+[tier4] Processing 27 priority sponsors unconfirmed after T1/T2/T3
+  invesco                      xhrs=  32  confirmed=2
+  dimensional                  xhrs=  34  confirmed=1
+  jpmorgan                     xhrs=  32  confirmed=0
+  vaneck                       xhrs=  23  confirmed=0
+  wisdomtree                   xhrs=  38  confirmed=0
+  northern_trust               xhrs=   2  confirmed=0
+  fidelity                     xhrs=   2  confirmed=0
+  nuveen                       xhrs=  40  confirmed=3
+  blackrock                    xhrs=  16  confirmed=1
+  pacer                        xhrs=  46  confirmed=0
+  tidal                        xhrs=   2  confirmed=0
+  alpha_architect              xhrs=  10  confirmed=0
+  franklin_templeton           xhrs=  50  confirmed=0
+  janus_henderson              xhrs=  82  confirmed=1
+  alliancebernstein            xhrs=   0  confirmed=0
+  alps                         xhrs=  42  confirmed=0
+  victory_capital              xhrs=  36  confirmed=0
+  pgim                         xhrs=  42  confirmed=1
+  bondbloxx                    xhrs=   0  confirmed=0
+  pimco                        xhrs=   0  confirmed=0
+  t_rowe_price                 xhrs=  16  confirmed=0
+  capital_group                xhrs=   0  confirmed=0
+  john_hancock                 xhrs=   0  confirmed=0
+  xtrackers                    xhrs=   2  confirmed=0
+  principal                    xhrs=  42  confirmed=1
+  hartford                     xhrs=  44  confirmed=0
+  exchange_traded_concepts     xhrs=   2  confirmed=0
+
+T4 confirmed 7 additional sponsors:
+  blackrock                    https://cdn.cookielaw.org/consent/1d844f07-6416-4f37-97e9-e7e8b80732f2/0199190f-a997-760a-b7f1-5addb
+  dimensional                  https://cdn.cookielaw.org/consent/4d84d028-d61f-479e-a6d3-456633eafaaa/018fe8ca-067c-7ce5-aa71-c87ce
+  invesco                      https://cdn.cookielaw.org/consent/f24a5310-0162-4fce-a06f-1567fe065c62/0197a1eb-815b-778d-a1fa-bd7b4
+  janus_henderson              https://cdn.cookielaw.org/consent/4977fda3-86b6-47fc-92e6-c638ec86409b/0197e92f-39e0-77b9-a61c-0dcf8
+  nuveen                       https://api.nuveen.com/documents/api/getproductdocuments/etf/NUGO/7586/
+  pgim                         https://cdn.cookielaw.org/consent/d5fc2099-7bc2-4f4f-8834-ad514a7ef9d8/019a2aef-e499-7890-81d4-edc25
+  principal                    https://cdn.cookielaw.org/consent/eee54359-806c-4dae-94ef-1ca00b27781a/019be20c-3a0c-75ff-8f5b-032e9

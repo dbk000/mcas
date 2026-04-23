@@ -1,0 +1,230 @@
+{
+  "date_stamp": "20260423",
+  "url_template": "https://tools-blob.dimensional.com/etf/{YYYYMMDD}/{TICKER}.csv",
+  "verified": {
+    "DFAC": {
+      "ok": true,
+      "reason": "ok",
+      "url": "https://tools-blob.dimensional.com/etf/20260423/DFAC.csv",
+      "data_rows": 2550
+    },
+    "DEHP": {
+      "ok": true,
+      "reason": "ok",
+      "url": "https://tools-blob.dimensional.com/etf/20260423/DEHP.csv",
+      "data_rows": 778
+    },
+    "DCOR": {
+      "ok": true,
+      "reason": "ok",
+      "url": "https://tools-blob.dimensional.com/etf/20260423/DCOR.csv",
+      "data_rows": 2380
+    },
+    "DFAI": {
+      "ok": true,
+      "reason": "ok",
+      "url": "https://tools-blob.dimensional.com/etf/20260423/DFAI.csv",
+      "data_rows": 3856
+    },
+    "DEXC": {
+      "ok": true,
+      "reason": "ok",
+      "url": "https://tools-blob.dimensional.com/etf/20260423/DEXC.csv",
+      "data_rows": 3425
+    },
+    "DFAE": {
+      "ok": true,
+      "reason": "ok",
+      "url": "https://tools-blob.dimensional.com/etf/20260423/DFAE.csv",
+      "data_rows": 5001
+    },
+    "DFAR": {
+      "ok": true,
+      "reason": "ok",
+      "url": "https://tools-blob.dimensional.com/etf/20260423/DFAR.csv",
+      "data_rows": 130
+    },
+    "DFAT": {
+      "ok": true,
+      "reason": "ok",
+      "url": "https://tools-blob.dimensional.com/etf/20260423/DFAT.csv",
+      "data_rows": 1282
+    },
+    "DFAS": {
+      "ok": true,
+      "reason": "ok",
+      "url": "https://tools-blob.dimensional.com/etf/20260423/DFAS.csv",
+      "data_rows": 2128
+    },
+    "DFCA": {
+      "ok": true,
+      "reason": "ok",
+      "url": "https://tools-blob.dimensional.com/etf/20260423/DFCA.csv",
+      "data_rows": 491
+    },
+    "DFAU": {
+      "ok": true,
+      "reason": "ok",
+      "url": "https://tools-blob.dimensional.com/etf/20260423/DFAU.csv",
+      "data_rows": 2200
+    },
+    "DFCF": {
+      "ok": true,
+      "reason": "ok",
+      "url": "https://tools-blob.dimensional.com/etf/20260423/DFCF.csv",
+      "data_rows": 1687
+    },
+    "DFAX": {
+      "ok": true,
+      "reason": "ok",
+      "url": "https://tools-blob.dimensional.com/etf/20260423/DFAX.csv",
+      "data_rows": 5001
+    },
+    "DFGP": {
+      "ok": true,
+      "reason": "ok",
+      "url": "https://tools-blob.dimensional.com/etf/20260423/DFGP.csv",
+      "data_rows": 1534
+    },
+    "DFGR": {
+      "ok": true,
+      "reason": "ok",
+      "url": "https://tools-blob.dimensional.com/etf/20260423/DFGR.csv",
+      "data_rows": 462
+    },
+    "DFEV": {
+      "ok": true,
+      "reason": "ok",
+      "url": "https://tools-blob.dimensional.com/etf/20260423/DFEV.csv",
+      "data_rows": 3572
+    },
+    "DFEM": {
+      "ok": true,
+      "reason": "ok",
+      "url": "https://tools-blob.dimensional.com/etf/20260423/DFEM.csv",
+      "data_rows": 5001
+    },
+    "DFGX": {
+      "ok": true,
+      "reason": "ok",
+      "url": "https://tools-blob.dimensional.com/etf/20260423/DFGX.csv",
+      "data_rows": 821
+    },
+    "DFIP": {
+      "ok": true,
+      "reason": "ok",
+      "url": "https://tools-blob.dimensional.com/etf/20260423/DFIP.csv",
+      "data_rows": 21
+    },
+    "DFLV": {
+      "ok": true,
+      "reason": "ok",
+      "url": "https://tools-blob.dimensional.com/etf/20260423/DFLV.csv",
+      "data_rows": 331
+    },
+    "DFIV": {
+      "ok": true,
+      "reason": "ok",
+      "url": "https://tools-blob.dimensional.com/etf/20260423/DFIV.csv",
+      "data_rows": 598
+    },
+    "DFSB": {
+      "ok": true,
+      "reason": "ok",
+      "url": "https://tools-blob.dimensional.com/etf/20260423/DFSB.csv",
+      "data_rows": 794
+    },
+    "DFNM": {
+      "ok": true,
+      "reason": "ok",
+      "url": "https://tools-blob.dimensional.com/etf/20260423/DFNM.csv",
+      "data_rows": 1139
+    },
+    "DFSD": {
+      "ok": true,
+      "reason": "ok",
+      "url": "https://tools-blob.dimensional.com/etf/20260423/DFSD.csv",
+      "data_rows": 1652
+    },
+    "DFSE": {
+      "ok": true,
+      "reason": "ok",
+      "url": "https://tools-blob.dimensional.com/etf/20260423/DFSE.csv",
+      "data_rows": 4279
+    },
+    "DFUS": {
+      "ok": true,
+      "reason": "ok",
+      "url": "https://tools-blob.dimensional.com/etf/20260423/DFUS.csv",
+      "data_rows": 2238
+    },
+    "DFSU": {
+      "ok": true,
+      "reason": "ok",
+      "url": "https://tools-blob.dimensional.com/etf/20260423/DFSU.csv",
+      "data_rows": 1876
+    },
+    "DFUV": {
+      "ok": true,
+      "reason": "ok",
+      "url": "https://tools-blob.dimensional.com/etf/20260423/DFUV.csv",
+      "data_rows": 1341
+    },
+    "DFSV": {
+      "ok": true,
+      "reason": "ok",
+      "url": "https://tools-blob.dimensional.com/etf/20260423/DFSV.csv",
+      "data_rows": 1030
+    },
+    "DFSI": {
+      "ok": true,
+      "reason": "ok",
+      "url": "https://tools-blob.dimensional.com/etf/20260423/DFSI.csv",
+      "data_rows": 2789
+    },
+    "DFVX": {
+      "ok": true,
+      "reason": "ok",
+      "url": "https://tools-blob.dimensional.com/etf/20260423/DFVX.csv",
+      "data_rows": 329
+    },
+    "DGCB": {
+      "ok": true,
+      "reason": "ok",
+      "url": "https://tools-blob.dimensional.com/etf/20260423/DGCB.csv",
+      "data_rows": 1213
+    },
+    "DUHP": {
+      "ok": true,
+      "reason": "ok",
+      "url": "https://tools-blob.dimensional.com/etf/20260423/DUHP.csv",
+      "data_rows": 161
+    },
+    "DUSB": {
+      "ok": true,
+      "reason": "ok",
+      "url": "https://tools-blob.dimensional.com/etf/20260423/DUSB.csv",
+      "data_rows": 477
+    },
+    "DXIV": {
+      "ok": true,
+      "reason": "ok",
+      "url": "https://tools-blob.dimensional.com/etf/20260423/DXIV.csv",
+      "data_rows": 2640
+    },
+    "DXUV": {
+      "ok": true,
+      "reason": "ok",
+      "url": "https://tools-blob.dimensional.com/etf/20260423/DXUV.csv",
+      "data_rows": 1989
+    }
+  },
+  "failed": {
+    "DFAW": {
+      "ok": false,
+      "reason": "too_few_rows (6<10)",
+      "url": "https://tools-blob.dimensional.com/etf/20260423/DFAW.csv",
+      "data_rows": null
+    }
+  }
+}

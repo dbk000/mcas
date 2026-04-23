@@ -1,0 +1,26 @@
+[rebuild] settled sheets: ['ishares', 'state_street', 'direxion', 'first_trust', 'global_x', 'vanguard', 'graniteshares', 'krane', 'neos']
+[rebuild] confirmed new sponsor endpoints: 5
+    calamos                      html_table https://www.calamos.com/etfs/{ticker_lower}
+    innovator                    html_table https://www.innovatoretfs.com/etf/?ticker={TICKER}
+    proshares                    html_table https://www.proshares.com/our-etfs/leveraged-and-inverse/{ticker_lower}
+    schwab                       html_table https://www.schwabassetmanagement.com/allholdings/{TICKER}
+    yieldmax                     html_table https://www.yieldmaxetfs.com/our-etfs/{TICKER}/
+[rebuild] excluded funds: 1757 across 65 sheets
+[rebuild] bucket G reinstatements: 52
+/home/darren/Desktop/MCAS/fund_holdings/source_authoring/phase_0/rebuild_bible.py:56: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+  return dt.datetime.utcnow().replace(microsecond=0).isoformat() + "Z"
+[rebuild] processing schwab (src_sheet=schwab, pool=33 rows)...
+[rebuild] schwab: admitted 33 funds
+[rebuild] processing proshares (src_sheet=proshares, pool=89 rows)...
+    [proshares] dropped 51/89 failing tickers (first 3: ['BITO:http_404', 'BITU:no_html_table_with_id_column_and_10_rows', 'TBT:no_html_table_with_id_column_and_10_rows'])
+[rebuild] proshares: admitted 38 funds
+[rebuild] processing innovator (src_sheet=innovator, pool=22 rows)...
+    [innovator] dropped 12/22 failing tickers (first 3: ['IAPR:no_html_table_with_id_column_and_10_rows', 'IJAN:no_html_table_with_id_column_and_10_rows', 'IJUL:no_html_table_with_id_column_and_10_rows'])
+[rebuild] innovator: admitted 10 funds
+[rebuild] processing calamos (src_sheet=calamos, pool=32 rows)...
+[rebuild] calamos: admitted 32 funds
+[rebuild] processing yieldmax (src_sheet=tidal, pool=1757 rows)...
+    [yieldmax] dropped 4/41 failing tickers (first 3: ['YMAG:no_html_table_with_id_column_and_10_rows', 'AIYY:no_html_table_with_id_column_and_10_rows', 'TSMY:http_0'])
+[rebuild] yieldmax: admitted 37 funds
+[rebuild] wrote /home/darren/Desktop/MCAS/fund_holdings/ground_truth/fund_bible_v1.xlsx.tmp  total_rows=1008  aum=$9.69T
+[rebuild] wrote state: /home/darren/Desktop/MCAS/fund_holdings/PHASE_0_SPONSOR_RECOVERY_STATE.md

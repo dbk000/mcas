@@ -1,0 +1,33 @@
+{
+  "sponsor": "alpha_architect",
+  "host": "etfsite.alphaarchitect.com",
+  "base_path": "/{ticker_lower}/",
+  "probe_tickers": [
+    "BSVO",
+    "SFGV"
+  ],
+  "xhrs_by_ticker": {
+    "BSVO": {
+      "count": 5,
+      "top_scored": [],
+      "all_sample": [
+        "https://api.hubapi.com/hs-script-loader-public/v2/config/pixels-and-events/json?portalId=49599912",
+        "https://funds.alphaarchitect.com/cdn-cgi/challenge-platform/h/b/jsd/oneshot/0b8fb825cb67/0.061696825278882095:1776968958:KgicM8c8BWOI4NxYsYAXjZkcosrU-C6eL3vZKBZzw-A/9f0f4284296ceded",
+        "https://forms.hscollectedforms.net/collected-forms/v1/config/json?portalId=49599912&utk=",
+        "https://cta-service-cms2.hubspot.com/web-interactives/public/v1/embed/combinedConfigs?portalId=49599912&currentUrl=https%3A%2F%2Ffunds.alphaarchitect.com%2Fbsvo%2F",
+        "https://px.ads.linkedin.com/attribution_trigger?pid=8247130&time=1776972387888&url=https%3A%2F%2Ffunds.alphaarchitect.com%2Fbsvo%2F"
+      ]
+    },
+    "SFGV": {
+      "count": 5,
+      "top_scored": [],
+      "all_sample": [
+        "https://forms.hscollectedforms.net/collected-forms/v1/config/json?portalId=49599912&utk=",
+        "https://funds.alphaarchitect.com/cdn-cgi/challenge-platform/h/b/jsd/oneshot/0b8fb825cb67/0.061696825278882095:1776968958:KgicM8c8BWOI4NxYsYAXjZkcosrU-C6eL3vZKBZzw-A/9f0f42aa7d41dc6c",
+        "https://api.hubapi.com/hs-script-loader-public/v2/config/pixels-and-events/json?portalId=49599912",
+        "https://cta-service-cms2.hubspot.com/web-interactives/public/v1/embed/combinedConfigs?portalId=49599912&currentUrl=https%3A%2F%2Ffunds.alphaarchitect.com%2Fsfgv%2F&utk=3111102bd25a407f4f0eb5f2e8f5c85e&__hstc=129128147.3111102bd25a407f4f0eb5f2e8f5c85e.1776972393613.1776972393613.1776972393613.1&__hssc=129128147.1.1776972393613",
+        "https://px.ads.linkedin.com/attribution_trigger?pid=8247130&time=1776972393827&url=https%3A%2F%2Ffunds.alphaarchitect.com%2Fsfgv%2F"
+      ]
+    }
+  }
+}

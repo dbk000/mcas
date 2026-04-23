@@ -154,3 +154,98 @@ endpoints:
     holdings_url_format: html_table
     sponsor_page_template: "https://neosfunds.com/etfs/{ticker_lower}/"
     verified_serves_holdings: true
+
+# ---- Phase 0 Sponsor Recovery additions 2026-04-23 ----
+
+  schwab:
+    sponsor_slug: schwab
+    discovery_method: direct_ticker_pattern
+    holdings_url_template: "https://www.schwabassetmanagement.com/allholdings/{TICKER}"
+    holdings_url_format: html_table
+    sponsor_page_template: "https://www.schwabassetmanagement.com/allholdings/{TICKER}"
+    verified_serves_holdings: true
+    lineage: phase_0_sponsor_recovery_cc
+    verified_tickers: ['SCHD', 'SCHX']
+
+  proshares:
+    sponsor_slug: proshares
+    discovery_method: direct_ticker_pattern
+    holdings_url_template: "https://www.proshares.com/our-etfs/leveraged-and-inverse/{ticker_lower}"
+    holdings_url_format: html_table
+    sponsor_page_template: "https://www.proshares.com/our-etfs/leveraged-and-inverse/{ticker_lower}"
+    verified_serves_holdings: true
+    lineage: phase_0_sponsor_recovery_cc
+    verified_tickers: ['TQQQ', 'QLD']
+
+  innovator:
+    sponsor_slug: innovator
+    discovery_method: direct_ticker_pattern
+    holdings_url_template: "https://www.innovatoretfs.com/etf/?ticker={TICKER}"
+    holdings_url_format: html_table
+    sponsor_page_template: "https://www.innovatoretfs.com/etf/?ticker={TICKER}"
+    verified_serves_holdings: true
+    lineage: phase_0_sponsor_recovery_cc
+    verified_tickers: ['SFLR', 'QFLR']
+
+  calamos:
+    sponsor_slug: calamos
+    discovery_method: direct_ticker_pattern
+    holdings_url_template: "https://www.calamos.com/etfs/{ticker_lower}"
+    holdings_url_format: html_table
+    sponsor_page_template: "https://www.calamos.com/etfs/{ticker_lower}"
+    verified_serves_holdings: true
+    lineage: phase_0_sponsor_recovery_cc
+    verified_tickers: ['CPSM', 'CPRJ']
+
+  yieldmax:
+    sponsor_slug: yieldmax
+    discovery_method: direct_ticker_pattern
+    holdings_url_template: "https://www.yieldmaxetfs.com/our-etfs/{TICKER}/"
+    holdings_url_format: html_table
+    sponsor_page_template: "https://www.yieldmaxetfs.com/our-etfs/{TICKER}/"
+    verified_serves_holdings: true
+    lineage: phase_0_sponsor_recovery_cc
+    verified_tickers: ['MSTY', 'NVDY']
+
+
+# ---- Phase 0 Top-5 Recovery: Invesco added 2026-04-24 ----
+
+  invesco:
+    sponsor_slug: invesco
+    discovery_method: ticker_to_cusip_scrape
+    holdings_url_template: "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/{CUSIP}/holdings/fund?idType=cusip&productType=ETF"
+    holdings_url_format: json
+    sponsor_page_template: "https://www.invesco.com/us/financial-products/etfs/product-detail?audienceType=Investor&ticker={TICKER}"
+    verified_serves_holdings: true
+    lineage: phase_0_sponsor_recovery_cc
+    notes: |
+      Per-fund holdings JSON served from dng-api.invesco.com using CUSIP (not ticker).
+      Ticker→CUSIP map obtained from Invesco's product search API:
+      `dng-api.invesco.com/product/search?q=ticker:{TICKER}&wt=json&rows=5`
+      Response has `.holdings` array with keys: ticker, issuerName, units,
+      percentageOfTotalNetAssets, securityTypeName, cusip. Tested on 207 tickers,
+      200 verified with ≥10 rows.
+    ticker_to_cusip_map_file: source_authoring/phase_0/invesco_ticker_cusip.json
+
+
+# ---- Phase 0 Session-Replay Recovery: Dimensional added 2026-04-24 ----
+
+  dimensional:
+    sponsor_slug: dimensional
+    discovery_method: session_replay_cdn_blob
+    holdings_url_template: "https://tools-blob.dimensional.com/etf/{YYYYMMDD}/{TICKER}.csv"
+    holdings_url_format: csv
+    sponsor_page_template: "https://www.dimensional.com/us-en/funds/{ticker_lower}"
+    verified_serves_holdings: true
+    lineage: phase_0_session_replay_pipeline_cc
+    notes: |
+      Per-fund holdings CSV served from Dimensional's blob CDN. URL is dated
+      by as-of-date (YYYYMMDD, typically T-1 business day). Pattern discovered
+      via Playwright session-replay pipeline: harvested the `funddetail` POST
+      response which contains a `fullHoldingsCsvUrl` pointing to the dated CDN.
+      The CDN is auth-free (no session required) once the URL is known.
+      Tested on 37 excluded Dimensional tickers; 36 verified with ≥10 rows
+      (1 newly-launched fund with <10 positions failed threshold).
+      Downstream consumers should update YYYYMMDD to current date before fetch.
+    url_date_example: "20260423"
+

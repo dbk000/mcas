@@ -1,0 +1,55 @@
+{
+  "sponsor": "jpmorgan",
+  "ticker_captures": {
+    "JEPI": {
+      "ticker": "JEPI",
+      "url": "https://am.jpmorgan.com/us/en/asset-management/adv/products/jepi-etf-shares",
+      "steps": [
+        "goto_ok"
+      ],
+      "xhr_pre_click": 16,
+      "holdings_clicked": false,
+      "xhr_post_click": 16,
+      "html_bytes": 215665,
+      "n_tables": 0,
+      "xhr_count": 16,
+      "xhr_real_count": 3,
+      "top_scored": [
+        {
+          "url": "https://am.jpmorgan.com/content/jpm-am-aem/countryroleselectorconfigpage.seomap.json",
+          "score": 1
+        }
+      ],
+      "all_real": [
+        "https://am.jpmorgan.com/content/jpm-am-aem/countryroleselectorconfigpage.crsmap.us_en_adv.json?currentPath=/content/jpm-am-aem/americas/us/en/adv/includes/header/jcr:content/par/jpm_am_navigation_he",
+        "https://am.jpmorgan.com/content/jpm-am-aem/americas/us/en/adv/includes/footer/_jcr_content.footerv2.json?v=1605821551078/americas",
+        "https://am.jpmorgan.com/content/jpm-am-aem/countryroleselectorconfigpage.seomap.json"
+      ]
+    },
+    "JPST": {
+      "ticker": "JPST",
+      "url": "https://am.jpmorgan.com/us/en/asset-management/adv/products/jpst-etf-shares",
+      "steps": [
+        "goto_ok"
+      ],
+      "xhr_pre_click": 14,
+      "holdings_clicked": false,
+      "xhr_post_click": 14,
+      "html_bytes": 214138,
+      "n_tables": 0,
+      "xhr_count": 14,
+      "xhr_real_count": 3,
+      "top_scored": [
+        {
+          "url": "https://am.jpmorgan.com/content/jpm-am-aem/countryroleselectorconfigpage.seomap.json",
+          "score": 1
+        }
+      ],
+      "all_real": [
+        "https://am.jpmorgan.com/content/jpm-am-aem/countryroleselectorconfigpage.crsmap.us_en_adv.json?currentPath=/content/jpm-am-aem/americas/us/en/adv/includes/header/jcr:content/par/jpm_am_navigation_he",
+        "https://am.jpmorgan.com/content/jpm-am-aem/americas/us/en/adv/includes/footer/_jcr_content.footerv2.json?v=1605821551078/americas",
+        "https://am.jpmorgan.com/content/jpm-am-aem/countryroleselectorconfigpage.seomap.json"
+      ]
+    }
+  }
+}

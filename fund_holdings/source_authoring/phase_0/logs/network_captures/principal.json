@@ -1,0 +1,107 @@
+{
+  "sponsor": "principal",
+  "host": "www.principalam.com",
+  "base_path": "/us/etf/{ticker_lower}",
+  "probe_tickers": [
+    "USMC",
+    "PREF"
+  ],
+  "xhrs_by_ticker": {
+    "USMC": {
+      "count": 21,
+      "top_scored": [
+        [
+          "https://principalfinancialgroupqpnzn1vj.org.coveo.com/rest/search/v2/querySuggest?organizationId=principalfinancialgroupqpnzn1vj",
+          1
+        ],
+        [
+          "https://cdn.cookielaw.org/consent/eee54359-806c-4dae-94ef-1ca00b27781a/eee54359-806c-4dae-94ef-1ca00b27781a.json",
+          1
+        ],
+        [
+          "https://cdn.cookielaw.org/consent/eee54359-806c-4dae-94ef-1ca00b27781a/019be20c-3a0c-75ff-8f5b-032e93fa9464/en.json",
+          1
+        ],
+        [
+          "https://cdn.cookielaw.org/scripttemplates/202512.1.0/assets/otFlat.json",
+          1
+        ],
+        [
+          "https://cdn.cookielaw.org/scripttemplates/202512.1.0/assets/v2/otPcPanel.json",
+          1
+        ]
+      ],
+      "all_sample": [
+        "https://api.ipify.org/?format=json",
+        "https://principallifeinsco.us-7.evergage.com/api2/event/pgam_prod?event=eyJzb3VyY2UiOnsicGFnZVR5cGUiOiJOb0RldGVjdGVkUGFnZSIsInVybCI6Imh0dHBzOi8vd3d3LnByaW5jaXBhbGFtLmNvbS91cy9ldGYvdXNtYyIsInVybFJlZmVycmVyIjoiIiwiY2hhbm5lbCI6IldlYiIsImJlYWNvblZlcnNpb24iOjE2LCJjb25maWdWZXJzaW9uIjoiODYiLCJjb250ZW50Wm9uZXMiOltdfSwidXNlciI6eyJhbm9ueW1vdXNJZCI6IjJkMmQ4MTUzYTViYjZjYjYifSwiaW50ZXJhY3Rpb24iOnsibmFtZSI6IlVua25vd24gVmlldyBJdGVtIn0sInBhZ2VWaWV3Ijp0cnVlLCJjb25zZW50cyI6W10sImFjY291bnQiOnt9LCJfdG9vbHNFdmVudExpbmtJZCI6Ijc3MDE3OTQ4ODE5MDA4NzYiLCJleHBsYWluIjp0cnVlfQ%3D%3D",
+        "https://principalfinancialgroupqpnzn1vj.org.coveo.com/rest/search/v2/querySuggest?organizationId=principalfinancialgroupqpnzn1vj",
+        "https://px.ads.linkedin.com/wa/?medium=fetch&fmt=g",
+        "https://px.ads.linkedin.com/attribution_trigger?pid=2488785&time=1776972437244&url=https%3A%2F%2Fwww.principalam.com%2Fus%2Fetf%2Fusmc&tm=gtmv2",
+        "https://cdn.cookielaw.org/consent/eee54359-806c-4dae-94ef-1ca00b27781a/eee54359-806c-4dae-94ef-1ca00b27781a.json",
+        "https://geolocation.onetrust.com/cookieconsentpub/v1/geo/location",
+        "https://cdn.cookielaw.org/consent/eee54359-806c-4dae-94ef-1ca00b27781a/019be20c-3a0c-75ff-8f5b-032e93fa9464/en.json",
+        "https://cdn.cookielaw.org/scripttemplates/202512.1.0/assets/otFlat.json",
+        "https://cdn.cookielaw.org/scripttemplates/202512.1.0/assets/v2/otPcPanel.json",
+        "https://cdn.cookielaw.org/scripttemplates/202512.1.0/assets/otCommonStyles.css",
+        "https://cdn.cookielaw.org/logos/static/ot_guard_logo.svg",
+        "https://c.az.contentsquare.net/pageview?ex=&pvt=n&la=en-US&uc=1&url=https%3A%2F%2Fwww.principalam.com%2Fus%2Fetf%2Fusmc&dr=&dw=1440&dh=2286&ww=1440&wh=900&sw=1440&sh=900&uu=03e4925b-f2bd-a3d7-99c6-9fbd80108d72&sn=1&hd=1776972437&v=15.214.2&pid=19488&pn=1&ct=0",
+        "https://region1.google-analytics.com/g/collect?v=2&tid=G-1K26YKL1WP&gtm=45je64m0v898898855z8810557788za20gzb810557788zd810557788&_p=1776972436392&gcs=G100&gcd=13p3pPp2p5l1&npa=1&dma_cps=-&dma=1&gdid=dYWJhMj&_eu=AAAAAGA&are=1&cid=1764697678.1776972438&frm=0&pscdl=denied&rcb=13&sr=1440x900&tt=external&uaa=x86&uab=64&uafvl=Not%253AA-Brand%3B99.0.0.0%7CHeadlessChrome%3B145.0.7632.6%7CChromium%3B145.0.7632.6&uam=&uamb=0&uap=Linux&uapv=&uaw=0&ul=united%20states&gaf=2&_s=1&tag_exp=0~115616985~115938466~115938468~117266400~117512542~118463262&dl=https%3A%2F%2Fwww.principalam.com%2Fus%2Fetf%2Fusmc&dt=page%20not%20found%20%7C%20principal%20asset%20management&sid=1776972437&sct=1&seg=0&_tu=KA&en=page_view&_fv=1&_nsi=1&_ss=1&ep.page=%2Fus%2Fetf%2Fusmc&ep.allowLinker=true&ep.purpose=&ep.business_line=&ep.intended_audience=&ep.author=&ep.publish_date=&ep.compliance_date=&ep.contract_id=&ep.gtm_tag_name=PFG%20-%20GA4%20-%20Event%20-%20Configuration%20Tag%20-%20Combined&ep.benefit_id=&ep.plan_number=&ep.member_id=&ep.product_level1=etf&ep.product_level2=usmc&ep.pfg_stat_cookie=(not%20set)&ep.pfg_app_id=appid-25010720&ep.individual_tokenized_id=&ep.is_secure_app=False&up.gtm_settings=GTM-TN78FGB%20-%201386%20-%20&up.authentication_status=no&up.mobile=false&tfd=1762",
+        "https://region1.google-analytics.com/g/collect?v=2&tid=G-6SBT3RF4HF&gtm=45je64m0v9200100655z8810557788za20gzb810557788zd810557788&_p=1776972436392&gcs=G100&gcd=13p3p3p2p5l1&npa=1&dma_cps=-&dma=1&gdid=dYWJhMj&_eu=AAAAAEA&are=1&cid=1764697678.1776972438&frm=0&pscdl=denied&rcb=5&sr=1440x900&uaa=x86&uab=64&uafvl=Not%253AA-Brand%3B99.0.0.0%7CHeadlessChrome%3B145.0.7632.6%7CChromium%3B145.0.7632.6&uam=&uamb=0&uap=Linux&uapv=&uaw=0&ul=en-us&_s=1&tag_exp=0~115938466~115938468~117266401~117512542&sid=1776972437&sct=1&seg=0&dl=https%3A%2F%2Fwww.principalam.com%2Fus%2Fetf%2Fusmc&dt=Page%20not%20found%20%7C%20Principal%20Asset%20Management&_tu=KA&en=Visitor%20IP&_fv=1&_ss=1&ep.event_label=65.109.7.49&ep.event_category=9946616022&tfd=1785",
+        "https://pagead2.googlesyndication.com/ccm/collect?rcb=16&frm=0&ae=g&dl=https%3A%2F%2Fwww.principalam.com%2Fus%2Fetf%2Fusmc&scrsrc=www.googletagmanager.com&rnd=342055417.1776972438&navt=n&npa=1&did=dYWJhMj&gdid=dYWJhMj&_tu=KA&gtm=45be64m0v896739044z8810557788za20gzb810557788zd810557788xea&gcs=G100&gcd=13p3pPp2p5l1&dma_cps=-&dma=1&tag_exp=0~115938466~115938468~117266401~118128923~118463261&apve=1&apvf=f&apvc=0&tids=AW-10994203091&tid=AW-10994203091&tft=1776972437886&tfd=1788",
+        "https://a.clarity.ms/collect",
+        "https://k-us1.az.contentsquare.net/v2/recording?rt=5&rst=1776972437724&let=1776972437782&v=15.214.2&pid=19488&pn=1&sn=1&uu=03e4925b-f2bd-a3d7-99c6-9fbd80108d72&ri=1&ct=2",
+        "https://srm.af.contentsquare.net/exist?v=15.214.2&pid=19488&pn=1&sn=1&uu=03e4925b-f2bd-a3d7-99c6-9fbd80108d72",
+        "https://a.clarity.ms/collect",
+        "https://bf02182chf.bf.dynatrace.com/bf?type=js3&sn=v_4_srv_-2D31718_sn_BVJB5OH644VE57V6RER9RB5MPTFJPCR1&svrid=-31718&flavor=cors&vi=PRNDAANCPBORACGRUDRNAIUNOJFQAUJR-0&modifiedSince=1776856655487&bp=3&app=cd9dd7b645426a49&crc=3921056776&en=ss94q7ea&end=1"
+      ]
+    },
+    "PREF": {
+      "count": 21,
+      "top_scored": [
+        [
+          "https://principalfinancialgroupqpnzn1vj.org.coveo.com/rest/search/v2/querySuggest?organizationId=principalfinancialgroupqpnzn1vj",
+          1
+        ],
+        [
+          "https://cdn.cookielaw.org/consent/eee54359-806c-4dae-94ef-1ca00b27781a/eee54359-806c-4dae-94ef-1ca00b27781a.json",
+          1
+        ],
+        [
+          "https://cdn.cookielaw.org/consent/eee54359-806c-4dae-94ef-1ca00b27781a/019be20c-3a0c-75ff-8f5b-032e93fa9464/en.json",
+          1
+        ],
+        [
+          "https://cdn.cookielaw.org/scripttemplates/202512.1.0/assets/otFlat.json",
+          1
+        ],
+        [
+          "https://cdn.cookielaw.org/scripttemplates/202512.1.0/assets/v2/otPcPanel.json",
+          1
+        ]
+      ],
+      "all_sample": [
+        "https://api.ipify.org/?format=json",
+        "https://principallifeinsco.us-7.evergage.com/api2/event/pgam_prod?event=eyJzb3VyY2UiOnsicGFnZVR5cGUiOiJOb0RldGVjdGVkUGFnZSIsInVybCI6Imh0dHBzOi8vd3d3LnByaW5jaXBhbGFtLmNvbS91cy9ldGYvcHJlZiIsInVybFJlZmVycmVyIjoiIiwiY2hhbm5lbCI6IldlYiIsImJlYWNvblZlcnNpb24iOjE2LCJjb25maWdWZXJzaW9uIjoiODYiLCJjb250ZW50Wm9uZXMiOltdfSwidXNlciI6eyJhbm9ueW1vdXNJZCI6IjI2MTYyNmJmZjM1ZmVjY2UifSwiaW50ZXJhY3Rpb24iOnsibmFtZSI6IlVua25vd24gVmlldyBJdGVtIn0sInBhZ2VWaWV3Ijp0cnVlLCJjb25zZW50cyI6W10sImFjY291bnQiOnt9LCJfdG9vbHNFdmVudExpbmtJZCI6IjgwMTAyNTIxNzE3ODk4OTciLCJleHBsYWluIjp0cnVlfQ%3D%3D",
+        "https://principalfinancialgroupqpnzn1vj.org.coveo.com/rest/search/v2/querySuggest?organizationId=principalfinancialgroupqpnzn1vj",
+        "https://px.ads.linkedin.com/wa/?medium=fetch&fmt=g",
+        "https://px.ads.linkedin.com/attribution_trigger?pid=2488785&time=1776972442835&url=https%3A%2F%2Fwww.principalam.com%2Fus%2Fetf%2Fpref&tm=gtmv2",
+        "https://cdn.cookielaw.org/consent/eee54359-806c-4dae-94ef-1ca00b27781a/eee54359-806c-4dae-94ef-1ca00b27781a.json",
+        "https://c.az.contentsquare.net/pageview?ex=&pvt=n&la=en-US&uc=1&url=https%3A%2F%2Fwww.principalam.com%2Fus%2Fetf%2Fpref&dr=&dw=1440&dh=2286&ww=1440&wh=900&sw=1440&sh=900&uu=85d9daf8-f2bd-a720-bb03-c5e8cb271247&sn=1&hd=1776972442&v=15.214.2&pid=19488&pn=1&ct=0",
+        "https://geolocation.onetrust.com/cookieconsentpub/v1/geo/location",
+        "https://cdn.cookielaw.org/consent/eee54359-806c-4dae-94ef-1ca00b27781a/019be20c-3a0c-75ff-8f5b-032e93fa9464/en.json",
+        "https://cdn.cookielaw.org/scripttemplates/202512.1.0/assets/otFlat.json",
+        "https://cdn.cookielaw.org/scripttemplates/202512.1.0/assets/v2/otPcPanel.json",
+        "https://cdn.cookielaw.org/scripttemplates/202512.1.0/assets/otCommonStyles.css",
+        "https://k-us1.az.contentsquare.net/v2/recording?rt=5&rst=1776972442979&let=1776972443033&v=15.214.2&pid=19488&pn=1&sn=1&uu=85d9daf8-f2bd-a720-bb03-c5e8cb271247&ri=1&ct=2",
+        "https://cdn.cookielaw.org/logos/static/ot_guard_logo.svg",
+        "https://srm.af.contentsquare.net/exist?v=15.214.2&pid=19488&pn=1&sn=1&uu=85d9daf8-f2bd-a720-bb03-c5e8cb271247",
+        "https://a.clarity.ms/collect",
+        "https://region1.google-analytics.com/g/collect?v=2&tid=G-1K26YKL1WP&gtm=45je64m0v898898855z8810557788za20gzb810557788zd810557788&_p=1776972442100&gcs=G100&gcd=13p3pPp2p5l1&npa=1&dma_cps=-&dma=1&gdid=dYWJhMj&_eu=AAAAAGA&are=1&cid=89066191.1776972444&frm=0&pscdl=denied&rcb=16&sr=1440x900&tt=external&uaa=x86&uab=64&uafvl=Not%253AA-Brand%3B99.0.0.0%7CHeadlessChrome%3B145.0.7632.6%7CChromium%3B145.0.7632.6&uam=&uamb=0&uap=Linux&uapv=&uaw=0&ul=united%20states&_s=1&tag_exp=0~115616986~115938466~115938468~117266401~117512542~117884344~118167058&dl=https%3A%2F%2Fwww.principalam.com%2Fus%2Fetf%2Fpref&dt=page%20not%20found%20%7C%20principal%20asset%20management&sid=1776972442&sct=1&seg=0&_tu=KA&en=page_view&_fv=1&_nsi=1&_ss=1&ep.page=%2Fus%2Fetf%2Fpref&ep.allowLinker=true&ep.purpose=&ep.business_line=&ep.intended_audience=&ep.author=&ep.publish_date=&ep.compliance_date=&ep.contract_id=&ep.gtm_tag_name=PFG%20-%20GA4%20-%20Event%20-%20Configuration%20Tag%20-%20Combined&ep.benefit_id=&ep.plan_number=&ep.member_id=&ep.product_level1=etf&ep.product_level2=pref&ep.pfg_stat_cookie=(not%20set)&ep.pfg_app_id=appid-25010720&ep.individual_tokenized_id=&ep.is_secure_app=False&up.gtm_settings=GTM-TN78FGB%20-%201386%20-%20&up.authentication_status=no&up.mobile=false&tfd=2117",
+        "https://region1.google-analytics.com/g/collect?v=2&tid=G-6SBT3RF4HF&gtm=45je64m0v9200100655z8810557788za20gzb810557788zd810557788&_p=1776972442100&gcs=G100&gcd=13p3p3p2p5l1&npa=1&dma_cps=-&dma=1&gdid=dYWJhMj&_eu=AAAAAEA&are=1&cid=89066191.1776972444&frm=0&pscdl=denied&rcb=18&sr=1440x900&uaa=x86&uab=64&uafvl=Not%253AA-Brand%3B99.0.0.0%7CHeadlessChrome%3B145.0.7632.6%7CChromium%3B145.0.7632.6&uam=&uamb=0&uap=Linux&uapv=&uaw=0&ul=en-us&_s=1&tag_exp=0~115616985~115938466~115938468~117266401~117512542&sid=1776972443&sct=1&seg=0&dl=https%3A%2F%2Fwww.principalam.com%2Fus%2Fetf%2Fpref&dt=Page%20not%20found%20%7C%20Principal%20Asset%20Management&_tu=KA&en=Visitor%20IP&_fv=1&_ss=1&ep.event_label=65.109.7.49&ep.event_category=9946616022&tfd=2155",
+        "https://pagead2.googlesyndication.com/ccm/collect?rcb=6&frm=0&ae=g&dl=https%3A%2F%2Fwww.principalam.com%2Fus%2Fetf%2Fpref&scrsrc=www.googletagmanager.com&rnd=1799795533.1776972444&navt=n&npa=1&did=dYWJhMj&gdid=dYWJhMj&_tu=KA&gtm=45be64m0v896739044z8810557788za20gzb810557788zd810557788xea&gcs=G100&gcd=13p3pPp2p5l1&dma_cps=-&dma=1&tag_exp=0~115616986~115938466~115938468~117266400~117884344~118128923&apve=1&apvf=f&apvc=0&tids=AW-10994203091&tid=AW-10994203091&tft=1776972443656&tfd=2158",
+        "https://a.clarity.ms/collect",
+        "https://bf02182chf.bf.dynatrace.com/bf?type=js3&sn=v_4_srv_-2D25367_sn_RKN76L5KAFRLHAGUGDT1NHA5SLJ18N13&svrid=-25367&flavor=cors&vi=NUDJPQUFRUSWOBMVKFFBUOKRAKFPVQFU-0&modifiedSince=1776856655487&bp=3&app=cd9dd7b645426a49&crc=3852283406&en=ss94q7ea&end=1"
+      ]
+    }
+  }
+}

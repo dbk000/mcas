@@ -1,0 +1,16 @@
+[invesco_verify] Verifying 207 tickers with 8-way concurrency
+  [25/207] ok=22 elapsed=3s
+  [50/207] ok=46 elapsed=5s
+  [75/207] ok=71 elapsed=7s
+  [100/207] ok=94 elapsed=8s
+  [125/207] ok=119 elapsed=9s
+  [150/207] ok=144 elapsed=10s
+  [175/207] ok=168 elapsed=12s
+  [200/207] ok=193 elapsed=13s
+
+Verified OK: 200
+Failed: 7
+    4 body_too_small:3b
+    3 no_id_array_in_json
+
+Wrote: /home/darren/Desktop/MCAS/fund_holdings/source_authoring/phase_0/invesco_verified_urls.json

@@ -1,0 +1,76 @@
+[curated] 70 patterns across 63 sponsors
+[curated] existing confirmed: ['calamos', 'innovator', 'proshares', 'schwab']
+  invesco                      RSP    html_table 200 no_html_table_with_id_column_and_10_rows — https://www.invesco.com/us/financial-products/etfs/product-detail?audienceType=I
+  invesco                      RSP    json       200 no_html_table_with_id_column_and_10_rows — https://www.invesco.com/us-rest/contentdetail?contentId=us-etf-product-detail.ho
+  wisdomtree                   USFR   csv        200 no_html_table_with_id_column_and_10_rows — https://www.wisdomtree.com/-/media/us-media-files/documents/resource-library/fun
+  jpmorgan                     JEPI   json       404 http_404 — https://am.jpmorgan.com/services/etf-holdings?ticker=JEPI
+  dimensional                  DFAC   csv        404 http_404 — https://us.dimensional.com/api/funds/DFAC/holdings.csv
+  dimensional                  DFAC   json       404 http_404 — https://us.dimensional.com/api/funds/DFAC/holdings
+  vaneck                       SMH    json       200 no_html_table_with_id_column_and_10_rows — https://www.vaneck.com/api/funds/smh/holdings.json
+  vaneck                       SMH    csv        200 no_html_table_with_id_column_and_10_rows — https://www.vaneck.com/etf/etf-holdings-csv/?fund=SMH
+  franklin_templeton           FLCB   json       404 http_404 — https://www.franklintempleton.com/api/etf/holdings/FLCB
+  franklin_templeton           FLCB   html_table 200 no_html_table_with_id_column_and_10_rows — https://www.franklintempleton.com/us-etfs/holdings?fund=FLCB
+  fidelity                     FBND   csv        200 no_html_table_with_id_column_and_10_rows — https://fundresearch.fidelity.com/mutual-funds/download-csv/composition/FBND
+  nuveen                       NUGO   json       200 no_html_table_with_id_column_and_10_rows — https://www.nuveen.com/api/etf/NUGO/holdings
+  schwab                       CONFIRMED  html_table https://www.schwabassetmanagement.com/allholdings/{TICKER}
+  t_rowe_price                 TCAF   json       502 http_502 — https://www.troweprice.com/services/advisor-api/etfs/holdings/TCAF
+  northern_trust               GUNR   html_table 404 http_404 — https://flexshares.com/funds/gunr/holdings
+  northern_trust               GUNR   csv        404 http_404 — https://flexshares.com/documents/gunr_holdings.csv
+  pacer                        PTNQ   html_table 200 no_html_table_with_id_column_and_10_rows — https://www.paceretfs.com/products/ptnq
+  john_hancock                 JHMM   json       403 http_403 — https://www.jhinvestments.com/api/etf-holdings/JHMM
+  janus_henderson              JAAA   json       404 http_404 — https://www.janushenderson.com/api/etf/JAAA/holdings
+  capital_group                CGCP   json       404 http_404 — https://www.capitalgroup.com/api/advisor/funds/CGCP/holdings
+  blackrock                    DYNF   html_table 404 http_404 — https://www.blackrock.com/us/individual/products/DYNF
+  alliancebernstein            YEAR   html_table 404 http_404 — https://www.abfunds.com/link/en/etf/year-overview
+  wisdomtree                   USFR   json       404 http_404 — https://www.wisdomtree.com/api/fund-holdings?ticker=USFR
+  proshares                    TQQQ   csv        404 http_404 — https://www.proshares.com/globalassets/proshares/resources/holdings/tqqq-holding
+  pimco                        MINT   html_table 403 http_403 — https://www.pimco.com/en-us/investments/etf/mint
+  allspring                    APLU   json       404 http_404 — https://www.allspringglobal.com/api/etfs/APLU/holdings
+  victory_capital              UITB   json       404 http_404 — https://www.vcm.com/api/etf-holdings/UITB
+  harbor                       WINN   json       404 http_404 — https://www.harborcapital.com/api/etfs/winn/holdings
+  columbia                     RECS   json       404 http_404 — https://www.columbiathreadneedleus.com/api/funds/RECS/holdings
+  pgim                         PULS   json       200 body_too_small:10b — https://www.pgim.com/api/etf/puls/holdings
+  principal                    USMC   json       404 http_404 — https://www.principalam.com/api/etfs/USMC/holdings
+  bondbloxx                    XHLF   html_table 404 http_404 — https://bondbloxx.com/etfs/xhlf/
+  neuberger_berman             NBOS   html_table 429 http_429 — https://www.nb.com/en/global/etf/nbos
+  bny_mellon                   BKLC   html_table 404 http_404 — https://im.bnymellon.com/us/en/intermediary/etf/bklc
+  hartford                     HTRB   html_table 404 http_404 — https://www.hartfordfunds.com/etfs/htrb-overview.html
+  touchstone                   SIO    html_table 404 http_404 — https://www.touchstoneinvestments.com/etfs/SIO
+  doubleline                   DBND   html_table 200 no_html_table_with_id_column_and_10_rows — https://www.doubleline.com/etfs/dbnd/
+  strategy_shares              SSUS   half-miss  404 http_404
+  alps                         AMLP   html_table 404 http_404 — https://www.alpsfunds.com/etfs/amlp
+  alpha_architect              BSVO   html_table 404 http_404 — https://etfsite.alphaarchitect.com/bsvo/
+  innovator                    CONFIRMED  html_table https://www.innovatoretfs.com/etf/?ticker={TICKER}
+  calamos                      CONFIRMED  html_table https://www.calamos.com/etfs/{ticker_lower}
+  sprott                       URNM   html_table 404 http_404 — https://sprottetfs.com/etfs/urnm/
+  xtrackers                    DBEF   html_table 0 http_0 — https://etfus.dws.com/en-us/DBEF
+  goldman_sachs                GUSA   html_table 200 no_html_table_with_id_column_and_10_rows — https://www.gsam.com/content/gsam/us/en/individual/products/etf/gusa
+  mfs                          MFSI   html_table 404 http_404 — https://www.mfs.com/en-us/investment-professional/products/mfs-etfs.html?ticker=
+  abrdn                        BCI    html_table 200 no_html_table_with_id_column_and_10_rows — https://www.abrdn.com/en-us/us/investor/etf/fund-centre/bci
+  alger                        ALAI   html_table 404 http_404 — https://www.alger.com/etfs/alai
+  russell_investments          RGLO   html_table 404 http_404 — https://russellinvestments.com/us/etf/RGLO
+  macquarie                    LRGG   html_table 200 no_html_table_with_id_column_and_10_rows — https://www.delawarefunds.com/etfs/lrgg
+  putnam                       PVAL   html_table 200 no_html_table_with_id_column_and_10_rows — https://www.putnam.com/individual/etf/PVAL
+  virtus                       UTES   html_table 200 no_html_table_with_id_column_and_10_rows — https://www.virtusetfs.com/etf/UTES
+  tcw                          CERY   html_table 200 no_html_table_with_id_column_and_10_rows — https://www.tcw.com/products/etf/cery
+  tortoise                     TPYP   html_table 0 http_0 — https://tortoiseetfs.com/etfs/tpyp/
+  tema                         RSHO   html_table 200 no_html_table_with_id_column_and_10_rows — https://www.temaetfs.com/RSHO/
+  gmo                          QLTY   html_table 404 http_404 — https://www.gmo.com/americas/product-index/etfs/qlty/
+  frontier_asset               FGSM   html_table 404 http_404 — https://www.frontierasset.com/etfs/fgsm
+  themes                       UNHG   html_table 404 http_404 — https://themesetfs.com/themes/UNHG
+  inspire                      IBD    html_table 200 no_html_table_with_id_column_and_10_rows — https://www.inspireetf.com/ibd/
+  unaffiliated_oneascent       OACP   html_table 200 no_html_table_with_id_column_and_10_rows — https://oneascent.com/etf/OACP/
+  lazard                       IEQ    html_table 0 http_0 — https://lazardfunds.com/etf/ieq
+  unaffiliated_tradr           TSLQ   html_table 404 http_404 — https://tradretfs.com/etfs/TSLQ/
+  tidal                        MSTY   html_table 0 http_0 — https://tidaletfservices.com/etfs/MSTY/
+  exchange_traded_concepts     ROBO   html_table 404 http_404 — https://www.etfarchitect.com/ROBO/
+  bitwise                      BITB   html_table 404 http_404 — https://bitwiseinvestments.com/crypto-market-index-etfs/bitb
+  yieldmax                     CONFIRMED  html_table https://www.yieldmaxetfs.com/our-etfs/{TICKER}/
+  roundhill                    MAGS   html_table 200 no_html_table_with_id_column_and_10_rows — https://www.roundhillinvestments.com/etfs/MAGS/
+  simplify                     SVOL   html_table 404 http_404 — https://www.simplify.us/etfs/svol
+  strive                       STRV   html_table 404 http_404 — https://www.strive.com/etfs/strv
+  themes                       UNHG   html_table 404 http_404 — https://themesetfs.com/etfs/UNHG/
+
+[curated] Confirmed 1 NEW sponsors via curated patterns
+  yieldmax
+[curated] Total confirmed now: 5

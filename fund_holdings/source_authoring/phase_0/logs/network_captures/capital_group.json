@@ -1,0 +1,21 @@
+{
+  "sponsor": "capital_group",
+  "host": "www.capitalgroup.com",
+  "base_path": "/advisor/investments/etf/{ticker_lower}",
+  "probe_tickers": [
+    "CGCP",
+    "CGMU"
+  ],
+  "xhrs_by_ticker": {
+    "CGCP": {
+      "count": 0,
+      "top_scored": [],
+      "all_sample": []
+    },
+    "CGMU": {
+      "count": 0,
+      "top_scored": [],
+      "all_sample": []
+    }
+  }
+}

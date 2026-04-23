@@ -1,0 +1,145 @@
+{
+  "sponsor": "victory_capital",
+  "host": "www.vcm.com",
+  "base_path": "/etfs/{ticker_lower}",
+  "probe_tickers": [
+    "UITB",
+    "VFLO"
+  ],
+  "xhrs_by_ticker": {
+    "UITB": {
+      "count": 23,
+      "top_scored": [
+        [
+          "https://api.userway.org/api/v1/tunings/T5xjuZFih9",
+          1
+        ],
+        [
+          "https://cdn.userway.org/widgetapp/2026-04-14-10-40-20/locales/en-US.json",
+          1
+        ],
+        [
+          "https://cdn.userway.org/remediations/consolidated/3527094/mZMclaYp2UU8pMBa.json",
+          1
+        ],
+        [
+          "https://cdn.userway.org/remediations/consolidated/3527094/mZMclaYp2UU8pMBa.json",
+          1
+        ],
+        [
+          "https://cdn77.api.userway.org/api/img-dscr/v2/T5xjuZFih9/3527094/J5AWC2fqiRl5swLS/alts.json?dto=%7B%22sorted%22%3A%5B%7B%22src%22%3A%22https%3A%2F%2Fwww.vcm.com%2Fcontent%2Fdam%2Fvcm%2Fbasic%2Farrow-blue.svg%22%2C%22alt%22%3A%22%22%2C%22dir%22%3A%22RO%22%7D%2C%7B%22src%22%3A%22https%3A%2F%2Fwww.vcm.com%2Fcontent%2Fdam%2Fvcm%2Fbasic%2Fcall-logo.svg%22%2C%22alt%22%3A%22%22%2C%22dir%22%3A%22RO%22%7D%2C%7B%22src%22%3A%22https%3A%2F%2Fwww.vcm.com%2Fcontent%2Fdam%2Fvcm%2Fbasic%2Fright-arrow.svg%22%2C%22alt%22%3A%22dropdown%22%2C%22dir%22%3A%22RO%22%7D%2C%7B%22src%22%3A%22https%3A%2F%2Fwww.vcm.com%2Fcontent%2Fdam%2Fvcm%2Fbasic%2Fsearchicon.svg%22%2C%22alt%22%3A%22%22%2C%22dir%22%3A%22RO%22%7D%2C%7B%22src%22%3A%22https%3A%2F%2Fwww.vcm.com%2Fcontent%2Fdam%2Fvcm%2Fbasic%2FVCM-logo.svg%22%2C%22alt%22%3A%22Victory%20Capital%20Invest%20logo%22%2C%22dir%22%3A%22RO%22%7D%5D%2C%22tier%22%3A%22PAID_QUOTA_TIER%22%2C%22pageUrl%22%3A%22https%3A%2F%2Fwww.vcm.com%2Fetfs%2Fuitb%22%7D",
+          1
+        ],
+        [
+          "https://api.userway.org/api/br-links/v0/links/3527094",
+          1
+        ],
+        [
+          "https://cdn77.api.userway.org/api/img-dscr/v2/T5xjuZFih9/3527094/J5AWC2fqiRl5swLS/alts.json?dto=%7B%22sorted%22%3A%5B%7B%22src%22%3A%22https%3A%2F%2Fwww.vcm.com%2Fcontent%2Fdam%2Fvcm%2Fbasic%2Fcontact-icon.svg%22%2C%22alt%22%3A%22%22%2C%22dir%22%3A%22RO%22%7D%2C%7B%22src%22%3A%22https%3A%2F%2Fwww.vcm.com%2Fcontent%2Fdam%2Fvcm%2Fbasic%2Fright-arrow.svg%22%2C%22alt%22%3A%22%22%2C%22dir%22%3A%22RO%22%7D%2C%7B%22src%22%3A%22https%3A%2F%2Fwww.vcm.com%2Fcontent%2Fdam%2Fvcm%2Fbasic%2FVCM-logo.svg%22%2C%22alt%22%3A%22Victory%20Capital%20Invest%20Search%20logo%22%2C%22dir%22%3A%22RO%22%7D%2C%7B%22src%22%3A%22https%3A%2F%2Fwww.vcm.com%2Fcontent%2Fdam%2Fvcm%2Ffranchises%2FIntegrity.AM.Logo.png%22%2C%22alt%22%3A%22Integrity%20logo%22%2C%22dir%22%3A%22RO%22%7D%2C%7B%22src%22%3A%22https%3A%2F%2Fwww.vcm.com%2Fcontent%2Fdam%2Fvcm%2Ffranchises%2FNEC-logo.png%22%2C%22alt%22%3A%22NEC-logo%20logo%22%2C%22dir%22%3A%22RO%22%7D%2C%7B%22src%22%3A%22https%3A%2F%2Fwww.vcm.com%2Fcontent%2Fdam%2Fvcm%2Ffranchises%2FPioneeer-Header-Logo.png%22%2C%22alt%22%3A%22Pioneeer-Header-Logo%20logo%22%2C%22dir%22%3A%22RO%22%7D%2C%7B%22src%22%3A%22https%3A%2F%2Fwww.vcm.com%2Fcontent%2Fdam%2Fvcm%2Ffranchises%2FRS-logo.png%22%2C%22alt%22%3A%22RS-logo%20logo%22%2C%22dir%22%3A%22RO%22%7D%2C%7B%22src%22%3A%22https%3A%2F%2Fwww.vcm.com%2Fcontent%2Fdam%2Fvcm%2Ffranchises%2Fsycamore.logo.png%22%2C%22alt%22%3A%22sycamore%20logo%22%2C%22dir%22%3A%22RO%22%7D%2C%7B%22src%22%3A%22https%3A%2F%2Fwww.vcm.com%2Fcontent%2Fdam%2Fvcm%2Ffranchises%2FTrivalent.logo.png%22%2C%22alt%22%3A%22Trivalent%20logo%22%2C%22dir%22%3A%22RO%22%7D%2C%7B%22src%22%3A%22https%3A%2F%2Fwww.vcm.com%2Fcontent%2Fdam%2Fvcm%2Ffranchises%2FVC_Solutions_Logo.png%22%2C%22alt%22%3A%22VC_Solutions_Logo%20logo%22%2C%22dir%22%3A%22RO%22%7D%2C%7B%22src%22%3A%22https%3A%2F%2Fwww.vcm.com%2Fcontent%2Fdam%2Fvcm%2Ffranchises%2FVictoryIncomeInvestorsLogo.png%22%2C%22alt%22%3A%22VictoryIncomeInvestorsLogo%20logo%22%2C%22dir%22%3A%22RO%22%7D%2C%7B%22src%22%3A%22https%3A%2F%2Fwww.vcm.com%2Fcontent%2Fdam%2Fvcm%2Ffranchises%2FWestEndLogo_web.png%22%2C%22alt%22%3A%22WestEndLogo_web%20logo%22%2C%22dir%22%3A%22RO%22%7D%5D%2C%22tier%22%3A%22PAID_QUOTA_TIER%22%2C%22pageUrl%22%3A%22https%3A%2F%2Fwww.vcm.com%2Fetfs%2Fuitb%22%7D",
+          1
+        ],
+        [
+          "https://api.userway.org/api/br-links/v0/links/3527094",
+          1
+        ],
+        [
+          "https://cdn77.api.userway.org/api/img-dscr/v2/T5xjuZFih9/3527094/J5AWC2fqiRl5swLS/alts.json?dto=%7B%22sorted%22%3A%5B%7B%22src%22%3A%22https%3A%2F%2Fwww.vcm.com%2Fcontent%2Fdam%2Fvcm%2Fbasic%2FIcon_Mail_White.svg%22%2C%22alt%22%3A%22%22%2C%22dir%22%3A%22RO%22%7D%2C%7B%22src%22%3A%22https%3A%2F%2Fwww.vcm.com%2Fcontent%2Fdam%2Fvcm%2Fbasic%2Fright-arrow.svg%22%2C%22alt%22%3A%22aboutvictorydropdown%22%2C%22dir%22%3A%22RO%22%7D%2C%7B%22src%22%3A%22https%3A%2F%2Fwww.vcm.com%2Fcontent%2Fdam%2Fvcm%2Fbasic%2Fsearchicon.svg%22%2C%22alt%22%3A%22search%22%2C%22dir%22%3A%22RO%22%7D%2C%7B%22src%22%3A%22https%3A%2F%2Fwww.vcm.com%2Fcontent%2Fdam%2Fvcm%2Fbasic%2FVCM-logo.svg%22%2C%22alt%22%3A%22Victory%20Capital%20Invest%20Search%20logo%22%2C%22dir%22%3A%22RO%22%7D%2C%7B%22src%22%3A%22https%3A%2F%2Fwww.vcm.com%2Fcontent%2Fdam%2Fvcm%2Fcommon%2Ffooter%2FVictory_Logo.png%22%2C%22alt%22%3A%22Victory%20Capital%20footer%20logo%22%2C%22dir%22%3A%22RO%22%7D%5D%2C%22tier%22%3A%22PAID_QUOTA_TIER%22%2C%22pageUrl%22%3A%22https%3A%2F%2Fwww.vcm.com%2Fetfs%2Fuitb%22%7D",
+          1
+        ],
+        [
+          "https://api.userway.org/api/a11y-data/v0/page/https%3A%2F%2Fwww.vcm.com%2Fetfs%2Fuitb/DESKTOP/WIDGET_ON/status",
+          1
+        ],
+        [
+          "https://api.userway.org/api/a11y-data/v0/page/https%3A%2F%2Fwww.vcm.com%2Fetfs%2Fuitb/DESKTOP/contrib",
+          1
+        ],
+        [
+          "https://api.userway.org/api/br-links/v0/links/3527094",
+          1
+        ],
+        [
+          "https://api.userway.org/api/br-links/v0/contribute/3527094",
+          1
+        ],
+        [
+          "https://cdn77.api.userway.org/api/img-dscr/v2/T5xjuZFih9/3527094/J5AWC2fqiRl5swLS/alts.json?dto=%7B%22sorted%22%3A%5B%7B%22src%22%3A%22https%3A%2F%2Fwww.vcm.com%2Fetc.clientlibs%2Fvcm%2Fclientlibs%2Fclientlib-site%2Fresources%2Fcross-icon.png%22%2C%22alt%22%3A%22close%22%2C%22dir%22%3A%22RO%22%7D%5D%2C%22tier%22%3A%22PAID_QUOTA_TIER%22%2C%22pageUrl%22%3A%22https%3A%2F%2Fwww.vcm.com%2Fetfs%2Fuitb%22%7D",
+          1
+        ],
+        [
+          "https://api.userway.org/api/br-links/v0/links/3527094",
+          1
+        ]
+      ],
+      "all_sample": [
+        "https://dpm.demdex.net/id?d_visid_ver=5.0.1&d_fieldgroup=MC&d_rtbd=json&d_ver=2&d_orgid=232A34FB5CEBBDB60A495FDE%40AdobeOrg&d_nsid=0&ts=1776972411428",
+        "https://www.google.com/ccm/collect?rcb=1&frm=0&ae=g&en=page_view&dl=https%3A%2F%2Fwww.vcm.com%2Fetfs%2Fuitb&scrsrc=www.googletagmanager.com&rnd=1310714235.1776972411&dt=Page%20Not%20Found%20-%20404%20Not%20Found%20-%20Victory%20Capital&auid=1711945415.1776972411&navt=n&npa=1&ep.ads_data_redaction=0&gtm=45He64m0za200xea&gcd=13l3l3l2l1l1&dma_cps=a&dma=1&tag_exp=0~115616985~115938465~115938468~117266400~118128922&apve=1&apvf=f&apvc=1&tft=1776972411488&tfd=1729",
+        "https://region1.google-analytics.com/g/collect?v=2&tid=G-YVSLTYFE6D&gtm=45je64m0v9126095185za20g&_p=1776972411367&gcd=13l3lPl2l1l1&npa=1&dma_cps=a&dma=1&_eu=EAAI&are=1&cid=109398121.1776972411&frm=0&ir=1&pscdl=noapi&rcb=5&sr=1440x900&uaa=x86&uab=64&uafvl=Not%253AA-Brand%3B99.0.0.0%7CHeadlessChrome%3B145.0.7632.6%7CChromium%3B145.0.7632.6&uam=&uamb=0&uap=Linux&uapv=&uaw=0&ul=en-us&_s=1&tag_exp=0~115938465~115938468~117266400~117512543~118167060&sid=1776972411&sct=1&seg=0&dl=https%3A%2F%2Fwww.vcm.com%2Fetfs%2Fuitb&dt=Page%20Not%20Found%20-%20404%20Not%20Found%20-%20Victory%20Capital&en=page_view&_fv=1&_ss=1&tfd=1775",
+        "https://www.vcm.com/popup-content-page",
+        "https://region1.google-analytics.com/g/collect?v=2&tid=G-45CNYL82DT&gtm=45je64m0v881962378za200zd881962378&_p=1776972411367&gcd=13l3l3l2l1l1&npa=1&dma_cps=a&dma=1&are=1&cid=109398121.1776972411&frm=0&pscdl=noapi&rcb=12&sr=1440x900&uaa=x86&uab=64&uafvl=Not%253AA-Brand%3B99.0.0.0%7CHeadlessChrome%3B145.0.7632.6%7CChromium%3B145.0.7632.6&uam=&uamb=0&uap=Linux&uapv=&uaw=0&ul=en-us&_s=1&tag_exp=0~115938465~115938469~117266400~117512543~118463261&sid=1776972411&sct=1&seg=0&dl=https%3A%2F%2Fwww.vcm.com%2Fetfs%2Fuitb&dt=Page%20Not%20Found%20-%20404%20Not%20Found%20-%20Victory%20Capital&en=page_view&_fv=1&_ss=1&_ee=1&tfd=1953",
+        "https://api.userway.org/api/v1/tunings/T5xjuZFih9",
+        "https://tags.srv.stackadapt.com/sa.jpeg",
+        "https://cdn.userway.org/widgetapp/2026-04-14-10-40-20/locales/en-US.json",
+        "https://tags.srv.stackadapt.com/saq_pxl?uid=T3RUooNXrZkPqMbutUgg2w&is_js=true&landing_url=https%3A%2F%2Fwww.vcm.com%2Fetfs%2Fuitb&t=Page%20Not%20Found%20-%20404%20Not%20Found%20-%20Victory%20Capital&tip=z3eBg-8WvcZFPP6_YUdlvZ5klBRCUu_tHnrhmMrgAuo&host=https%3A%2F%2Fwww.vcm.com&sa_conv_data_css_value=%27%27&sa_conv_data_image_value=ffd8ffe000104a46494600010101006000600000ffdb004300080606070605080707070909080a0c140d0c0b0b0c1912130f141d1a1f1e1d1a1c1c20242e2720222c231c1c2837292c30313434341f27393d38323c2e333432ffdb0043010909090c0b0c180d0d1832211c213232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232ffc00011080001000103012200021101031101ffc4001f0000010501010101010100000000000000000102030405060708090a0bffc400b5100002010303020403050504040000017d01020300041105122131410613516107227114328191a1082342b1c11552d1f02433627282090a161718191a25262728292a3435363738393a434445464748494a535455565758595a636465666768696a737475767778797a838485868788898a92939495969798999aa2a3a4a5a6a7a8a9aab2b3b4b5b6b7b8b9bac2c3c4c5c6c7c8c9cad2d3d4d5d6d7d8d9dae1e2e3e4e5e6e7e8e9eaf1f2f3f4f5f6f7f8f9faffc4001f0100030101010101010101010000000000000102030405060708090a0bffc400b51100020102040403040705040400010277000102031104052131061241510761711322328108144291a1b1c109233352f0156272d10a162434e125f11718191a262728292a35363738393a434445464748494a535455565758595a636465666768696a737475767778797a82838485868788898a92939495969798999aa2a3a4a5a6a7a8a9aab2b3b4b5b6b7b8b9bac2c3c4c5c6c7c8c9cad2d3d4d5d6d7d8d9dae2e3e4e5e6e7e8e9eaf2f3f4f5f6f7f8f9faffda000c03010002110311003f00f7fa28a2803fffd9f5a88ef16cd759aa4c6c8890d9985aff416d0731&l_src=&l_src_d=&u_src=&u_src_d=&shop=false&sa-user-id-v4=s%253A.o6W7wkJsHSTU4%252BLlDruZ%252FwNjVcUZZMvakQpSatDoAgo&sa-user-id-v3=s%253AAQAKIE3NnBP8Qn0_T9l3OSBdUVonqlavYbX-pCvLZfDufZEKENYBGAQg_OSpzwYwAToEwTl8pEIE6IM-jg.20HLwqb8nAc4l4gbF1LxgeR6YFp4%252Fi467%252BXaZDYYu9k&sa-user-id-v2=s%253A9aiO8WzXWapMbIiQ2Zha_0FtBzE.AxmGUa2GMLRhvEUyCyEB04F5qQX2I%252BSiLIxjLs4ITts&sa-user-id=s%253A0-f5a88ef1-6cd7-59aa-4c6c-8890d9985aff.WNl1oIlKNWvqqMtkvydJFT7JosqymvnEC3lhxiNTGho",
+        "https://cdn.userway.org/remediations/consolidated/3527094/mZMclaYp2UU8pMBa.json",
+        "https://cdn.userway.org/remediations/consolidated/3527094/mZMclaYp2UU8pMBa.json",
+        "https://cdn77.api.userway.org/api/img-dscr/v2/T5xjuZFih9/3527094/J5AWC2fqiRl5swLS/alts.json?dto=%7B%22sorted%22%3A%5B%7B%22src%22%3A%22https%3A%2F%2Fwww.vcm.com%2Fcontent%2Fdam%2Fvcm%2Fbasic%2Farrow-blue.svg%22%2C%22alt%22%3A%22%22%2C%22dir%22%3A%22RO%22%7D%2C%7B%22src%22%3A%22https%3A%2F%2Fwww.vcm.com%2Fcontent%2Fdam%2Fvcm%2Fbasic%2Fcall-logo.svg%22%2C%22alt%22%3A%22%22%2C%22dir%22%3A%22RO%22%7D%2C%7B%22src%22%3A%22https%3A%2F%2Fwww.vcm.com%2Fcontent%2Fdam%2Fvcm%2Fbasic%2Fright-arrow.svg%22%2C%22alt%22%3A%22dropdown%22%2C%22dir%22%3A%22RO%22%7D%2C%7B%22src%22%3A%22https%3A%2F%2Fwww.vcm.com%2Fcontent%2Fdam%2Fvcm%2Fbasic%2Fsearchicon.svg%22%2C%22alt%22%3A%22%22%2C%22dir%22%3A%22RO%22%7D%2C%7B%22src%22%3A%22https%3A%2F%2Fwww.vcm.com%2Fcontent%2Fdam%2Fvcm%2Fbasic%2FVCM-logo.svg%22%2C%22alt%22%3A%22Victory%20Capital%20Invest%20logo%22%2C%22dir%22%3A%22RO%22%7D%5D%2C%22tier%22%3A%22PAID_QUOTA_TIER%22%2C%22pageUrl%22%3A%22https%3A%2F%2Fwww.vcm.com%2Fetfs%2Fuitb%22%7D",
+        "https://api.userway.org/api/br-links/v0/links/3527094",
+        "https://cdn77.api.userway.org/api/img-dscr/v2/T5xjuZFih9/3527094/J5AWC2fqiRl5swLS/alts.json?dto=%7B%22sorted%22%3A%5B%7B%22src%22%3A%22https%3A%2F%2Fwww.vcm.com%2Fcontent%2Fdam%2Fvcm%2Fbasic%2Fcontact-icon.svg%22%2C%22alt%22%3A%22%22%2C%22dir%22%3A%22RO%22%7D%2C%7B%22src%22%3A%22https%3A%2F%2Fwww.vcm.com%2Fcontent%2Fdam%2Fvcm%2Fbasic%2Fright-arrow.svg%22%2C%22alt%22%3A%22%22%2C%22dir%22%3A%22RO%22%7D%2C%7B%22src%22%3A%22https%3A%2F%2Fwww.vcm.com%2Fcontent%2Fdam%2Fvcm%2Fbasic%2FVCM-logo.svg%22%2C%22alt%22%3A%22Victory%20Capital%20Invest%20Search%20logo%22%2C%22dir%22%3A%22RO%22%7D%2C%7B%22src%22%3A%22https%3A%2F%2Fwww.vcm.com%2Fcontent%2Fdam%2Fvcm%2Ffranchises%2FIntegrity.AM.Logo.png%22%2C%22alt%22%3A%22Integrity%20logo%22%2C%22dir%22%3A%22RO%22%7D%2C%7B%22src%22%3A%22https%3A%2F%2Fwww.vcm.com%2Fcontent%2Fdam%2Fvcm%2Ffranchises%2FNEC-logo.png%22%2C%22alt%22%3A%22NEC-logo%20logo%22%2C%22dir%22%3A%22RO%22%7D%2C%7B%22src%22%3A%22https%3A%2F%2Fwww.vcm.com%2Fcontent%2Fdam%2Fvcm%2Ffranchises%2FPioneeer-Header-Logo.png%22%2C%22alt%22%3A%22Pioneeer-Header-Logo%20logo%22%2C%22dir%22%3A%22RO%22%7D%2C%7B%22src%22%3A%22https%3A%2F%2Fwww.vcm.com%2Fcontent%2Fdam%2Fvcm%2Ffranchises%2FRS-logo.png%22%2C%22alt%22%3A%22RS-logo%20logo%22%2C%22dir%22%3A%22RO%22%7D%2C%7B%22src%22%3A%22https%3A%2F%2Fwww.vcm.com%2Fcontent%2Fdam%2Fvcm%2Ffranchises%2Fsycamore.logo.png%22%2C%22alt%22%3A%22sycamore%20logo%22%2C%22dir%22%3A%22RO%22%7D%2C%7B%22src%22%3A%22https%3A%2F%2Fwww.vcm.com%2Fcontent%2Fdam%2Fvcm%2Ffranchises%2FTrivalent.logo.png%22%2C%22alt%22%3A%22Trivalent%20logo%22%2C%22dir%22%3A%22RO%22%7D%2C%7B%22src%22%3A%22https%3A%2F%2Fwww.vcm.com%2Fcontent%2Fdam%2Fvcm%2Ffranchises%2FVC_Solutions_Logo.png%22%2C%22alt%22%3A%22VC_Solutions_Logo%20logo%22%2C%22dir%22%3A%22RO%22%7D%2C%7B%22src%22%3A%22https%3A%2F%2Fwww.vcm.com%2Fcontent%2Fdam%2Fvcm%2Ffranchises%2FVictoryIncomeInvestorsLogo.png%22%2C%22alt%22%3A%22VictoryIncomeInvestorsLogo%20logo%22%2C%22dir%22%3A%22RO%22%7D%2C%7B%22src%22%3A%22https%3A%2F%2Fwww.vcm.com%2Fcontent%2Fdam%2Fvcm%2Ffranchises%2FWestEndLogo_web.png%22%2C%22alt%22%3A%22WestEndLogo_web%20logo%22%2C%22dir%22%3A%22RO%22%7D%5D%2C%22tier%22%3A%22PAID_QUOTA_TIER%22%2C%22pageUrl%22%3A%22https%3A%2F%2Fwww.vcm.com%2Fetfs%2Fuitb%22%7D",
+        "https://api.userway.org/api/br-links/v0/links/3527094",
+        "https://region1.google-analytics.com/g/collect?v=2&tid=G-45CNYL82DT&gtm=45je64m0v881962378za200zd881962378&_p=1776972411367&gcd=13l3l3l2l1l1&npa=1&dma_cps=a&dma=1&_eu=AEAAAAQ&ae=a&are=1&cid=109398121.1776972411&frm=0&pscdl=noapi&rcb=12&sr=1440x900&uaa=x86&uab=64&uafvl=Not%253AA-Brand%3B99.0.0.0%7CHeadlessChrome%3B145.0.7632.6%7CChromium%3B145.0.7632.6&uam=&uamb=0&uap=Linux&uapv=&uaw=0&ul=en-us&_s=2&tag_exp=0~115938465~115938469~117266400~117512543~118463261&sid=1776972411&sct=1&seg=0&dl=https%3A%2F%2Fwww.vcm.com%2Fetfs%2Fuitb&dt=Page%20Not%20Found%20-%20404%20Not%20Found%20-%20Victory%20Capital&en=scroll&epn.percent_scrolled=90&_et=9&tfd=6962",
+        "https://cdn77.api.userway.org/api/img-dscr/v2/T5xjuZFih9/3527094/J5AWC2fqiRl5swLS/alts.json?dto=%7B%22sorted%22%3A%5B%7B%22src%22%3A%22https%3A%2F%2Fwww.vcm.com%2Fcontent%2Fdam%2Fvcm%2Fbasic%2FIcon_Mail_White.svg%22%2C%22alt%22%3A%22%22%2C%22dir%22%3A%22RO%22%7D%2C%7B%22src%22%3A%22https%3A%2F%2Fwww.vcm.com%2Fcontent%2Fdam%2Fvcm%2Fbasic%2Fright-arrow.svg%22%2C%22alt%22%3A%22aboutvictorydropdown%22%2C%22dir%22%3A%22RO%22%7D%2C%7B%22src%22%3A%22https%3A%2F%2Fwww.vcm.com%2Fcontent%2Fdam%2Fvcm%2Fbasic%2Fsearchicon.svg%22%2C%22alt%22%3A%22search%22%2C%22dir%22%3A%22RO%22%7D%2C%7B%22src%22%3A%22https%3A%2F%2Fwww.vcm.com%2Fcontent%2Fdam%2Fvcm%2Fbasic%2FVCM-logo.svg%22%2C%22alt%22%3A%22Victory%20Capital%20Invest%20Search%20logo%22%2C%22dir%22%3A%22RO%22%7D%2C%7B%22src%22%3A%22https%3A%2F%2Fwww.vcm.com%2Fcontent%2Fdam%2Fvcm%2Fcommon%2Ffooter%2FVictory_Logo.png%22%2C%22alt%22%3A%22Victory%20Capital%20footer%20logo%22%2C%22dir%22%3A%22RO%22%7D%5D%2C%22tier%22%3A%22PAID_QUOTA_TIER%22%2C%22pageUrl%22%3A%22https%3A%2F%2Fwww.vcm.com%2Fetfs%2Fuitb%22%7D",
+        "https://api.userway.org/api/a11y-data/v0/page/https%3A%2F%2Fwww.vcm.com%2Fetfs%2Fuitb/DESKTOP/WIDGET_ON/status",
+        "https://api.userway.org/api/a11y-data/v0/page/https%3A%2F%2Fwww.vcm.com%2Fetfs%2Fuitb/DESKTOP/contrib",
+        "https://api.userway.org/api/br-links/v0/links/3527094",
+        "https://api.userway.org/api/br-links/v0/contribute/3527094",
+        "https://cdn77.api.userway.org/api/img-dscr/v2/T5xjuZFih9/3527094/J5AWC2fqiRl5swLS/alts.json?dto=%7B%22sorted%22%3A%5B%7B%22src%22%3A%22https%3A%2F%2Fwww.vcm.com%2Fetc.clientlibs%2Fvcm%2Fclientlibs%2Fclientlib-site%2Fresources%2Fcross-icon.png%22%2C%22alt%22%3A%22close%22%2C%22dir%22%3A%22RO%22%7D%5D%2C%22tier%22%3A%22PAID_QUOTA_TIER%22%2C%22pageUrl%22%3A%22https%3A%2F%2Fwww.vcm.com%2Fetfs%2Fuitb%22%7D",
+        "https://api.userway.org/api/br-links/v0/links/3527094"
+      ]
+    },
+    "VFLO": {
+      "count": 13,
+      "top_scored": [
+        [
+          "https://api.userway.org/api/v1/tunings/T5xjuZFih9",
+          1
+        ],
+        [
+          "https://cdn.userway.org/widgetapp/2026-04-14-10-40-20/locales/en-US.json",
+          1
+        ],
+        [
+          "https://cdn.userway.org/remediations/consolidated/3527094/mZMclaYp2UU8pMBa.json",
+          1
+        ],
+        [
+          "https://cdn.userway.org/remediations/consolidated/3527094/mZMclaYp2UU8pMBa.json",
+          1
+        ],
+        [
+          "https://cdn77.api.userway.org/api/img-dscr/v2/T5xjuZFih9/3527094/J5AWC2fqiRl5swLS/alts.json?dto=%7B%22sorted%22%3A%5B%7B%22src%22%3A%22https%3A%2F%2Fwww.vcm.com%2Fcontent%2Fdam%2Fvcm%2Fbasic%2Farrow-blue.svg%22%2C%22alt%22%3A%22%22%2C%22dir%22%3A%22RO%22%7D%2C%7B%22src%22%3A%22https%3A%2F%2Fwww.vcm.com%2Fcontent%2Fdam%2Fvcm%2Fbasic%2Fcall-logo.svg%22%2C%22alt%22%3A%22%22%2C%22dir%22%3A%22RO%22%7D%2C%7B%22src%22%3A%22https%3A%2F%2Fwww.vcm.com%2Fcontent%2Fdam%2Fvcm%2Fbasic%2Fright-arrow.svg%22%2C%22alt%22%3A%22dropdown%22%2C%22dir%22%3A%22RO%22%7D%2C%7B%22src%22%3A%22https%3A%2F%2Fwww.vcm.com%2Fcontent%2Fdam%2Fvcm%2Fbasic%2Fsearchicon.svg%22%2C%22alt%22%3A%22%22%2C%22dir%22%3A%22RO%22%7D%2C%7B%22src%22%3A%22https%3A%2F%2Fwww.vcm.com%2Fcontent%2Fdam%2Fvcm%2Fbasic%2FVCM-logo.svg%22%2C%22alt%22%3A%22Victory%20Capital%20Invest%20logo%22%2C%22dir%22%3A%22RO%22%7D%5D%2C%22tier%22%3A%22PAID_QUOTA_TIER%22%2C%22pageUrl%22%3A%22https%3A%2F%2Fwww.vcm.com%2Fetfs%2Fvflo%22%7D",
+          1
+        ],
+        [
+          "https://api.userway.org/api/br-links/v0/links/3527094",
+          1
+        ]
+      ],
+      "all_sample": [
+        "https://dpm.demdex.net/id?d_visid_ver=5.0.1&d_fieldgroup=MC&d_rtbd=json&d_ver=2&d_orgid=232A34FB5CEBBDB60A495FDE%40AdobeOrg&d_nsid=0&ts=1776972423096",
+        "https://www.google.com/ccm/collect?rcb=8&frm=0&ae=g&en=page_view&dl=https%3A%2F%2Fwww.vcm.com%2Fetfs%2Fvflo&scrsrc=www.googletagmanager.com&rnd=279204831.1776972423&dt=Page%20Not%20Found%20-%20404%20Not%20Found%20-%20Victory%20Capital&auid=587918129.1776972423&navt=n&npa=1&ep.ads_data_redaction=0&gtm=45He64m0za200xea&gcd=13l3l3l2l1l1&dma_cps=a&dma=1&tag_exp=0~115616986~115938465~115938469~117266401~117384405~118487543&apve=1&apvf=f&apvc=1&tft=1776972423147&tfd=1367",
+        "https://region1.google-analytics.com/g/collect?v=2&tid=G-YVSLTYFE6D&gtm=45je64m0v9126095185za20g&_p=1776972423021&gcd=13l3lPl2l1l1&npa=1&dma_cps=a&dma=1&_eu=EAAI&are=1&cid=637848271.1776972423&frm=0&ir=1&pscdl=noapi&rcb=19&sr=1440x900&uaa=x86&uab=64&uafvl=Not%253AA-Brand%3B99.0.0.0%7CHeadlessChrome%3B145.0.7632.6%7CChromium%3B145.0.7632.6&uam=&uamb=0&uap=Linux&uapv=&uaw=0&ul=en-us&_s=1&tag_exp=0~115938465~115938468~117266400~117384405~117512543~118463262&sid=1776972423&sct=1&seg=0&dl=https%3A%2F%2Fwww.vcm.com%2Fetfs%2Fvflo&dt=Page%20Not%20Found%20-%20404%20Not%20Found%20-%20Victory%20Capital&en=page_view&_fv=1&_ss=1&tfd=1404",
+        "https://region1.google-analytics.com/g/collect?v=2&tid=G-45CNYL82DT&gtm=45je64m0v881962378za200zd881962378&_p=1776972423021&gcd=13l3l3l2l1l1&npa=1&dma_cps=a&dma=1&are=1&cid=637848271.1776972423&frm=0&pscdl=noapi&rcb=18&sr=1440x900&uaa=x86&uab=64&uafvl=Not%253AA-Brand%3B99.0.0.0%7CHeadlessChrome%3B145.0.7632.6%7CChromium%3B145.0.7632.6&uam=&uamb=0&uap=Linux&uapv=&uaw=0&ul=en-us&_s=1&tag_exp=0~115616986~115938465~115938469~117266401~117384406~117512543~118167058~118463262&sid=1776972423&sct=1&seg=0&dl=https%3A%2F%2Fwww.vcm.com%2Fetfs%2Fvflo&dt=Page%20Not%20Found%20-%20404%20Not%20Found%20-%20Victory%20Capital&en=page_view&_fv=1&_ss=1&_ee=1&tfd=1490",
+        "https://www.vcm.com/popup-content-page",
+        "https://api.userway.org/api/v1/tunings/T5xjuZFih9",
+        "https://tags.srv.stackadapt.com/sa.jpeg",
+        "https://tags.srv.stackadapt.com/saq_pxl?uid=T3RUooNXrZkPqMbutUgg2w&is_js=true&landing_url=https%3A%2F%2Fwww.vcm.com%2Fetfs%2Fvflo&t=Page%20Not%20Found%20-%20404%20Not%20Found%20-%20Victory%20Capital&tip=cf5DXbHuNErRBpKi6HPkDwKxK8PEwMmydXuJ04WQU4I&host=https%3A%2F%2Fwww.vcm.com&sa_conv_data_css_value=%27%27&sa_conv_data_image_value=ffd8ffe000104a46494600010101006000600000ffdb004300080606070605080707070909080a0c140d0c0b0b0c1912130f141d1a1f1e1d1a1c1c20242e2720222c231c1c2837292c30313434341f27393d38323c2e333432ffdb0043010909090c0b0c180d0d1832211c213232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232ffc00011080001000103012200021101031101ffc4001f0000010501010101010100000000000000000102030405060708090a0bffc400b5100002010303020403050504040000017d01020300041105122131410613516107227114328191a1082342b1c11552d1f02433627282090a161718191a25262728292a3435363738393a434445464748494a535455565758595a636465666768696a737475767778797a838485868788898a92939495969798999aa2a3a4a5a6a7a8a9aab2b3b4b5b6b7b8b9bac2c3c4c5c6c7c8c9cad2d3d4d5d6d7d8d9dae1e2e3e4e5e6e7e8e9eaf1f2f3f4f5f6f7f8f9faffc4001f0100030101010101010101010000000000000102030405060708090a0bffc400b51100020102040403040705040400010277000102031104052131061241510761711322328108144291a1b1c109233352f0156272d10a162434e125f11718191a262728292a35363738393a434445464748494a535455565758595a636465666768696a737475767778797a82838485868788898a92939495969798999aa2a3a4a5a6a7a8a9aab2b3b4b5b6b7b8b9bac2c3c4c5c6c7c8c9cad2d3d4d5d6d7d8d9dae2e3e4e5e6e7e8e9eaf2f3f4f5f6f7f8f9faffda000c03010002110311003f00f7fa28a2803fffd9f5a88ef16cd759aa4c6c8890d9985aff416d0731&l_src=&l_src_d=&u_src=&u_src_d=&shop=false&sa-user-id-v4=s%253A.o6W7wkJsHSTU4%252BLlDruZ%252FwNjVcUZZMvakQpSatDoAgo&sa-user-id-v3=s%253AAQAKIE3NnBP8Qn0_T9l3OSBdUVonqlavYbX-pCvLZfDufZEKENYBGAQgh-WpzwYwAToEwTl8pEIEuH3lMA.a1tDhwH1kNg41o6FWmLgHzU91w0KZJjTUwmFD2s437w&sa-user-id-v2=s%253A9aiO8WzXWapMbIiQ2Zha_0FtBzE.AxmGUa2GMLRhvEUyCyEB04F5qQX2I%252BSiLIxjLs4ITts&sa-user-id=s%253A0-f5a88ef1-6cd7-59aa-4c6c-8890d9985aff.WNl1oIlKNWvqqMtkvydJFT7JosqymvnEC3lhxiNTGho",
+        "https://cdn.userway.org/widgetapp/2026-04-14-10-40-20/locales/en-US.json",
+        "https://cdn.userway.org/remediations/consolidated/3527094/mZMclaYp2UU8pMBa.json",
+        "https://cdn.userway.org/remediations/consolidated/3527094/mZMclaYp2UU8pMBa.json",
+        "https://cdn77.api.userway.org/api/img-dscr/v2/T5xjuZFih9/3527094/J5AWC2fqiRl5swLS/alts.json?dto=%7B%22sorted%22%3A%5B%7B%22src%22%3A%22https%3A%2F%2Fwww.vcm.com%2Fcontent%2Fdam%2Fvcm%2Fbasic%2Farrow-blue.svg%22%2C%22alt%22%3A%22%22%2C%22dir%22%3A%22RO%22%7D%2C%7B%22src%22%3A%22https%3A%2F%2Fwww.vcm.com%2Fcontent%2Fdam%2Fvcm%2Fbasic%2Fcall-logo.svg%22%2C%22alt%22%3A%22%22%2C%22dir%22%3A%22RO%22%7D%2C%7B%22src%22%3A%22https%3A%2F%2Fwww.vcm.com%2Fcontent%2Fdam%2Fvcm%2Fbasic%2Fright-arrow.svg%22%2C%22alt%22%3A%22dropdown%22%2C%22dir%22%3A%22RO%22%7D%2C%7B%22src%22%3A%22https%3A%2F%2Fwww.vcm.com%2Fcontent%2Fdam%2Fvcm%2Fbasic%2Fsearchicon.svg%22%2C%22alt%22%3A%22%22%2C%22dir%22%3A%22RO%22%7D%2C%7B%22src%22%3A%22https%3A%2F%2Fwww.vcm.com%2Fcontent%2Fdam%2Fvcm%2Fbasic%2FVCM-logo.svg%22%2C%22alt%22%3A%22Victory%20Capital%20Invest%20logo%22%2C%22dir%22%3A%22RO%22%7D%5D%2C%22tier%22%3A%22PAID_QUOTA_TIER%22%2C%22pageUrl%22%3A%22https%3A%2F%2Fwww.vcm.com%2Fetfs%2Fvflo%22%7D",
+        "https://api.userway.org/api/br-links/v0/links/3527094"
+      ]
+    }
+  }
+}

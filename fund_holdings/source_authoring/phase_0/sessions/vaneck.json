@@ -1,0 +1,449 @@
+{
+  "sponsor": "vaneck",
+  "harvested_at": "2026-04-24T09:37:25Z",
+  "cookies": [
+    {
+      "name": "taboola_session_id",
+      "value": "v2_aa0eb3c2c1787ed98825767ea9934e99_959104ad-b7ce-4b35-90c0-b747620f91e9-tuct10e4bf62_1777023458_1777023460_CNawjgYQ851jGJ7L6PbbMyACKAEwRTiSxghA04sQSMuG2ANQ8YEPWABgAGj69daL2tnS6PUBcAGAAQCIAQA",
+      "domain": ".taboola.com",
+      "path": "/vested-network/",
+      "expires": -1,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "TiPMix",
+      "value": "45.31228754675616",
+      "domain": ".www.vaneck.com",
+      "path": "/",
+      "expires": 1777027045.961029,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "x-ms-routing-name",
+      "value": "self",
+      "domain": ".www.vaneck.com",
+      "path": "/",
+      "expires": 1777027045.961198,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "EPiStateMarker",
+      "value": "true",
+      "domain": "www.vaneck.com",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "ARRAffinity",
+      "value": "2d92583f47c146751513a43692ac311a432e3a403e546b1cdb54027592dcb918",
+      "domain": ".www.vaneck.com",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "ARRAffinitySameSite",
+      "value": "2d92583f47c146751513a43692ac311a432e3a403e546b1cdb54027592dcb918",
+      "domain": ".www.vaneck.com",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "ve-country-us",
+      "value": "iso%3Dus%26investortype%3Dretail%26language%3Den%26disclaimer%3Dtrue%26foreigntax%3Dfalse%26foreigntaxdisclaimer%3Dfalse",
+      "domain": ".vaneck.com",
+      "path": "/",
+      "expires": 1808559446.13704,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "sitelanguage",
+      "value": "en",
+      "domain": ".vaneck.com",
+      "path": "/",
+      "expires": 1782207446.137179,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "ve-country",
+      "value": "current%3Dus%26previous%3D",
+      "domain": ".vaneck.com",
+      "path": "/",
+      "expires": 1808559446.13722,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "visitortype",
+      "value": "user",
+      "domain": ".vaneck.com",
+      "path": "/",
+      "expires": 1782207446.137263,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "Lax"
+    },
+    {
+      "name": ".AspNetCore.Antiforgery.9TtSrW0hzOs",
+      "value": "CfDJ8M2fW2DaDcJJtKeA8kpvrTYXstFTzJxg-9_evqRHut2gkYwj9PLUBeoyZIKqpG3yPNVRqMDfACSldoGxP6L2Kn9_2aYd4sNgiA97J0sA6EyAHOmLojjXWGnRI7XdapXsdana4FY-JasT4SrjNZLeK6g",
+      "domain": "www.vaneck.com",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "Lax"
+    },
+    {
+      "name": ".EPiForm_BID",
+      "value": "403e4492-1c7e-44b7-b744-08d71ac55583",
+      "domain": "www.vaneck.com",
+      "path": "/",
+      "expires": 1784799446.814057,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "Lax"
+    },
+    {
+      "name": ".EPiForm_VisitorIdentifier",
+      "value": "403e4492-1c7e-44b7-b744-08d71ac55583%7C",
+      "domain": "www.vaneck.com",
+      "path": "/",
+      "expires": 1784799446.814083,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "ai_user",
+      "value": "gy0MfpvGXK2H/flQ2Ts33V|2026-04-24T09:37:27.232Z",
+      "domain": "www.vaneck.com",
+      "path": "/",
+      "expires": 1808559447.2328,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "_gid",
+      "value": "GA1.2.775989852.1777023457",
+      "domain": ".vaneck.com",
+      "path": "/",
+      "expires": 1777109860,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "_gcl_au",
+      "value": "1.1.2027123113.1777023458",
+      "domain": ".vaneck.com",
+      "path": "/",
+      "expires": 1784799458,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "_twpid",
+      "value": "tw.1777023457687.616665915489652289",
+      "domain": ".vaneck.com",
+      "path": "/",
+      "expires": 1810719457.693443,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "Strict"
+    },
+    {
+      "name": "guest_id_marketing",
+      "value": "v1%3A177702345781716444",
+      "domain": ".twitter.com",
+      "path": "/",
+      "expires": 1811583457.882004,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "guest_id_ads",
+      "value": "v1%3A177702345781716444",
+      "domain": ".twitter.com",
+      "path": "/",
+      "expires": 1811583457.882112,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "personalization_id",
+      "value": "\"v1_Oz7NtAIOGrgqE+RfBzK69w==\"",
+      "domain": ".twitter.com",
+      "path": "/",
+      "expires": 1811583457.882151,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "guest_id",
+      "value": "v1%3A177702345781716444",
+      "domain": ".twitter.com",
+      "path": "/",
+      "expires": 1811583457.882185,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "IDE",
+      "value": "AHWqTUmtayoLrvuV2ILsvB4q_GcxostlsJmNBfmXF1MQKt52saCOoaxc7iE4lzVq",
+      "domain": ".doubleclick.net",
+      "path": "/",
+      "expires": 1810719457.922233,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "bcookie",
+      "value": "\"v=2&3ce53aee-a85f-4eb7-8276-14cd6c8fe0c3\"",
+      "domain": ".linkedin.com",
+      "path": "/",
+      "expires": 1808559457.933825,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "li_gc",
+      "value": "MTswOzE3NzcwMjM0NTc7MjswMjHgvUZdE/VZWe1g8IF32alOLcVzOCR91qVeYR3+BRQmKw==",
+      "domain": ".linkedin.com",
+      "path": "/",
+      "expires": 1792575457.933916,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "lidc",
+      "value": "\"b=TGST08:s=T:r=T:a=T:p=T:g=3258:u=1:x=1:i=1777023457:t=1777109857:v=2:sig=AQHL-5UhT94Az8Tu3uGZghAZw2DcnzNm\"",
+      "domain": ".linkedin.com",
+      "path": "/",
+      "expires": 1777109857.93395,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "muc_ads",
+      "value": "8f30d7f7-0de5-4eb6-ad74-fc3a666171b6",
+      "domain": ".t.co",
+      "path": "/",
+      "expires": 1811583457.953456,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "_fbp",
+      "value": "fb.1.1777023458034.378460990402471979",
+      "domain": ".vaneck.com",
+      "path": "/",
+      "expires": 1784799461,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "bito",
+      "value": "AAFgFU7T1nQAAABBxG_XIg",
+      "domain": ".bidr.io",
+      "path": "/",
+      "expires": 1811137061.140254,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "bitoIsSecure",
+      "value": "ok",
+      "domain": ".bidr.io",
+      "path": "/",
+      "expires": 1811137058.086694,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "t_gid",
+      "value": "959104ad-b7ce-4b35-90c0-b747620f91e9-tuct10e4bf62",
+      "domain": ".taboola.com",
+      "path": "/",
+      "expires": 1808559490.871822,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "t_pt_gid",
+      "value": "959104ad-b7ce-4b35-90c0-b747620f91e9-tuct10e4bf62",
+      "domain": ".taboola.com",
+      "path": "/",
+      "expires": 1808559490.871896,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "None",
+      "partitionKey": "https://vaneck.com",
+      "_crHasCrossSiteAncestor": true
+    },
+    {
+      "name": "_mkto_trk",
+      "value": "id:410-XOR-673&token:_mch-vaneck.com-1777023458149-48749",
+      "domain": ".vaneck.com",
+      "path": "/",
+      "expires": 1811583461.139268,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "MUID",
+      "value": "1C60F8DCEA5D609E29AFEF99EB0861D2",
+      "domain": ".bing.com",
+      "path": "/",
+      "expires": 1810719459.185288,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "cu",
+      "value": "656172b5-f09e-4fb4-a71b-7de0cd135ba8|1777023458302",
+      "domain": ".ipredictive.com",
+      "path": "/",
+      "expires": 1808559461.210695,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "is",
+      "value": "5cffa671-31cb-4237-8a8e-1d0510b90be1",
+      "domain": ".vaneck.com",
+      "path": "/",
+      "expires": 1777025260,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "iv",
+      "value": "76e3046f-81d7-47f0-aa03-c2480d85ddc5",
+      "domain": ".vaneck.com",
+      "path": "/",
+      "expires": 1811583460.680233,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "ai_session",
+      "value": "B1/FlCM3JWRlZKixvJYoAu|1777023447407|1777023460794",
+      "domain": "www.vaneck.com",
+      "path": "/",
+      "expires": 1777025260.795775,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "_rdt_uuid",
+      "value": "1777023457827.3249c904-aab2-41ed-aaaa-e2e0a5ecfddb",
+      "domain": ".vaneck.com",
+      "path": "/",
+      "expires": 1784799460,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "Strict"
+    },
+    {
+      "name": "_ga_XLC1ML09SH",
+      "value": "GS2.1.s1777023457$o1$g1$t1777023461$j56$l0$h0",
+      "domain": ".vaneck.com",
+      "path": "/",
+      "expires": 1811583461.110255,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "_ga",
+      "value": "GA1.1.421113122.1777023457",
+      "domain": ".vaneck.com",
+      "path": "/",
+      "expires": 1811583461.308179,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "_uetsid",
+      "value": "3b426ca03fc111f18b6c15a5b2764306",
+      "domain": ".vaneck.com",
+      "path": "/",
+      "expires": 1777109861,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "_uetvid",
+      "value": "3b4276c03fc111f1b3a651a385383950",
+      "domain": ".vaneck.com",
+      "path": "/",
+      "expires": 1810719461,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "_ce.s",
+      "value": "lcw~1777023461211~lcw~1777023461212",
+      "domain": ".vaneck.com",
+      "path": "/",
+      "expires": 1808559461,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Strict"
+    },
+    {
+      "name": "_ga_W5S64TS8EB",
+      "value": "GS2.1.s1777023457$o1$g1$t1777023493$j24$l0$h294351239",
+      "domain": ".vaneck.com",
+      "path": "/",
+      "expires": 1811583493.624441,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    }
+  ],
+  "template": null
+}

@@ -1,0 +1,95 @@
+{
+  "SMH": {
+    "tables_in_rendered_dom": [],
+    "verified_responses": [
+      {
+        "url": "https://www.vaneck.com/Main/FundListingUs/GetFundData",
+        "bytes": 12602,
+        "ct": "application/json; charset=utf-8",
+        "verify": {
+          "json": {
+            "path": ".Result.Headers",
+            "keys": [
+              "Name",
+              "Sortable",
+              "Template",
+              "Selected",
+              "Link",
+              "HeaderClassName",
+              "ClassName",
+              "DisplayName",
+              "SubHeaders",
+              "DesktopOnly",
+              "MobileOnly",
+              "excludedCountries"
+            ],
+            "data_rows": 13
+          }
+        }
+      }
+    ],
+    "total_captures": 21
+  },
+  "MOAT": {
+    "tables_in_rendered_dom": [],
+    "verified_responses": [
+      {
+        "url": "https://www.vaneck.com/Main/FundListingUs/GetFundData",
+        "bytes": 12638,
+        "ct": "application/json; charset=utf-8",
+        "verify": {
+          "json": {
+            "path": ".Result.Headers",
+            "keys": [
+              "Name",
+              "Sortable",
+              "Template",
+              "Selected",
+              "Link",
+              "HeaderClassName",
+              "ClassName",
+              "DisplayName",
+              "SubHeaders",
+              "DesktopOnly",
+              "MobileOnly",
+              "excludedCountries"
+            ],
+            "data_rows": 13
+          }
+        }
+      }
+    ],
+    "total_captures": 31
+  },
+  "GDX": {
+    "tables_in_rendered_dom": [],
+    "verified_responses": [
+      {
+        "url": "https://www.vaneck.com/Main/FundListingUs/GetFundData",
+        "bytes": 12586,
+        "ct": "application/json; charset=utf-8",
+        "verify": {
+          "json": {
+            "path": ".Result.Headers",
+            "keys": [
+              "Name",
+              "Sortable",
+              "Template",
+              "Selected",
+              "Link",
+              "HeaderClassName",
+              "ClassName",
+              "DisplayName",
+              "SubHeaders",
+              "DesktopOnly",
+              "MobileOnly",
+              "excludedCountries"
+            ],
+            "data_rows": 13
+          }
+        }
+      }
+    ],
+    "total_captures": 29
+  }
+}

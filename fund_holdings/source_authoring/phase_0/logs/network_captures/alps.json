@@ -1,0 +1,107 @@
+{
+  "sponsor": "alps",
+  "host": "www.alpsfunds.com",
+  "base_path": "/etfs/{ticker_lower}",
+  "probe_tickers": [
+    "AMLP",
+    "SMTH"
+  ],
+  "xhrs_by_ticker": {
+    "AMLP": {
+      "count": 21,
+      "top_scored": [
+        [
+          "https://app.hubspot.com/content-tools-menu/api/v1/tools-menu/has-permission-json?portalId=9443423",
+          1
+        ],
+        [
+          "https://cdn.cookielaw.org/consent/7ddf4ad4-8b0e-4979-b174-b63650b502d9/7ddf4ad4-8b0e-4979-b174-b63650b502d9.json",
+          1
+        ],
+        [
+          "https://cdn.cookielaw.org/consent/7ddf4ad4-8b0e-4979-b174-b63650b502d9/019d4fb9-a7a2-7934-b3ba-c2afef630099/en.json",
+          1
+        ],
+        [
+          "https://cdn.cookielaw.org/scripttemplates/202601.2.0/assets/otFloatingFlat.json",
+          1
+        ],
+        [
+          "https://cdn.cookielaw.org/scripttemplates/202601.2.0/assets/v2/otPcCenter.json",
+          1
+        ]
+      ],
+      "all_sample": [
+        "https://ka-p.fontawesome.com/releases/v6.7.2/css/pro.min.css?token=6a589d67ce",
+        "https://ka-p.fontawesome.com/releases/v6.7.2/css/pro-v4-shims.min.css?token=6a589d67ce",
+        "https://ka-p.fontawesome.com/releases/v6.7.2/css/pro-v5-font-face.min.css?token=6a589d67ce",
+        "https://ka-p.fontawesome.com/releases/v6.7.2/css/pro-v4-font-face.min.css?token=6a589d67ce",
+        "https://kit.fontawesome.com/6a589d67ce/7330734/kit-upload.css",
+        "https://ka-p.fontawesome.com/releases/v5.15.4/css/pro.min.css?token=4d19817571",
+        "https://ka-p.fontawesome.com/releases/v5.15.4/css/pro-v4-shims.min.css?token=4d19817571",
+        "https://ka-p.fontawesome.com/releases/v5.15.4/css/pro-v4-font-face.min.css?token=4d19817571",
+        "https://kit.fontawesome.com/4d19817571/22099026/kit-upload.css",
+        "https://app.hubspot.com/content-tools-menu/api/v1/tools-menu/has-permission-json?portalId=9443423",
+        "https://cta-service-cms2.hubspot.com/web-interactives/public/v1/embed/combinedConfigs?contentIds=191731753509&portalId=9443423&currentUrl=https%3A%2F%2Fwww.alpsfunds.com%2Fetfs%2Famlp&contentId=null",
+        "https://js.hs-banner.com/v2/cf-location",
+        "https://cdn.cookielaw.org/consent/7ddf4ad4-8b0e-4979-b174-b63650b502d9/7ddf4ad4-8b0e-4979-b174-b63650b502d9.json",
+        "https://geolocation.onetrust.com/cookieconsentpub/v1/geo/location",
+        "https://cdn.cookielaw.org/consent/7ddf4ad4-8b0e-4979-b174-b63650b502d9/019d4fb9-a7a2-7934-b3ba-c2afef630099/en.json",
+        "https://cdn.cookielaw.org/scripttemplates/202601.2.0/assets/otFloatingFlat.json",
+        "https://cdn.cookielaw.org/scripttemplates/202601.2.0/assets/v2/otPcCenter.json",
+        "https://cdn.cookielaw.org/scripttemplates/202601.2.0/assets/otCommonStyles.css",
+        "https://cdn.cookielaw.org/logos/static/ot_guard_logo.svg",
+        "https://region1.google-analytics.com/g/collect?v=2&tid=G-0DZFB6L5HK&gtm=45je64m0v9186307038za200zd9186307038&_p=1776972406521&gcs=G100&gcd=13p3p3p2p5l1&npa=1&dma_cps=-&dma=1&gdid=dZTQ1Zm.dYWJhMj&are=1&cid=282240193.1776972409&frm=0&pscdl=denied&rcb=14&sr=1440x900&uaa=x86&uab=64&uafvl=Not%253AA-Brand%3B99.0.0.0%7CHeadlessChrome%3B145.0.7632.6%7CChromium%3B145.0.7632.6&uam=&uamb=0&uap=Linux&uapv=&uaw=0&ul=en-us&_s=1&tag_exp=0~115616986~115938466~115938469~117266400~117384405~117512542&sid=1776972407&sct=1&seg=0&dl=https%3A%2F%2Fwww.alpsfunds.com%2Fetfs%2Famlp&dt=&en=page_view&_fv=1&_nsi=1&_ss=1&_ee=1&tfd=3625",
+        "https://region1.google-analytics.com/g/collect?v=2&tid=G-FX0FHH2G7W&gtm=45je64m0v891425327z8890459640za20gzb890459640zd890459640&_p=1776972406521&gcs=G100&gcd=13p3p3p2p5l1&npa=1&dma_cps=-&dma=1&gdid=dZTQ1Zm.dYWJhMj&are=1&cid=282240193.1776972409&frm=0&pscdl=denied&rcb=4&sr=1440x900&uaa=x86&uab=64&uafvl=Not%253AA-Brand%3B99.0.0.0%7CHeadlessChrome%3B145.0.7632.6%7CChromium%3B145.0.7632.6&uam=&uamb=0&uap=Linux&uapv=&uaw=0&ul=en-us&_s=1&tag_exp=0~115616986~115938466~115938469~117266400~117512542~118463261&sid=1776972408&sct=1&seg=0&dl=https%3A%2F%2Fwww.alpsfunds.com%2Fetfs%2Famlp&dt=&en=page_view&_fv=1&_ss=1&tfd=3636"
+      ]
+    },
+    "SMTH": {
+      "count": 21,
+      "top_scored": [
+        [
+          "https://app.hubspot.com/content-tools-menu/api/v1/tools-menu/has-permission-json?portalId=9443423",
+          1
+        ],
+        [
+          "https://cdn.cookielaw.org/consent/7ddf4ad4-8b0e-4979-b174-b63650b502d9/7ddf4ad4-8b0e-4979-b174-b63650b502d9.json",
+          1
+        ],
+        [
+          "https://cdn.cookielaw.org/consent/7ddf4ad4-8b0e-4979-b174-b63650b502d9/019d4fb9-a7a2-7934-b3ba-c2afef630099/en.json",
+          1
+        ],
+        [
+          "https://cdn.cookielaw.org/scripttemplates/202601.2.0/assets/otFloatingFlat.json",
+          1
+        ],
+        [
+          "https://cdn.cookielaw.org/scripttemplates/202601.2.0/assets/v2/otPcCenter.json",
+          1
+        ]
+      ],
+      "all_sample": [
+        "https://ka-p.fontawesome.com/releases/v6.7.2/css/pro.min.css?token=6a589d67ce",
+        "https://ka-p.fontawesome.com/releases/v6.7.2/css/pro-v4-shims.min.css?token=6a589d67ce",
+        "https://ka-p.fontawesome.com/releases/v6.7.2/css/pro-v5-font-face.min.css?token=6a589d67ce",
+        "https://ka-p.fontawesome.com/releases/v6.7.2/css/pro-v4-font-face.min.css?token=6a589d67ce",
+        "https://kit.fontawesome.com/6a589d67ce/7330734/kit-upload.css",
+        "https://ka-p.fontawesome.com/releases/v5.15.4/css/pro.min.css?token=4d19817571",
+        "https://ka-p.fontawesome.com/releases/v5.15.4/css/pro-v4-shims.min.css?token=4d19817571",
+        "https://ka-p.fontawesome.com/releases/v5.15.4/css/pro-v4-font-face.min.css?token=4d19817571",
+        "https://kit.fontawesome.com/4d19817571/22099026/kit-upload.css",
+        "https://app.hubspot.com/content-tools-menu/api/v1/tools-menu/has-permission-json?portalId=9443423",
+        "https://cta-service-cms2.hubspot.com/web-interactives/public/v1/embed/combinedConfigs?contentIds=191731753509&portalId=9443423&currentUrl=https%3A%2F%2Fwww.alpsfunds.com%2Fetfs%2Fsmth&contentId=null",
+        "https://js.hs-banner.com/v2/cf-location",
+        "https://cdn.cookielaw.org/consent/7ddf4ad4-8b0e-4979-b174-b63650b502d9/7ddf4ad4-8b0e-4979-b174-b63650b502d9.json",
+        "https://geolocation.onetrust.com/cookieconsentpub/v1/geo/location",
+        "https://cdn.cookielaw.org/consent/7ddf4ad4-8b0e-4979-b174-b63650b502d9/019d4fb9-a7a2-7934-b3ba-c2afef630099/en.json",
+        "https://cdn.cookielaw.org/scripttemplates/202601.2.0/assets/otFloatingFlat.json",
+        "https://cdn.cookielaw.org/scripttemplates/202601.2.0/assets/v2/otPcCenter.json",
+        "https://cdn.cookielaw.org/scripttemplates/202601.2.0/assets/otCommonStyles.css",
+        "https://cdn.cookielaw.org/logos/static/ot_guard_logo.svg",
+        "https://region1.google-analytics.com/g/collect?v=2&tid=G-0DZFB6L5HK&gtm=45je64m0v9186307038za200zd9186307038&_p=1776972412145&gcs=G100&gcd=13p3p3p2p5l1&npa=1&dma_cps=-&dma=1&gdid=dZTQ1Zm.dYWJhMj&are=1&cid=514424052.1776972414&frm=0&pscdl=denied&rcb=17&sr=1440x900&uaa=x86&uab=64&uafvl=Not%253AA-Brand%3B99.0.0.0%7CHeadlessChrome%3B145.0.7632.6%7CChromium%3B145.0.7632.6&uam=&uamb=0&uap=Linux&uapv=&uaw=0&ul=en-us&_s=1&tag_exp=0~115938465~115938469~117266401~117512542~118128922&sid=1776972412&sct=1&seg=0&dl=https%3A%2F%2Fwww.alpsfunds.com%2Fetfs%2Fsmth&dt=&en=page_view&_fv=1&_nsi=1&_ss=1&_ee=1&tfd=2859",
+        "https://region1.google-analytics.com/g/collect?v=2&tid=G-FX0FHH2G7W&gtm=45je64m0v891425327z8890459640za20gzb890459640zd890459640&_p=1776972412145&gcs=G100&gcd=13p3p3p2p5l1&npa=1&dma_cps=-&dma=1&gdid=dZTQ1Zm.dYWJhMj&are=1&cid=514424052.1776972414&frm=0&pscdl=denied&rcb=6&sr=1440x900&uaa=x86&uab=64&uafvl=Not%253AA-Brand%3B99.0.0.0%7CHeadlessChrome%3B145.0.7632.6%7CChromium%3B145.0.7632.6&uam=&uamb=0&uap=Linux&uapv=&uaw=0&ul=en-us&_s=1&tag_exp=0~115616985~115938465~115938469~117266401~117512542~118128922&sid=1776972413&sct=1&seg=0&dl=https%3A%2F%2Fwww.alpsfunds.com%2Fetfs%2Fsmth&dt=&en=page_view&_fv=1&_ss=1&tfd=2880"
+      ]
+    }
+  }
+}

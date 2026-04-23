@@ -1,0 +1,110 @@
+{
+  "sponsor": "invesco",
+  "ticker_captures": {
+    "RSP": {
+      "ticker": "RSP",
+      "url": "https://www.invesco.com/us/financial-products/etfs/product-detail?audienceType=Investor&ticker=RSP",
+      "steps": [
+        "goto_ok"
+      ],
+      "xhr_pre_click": 32,
+      "holdings_clicked": false,
+      "xhr_post_click": 37,
+      "html_bytes": 1046594,
+      "n_tables": 5,
+      "xhr_count": 37,
+      "xhr_real_count": 14,
+      "top_scored": [
+        {
+          "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V357/holdings/fund?idType=cusip&productType=ETF&loadType=initial",
+          "score": 10
+        },
+        {
+          "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V357/weightedHoldings/fund?idType=cusip&breakdown=sector&productType=ETF",
+          "score": 10
+        },
+        {
+          "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V357/weightedHoldings/fund?idType=cusip&breakdown=country&productType=ETF",
+          "score": 10
+        },
+        {
+          "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V357/holdings/fund?idType=cusip&productType=ETF",
+          "score": 10
+        },
+        {
+          "url": "https://www.invesco.com/us/en/financial-products/etfs/invesco-sp-500-equal-weight-etf.i18n.en_US.json",
+          "score": 1
+        }
+      ],
+      "all_real": [
+        "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V357/keyStats?idType=cusip&productType=ETF",
+        "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V357?expand=nav&idType=cusip&variationType=fundDetails&productType=ETF",
+        "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V357?expand=nav&idType=cusip&variationType=fundCharacteristics&productType=ETF",
+        "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V357/performance/standard?idType=cusip&performanceSubType=annualized&productType=ETF&performancePeriod=monthly",
+        "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V357/holdings/fund?idType=cusip&productType=ETF&loadType=initial",
+        "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V357/prices?idType=cusip&variationType=priceListing&productType=ETF&productSubType=ETF",
+        "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V357?expand=nav&idType=cusip&variationType=yieldInformation&productType=ETF&managementFeeWaiver=0.0",
+        "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V357/distribution?idType=cusip&productType=ETF&loadType=initial",
+        "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V357/frequencyPremiumDiscounts?idType=cusip&productType=ETF&loadType=initial",
+        "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V357/navs?idType=cusip&productType=ETF&variationType=premiumDiscounts",
+        "https://www.invesco.com/us/en/financial-products/etfs/invesco-sp-500-equal-weight-etf.i18n.en_US.json",
+        "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V357/weightedHoldings/fund?idType=cusip&breakdown=sector&productType=ETF",
+        "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V357/weightedHoldings/fund?idType=cusip&breakdown=country&productType=ETF",
+        "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V357/holdings/fund?idType=cusip&productType=ETF"
+      ]
+    },
+    "QQQM": {
+      "ticker": "QQQM",
+      "url": "https://www.invesco.com/us/financial-products/etfs/product-detail?audienceType=Investor&ticker=QQQM",
+      "steps": [
+        "goto_ok",
+        "cookies_accepted"
+      ],
+      "xhr_pre_click": 32,
+      "holdings_clicked": false,
+      "xhr_post_click": 37,
+      "html_bytes": 1038422,
+      "n_tables": 4,
+      "xhr_count": 37,
+      "xhr_real_count": 14,
+      "top_scored": [
+        {
+          "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138G649/holdings/fund?idType=cusip&productType=ETF&loadType=initial",
+          "score": 10
+        },
+        {
+          "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138G649/weightedHoldings/fund?idType=cusip&breakdown=sector&productType=ETF",
+          "score": 10
+        },
+        {
+          "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138G649/weightedHoldings/fund?idType=cusip&breakdown=country&productType=ETF",
+          "score": 10
+        },
+        {
+          "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138G649/holdings/fund?idType=cusip&productType=ETF",
+          "score": 10
+        },
+        {
+          "url": "https://www.invesco.com/us/en/financial-products/etfs/invesco-nasdaq-100-etf.i18n.en_US.json",
+          "score": 1
+        }
+      ],
+      "all_real": [
+        "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138G649/keyStats?idType=cusip&productType=ETF",
+        "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138G649?expand=nav&idType=cusip&variationType=fundDetails&productType=ETF",
+        "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138G649?expand=nav&idType=cusip&variationType=fundCharacteristics&productType=ETF",
+        "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138G649/performance/standard?idType=cusip&performanceSubType=annualized&productType=ETF&performancePeriod=monthly",
+        "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138G649/holdings/fund?idType=cusip&productType=ETF&loadType=initial",
+        "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138G649/prices?idType=cusip&variationType=priceListing&productType=ETF&productSubType=ETF",
+        "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138G649?expand=nav&idType=cusip&variationType=yieldInformation&productType=ETF&managementFeeWaiver=0.0",
+        "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138G649/distribution?idType=cusip&productType=ETF&loadType=initial",
+        "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138G649/frequencyPremiumDiscounts?idType=cusip&productType=ETF&loadType=initial",
+        "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138G649/navs?idType=cusip&productType=ETF&variationType=premiumDiscounts",
+        "https://www.invesco.com/us/en/financial-products/etfs/invesco-nasdaq-100-etf.i18n.en_US.json",
+        "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138G649/weightedHoldings/fund?idType=cusip&breakdown=sector&productType=ETF",
+        "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138G649/weightedHoldings/fund?idType=cusip&breakdown=country&productType=ETF",
+        "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138G649/holdings/fund?idType=cusip&productType=ETF"
+      ]
+    }
+  }
+}

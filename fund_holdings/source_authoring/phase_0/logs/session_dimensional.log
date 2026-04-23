@@ -1,0 +1,16 @@
+Sponsors: ['dimensional']
+Harvest: True  Replay: True
+
+[harvest] === dimensional ===
+  dimensional:DFAC captures=11 kept=8
+  dimensional:DFUS captures=11 kept=8
+  ✗ no holdings template derived from harvest
+  saved session → /home/darren/Desktop/MCAS/fund_holdings/source_authoring/phase_0/sessions/dimensional.json  + capture → /home/darren/Desktop/MCAS/fund_holdings/source_authoring/phase_0/logs/session_captures/dimensional_harvest.json
+
+[replay] === dimensional (37 tickers) ===
+  [replay] session has no template — harvest failed to find holdings XHR
+  wrote /home/darren/Desktop/MCAS/fund_holdings/source_authoring/phase_0/session_replay_dimensional.json
+
+
+=== REPLAY SUMMARY ===
+  dimensional                 0/0 verified

@@ -1,0 +1,21 @@
+{
+  "sponsor": "pimco",
+  "host": "www.pimco.com",
+  "base_path": "/en-us/investments/etf/{ticker_lower}",
+  "probe_tickers": [
+    "MINT",
+    "BOND"
+  ],
+  "xhrs_by_ticker": {
+    "MINT": {
+      "count": 0,
+      "top_scored": [],
+      "all_sample": []
+    },
+    "BOND": {
+      "count": 0,
+      "top_scored": [],
+      "all_sample": []
+    }
+  }
+}

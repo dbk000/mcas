@@ -1,0 +1,115 @@
+{
+  "sponsor": "dimensional",
+  "host": "us.dimensional.com",
+  "base_path": "/funds/{ticker_lower}",
+  "probe_tickers": [
+    "DFAC",
+    "DFUS"
+  ],
+  "xhrs_by_ticker": {
+    "DFAC": {
+      "count": 17,
+      "top_scored": [
+        [
+          "https://etf.dimensional.com/public/v2/portfolios/filters?allowMorningstarFixedIncome=true",
+          3
+        ],
+        [
+          "https://www.dimensional.com/investment-api/portfolio-details",
+          3
+        ],
+        [
+          "https://www.dimensional.com/investment-api/portfolio-disclosures",
+          3
+        ],
+        [
+          "https://cdn.cookielaw.org/consent/4d84d028-d61f-479e-a6d3-456633eafaaa/4d84d028-d61f-479e-a6d3-456633eafaaa.json",
+          1
+        ],
+        [
+          "https://www.dimensional.com/coveo/rest/token",
+          1
+        ],
+        [
+          "https://cdn.cookielaw.org/consent/4d84d028-d61f-479e-a6d3-456633eafaaa/018fe8ca-067c-7ce5-aa71-c87ce412af28/en.json",
+          1
+        ],
+        [
+          "https://cdn.cookielaw.org/consent/4d84d028-d61f-479e-a6d3-456633eafaaa/018fe8ca-067c-7ce5-aa71-c87ce412af28/bLayout-en.json",
+          1
+        ]
+      ],
+      "all_sample": [
+        "https://www.google.com/ccm/collect?rcb=1&frm=0&ae=g&en=page_view&dl=https%3A%2F%2Fwww.dimensional.com%2Fus-en%2Ffunds%2Fdfac&scrsrc=www.googletagmanager.com&rnd=2017330558.1776972344&dt=US%20Core%20Equity%202%20ETF%20%7C%20Dimensional&auid=1442533075.1776972344&navt=n&npa=1&ep.ads_data_redaction=0&gtm=45He64m0v72577516za200zd72577516xea&gcd=13l3l3l2l1l1&dma_cps=a&dma=1&tag_exp=0~115616985~115938465~115938468~117266401~118128922&apve=1&apvf=f&apvc=1&tft=1776972344225&tfd=1466",
+        "https://www.dimensional.com/audience-selector-api/get-splash-page-modal-for-country",
+        "https://cdn.cookielaw.org/consent/4d84d028-d61f-479e-a6d3-456633eafaaa/4d84d028-d61f-479e-a6d3-456633eafaaa.json",
+        "https://geolocation.onetrust.com/cookieconsentpub/v1/geo/location",
+        "https://www.dimensional.com/coveo/rest/token",
+        "https://etf.dimensional.com/public/v2/fundcenter?allowMorningstarFixedIncome=true",
+        "https://etf.dimensional.com/public/v2/portfolios/filters?allowMorningstarFixedIncome=true",
+        "https://dfaproduction7j3xksbp.analytics.org.coveo.com/rest/v15/analytics/view?visitor=ce194bf3-d3f0-41bd-8016-5358361e3d46",
+        "https://cdn.cookielaw.org/consent/4d84d028-d61f-479e-a6d3-456633eafaaa/018fe8ca-067c-7ce5-aa71-c87ce412af28/en.json",
+        "https://bam.nr-data.net/1/69b175467f?a=718381472&sa=1&v=1.264.0&t=Unnamed%20Transaction&rst=2849&ck=0&s=0&ref=https://www.dimensional.com/us-en/funds/dfac&ptid=ff621baca0e23f9b&af=err,spa,xhr,stn,ins&be=1182&fe=1626&dc=414&perf=%7B%22timing%22:%7B%22of%22:1776972342760,%22n%22:0,%22f%22:486,%22dn%22:486,%22dne%22:486,%22c%22:486,%22s%22:486,%22ce%22:486,%22rq%22:489,%22rp%22:1183,%22rpe%22:1294,%22di%22:1595,%22ds%22:1595,%22de%22:1596,%22dc%22:2804,%22l%22:2805,%22le%22:2808%7D,%22navigation%22:%7B%7D%7D&fp=1500&fcp=1524",
+        "https://cdn.cookielaw.org/consent/4d84d028-d61f-479e-a6d3-456633eafaaa/018fe8ca-067c-7ce5-aa71-c87ce412af28/bLayout-en.json",
+        "https://cdn.cookielaw.org/scripttemplates/202512.1.0/assets/otCommonStyles.css",
+        "https://bam.nr-data.net/events/1/69b175467f?a=718381472&sa=1&v=1.264.0&t=Unnamed%20Transaction&rst=3107&ck=0&s=0&ref=https://www.dimensional.com/us-en/funds/dfac&ptid=ff621baca0e23f9b",
+        "https://www.dimensional.com/investment-api/portfolio-details",
+        "https://etf.dimensional.com/public/v2/fundcenter/funddetail",
+        "https://www.dimensional.com/investment-api/portfolio-disclosures",
+        "https://tools-blob.dimensional.com/ink/DFAC.pdf"
+      ]
+    },
+    "DFUS": {
+      "count": 17,
+      "top_scored": [
+        [
+          "https://etf.dimensional.com/public/v2/portfolios/filters?allowMorningstarFixedIncome=true",
+          3
+        ],
+        [
+          "https://www.dimensional.com/investment-api/portfolio-details",
+          3
+        ],
+        [
+          "https://www.dimensional.com/investment-api/portfolio-disclosures",
+          3
+        ],
+        [
+          "https://cdn.cookielaw.org/consent/4d84d028-d61f-479e-a6d3-456633eafaaa/4d84d028-d61f-479e-a6d3-456633eafaaa.json",
+          1
+        ],
+        [
+          "https://www.dimensional.com/coveo/rest/token",
+          1
+        ],
+        [
+          "https://cdn.cookielaw.org/consent/4d84d028-d61f-479e-a6d3-456633eafaaa/018fe8ca-067c-7ce5-aa71-c87ce412af28/en.json",
+          1
+        ],
+        [
+          "https://cdn.cookielaw.org/consent/4d84d028-d61f-479e-a6d3-456633eafaaa/018fe8ca-067c-7ce5-aa71-c87ce412af28/bLayout-en.json",
+          1
+        ]
+      ],
+      "all_sample": [
+        "https://www.google.com/ccm/collect?rcb=19&frm=0&ae=g&en=page_view&dl=https%3A%2F%2Fwww.dimensional.com%2Fus-en%2Ffunds%2Fdfus&scrsrc=www.googletagmanager.com&rnd=132233420.1776972354&dt=US%20Equity%20Market%20ETF%20%7C%20Dimensional&auid=1380493137.1776972354&navt=n&npa=1&ep.ads_data_redaction=0&gtm=45He64m0h1v72577516za200zd72577516xea&gcd=13l3l3l2l1l1&dma_cps=a&dma=1&tag_exp=0~115616986~115938466~115938469~117266401~118167060&apve=1&apvf=f&apvc=1&tft=1776972354365&tfd=1725",
+        "https://www.dimensional.com/audience-selector-api/get-splash-page-modal-for-country",
+        "https://cdn.cookielaw.org/consent/4d84d028-d61f-479e-a6d3-456633eafaaa/4d84d028-d61f-479e-a6d3-456633eafaaa.json",
+        "https://geolocation.onetrust.com/cookieconsentpub/v1/geo/location",
+        "https://www.dimensional.com/coveo/rest/token",
+        "https://etf.dimensional.com/public/v2/fundcenter?allowMorningstarFixedIncome=true",
+        "https://etf.dimensional.com/public/v2/portfolios/filters?allowMorningstarFixedIncome=true",
+        "https://cdn.cookielaw.org/consent/4d84d028-d61f-479e-a6d3-456633eafaaa/018fe8ca-067c-7ce5-aa71-c87ce412af28/en.json",
+        "https://dfaproduction7j3xksbp.analytics.org.coveo.com/rest/v15/analytics/view?visitor=c6280c9e-d4f7-4c92-8099-33a66b42b73e",
+        "https://cdn.cookielaw.org/consent/4d84d028-d61f-479e-a6d3-456633eafaaa/018fe8ca-067c-7ce5-aa71-c87ce412af28/bLayout-en.json",
+        "https://cdn.cookielaw.org/scripttemplates/202512.1.0/assets/otCommonStyles.css",
+        "https://bam.nr-data.net/1/69b175467f?a=718381472&sa=1&v=1.264.0&t=Unnamed%20Transaction&rst=2880&ck=0&s=0&ref=https://www.dimensional.com/us-en/funds/dfus&ptid=ca7d4de336c15307&af=err,spa,xhr,stn,ins&be=1344&fe=1497&dc=336&perf=%7B%22timing%22:%7B%22of%22:1776972352640,%22n%22:0,%22f%22:493,%22dn%22:493,%22dne%22:493,%22c%22:493,%22s%22:493,%22ce%22:493,%22rq%22:495,%22rp%22:1344,%22rpe%22:1458,%22di%22:1680,%22ds%22:1680,%22de%22:1680,%22dc%22:2838,%22l%22:2839,%22le%22:2841%7D,%22navigation%22:%7B%7D%7D&fp=1580&fcp=1652",
+        "https://bam.nr-data.net/events/1/69b175467f?a=718381472&sa=1&v=1.264.0&t=Unnamed%20Transaction&rst=3050&ck=0&s=0&ref=https://www.dimensional.com/us-en/funds/dfus&ptid=ca7d4de336c15307",
+        "https://www.dimensional.com/investment-api/portfolio-details",
+        "https://etf.dimensional.com/public/v2/fundcenter/funddetail",
+        "https://www.dimensional.com/investment-api/portfolio-disclosures",
+        "https://tools-blob.dimensional.com/ink/DFUS.pdf"
+      ]
+    }
+  }
+}

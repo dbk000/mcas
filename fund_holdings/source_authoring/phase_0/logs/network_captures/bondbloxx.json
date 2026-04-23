@@ -1,0 +1,21 @@
+{
+  "sponsor": "bondbloxx",
+  "host": "bondbloxx.com",
+  "base_path": "/etfs/{ticker_lower}",
+  "probe_tickers": [
+    "XHLF",
+    "XONE"
+  ],
+  "xhrs_by_ticker": {
+    "XHLF": {
+      "count": 0,
+      "top_scored": [],
+      "all_sample": []
+    },
+    "XONE": {
+      "count": 0,
+      "top_scored": [],
+      "all_sample": []
+    }
+  }
+}

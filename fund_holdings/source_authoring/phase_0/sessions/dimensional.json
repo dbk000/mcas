@@ -1,0 +1,67 @@
+{
+  "sponsor": "dimensional",
+  "harvested_at": "2026-04-24T09:35:40Z",
+  "cookies": [
+    {
+      "name": "__cf_bm",
+      "value": "TOY4QpnV8qWvp9eI7fium9UxHtQrRDkYFDHhX.8tPos-1777023341.29644-1.0.1.1-jp2eXQatjAbclm_i32sw0cGZyUkUzPxql4vw3_EXbgzKhdXRS6p19NR680ZCUSFGcTYk1AqkLgvVJj3abMfstbYoBfrM9bt6dj.weQGh6uHAwmmIL8MiH1kO2P1KMgvg",
+      "domain": ".dimensional.com",
+      "path": "/",
+      "expires": 1777025141.704804,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "dimensional_global#lang",
+      "value": "en",
+      "domain": "www.dimensional.com",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "shell#lang",
+      "value": "en",
+      "domain": "www.dimensional.com",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "_gcl_au",
+      "value": "1.1.1439236936.1777023343",
+      "domain": ".dimensional.com",
+      "path": "/",
+      "expires": 1784799343,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "coveo_visitorId",
+      "value": "8fce35f5-7315-40d4-8db3-531798a25901",
+      "domain": ".dimensional.com",
+      "path": "/",
+      "expires": 1808580286,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "OptanonConsent",
+      "value": "isGpcEnabled=0&datestamp=Fri+Apr+24+2026+09%3A36%3A00+GMT%2B0000+(Coordinated+Universal+Time)&version=202512.1.0&browserGpcFlag=0&isIABGlobal=false&hosts=&landingPath=NotLandingPage&groups=1%3A1%2C2%3A0%2C4%3A0&AwaitingReconsent=false",
+      "domain": ".dimensional.com",
+      "path": "/",
+      "expires": 1808559360,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    }
+  ],
+  "template": null
+}

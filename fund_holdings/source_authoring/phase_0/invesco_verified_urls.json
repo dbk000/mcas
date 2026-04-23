@@ -1,0 +1,1667 @@
+{
+  "verified": {
+    "BMVP": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46137V712",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V712/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 57,
+      "bytes": 17084
+    },
+    "BKLN": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138G508",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138G508/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 171,
+      "bytes": 69259
+    },
+    "BSCQ": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138J791",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138J791/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 268,
+      "bytes": 104768
+    },
+    "BSCS": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138J643",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138J643/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 467,
+      "bytes": 182932
+    },
+    "BSCR": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138J783",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138J783/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 500,
+      "bytes": 195581
+    },
+    "BAB": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138G805",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138G805/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 1628,
+      "bytes": 657684
+    },
+    "BSCT": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138J577",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138J577/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 457,
+      "bytes": 179369
+    },
+    "BSCY": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46139W783",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46139W783/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 297,
+      "bytes": 116743
+    },
+    "BSCU": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138J460",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138J460/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 448,
+      "bytes": 175663
+    },
+    "BSCW": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46139W858",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46139W858/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 319,
+      "bytes": 124881
+    },
+    "BSCX": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46139W825",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46139W825/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 282,
+      "bytes": 110557
+    },
+    "BSJQ": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138J635",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138J635/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 48,
+      "bytes": 19112
+    },
+    "BSCZ": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46139W759",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46139W759/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 317,
+      "bytes": 123488
+    },
+    "BSJR": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138J585",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138J585/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 112,
+      "bytes": 44651
+    },
+    "BSCV": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138J429",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138J429/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 402,
+      "bytes": 157460
+    },
+    "BSJS": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138J452",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138J452/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 199,
+      "bytes": 79176
+    },
+    "BSJV": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46139W817",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46139W817/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 193,
+      "bytes": 76532
+    },
+    "BSJT": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138J395",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138J395/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 331,
+      "bytes": 131907
+    },
+    "BSJX": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46139W742",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46139W742/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 133,
+      "bytes": 52426
+    },
+    "BSJU": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46139W841",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46139W841/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 226,
+      "bytes": 89270
+    },
+    "BSJW": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46139W775",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46139W775/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 172,
+      "bytes": 68445
+    },
+    "BSMQ": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138J510",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138J510/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 2122,
+      "bytes": 854927
+    },
+    "BSMU": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138J445",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138J445/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 1646,
+      "bytes": 661117
+    },
+    "BSMR": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138J494",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138J494/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 2498,
+      "bytes": 1006538
+    },
+    "CGW": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138E263",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138E263/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 83,
+      "bytes": 25206
+    },
+    "BSMY": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46139W767",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46139W767/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 1703,
+      "bytes": 692103
+    },
+    "BSMS": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138J486",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138J486/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 2089,
+      "bytes": 839956
+    },
+    "CQQQ": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138E800",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138E800/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 177,
+      "bytes": 58186
+    },
+    "CUT": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138E545",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138E545/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 67,
+      "bytes": 21890
+    },
+    "BSMV": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138J411",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138J411/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 1443,
+      "bytes": 580554
+    },
+    "CSD": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46137V159",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V159/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 27,
+      "bytes": 8548
+    },
+    "BSMT": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138J478",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138J478/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 1762,
+      "bytes": 707942
+    },
+    "BSMW": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46139W833",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46139W833/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 1633,
+      "bytes": 659527
+    },
+    "DJD": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46137V605",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V605/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 30,
+      "bytes": 9423
+    },
+    "BSSX": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46139W791",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46139W791/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 1364,
+      "bytes": 551139
+    },
+    "CSTK": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46127B205",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46127B205/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 54,
+      "bytes": 15380
+    },
+    "EELV": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138E297",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138E297/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 225,
+      "bytes": 86658
+    },
+    "DWAS": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138E842",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138E842/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 204,
+      "bytes": 66897
+    },
+    "CZA": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46137Y401",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137Y401/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 103,
+      "bytes": 32186
+    },
+    "CVY": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46137Y500",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137Y500/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 152,
+      "bytes": 62102
+    },
+    "GGME": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46137V696",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V696/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 102,
+      "bytes": 33263
+    },
+    "EEMO": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138E289",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138E289/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 280,
+      "bytes": 93205
+    },
+    "GRPM": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46137V225",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V225/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 61,
+      "bytes": 20055
+    },
+    "EQWL": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46137V449",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V449/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 103,
+      "bytes": 32017
+    },
+    "GOVI": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138E107",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138E107/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 33,
+      "bytes": 12454
+    },
+    "ERTH": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46137V407",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V407/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 179,
+      "bytes": 68994
+    },
+    "EQAL": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138E420",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138E420/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 994,
+      "bytes": 350671
+    },
+    "EFAA": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46090A713",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46090A713/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 722,
+      "bytes": 271364
+    },
+    "IDHQ": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138E214",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138E214/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 207,
+      "bytes": 68171
+    },
+    "IDLV": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138E230",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138E230/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 215,
+      "bytes": 71130
+    },
+    "IBBQ": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138G599",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138G599/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 264,
+      "bytes": 99511
+    },
+    "IIGD": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46139W502",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46139W502/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 167,
+      "bytes": 64854
+    },
+    "ICLO": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46090A721",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46090A721/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 172,
+      "bytes": 68000
+    },
+    "IDMO": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138E222",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138E222/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 201,
+      "bytes": 66591
+    },
+    "GTOC": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46127B601",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46127B601/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 661,
+      "bytes": 279233
+    },
+    "IGPT": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46137V639",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V639/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 114,
+      "bytes": 43018
+    },
+    "GTO": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46090A804",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46090A804/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 1768,
+      "bytes": 749405
+    },
+    "IMFL": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138J437",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138J437/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 885,
+      "bytes": 314887
+    },
+    "GSY": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46090A887",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46090A887/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 398,
+      "bytes": 159846
+    },
+    "IMF": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46127B106",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46127B106/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 79,
+      "bytes": 28138
+    },
+    "KBWB": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138E628",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138E628/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 30,
+      "bytes": 11625
+    },
+    "IQSZ": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46127B700",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46127B700/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 513,
+      "bytes": 166800
+    },
+    "IUS": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138J742",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138J742/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 547,
+      "bytes": 176985
+    },
+    "KBWP": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138E586",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138E586/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 26,
+      "bytes": 8310
+    },
+    "KBWY": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138E594",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138E594/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 32,
+      "bytes": 10809
+    },
+    "INTM": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46127B502",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46127B502/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 172,
+      "bytes": 70509
+    },
+    "KLMN": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138G417",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138G417/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 282,
+      "bytes": 91995
+    },
+    "GTOS": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46090A739",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46090A739/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 615,
+      "bytes": 261012
+    },
+    "IPKW": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138E644",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138E644/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 179,
+      "bytes": 59048
+    },
+    "KBWD": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138E610",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138E610/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 43,
+      "bytes": 14859
+    },
+    "IROC": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46090A747",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46090A747/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 136,
+      "bytes": 59576
+    },
+    "PBE": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46137V787",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V787/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 33,
+      "bytes": 10977
+    },
+    "KNCT": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46137V688",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V688/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 112,
+      "bytes": 36440
+    },
+    "MTRA": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46127B304",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46127B304/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 65,
+      "bytes": 21339
+    },
+    "PBJ": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46137V753",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V753/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 32,
+      "bytes": 10053
+    },
+    "PBTP": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138E495",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138E495/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 26,
+      "bytes": 10587
+    },
+    "OMFL": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138J619",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138J619/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 482,
+      "bytes": 156380
+    },
+    "PBD": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138G847",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138G847/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 124,
+      "bytes": 37593
+    },
+    "PBUS": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138E461",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138E461/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 541,
+      "bytes": 176451
+    },
+    "PCY": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138E784",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138E784/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 104,
+      "bytes": 42463
+    },
+    "KLMT": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138G433",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138G433/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 517,
+      "bytes": 169046
+    },
+    "OMFS": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138J593",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138J593/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 1121,
+      "bytes": 366075
+    },
+    "PBP": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46137V399",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V399/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 508,
+      "bytes": 189815
+    },
+    "PDP": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46137V837",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V837/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 102,
+      "bytes": 31805
+    },
+    "PEJ": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46137V720",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V720/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 32,
+      "bytes": 10158
+    },
+    "PEZ": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46137V803",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V803/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 47,
+      "bytes": 14655
+    },
+    "PCEF": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138E404",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138E404/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 111,
+      "bytes": 45656
+    },
+    "PBW": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46137V134",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V134/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 71,
+      "bytes": 23422
+    },
+    "PFI": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46137V860",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V860/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 50,
+      "bytes": 15777
+    },
+    "PFM": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46137V506",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V506/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 433,
+      "bytes": 140893
+    },
+    "PGF": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46137V621",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V621/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 101,
+      "bytes": 39862
+    },
+    "PDN": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138E735",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138E735/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 1598,
+      "bytes": 606007
+    },
+    "PEY": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46137V563",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V563/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 52,
+      "bytes": 16369
+    },
+    "PGX": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138E511",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138E511/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 271,
+      "bytes": 106940
+    },
+    "PID": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46137V548",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V548/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 67,
+      "bytes": 22478
+    },
+    "PICB": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138E636",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138E636/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 602,
+      "bytes": 232807
+    },
+    "PIE": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138E867",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138E867/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 113,
+      "bytes": 36635
+    },
+    "PHDG": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46090A705",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46090A705/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 514,
+      "bytes": 191297
+    },
+    "PGJ": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46137V571",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V571/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 74,
+      "bytes": 25042
+    },
+    "PHO": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46137V142",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V142/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 38,
+      "bytes": 12039
+    },
+    "PIPE": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46090A663",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46090A663/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 27,
+      "bytes": 8995
+    },
+    "PJP": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46137V662",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V662/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 34,
+      "bytes": 13011
+    },
+    "PIZ": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138E875",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138E875/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 114,
+      "bytes": 37681
+    },
+    "PKW": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46137V308",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V308/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 229,
+      "bytes": 71185
+    },
+    "PNQI": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46137V530",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V530/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 80,
+      "bytes": 25977
+    },
+    "POWA": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138J775",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138J775/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 52,
+      "bytes": 16153
+    },
+    "PFIG": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138E693",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138E693/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 804,
+      "bytes": 311899
+    },
+    "PIO": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138E651",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138E651/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 47,
+      "bytes": 15408
+    },
+    "PPA": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46137V100",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V100/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 62,
+      "bytes": 19481
+    },
+    "PKB": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46137V779",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V779/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 32,
+      "bytes": 10144
+    },
+    "PRN": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46137V845",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V845/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 41,
+      "bytes": 13454
+    },
+    "PSCC": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138E172",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138E172/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 26,
+      "bytes": 8288
+    },
+    "PSCE": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138G474",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138G474/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 33,
+      "bytes": 10438
+    },
+    "PSCD": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138E180",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138E180/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 90,
+      "bytes": 27952
+    },
+    "PSCF": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138E156",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138E156/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 163,
+      "bytes": 49742
+    },
+    "PSCH": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138E149",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138E149/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 79,
+      "bytes": 28673
+    },
+    "PSCM": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138G201",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138G201/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 26,
+      "bytes": 8132
+    },
+    "PSCI": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138E123",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138E123/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 95,
+      "bytes": 31001
+    },
+    "PSCT": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138E115",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138E115/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 73,
+      "bytes": 23827
+    },
+    "PSI": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46137V647",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V647/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 32,
+      "bytes": 10136
+    },
+    "PSL": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46137V886",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V886/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 49,
+      "bytes": 15446
+    },
+    "PSP": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46137V118",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V118/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 72,
+      "bytes": 22119
+    },
+    "PTF": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46137V811",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V811/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 40,
+      "bytes": 12565
+    },
+    "PSCU": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138G409",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138G409/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 40,
+      "bytes": 12538
+    },
+    "PTH": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46137V852",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V852/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 62,
+      "bytes": 20465
+    },
+    "PUI": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46137V795",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V795/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 38,
+      "bytes": 11840
+    },
+    "PRF": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46137V613",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V613/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 1006,
+      "bytes": 328466
+    },
+    "PSR": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46090A101",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46090A101/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 32,
+      "bytes": 10181
+    },
+    "PWV": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46137V738",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V738/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 52,
+      "bytes": 16264
+    },
+    "PVI": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138G862",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138G862/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 141,
+      "bytes": 58027
+    },
+    "PXE": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46137V761",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V761/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 33,
+      "bytes": 10889
+    },
+    "PRFZ": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46137V597",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V597/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 1551,
+      "bytes": 586015
+    },
+    "PWZ": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138E206",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138E206/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 1120,
+      "bytes": 460557
+    },
+    "PWB": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46137V746",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V746/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 53,
+      "bytes": 17472
+    },
+    "PYZ": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46137V704",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V704/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 44,
+      "bytes": 13661
+    },
+    "PXH": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138E727",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138E727/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 401,
+      "bytes": 154975
+    },
+    "QBIG": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46090A671",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46090A671/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 19,
+      "bytes": 6759
+    },
+    "PXI": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46137V878",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V878/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 44,
+      "bytes": 13811
+    },
+    "QOWZ": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138G466",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138G466/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 53,
+      "bytes": 17195
+    },
+    "PXF": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138E743",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138E743/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 1038,
+      "bytes": 369643
+    },
+    "PXJ": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46137Y872",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137Y872/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 32,
+      "bytes": 10109
+    },
+    "PGHY": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138E669",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138E669/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 597,
+      "bytes": 251841
+    },
+    "QQA": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46090A689",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46090A689/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 121,
+      "bytes": 45972
+    },
+    "QQHG": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46127B403",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46127B403/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 260,
+      "bytes": 86478
+    },
+    "QQMG": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138G540",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138G540/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 93,
+      "bytes": 28824
+    },
+    "QQQS": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138G482",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138G482/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 205,
+      "bytes": 73411
+    },
+    "QVMM": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138G573",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138G573/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 361,
+      "bytes": 112003
+    },
+    "QQQM": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138G649",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138G649/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 107,
+      "bytes": 40804
+    },
+    "RDIV": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138G656",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138G656/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 59,
+      "bytes": 18780
+    },
+    "PZT": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138E529",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138E529/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 921,
+      "bytes": 378802
+    },
+    "QQQJ": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138G631",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138G631/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 105,
+      "bytes": 32808
+    },
+    "RFV": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46137V191",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V191/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 100,
+      "bytes": 31190
+    },
+    "RFG": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46137V217",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V217/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 97,
+      "bytes": 30216
+    },
+    "RPG": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46137V266",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V266/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 68,
+      "bytes": 22324
+    },
+    "RPV": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46137V258",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V258/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 127,
+      "bytes": 47980
+    },
+    "RSPD": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46137V381",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V381/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 50,
+      "bytes": 15532
+    },
+    "QVML": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138G581",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138G581/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 452,
+      "bytes": 139579
+    },
+    "RSPF": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46137V340",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V340/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 78,
+      "bytes": 24361
+    },
+    "RSPE": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138G516",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138G516/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 185,
+      "bytes": 57036
+    },
+    "QVMS": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138G565",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138G565/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 540,
+      "bytes": 194865
+    },
+    "RSPC": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46137Y609",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137Y609/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 27,
+      "bytes": 8490
+    },
+    "RSPG": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46137V365",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V365/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 24,
+      "bytes": 7265
+    },
+    "RSP": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46137V357",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V357/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 510,
+      "bytes": 193564
+    },
+    "RSPM": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46137V316",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V316/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 28,
+      "bytes": 8817
+    },
+    "RSPS": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46137V373",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V373/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 38,
+      "bytes": 11469
+    },
+    "RSPR": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46137V290",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V290/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 33,
+      "bytes": 10486
+    },
+    "RSPU": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46137V274",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V274/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 33,
+      "bytes": 10380
+    },
+    "RSPH": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46137V332",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V332/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 62,
+      "bytes": 20345
+    },
+    "RSPN": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46137V324",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V324/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 82,
+      "bytes": 26874
+    },
+    "RSPT": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46137V282",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V282/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 76,
+      "bytes": 24929
+    },
+    "PZA": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138E537",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138E537/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 6421,
+      "bytes": 2750605
+    },
+    "SOXQ": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138G615",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138G615/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 32,
+      "bytes": 10188
+    },
+    "SATO": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138G557",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138G557/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 61,
+      "bytes": 18212
+    },
+    "SPHB": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138E370",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138E370/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 102,
+      "bytes": 31756
+    },
+    "SPGP": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46137V431",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V431/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 76,
+      "bytes": 24898
+    },
+    "SPHD": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138E362",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138E362/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 61,
+      "bytes": 22535
+    },
+    "RWJ": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138G664",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138G664/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 603,
+      "bytes": 228087
+    },
+    "RZG": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46137V175",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V175/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 134,
+      "bytes": 46870
+    },
+    "RZV": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46137V167",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V167/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 161,
+      "bytes": 50346
+    },
+    "RWL": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138G698",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138G698/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 506,
+      "bytes": 165180
+    },
+    "SPVM": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46137V423",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V423/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 103,
+      "bytes": 31935
+    },
+    "TAN": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138G706",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138G706/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 41,
+      "bytes": 13819
+    },
+    "SPLV": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138E354",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138E354/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 110,
+      "bytes": 42008
+    },
+    "SPHQ": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46137V241",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V241/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 102,
+      "bytes": 33458
+    },
+    "SPMO": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138E339",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138E339/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 102,
+      "bytes": 33501
+    },
+    "UPGD": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46137V522",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V522/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 52,
+      "bytes": 16331
+    },
+    "XLG": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46137V233",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V233/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 53,
+      "bytes": 16610
+    },
+    "TBLL": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138G888",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138G888/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 84,
+      "bytes": 31266
+    },
+    "XMHQ": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46137V472",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V472/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 83,
+      "bytes": 27271
+    },
+    "VRIG": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46090A879",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46090A879/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 363,
+      "bytes": 152144
+    },
+    "XMMO": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46137V464",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V464/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 78,
+      "bytes": 24612
+    },
+    "XMVM": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46137V456",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V456/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 81,
+      "bytes": 26655
+    },
+    "XSHD": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138E131",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138E131/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 57,
+      "bytes": 18231
+    },
+    "XSLV": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138G102",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138G102/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 119,
+      "bytes": 37859
+    },
+    "XSHQ": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138G300",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138G300/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 120,
+      "bytes": 37248
+    },
+    "XSVM": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46137V480",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V480/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 120,
+      "bytes": 39658
+    },
+    "XMLV": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138E198",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138E198/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 82,
+      "bytes": 26142
+    },
+    "RWK": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138G672",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138G672/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 402,
+      "bytes": 131284
+    },
+    "XSMO": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46137V498",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V498/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 116,
+      "bytes": 36682
+    },
+    "VRP": {
+      "ok": true,
+      "reason": "ok",
+      "cusip": "46138G870",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138G870/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": 338,
+      "bytes": 143976
+    }
+  },
+  "failed": {
+    "BSCP": {
+      "ok": false,
+      "reason": "body_too_small:3b",
+      "cusip": "46138J825",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138J825/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": null,
+      "bytes": 3
+    },
+    "BSJP": {
+      "ok": false,
+      "reason": "body_too_small:3b",
+      "cusip": "46138J817",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138J817/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": null,
+      "bytes": 3
+    },
+    "BSMP": {
+      "ok": false,
+      "reason": "body_too_small:3b",
+      "cusip": "46138J528",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138J528/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": null,
+      "bytes": 3
+    },
+    "EVMT": {
+      "ok": false,
+      "reason": "no_id_array_in_json",
+      "cusip": "46090F209",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46090F209/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": null,
+      "bytes": 753
+    },
+    "PDBA": {
+      "ok": false,
+      "reason": "no_id_array_in_json",
+      "cusip": "46090F308",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46090F308/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": null,
+      "bytes": 760
+    },
+    "PDBC": {
+      "ok": false,
+      "reason": "no_id_array_in_json",
+      "cusip": "46090F100",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46090F100/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": null,
+      "bytes": 767
+    },
+    "QQJG": {
+      "ok": false,
+      "reason": "body_too_small:3b",
+      "cusip": "46138G532",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138G532/holdings/fund?idType=cusip&productType=ETF",
+      "data_rows": null,
+      "bytes": 3
+    }
+  },
+  "summary": {
+    "mapped": 207,
+    "verified": 200,
+    "failed": 7
+  }
+}

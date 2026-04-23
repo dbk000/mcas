@@ -1,0 +1,467 @@
+{
+  "sponsor": "jpmorgan",
+  "harvested_at": "2026-04-24T09:38:37Z",
+  "cookies": [
+    {
+      "name": "_cls_cfgver",
+      "value": "8e8cbf90",
+      "domain": "report.jpm.gbqofs.io",
+      "path": "/reporting/64654ad3-6f20-4015-a04e-6a2f544f8231",
+      "expires": -1,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "_cls_v",
+      "value": "238486d6-5ac5-4a20-8d1d-fe3539243116",
+      "domain": "report.jpm.gbqofs.io",
+      "path": "/reporting/64654ad3-6f20-4015-a04e-6a2f544f8231",
+      "expires": -1,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "_cls_s",
+      "value": "f2a1e3cd-f386-4853-a640-ea0c92346271:0",
+      "domain": "report.jpm.gbqofs.io",
+      "path": "/reporting/64654ad3-6f20-4015-a04e-6a2f544f8231",
+      "expires": -1,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "rto",
+      "value": "c0",
+      "domain": "report.jpm.gbqofs.io",
+      "path": "/reporting/64654ad3-6f20-4015-a04e-6a2f544f8231",
+      "expires": -1,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "am_jpm_geolocation",
+      "value": "FI",
+      "domain": "am.jpmorgan.com",
+      "path": "/us/en/asset-management/adv/products",
+      "expires": -1,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "am_jpm_geolocation",
+      "value": "FI",
+      "domain": "am.jpmorgan.com",
+      "path": "/us/en/asset-management/adv/404",
+      "expires": -1,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "fireOnce",
+      "value": "",
+      "domain": "am.jpmorgan.com",
+      "path": "/us/en/asset-management/adv/404",
+      "expires": 1777025338,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "TS01c7814b",
+      "value": "01472f2cfcfcfe6ec17a1dbdcb724f6de1b0562a5d83e1b1884e64f471e8fa412084599cc38dcc3b31b7b80ef02b753d3e2fed23f5",
+      "domain": "am.jpmorgan.com",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "ppnet_4587",
+      "value": "!MSc4jiarUu6aUzji7F3O+WeUZh1aDFJfSxwG1QBzs+I/w7azbEiAqeIF2p949LoqfK65ftxgi6l+Q8U=",
+      "domain": "am.jpmorgan.com",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "AMCV_EA673DFC5A2F19060A495C9C@AdobeOrg",
+      "value": "1914845758|MCIDTS|17564|MCMID|47246323178057130370853621807094308787|MCAID|NONE|MCOPTOUT|isoptedout-false|MCAAMLH||MCAAMB||MCCIDH||MCSYNCSOP|411-17568|vVersion|2.3.0|IsCustom|true",
+      "domain": ".jpmorgan.com",
+      "path": "/",
+      "expires": 1811583519.902432,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "v1st",
+      "value": "BD85A0E89AD56301",
+      "domain": ".jpmorgan.com",
+      "path": "/",
+      "expires": 1811583519.905851,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "at_check",
+      "value": "true",
+      "domain": ".jpmorgan.com",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "_evga_10cc",
+      "value": "{%22uuid%22:%2217e0af213b5507cb%22}",
+      "domain": ".jpmorgan.com",
+      "path": "/",
+      "expires": 1811583538.472324,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "demdex",
+      "value": "25662432395089211923683043853858572858",
+      "domain": ".demdex.net",
+      "path": "/",
+      "expires": 1792575520.420833,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "AMCVS_13C91E796752C35E0A495FAA%40AdobeOrg",
+      "value": "1",
+      "domain": ".jpmorgan.com",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "dpm",
+      "value": "25662432395089211923683043853858572858",
+      "domain": ".dpm.demdex.net",
+      "path": "/",
+      "expires": 1792575520.420964,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "AMCV_13C91E796752C35E0A495FAA%40AdobeOrg",
+      "value": "179643557%7CMCIDTS%7C20568%7CMCMID%7C25664134121486296793682914358065271293%7CMCAAMLH-1777628320%7C6%7CMCAAMB-1777628320%7C6G1ynYcLPuiQxYZrsz_pkqfLG9yMXBpb2zX5dvJdYQJzPXImdj0y%7CMCOPTOUT-1777030720s%7CNONE%7CMCSYNCSOP%7C411-20575%7CvVersion%7C5.5.0",
+      "domain": ".jpmorgan.com",
+      "path": "/",
+      "expires": 1811583520.424176,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "am_jpm_client304",
+      "value": "true",
+      "domain": "am.jpmorgan.com",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "_ga",
+      "value": "GA1.1.1225707034.1777023524",
+      "domain": ".jpmorgan.com",
+      "path": "/",
+      "expires": 1811583537.853873,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "nmstat",
+      "value": "e7020f7a-7814-72f3-8709-ce5dbba4bcf5",
+      "domain": ".jpmorgan.com",
+      "path": "/",
+      "expires": 1811583523.992227,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "selectedRegionCode",
+      "value": "americas",
+      "domain": "am.jpmorgan.com",
+      "path": "/",
+      "expires": 1808559538,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "selectedRegion",
+      "value": "Americas",
+      "domain": "am.jpmorgan.com",
+      "path": "/",
+      "expires": 1808559538,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "selectedCountry",
+      "value": "us",
+      "domain": "am.jpmorgan.com",
+      "path": "/",
+      "expires": 1808559538,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "selectedCountryName",
+      "value": "United States",
+      "domain": "am.jpmorgan.com",
+      "path": "/",
+      "expires": 1808559538,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "selectedLang",
+      "value": "en",
+      "domain": "am.jpmorgan.com",
+      "path": "/",
+      "expires": 1808559538,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "selectedLangName",
+      "value": "English",
+      "domain": "am.jpmorgan.com",
+      "path": "/",
+      "expires": 1808559538,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "selectedCountryLangs",
+      "value": "[{\"name\":\"English\",\"code\":\"en\"}]",
+      "domain": "am.jpmorgan.com",
+      "path": "/",
+      "expires": 1808559538,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "selectedRoleCode",
+      "value": "adv",
+      "domain": "am.jpmorgan.com",
+      "path": "/",
+      "expires": 1808559538,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "selectedRoleName",
+      "value": "Financial Professionals",
+      "domain": "am.jpmorgan.com",
+      "path": "/",
+      "expires": 1808559538,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "selectedRole",
+      "value": "{\"type\":\"Financial Professionals\",\"code\":\"adv\",\"persistentCookie\":\"true\",\"englishOnly\":false}",
+      "domain": "am.jpmorgan.com",
+      "path": "/",
+      "expires": 1808559538,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "term-us-adv",
+      "value": "true",
+      "domain": "am.jpmorgan.com",
+      "path": "/",
+      "expires": 1808559524,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "_cls_v",
+      "value": "238486d6-5ac5-4a20-8d1d-fe3539243116",
+      "domain": ".jpmorgan.com",
+      "path": "/",
+      "expires": 1811583538.12498,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "_cls_s",
+      "value": "f2a1e3cd-f386-4853-a640-ea0c92346271:0",
+      "domain": ".jpmorgan.com",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "ajs_anonymous_id",
+      "value": "8fe9c650-360b-4be7-8965-0b7724631b75",
+      "domain": ".jpmorgan.com",
+      "path": "/",
+      "expires": 1808559537,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "_sfid_eaa8",
+      "value": "{%22anonymousId%22:%2217e0af213b5507cb%22%2C%22consents%22:[]}",
+      "domain": ".jpmorgan.com",
+      "path": "/",
+      "expires": 1811583538.264421,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "rto",
+      "value": "c0",
+      "domain": ".jpmorgan.com",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "bcookie",
+      "value": "\"v=2&199ac84d-9e95-4508-8b51-995f67f532f0\"",
+      "domain": ".linkedin.com",
+      "path": "/",
+      "expires": 1808559525.040277,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "li_gc",
+      "value": "MTswOzE3NzcwMjM1MjQ7MjswMjH9KUaXEBSSkj/8ZhRohQ/qQIRUK32S+m55f7ROBRkWFg==",
+      "domain": ".linkedin.com",
+      "path": "/",
+      "expires": 1792575525.040363,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "lidc",
+      "value": "\"b=OGST08:s=O:r=O:a=O:p=O:g=3415:u=1:x=1:i=1777023524:t=1777109924:v=2:sig=AQFKzPfuM3k14HosTp_ppceWFGHAMw16\"",
+      "domain": ".linkedin.com",
+      "path": "/",
+      "expires": 1777109925.040395,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "clinch-sid",
+      "value": "d8aad026-373e-4a27-acae-8421aae270e0~1777023525",
+      "domain": ".clinch.co",
+      "path": "/",
+      "expires": 1779615525.274623,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "AWSALB",
+      "value": "vLLsACwmQu5ECScMKA/8uty8Dv3e4YSkwgkamvw0/WNvY9fuBXZ7wE2pakTHwjARPz+UVFSD6i3RUSupUdA6Zh/Iw1vBUsq1OX3KDQwgzxGwxV0fItgoUR1WLpOa",
+      "domain": "am.jpmorgan.com",
+      "path": "/",
+      "expires": 1777628332.053294,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "AWSALBCORS",
+      "value": "vLLsACwmQu5ECScMKA/8uty8Dv3e4YSkwgkamvw0/WNvY9fuBXZ7wE2pakTHwjARPz+UVFSD6i3RUSupUdA6Zh/Iw1vBUsq1OX3KDQwgzxGwxV0fItgoUR1WLpOa",
+      "domain": "am.jpmorgan.com",
+      "path": "/",
+      "expires": 1777628332.053444,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "mbox",
+      "value": "session#af740316510c4cc0a3d98cc70ce03861#1777025394|PC#af740316510c4cc0a3d98cc70ce03861.37_0#1840268335",
+      "domain": ".jpmorgan.com",
+      "path": "/",
+      "expires": 1811583534.017621,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "_ga_Z5J80JF02M",
+      "value": "GS2.1.s1777023523$o1$g1$t1777023538$j45$l0$h0",
+      "domain": ".jpmorgan.com",
+      "path": "/",
+      "expires": 1811583538.217619,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "AWSALBTGCORS",
+      "value": "Z0IbNzjoPLRMceBhJZfI7S29p3bsC/yBdxIuBlAkwcKcE3lYzfCZj3zwX/6RqRScXxGwpVO9IMTZ9HFVE74aYUQ0Q2x3j/jOIv8Bpqa7w1u82z4+SDwfVh9orhipun125s/BJTkUqVl4FcMYPjEWXgsEpijQ3C7gUrAFm4iBdix7YOtkCSo=",
+      "domain": "k556555555563cz3w23n3n3x2754245.germany-2.evergage.com",
+      "path": "/",
+      "expires": 1777628338.507156,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "IDE",
+      "value": "AHWqTUl_dyftErSTb5Cg6p_H-zMCje4rEu0Jno7elcph0jYvMw-l6CX2jA5P_Wojxvg",
+      "domain": ".doubleclick.net",
+      "path": "/",
+      "expires": 1810719538.756453,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "None"
+    }
+  ],
+  "template": null
+}

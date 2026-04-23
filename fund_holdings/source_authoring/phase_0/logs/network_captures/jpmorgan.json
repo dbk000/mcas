@@ -1,0 +1,89 @@
+{
+  "sponsor": "jpmorgan",
+  "host": "am.jpmorgan.com",
+  "base_path": "/us/en/asset-management/adv/products/{ticker_lower}-etf-shares",
+  "probe_tickers": [
+    "JEPI",
+    "JPST"
+  ],
+  "xhrs_by_ticker": {
+    "JEPI": {
+      "count": 16,
+      "top_scored": [
+        [
+          "https://chasena.tt.omtrdc.net/rest/v1/delivery?client=chasena&sessionId=699d0f264d6f4a8385ec588d39e6754a&version=2.11.7",
+          1
+        ],
+        [
+          "https://am.jpmorgan.com/content/jpm-am-aem/countryroleselectorconfigpage.seomap.json",
+          1
+        ],
+        [
+          "https://www.chase.com/content/dam/consent-banner/config.json",
+          1
+        ],
+        [
+          "https://www.chase.com/apps/services/tags/https/am.jpmorgan.com/us/en/asset-management/adv/404/",
+          1
+        ]
+      ],
+      "all_sample": [
+        "https://dpm.demdex.net/id?d_visid_ver=5.5.0&d_fieldgroup=MC&d_rtbd=json&d_ver=2&d_orgid=13C91E796752C35E0A495FAA%40AdobeOrg&d_nsid=0&ts=1776972344835",
+        "https://chasena.tt.omtrdc.net/rest/v1/delivery?client=chasena&sessionId=699d0f264d6f4a8385ec588d39e6754a&version=2.11.7",
+        "https://am.jpmorgan.com/content/jpm-am-aem/countryroleselectorconfigpage.crsmap.us_en_adv.json?currentPath=/content/jpm-am-aem/americas/us/en/adv/includes/header/jcr:content/par/jpm_am_navigation_he",
+        "https://am.jpmorgan.com/content/jpm-am-aem/americas/us/en/adv/includes/footer/_jcr_content.footerv2.json?v=1605821551078/americas",
+        "https://am.jpmorgan.com/content/jpm-am-aem/countryroleselectorconfigpage.seomap.json",
+        "https://cdn.segment.com/v1/projects/2kGSMWEqumuHpgLgSXx7d0liZGpeBTTV/settings",
+        "https://region1.analytics.google.com/g/collect?v=2&tid=G-Z5J80JF02M&gtm=45je64m0v874078947z8810811859za20gzb810811859zd810811859&_p=1776972348465&_gaz=1&gcd=13l3l3l2l1l1&npa=1&dma_cps=a&dma=1&_eu=AAAAAGA&are=1&cid=1638781169.1776972349&frm=0&pscdl=noapi&rcb=8&sr=1440x900&uaa=x86&uab=64&uafvl=Not%253AA-Brand%3B99.0.0.0%7CHeadlessChrome%3B145.0.7632.6%7CChromium%3B145.0.7632.6&uam=&uamb=0&uap=Linux&uapv=&uaw=0&ul=English&gaf=2&_s=1&tag_exp=0~115938466~115938469~117266400~117512542~117884344&dl=https%3A%2F%2Fam.jpmorgan.com%2Fus%2Fen%2Fasset-management%2Fadv%2F404%2F&sid=1776972348&sct=1&seg=0&dt=404%20Page%20not%20found%20%7C%20J.P.%20Morgan%20Asset%20Management&en=page_view&_fv=1&_nsi=1&_ss=2&ep.email_contact=&ep.meta_myrrh=null&ep.page_type=404&ep.region=Americas&ep.country=United%20States&ep.role=Financial%20Professionals&ep.logged_in=false&ep.checked_list=Not%20Applicable&ep.unchecked_list=Not%20Applicable&ep.unshown_list=Not%20Applicable&ep.query_parameter=&ep.hmid=&ep.activity_id=&ep.gtm_container=GTM-5ZSQBVT&ep.line_of_business=Funds&ep.level_1_index=adv&ep.level_2_index=404&ep.level_3_index=&ep.level_4_index=&ep.log_in_type=&ep.meta_keywords=null&ep.meta_navigation_title=null&ep.meta_description=Page%20not%20found&ep.meta_template=error-template&up.email_contact=&tfd=5893",
+        "https://api.segment.io/v1/p",
+        "https://report.jpm.gbqofs.io/reporting/64654ad3-6f20-4015-a04e-6a2f544f8231/cls_report?_cls_s=71f9aed8-d643-411c-8dcc-c3946a8a26fb%3A0&_cls_v=1311461c-c76c-43f0-8f9d-3063b5f6124f&pv=2&f_cls_s=true",
+        "https://secure.chase.com/events/analytics/public/v1/cc.gif?log=1&wa_cb=1776972348972.245466&url=https%3A%2F%2Fam.jpmorgan.com%2Fus%2Fen%2Fasset-management%2Fadv%2F404%2F&pt=404%20Page%20not%20found%20%7C%20J.P.%20Morgan%20Asset%20Management&sr=1440x900&br=1440x900&wa_fv=Not%20enabled&et=0&tz=UTC&tzo=+0&cd=24&jv=1.8.5&mid=35669885188595568854480148077001624271&ad=1914845758%7CMCIDTS%7C17564%7CMCMID%7C35669885188595568854480148077001624271%7CMCAID%7CNONE%7CMCOPTOUT%7Cisoptedout-false%7CMCAAMLH%7C%7CMCAAMB%7C%7CMCCIDH%7C%7CMCSYNCSOP%7C411-17568%7CvVersion%7C2.3.0%7CIsCustom%7Ctrue&vt=unknwn&v1=B9387F5AC586247F&ls=N&ch=COL&st=Classic&av=1.0.0&eid=08274328-9645-4513-86cd-55de640727ac&clientId=2.0.4&e=1",
+        "https://static.chasecdn.com/loc/result",
+        "https://www.chase.com/etc/chase/appsconfig/clientconfig.enableCCPA.js",
+        "https://www.chase.com/content/dam/consent-banner/config.json",
+        "https://www.chase.com/apps/services/tags/https/am.jpmorgan.com/us/en/asset-management/adv/404/",
+        "https://www.chase.com/etc/chase/appsconfig/clientconfig.ccpaReportingPercentage.js",
+        "https://k556555555563cz3w23n3n3x2754245.germany-2.evergage.com/api2/event/mcp_prod?event=eyJzb3VyY2UiOnsicGFnZVR5cGUiOiJkZWZhdWx0IiwibG9jYWxlIjoiZW5fVVMiLCJ1cmwiOiJodHRwczovL2FtLmpwbW9yZ2FuLmNvbS91cy9lbi9hc3NldC1tYW5hZ2VtZW50L2Fkdi80MDQvIiwidXJsUmVmZXJyZXIiOiIiLCJjaGFubmVsIjoiV2ViIiwiYmVhY29uVmVyc2lvbiI6MTYsImNvbmZpZ1ZlcnNpb24iOiIyMDEiLCJjb250ZW50Wm9uZXMiOlsiZ2xvYmFsX3BvcHVwIiwiZ2xvYmFsX2luZm9iYXIiLCJnbG9iYWxfZXhpdF9pbnRlbnQiLCJnbG9iYWxfZm9vdGVyIl19LCJ1c2VyIjp7ImFub255bW91c0lkIjoiNjQ3NWI1YmFkZTlmODRiZiIsImF0dHJpYnV0ZXMiOnsicmVnaW9uIjoiQW1lcmljYXMiLCJjb3VudHJ5IjoiVW5pdGVkIFN0YXRlcyIsImxhdGVzdFJvbGUiOiJGaW5hbmNpYWwgUHJvZmVzc2lvbmFscyIsImxpbmVPZkJ1c2luZXNzIjoiRnVuZHMiLCJsYXRlc3RMYW5ndWFnZSI6IkVuZ2xpc2giLCJsb2dnZWRJbiI6ImZhbHNlIiwibGF0ZXN0VVJMVmlldyI6Imh0dHBzOi8vYW0uanBtb3JnYW4uY29tL3VzL2VuL2Fzc2V0LW1hbmFnZW1lbnQvYWR2LzQwNC8ifSwiaWRlbnRpdGllcyI6e319LCJpbnRlcmFjdGlvbiI6eyJuYW1lIjoiRGVmYXVsdCJ9LCJwYWdlVmlldyI6dHJ1ZSwiY29uc2VudHMiOltdLCJhY2NvdW50Ijp7fSwiX3Rvb2xzRXZlbnRMaW5rSWQiOiI4MTA5MjUwMzM3MTM5NTU0IiwiZXhwbGFpbiI6dHJ1ZX0%3D"
+      ]
+    },
+    "JPST": {
+      "count": 16,
+      "top_scored": [
+        [
+          "https://chasena.tt.omtrdc.net/rest/v1/delivery?client=chasena&sessionId=e15ab3d16b6d487da02bf2154c37c4bc&version=2.11.7",
+          1
+        ],
+        [
+          "https://am.jpmorgan.com/content/jpm-am-aem/countryroleselectorconfigpage.seomap.json",
+          1
+        ],
+        [
+          "https://www.chase.com/content/dam/consent-banner/config.json",
+          1
+        ],
+        [
+          "https://www.chase.com/apps/services/tags/https/am.jpmorgan.com/us/en/asset-management/adv/404/",
+          1
+        ]
+      ],
+      "all_sample": [
+        "https://dpm.demdex.net/id?d_visid_ver=5.5.0&d_fieldgroup=MC&d_rtbd=json&d_ver=2&d_orgid=13C91E796752C35E0A495FAA%40AdobeOrg&d_nsid=0&ts=1776972354306",
+        "https://chasena.tt.omtrdc.net/rest/v1/delivery?client=chasena&sessionId=e15ab3d16b6d487da02bf2154c37c4bc&version=2.11.7",
+        "https://am.jpmorgan.com/content/jpm-am-aem/countryroleselectorconfigpage.crsmap.us_en_adv.json?currentPath=/content/jpm-am-aem/americas/us/en/adv/includes/header/jcr:content/par/jpm_am_navigation_he",
+        "https://am.jpmorgan.com/content/jpm-am-aem/americas/us/en/adv/includes/footer/_jcr_content.footerv2.json?v=1605821551078/americas",
+        "https://am.jpmorgan.com/content/jpm-am-aem/countryroleselectorconfigpage.seomap.json",
+        "https://cdn.segment.com/v1/projects/2kGSMWEqumuHpgLgSXx7d0liZGpeBTTV/settings",
+        "https://region1.analytics.google.com/g/collect?v=2&tid=G-Z5J80JF02M&gtm=45je64m2h2v874078947z8810811859za20gzb810811859zd810811859&_p=1776972358052&_gaz=1&gcd=13l3l3l2l1l1&npa=1&dma_cps=a&dma=1&_eu=AAAAAGA&are=1&cid=1188040671.1776972358&frm=0&pscdl=noapi&rcb=19&sr=1440x900&uaa=x86&uab=64&uafvl=Not%253AA-Brand%3B99.0.0.0%7CHeadlessChrome%3B145.0.7632.6%7CChromium%3B145.0.7632.6&uam=&uamb=0&uap=Linux&uapv=&uaw=0&ul=English&_s=1&tag_exp=0~115938466~115938468~117266401~117512542&dl=https%3A%2F%2Fam.jpmorgan.com%2Fus%2Fen%2Fasset-management%2Fadv%2F404%2F&sid=1776972358&sct=1&seg=0&dt=404%20Page%20not%20found%20%7C%20J.P.%20Morgan%20Asset%20Management&en=page_view&_fv=1&_nsi=1&_ss=2&ep.email_contact=&ep.meta_myrrh=null&ep.page_type=404&ep.region=Americas&ep.country=United%20States&ep.role=Financial%20Professionals&ep.logged_in=false&ep.checked_list=Not%20Applicable&ep.unchecked_list=Not%20Applicable&ep.unshown_list=Not%20Applicable&ep.query_parameter=&ep.hmid=&ep.activity_id=&ep.gtm_container=GTM-5ZSQBVT&ep.line_of_business=Funds&ep.level_1_index=adv&ep.level_2_index=404&ep.level_3_index=&ep.level_4_index=&ep.log_in_type=&ep.meta_keywords=null&ep.meta_navigation_title=null&ep.meta_description=Page%20not%20found&ep.meta_template=error-template&up.email_contact=&tfd=6018",
+        "https://api.segment.io/v1/p",
+        "https://report.jpm.gbqofs.io/reporting/64654ad3-6f20-4015-a04e-6a2f544f8231/cls_report?_cls_s=1a4b5159-357f-4192-9595-7b27c49c8e19%3A0&_cls_v=c560839d-0b07-4b4e-8b3f-41bf029bf8ae&pv=2&f_cls_s=true",
+        "https://secure.chase.com/events/analytics/public/v1/cc.gif?log=1&wa_cb=1776972358958.700822&url=https%3A%2F%2Fam.jpmorgan.com%2Fus%2Fen%2Fasset-management%2Fadv%2F404%2F&pt=404%20Page%20not%20found%20%7C%20J.P.%20Morgan%20Asset%20Management&sr=1440x900&br=1440x900&wa_fv=Not%20enabled&et=0&tz=UTC&tzo=+0&cd=24&jv=1.8.5&mid=14870170177122469720830078822909859525&ad=1914845758%7CMCIDTS%7C17564%7CMCMID%7C14870170177122469720830078822909859525%7CMCAID%7CNONE%7CMCOPTOUT%7Cisoptedout-false%7CMCAAMLH%7C%7CMCAAMB%7C%7CMCCIDH%7C%7CMCSYNCSOP%7C411-17568%7CvVersion%7C2.3.0%7CIsCustom%7Ctrue&vt=unknwn&v1=B5559AB2710ACF08&ls=N&ch=COL&st=Classic&av=1.0.0&eid=49194103-6caf-4b81-a4d2-7edab5b0a2e0&clientId=2.0.4&e=1",
+        "https://static.chasecdn.com/loc/result",
+        "https://www.chase.com/etc/chase/appsconfig/clientconfig.enableCCPA.js",
+        "https://www.chase.com/content/dam/consent-banner/config.json",
+        "https://www.chase.com/apps/services/tags/https/am.jpmorgan.com/us/en/asset-management/adv/404/",
+        "https://www.chase.com/etc/chase/appsconfig/clientconfig.ccpaReportingPercentage.js",
+        "https://k556555555563cz3w23n3n3x2754245.germany-2.evergage.com/api2/event/mcp_prod?event=eyJzb3VyY2UiOnsicGFnZVR5cGUiOiJkZWZhdWx0IiwibG9jYWxlIjoiZW5fVVMiLCJ1cmwiOiJodHRwczovL2FtLmpwbW9yZ2FuLmNvbS91cy9lbi9hc3NldC1tYW5hZ2VtZW50L2Fkdi80MDQvIiwidXJsUmVmZXJyZXIiOiIiLCJjaGFubmVsIjoiV2ViIiwiYmVhY29uVmVyc2lvbiI6MTYsImNvbmZpZ1ZlcnNpb24iOiIyMDEiLCJjb250ZW50Wm9uZXMiOlsiZ2xvYmFsX3BvcHVwIiwiZ2xvYmFsX2luZm9iYXIiLCJnbG9iYWxfZXhpdF9pbnRlbnQiLCJnbG9iYWxfZm9vdGVyIl19LCJ1c2VyIjp7ImFub255bW91c0lkIjoiNGJhY2M3OGM2MTE0ZTdlZCIsImF0dHJpYnV0ZXMiOnsicmVnaW9uIjoiQW1lcmljYXMiLCJjb3VudHJ5IjoiVW5pdGVkIFN0YXRlcyIsImxhdGVzdFJvbGUiOiJGaW5hbmNpYWwgUHJvZmVzc2lvbmFscyIsImxpbmVPZkJ1c2luZXNzIjoiRnVuZHMiLCJsYXRlc3RMYW5ndWFnZSI6IkVuZ2xpc2giLCJsb2dnZWRJbiI6ImZhbHNlIiwibGF0ZXN0VVJMVmlldyI6Imh0dHBzOi8vYW0uanBtb3JnYW4uY29tL3VzL2VuL2Fzc2V0LW1hbmFnZW1lbnQvYWR2LzQwNC8ifSwiaWRlbnRpdGllcyI6e319LCJpbnRlcmFjdGlvbiI6eyJuYW1lIjoiRGVmYXVsdCJ9LCJwYWdlVmlldyI6dHJ1ZSwiY29uc2VudHMiOltdLCJhY2NvdW50Ijp7fSwiX3Rvb2xzRXZlbnRMaW5rSWQiOiIzMDQzODUwOTU3Nzc0NjUiLCJleHBsYWluIjp0cnVlfQ%3D%3D"
+      ]
+    }
+  }
+}

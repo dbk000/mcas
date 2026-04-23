@@ -1,0 +1,39 @@
+{
+  "sponsor": "t_rowe_price",
+  "host": "www.troweprice.com",
+  "base_path": "/financial-intermediary/us/en/investments/etfs/products/{ticker_lower}.html",
+  "probe_tickers": [
+    "TCAF",
+    "TSPA"
+  ],
+  "xhrs_by_ticker": {
+    "TCAF": {
+      "count": 8,
+      "top_scored": [],
+      "all_sample": [
+        "https://adobedc.demdex.net/ee/v1/interact?configId=a538e911-7035-43e1-903e-7fd7100acd73&requestId=ab6baa1f-7286-46e3-8f92-e55d162f499b",
+        "https://sitecats.troweprice.com/ee/irl1/v1/interact?configId=a538e911-7035-43e1-903e-7fd7100acd73&requestId=7674cf65-b69c-4efa-a4c2-6a85cfbd8bb6",
+        "https://siteintercept.qualtrics.com/WRSiteInterceptEngine/Targeting.php?Q_ZoneID=ZN_8DiCwx5sYuF137L&Q_CLIENTVERSION=2.46.0&Q_CLIENTTYPE=web",
+        "https://siteintercept.qualtrics.com/WRSiteInterceptEngine/Asset.php?Module=SI_a9qRSuTUh5i5yn3&Version=118&Q_CLIENTVERSION=2.46.0&Q_CLIENTTYPE=web&Q_BrandTier=6JXOb6PlXr&Q_ARCACHEVERSION=21&Q_BRANDDC=iad1",
+        "https://siteintercept.qualtrics.com/WRSiteInterceptEngine/Asset.php?Module=CR_4N6i19ALpRROs3s&Version=10&Q_InterceptID=SI_a9qRSuTUh5i5yn3&Q_CLIENTVERSION=2.46.0&Q_CLIENTTYPE=web&Q_BrandTier=6JXOb6PlXr&Q_ARCACHEVERSION=21&Q_BRANDDC=iad1",
+        "https://sr.qualtrics.com/sr-data-ingestion-service/v2/sessions/create",
+        "https://siteintercept.qualtrics.com/WRSiteInterceptEngine/?Q_Impress=1&Q_CID=CR_4N6i19ALpRROs3s&Q_SIID=SI_a9qRSuTUh5i5yn3&Q_ASID=AS_74ERn6JOPOYBgXj&Q_CLIENTVERSION=2.46.0&Q_CLIENTTYPE=web&r=1776972431051",
+        "https://fra1.sr.qualtrics.com/sr-data-ingestion-service/v2/sessions/record-playback"
+      ]
+    },
+    "TSPA": {
+      "count": 8,
+      "top_scored": [],
+      "all_sample": [
+        "https://adobedc.demdex.net/ee/v1/interact?configId=a538e911-7035-43e1-903e-7fd7100acd73&requestId=a84dcf1c-9f1c-46e2-8ed2-d8bc6d721f7e",
+        "https://sitecats.troweprice.com/ee/irl1/v1/interact?configId=a538e911-7035-43e1-903e-7fd7100acd73&requestId=cec01de9-755b-49a8-a378-7775a57ea911",
+        "https://siteintercept.qualtrics.com/WRSiteInterceptEngine/Targeting.php?Q_ZoneID=ZN_8DiCwx5sYuF137L&Q_CLIENTVERSION=2.46.0&Q_CLIENTTYPE=web",
+        "https://siteintercept.qualtrics.com/WRSiteInterceptEngine/Asset.php?Module=SI_a9qRSuTUh5i5yn3&Version=118&Q_CLIENTVERSION=2.46.0&Q_CLIENTTYPE=web&Q_BrandTier=6JXOb6PlXr&Q_ARCACHEVERSION=21&Q_BRANDDC=iad1",
+        "https://siteintercept.qualtrics.com/WRSiteInterceptEngine/Asset.php?Module=CR_4N6i19ALpRROs3s&Version=10&Q_InterceptID=SI_a9qRSuTUh5i5yn3&Q_CLIENTVERSION=2.46.0&Q_CLIENTTYPE=web&Q_BrandTier=6JXOb6PlXr&Q_ARCACHEVERSION=21&Q_BRANDDC=iad1",
+        "https://sr.qualtrics.com/sr-data-ingestion-service/v2/sessions/create",
+        "https://siteintercept.qualtrics.com/WRSiteInterceptEngine/?Q_Impress=1&Q_CID=CR_4N6i19ALpRROs3s&Q_SIID=SI_a9qRSuTUh5i5yn3&Q_ASID=AS_74ERn6JOPOYBgXj&Q_CLIENTVERSION=2.46.0&Q_CLIENTTYPE=web&r=1776972437309",
+        "https://fra1.sr.qualtrics.com/sr-data-ingestion-service/v2/sessions/record-playback"
+      ]
+    }
+  }
+}

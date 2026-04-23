@@ -1,0 +1,9 @@
+[rebuild_v2] current bible sheets: ['calamos', 'direxion', 'first_trust', 'global_x', 'graniteshares', 'innovator', 'ishares', 'krane', 'neos', 'proshares', 'schwab', 'state_street', 'vanguard', 'yieldmax']
+[rebuild_v2] invesco verified urls: 200
+    [invesco] url_map: admitted 200, skipped 17
+[rebuild_v2] invesco: admitted 200 funds
+[rebuild_v2] template-based confirmed: ['schwab', 'proshares', 'innovator', 'calamos', 'yieldmax']
+[rebuild_v2] wrote /home/darren/Desktop/MCAS/fund_holdings/ground_truth/fund_bible_v1.xlsx.tmp  total_rows=1208  aum=$9.99T
+
+[rebuild_v2] bible total: 1208
+  invesco                      admitted=200  tmpl=https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/{CUSIP}/holding

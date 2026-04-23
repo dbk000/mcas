@@ -1,0 +1,73 @@
+{
+  "sponsor": "blackrock",
+  "host": "www.blackrock.com",
+  "base_path": "/us/individual/products/{ticker_lower}",
+  "probe_tickers": [
+    "DYNF",
+    "BINC"
+  ],
+  "xhrs_by_ticker": {
+    "DYNF": {
+      "count": 8,
+      "top_scored": [
+        [
+          "https://cdn.cookielaw.org/consent/1d844f07-6416-4f37-97e9-e7e8b80732f2/1d844f07-6416-4f37-97e9-e7e8b80732f2.json",
+          1
+        ],
+        [
+          "https://cdn.cookielaw.org/consent/1d844f07-6416-4f37-97e9-e7e8b80732f2/0199190f-a997-760a-b7f1-5addbd244d1d/en.json",
+          1
+        ],
+        [
+          "https://cdn.cookielaw.org/scripttemplates/202601.2.0/assets/otCenterRounded.json",
+          1
+        ],
+        [
+          "https://cdn.cookielaw.org/scripttemplates/202601.2.0/assets/v2/otPcCenter.json",
+          1
+        ]
+      ],
+      "all_sample": [
+        "https://cdn.cookielaw.org/consent/1d844f07-6416-4f37-97e9-e7e8b80732f2/1d844f07-6416-4f37-97e9-e7e8b80732f2.json",
+        "https://geolocation.onetrust.com/cookieconsentpub/v1/geo/location",
+        "https://reports.sdiapi.com/service/viceEvent",
+        "https://cdn.cookielaw.org/consent/1d844f07-6416-4f37-97e9-e7e8b80732f2/0199190f-a997-760a-b7f1-5addbd244d1d/en.json",
+        "https://cdn.cookielaw.org/scripttemplates/202601.2.0/assets/otCenterRounded.json",
+        "https://cdn.cookielaw.org/scripttemplates/202601.2.0/assets/v2/otPcCenter.json",
+        "https://cdn.cookielaw.org/scripttemplates/202601.2.0/assets/otCommonStyles.css",
+        "https://cdn.cookielaw.org/logos/static/ot_guard_logo.svg"
+      ]
+    },
+    "BINC": {
+      "count": 8,
+      "top_scored": [
+        [
+          "https://cdn.cookielaw.org/consent/1d844f07-6416-4f37-97e9-e7e8b80732f2/1d844f07-6416-4f37-97e9-e7e8b80732f2.json",
+          1
+        ],
+        [
+          "https://cdn.cookielaw.org/consent/1d844f07-6416-4f37-97e9-e7e8b80732f2/0199190f-a997-760a-b7f1-5addbd244d1d/en.json",
+          1
+        ],
+        [
+          "https://cdn.cookielaw.org/scripttemplates/202601.2.0/assets/otCenterRounded.json",
+          1
+        ],
+        [
+          "https://cdn.cookielaw.org/scripttemplates/202601.2.0/assets/v2/otPcCenter.json",
+          1
+        ]
+      ],
+      "all_sample": [
+        "https://cdn.cookielaw.org/consent/1d844f07-6416-4f37-97e9-e7e8b80732f2/1d844f07-6416-4f37-97e9-e7e8b80732f2.json",
+        "https://geolocation.onetrust.com/cookieconsentpub/v1/geo/location",
+        "https://reports.sdiapi.com/service/viceEvent",
+        "https://cdn.cookielaw.org/consent/1d844f07-6416-4f37-97e9-e7e8b80732f2/0199190f-a997-760a-b7f1-5addbd244d1d/en.json",
+        "https://cdn.cookielaw.org/scripttemplates/202601.2.0/assets/otCenterRounded.json",
+        "https://cdn.cookielaw.org/scripttemplates/202601.2.0/assets/v2/otPcCenter.json",
+        "https://cdn.cookielaw.org/scripttemplates/202601.2.0/assets/otCommonStyles.css",
+        "https://cdn.cookielaw.org/logos/static/ot_guard_logo.svg"
+      ]
+    }
+  }
+}

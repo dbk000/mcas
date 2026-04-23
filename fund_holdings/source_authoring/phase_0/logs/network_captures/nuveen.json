@@ -1,0 +1,121 @@
+{
+  "sponsor": "nuveen",
+  "host": "www.nuveen.com",
+  "base_path": "/en-us/exchange-traded-funds/{TICKER}",
+  "probe_tickers": [
+    "NUGO",
+    "NULV"
+  ],
+  "xhrs_by_ticker": {
+    "NUGO": {
+      "count": 20,
+      "top_scored": [
+        [
+          "https://cdn.cookielaw.org/consent/24559030-a2b4-462e-a590-03ae0192de74/24559030-a2b4-462e-a590-03ae0192de74.json",
+          1
+        ],
+        [
+          "https://cdn.cookielaw.org/consent/24559030-a2b4-462e-a590-03ae0192de74/0d5d6e07-037a-4653-b3e0-ccb92680f66d/en.json",
+          1
+        ],
+        [
+          "https://cdn.cookielaw.org/scripttemplates/202407.2.0/assets/otFlat.json",
+          1
+        ],
+        [
+          "https://cdn.cookielaw.org/scripttemplates/202407.2.0/assets/v2/otPcCenter.json",
+          1
+        ],
+        [
+          "https://api.nuveen.com/documents/api/getproductdocuments/etf/NUGO/7586/",
+          1
+        ],
+        [
+          "https://www.nuveen.com/api/morningStar/getMorningStarAuthToken",
+          1
+        ],
+        [
+          "https://www.nuveen.com/api/subscriptionswealthAPI/GetProductDetailTouchPointServiceCall",
+          1
+        ]
+      ],
+      "all_sample": [
+        "https://cdn.cookielaw.org/consent/24559030-a2b4-462e-a590-03ae0192de74/24559030-a2b4-462e-a590-03ae0192de74.json",
+        "https://geolocation.onetrust.com/cookieconsentpub/v1/geo/location",
+        "https://cdn.cookielaw.org/consent/24559030-a2b4-462e-a590-03ae0192de74/0d5d6e07-037a-4653-b3e0-ccb92680f66d/en.json",
+        "https://cdn.cookielaw.org/scripttemplates/202407.2.0/assets/otFlat.json",
+        "https://cdn.cookielaw.org/scripttemplates/202407.2.0/assets/v2/otPcCenter.json",
+        "https://cdn.cookielaw.org/scripttemplates/202407.2.0/assets/otCommonStyles.css",
+        "https://api.nuveen.com/ETF/v2/productdetail/bycusip//67092P797?tooltip=1",
+        "https://api.nuveen.com/documents/api/getproductdocuments/etf/NUGO/7586/",
+        "https://www.nuveen.com/NiZ-alzo6/p3YKqs/e/U-FoDAEGBYs/X7J10JYutEt9N6L9a9/TnBr/bm/FQHls1OxQB",
+        "https://www.nuveen.com/api/morningStar/getMorningStarAuthToken",
+        "https://cdn.cookielaw.org/logos/static/ot_guard_logo.svg",
+        "https://www.gstatic.com/recaptcha/releases/gTpTIWhbKpxADzTzkcabhXN4/recaptcha__en.js",
+        "https://www.gstatic.com/recaptcha/releases/gTpTIWhbKpxADzTzkcabhXN4/recaptcha__en.js",
+        "https://www.gstatic.com/recaptcha/releases/gTpTIWhbKpxADzTzkcabhXN4/recaptcha__en.js",
+        "https://www.nuveen.com/NiZ-alzo6/p3YKqs/e/U-FoDAEGBYs/X7J10JYutEt9N6L9a9/TnBr/bm/FQHls1OxQB",
+        "https://www.nuveen.com/api/subscriptionswealthAPI/GetProductDetailTouchPointServiceCall",
+        "https://csp.withgoogle.com/csp/frame-ancestors/38fac9d5b82543fc4729580d18ff2d3d",
+        "https://siteintercept.qualtrics.com/WRSiteInterceptEngine/Targeting.php?Q_ZoneID=ZN_aW3Ph0VJaDuSTaJ&Q_CLIENTVERSION=2.46.0&Q_CLIENTTYPE=web",
+        "https://www.google.com/recaptcha/api2/reload?k=6Lf4iukkAAAAAIEdiD8N1a7ZAg7YWfpcKJlNYkXN",
+        "https://www.google.com/recaptcha/api2/reload?k=6Lf4iukkAAAAAIEdiD8N1a7ZAg7YWfpcKJlNYkXN"
+      ]
+    },
+    "NULV": {
+      "count": 20,
+      "top_scored": [
+        [
+          "https://cdn.cookielaw.org/consent/24559030-a2b4-462e-a590-03ae0192de74/24559030-a2b4-462e-a590-03ae0192de74.json",
+          1
+        ],
+        [
+          "https://cdn.cookielaw.org/consent/24559030-a2b4-462e-a590-03ae0192de74/0d5d6e07-037a-4653-b3e0-ccb92680f66d/en.json",
+          1
+        ],
+        [
+          "https://cdn.cookielaw.org/scripttemplates/202407.2.0/assets/otFlat.json",
+          1
+        ],
+        [
+          "https://cdn.cookielaw.org/scripttemplates/202407.2.0/assets/v2/otPcCenter.json",
+          1
+        ],
+        [
+          "https://api.nuveen.com/documents/api/getproductdocuments/etf/NULV/7586/",
+          1
+        ],
+        [
+          "https://www.nuveen.com/api/morningStar/getMorningStarAuthToken",
+          1
+        ],
+        [
+          "https://www.nuveen.com/api/subscriptionswealthAPI/GetProductDetailTouchPointServiceCall",
+          1
+        ]
+      ],
+      "all_sample": [
+        "https://cdn.cookielaw.org/consent/24559030-a2b4-462e-a590-03ae0192de74/24559030-a2b4-462e-a590-03ae0192de74.json",
+        "https://geolocation.onetrust.com/cookieconsentpub/v1/geo/location",
+        "https://cdn.cookielaw.org/consent/24559030-a2b4-462e-a590-03ae0192de74/0d5d6e07-037a-4653-b3e0-ccb92680f66d/en.json",
+        "https://cdn.cookielaw.org/scripttemplates/202407.2.0/assets/otFlat.json",
+        "https://cdn.cookielaw.org/scripttemplates/202407.2.0/assets/v2/otPcCenter.json",
+        "https://cdn.cookielaw.org/scripttemplates/202407.2.0/assets/otCommonStyles.css",
+        "https://api.nuveen.com/ETF/v2/productdetail/bycusip//67092P300?tooltip=1",
+        "https://api.nuveen.com/mp/products/baseballcard/ESGGETF",
+        "https://api.nuveen.com/documents/api/getproductdocuments/etf/NULV/7586/",
+        "https://www.nuveen.com/NiZ-alzo6/p3YKqs/e/U-FoDAEGBYs/X7J10JYutEt9N6L9a9/TnBr/bm/FQHls1OxQB",
+        "https://www.nuveen.com/api/morningStar/getMorningStarAuthToken",
+        "https://cdn.cookielaw.org/logos/static/ot_guard_logo.svg",
+        "https://www.gstatic.com/recaptcha/releases/gTpTIWhbKpxADzTzkcabhXN4/recaptcha__en.js",
+        "https://www.gstatic.com/recaptcha/releases/gTpTIWhbKpxADzTzkcabhXN4/recaptcha__en.js",
+        "https://www.gstatic.com/recaptcha/releases/gTpTIWhbKpxADzTzkcabhXN4/recaptcha__en.js",
+        "https://www.nuveen.com/NiZ-alzo6/p3YKqs/e/U-FoDAEGBYs/X7J10JYutEt9N6L9a9/TnBr/bm/FQHls1OxQB",
+        "https://www.nuveen.com/api/subscriptionswealthAPI/GetProductDetailTouchPointServiceCall",
+        "https://siteintercept.qualtrics.com/WRSiteInterceptEngine/Targeting.php?Q_ZoneID=ZN_aW3Ph0VJaDuSTaJ&Q_CLIENTVERSION=2.46.0&Q_CLIENTTYPE=web",
+        "https://www.google.com/recaptcha/api2/reload?k=6Lf4iukkAAAAAIEdiD8N1a7ZAg7YWfpcKJlNYkXN",
+        "https://www.google.com/recaptcha/api2/reload?k=6Lf4iukkAAAAAIEdiD8N1a7ZAg7YWfpcKJlNYkXN"
+      ]
+    }
+  }
+}

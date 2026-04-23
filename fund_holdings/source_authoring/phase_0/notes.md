@@ -350,3 +350,25 @@ pytest -v ../../tests/test_fund_bible_schema.py
 Total end-to-end runtime: ~5-10 min dominated by the §7.2 content-verify
 pass (one GET per row with per-host throttle + retry).
 
+
+
+---
+## Bucket G — Relaxed Row-Count Gate Applied (2026-04-23)
+
+As part of Phase 0 Sponsor Recovery (Revision 2 §7):
+
+Relaxed `MIN_ROWS_DATA` per Vehicle_Subtype for intra-sheet re-verification of
+previously-excluded rows in REMEDIATED_SHEETS only. Thresholds:
+
+- `target_maturity_bond` (iShares iBonds-style ladders): 3 rows
+- `leveraged_2x`, `leveraged_3x`, `inverse` (Direxion etc.): 3 rows
+- `single_stock_leveraged`, `single_stock_inverse`: 1 row
+- `buffered_outcome`, `options_strategy`: 3 rows
+
+**Execution result:** 52 of 59 intra-sheet candidates passed under
+the relaxed gate.
+
+**Forward-looking precedent:** this relaxation applies ONLY to the Bucket G
+recovery. Whether future Phase 0 work admits these vehicle_subtypes at the
+relaxed threshold is a Phase 1+ governance decision. Do NOT codify in
+PHASE_0_REMEDIATION_TASKBOARD.md — recorded here only as execution record.

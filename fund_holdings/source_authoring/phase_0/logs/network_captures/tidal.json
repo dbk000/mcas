@@ -1,0 +1,25 @@
+{
+  "sponsor": "tidal",
+  "host": "tidaletfservices.com",
+  "base_path": "/etfs/{TICKER}",
+  "probe_tickers": [
+    "MSTY",
+    "NVDY"
+  ],
+  "xhrs_by_ticker": {
+    "MSTY": {
+      "count": 1,
+      "top_scored": [],
+      "all_sample": [
+        "__error__:TimeoutError:Page.goto: Timeout 20000ms exceeded.\nCall log:\n  - navigating to \"https://tidale"
+      ]
+    },
+    "NVDY": {
+      "count": 1,
+      "top_scored": [],
+      "all_sample": [
+        "__error__:TimeoutError:Page.goto: Timeout 20000ms exceeded.\nCall log:\n  - navigating to \"https://tidale"
+      ]
+    }
+  }
+}

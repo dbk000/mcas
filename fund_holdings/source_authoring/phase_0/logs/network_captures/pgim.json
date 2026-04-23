@@ -1,0 +1,115 @@
+{
+  "sponsor": "pgim",
+  "host": "www.pgim.com",
+  "base_path": "/investments/etf/{ticker_lower}",
+  "probe_tickers": [
+    "PULS",
+    "PAAA"
+  ],
+  "xhrs_by_ticker": {
+    "PULS": {
+      "count": 21,
+      "top_scored": [
+        [
+          "https://www.pgim.com/libs/granite/csrf/token.json",
+          1
+        ],
+        [
+          "https://cdn.cookielaw.org/consent/d5fc2099-7bc2-4f4f-8834-ad514a7ef9d8/d5fc2099-7bc2-4f4f-8834-ad514a7ef9d8.json",
+          1
+        ],
+        [
+          "https://cdn.cookielaw.org/consent/d5fc2099-7bc2-4f4f-8834-ad514a7ef9d8/019a2aef-e499-7890-81d4-edc25a87a3af/en.json",
+          1
+        ],
+        [
+          "https://cdn.cookielaw.org/scripttemplates/202601.2.0/assets/otFlat.json",
+          1
+        ],
+        [
+          "https://cdn.cookielaw.org/scripttemplates/202601.2.0/assets/otPcCenter.json",
+          1
+        ],
+        [
+          "https://pgim.piwik.pro/703ba9db-a60c-490b-a2eb-5b1ed6380553/privacy-widgets.json",
+          1
+        ]
+      ],
+      "all_sample": [
+        "https://www.pgim.com/libs/granite/csrf/token.json",
+        "https://dpm.demdex.net/id?d_visid_ver=5.5.0&d_fieldgroup=MC&d_rtbd=json&d_ver=2&d_orgid=A3F5A8DC5886052D0A495CC3%40AdobeOrg&d_nsid=0&ts=1776972421436",
+        "https://cdn.cookielaw.org/consent/d5fc2099-7bc2-4f4f-8834-ad514a7ef9d8/d5fc2099-7bc2-4f4f-8834-ad514a7ef9d8.json",
+        "https://geolocation.onetrust.com/cookieconsentpub/v1/geo/location",
+        "https://adobedc.demdex.net/ee/v1/identity/acquire?configId=5ed513bd-a142-4fbd-a8f3-596072d1c329&requestId=984d45f0-ec08-486d-852e-be441aac876c",
+        "https://www.pgim.com/iffearnd-not-Looke-me-When-the-vpon-Thath-Centle?d=www.pgim.com",
+        "https://cdn.cookielaw.org/consent/d5fc2099-7bc2-4f4f-8834-ad514a7ef9d8/019a2aef-e499-7890-81d4-edc25a87a3af/en.json",
+        "https://cdn.cookielaw.org/scripttemplates/202601.2.0/assets/otFlat.json",
+        "https://cdn.cookielaw.org/scripttemplates/202601.2.0/assets/otPcCenter.json",
+        "https://cdn.cookielaw.org/scripttemplates/202601.2.0/assets/otCommonStyles.css",
+        "https://api.ipify.org/?format=json",
+        "https://pagead2.googlesyndication.com/ccm/collect?rcb=9&frm=0&en=page_view&dl=https%3A%2F%2Fwww.pgim.com%2Finvestments%2Fetf%2Fpuls&scrsrc=www.googletagmanager.com&rnd=1839749918.1776972422&navt=n&npa=1&gdid=dYWJhMj&gtm=45fe64m0v9135075984za200xec&gcs=G100&gcd=13m3m3l2l5l1&dma_cps=a&dma=1&tag_exp=0~115616985~115938466~115938469~117266401~118128922&apve=1&apvf=f&apvc=1&tids=DC-2988838&tid=DC-2988838&tft=1776972422239&tfd=5851",
+        "https://pagead2.googlesyndication.com/pagead/conversion/982226099/?random=1776972422349&cv=11&fst=1776972422349&bg=ffffff&guid=ON&async=1&en=page_view&gtm=45be64m0v9180579374za200xec&gcs=G100&gcd=13m3mPl2l5l1&dma_cps=-&dma=1&tag_exp=0~115616985~115938466~115938469~117266400&u_w=1440&u_h=900&url=https%3A%2F%2Fwww.pgim.com%2Finvestments%2Fetf%2Fpuls&rcb=4&gtm_ee=1&frm=0&tiba=Institutional%20Investors&did=dYWJhMj&gdid=dYWJhMj&npa=1&pscdl=denied&label=9GyBCOa9oKEZELOprtQD&hn=www.googleadservices.com&uaa=x86&uab=64&uafvl=Not%253AA-Brand%3B99.0.0.0%7CHeadlessChrome%3B145.0.7632.6%7CChromium%3B145.0.7632.6&uamb=0&uam=&uap=Linux&uapv=&uaw=0&data=event%3Dgtag.config&category=acrcp_v1_512&fmt=8",
+        "https://pagead2.googlesyndication.com/ccm/collect?rcb=4&frm=0&en=page_view&dl=https%3A%2F%2Fwww.pgim.com%2Finvestments%2Fetf%2Fpuls&scrsrc=www.googletagmanager.com&rnd=1839749918.1776972422&navt=n&npa=1&did=dYWJhMj&gdid=dYWJhMj&gtm=45be64m0v9180579374za200xec&gcs=G100&gcd=13m3mPl2l5l1&dma_cps=-&dma=1&tag_exp=0~115616985~115938466~115938469~117266400&apve=1&apvf=f&apvc=0&tids=AW-982226099&tid=AW-982226099&tft=1776972422381&tfd=5992",
+        "https://pagead2.googlesyndication.com/pagead/conversion/986939945/?random=1776972422455&cv=11&fst=1776972422455&bg=ffffff&guid=ON&async=1&en=page_view&gtm=45be64m0v897598071za200xec&gcs=G100&gcd=13m3mPl2l5l1&dma_cps=-&dma=1&tag_exp=0~115616985~115938466~115938468~117266401~117384405~118463262&u_w=1440&u_h=900&url=https%3A%2F%2Fwww.pgim.com%2Finvestments%2Fetf%2Fpuls&rcb=14&gtm_ee=1&frm=0&tiba=Institutional%20Investors&did=dYWJhMj&gdid=dYWJhMj&npa=1&pscdl=denied&label=SLEcCI6OmZ4ZEKmEztYD&hn=www.googleadservices.com&uaa=x86&uab=64&uafvl=Not%253AA-Brand%3B99.0.0.0%7CHeadlessChrome%3B145.0.7632.6%7CChromium%3B145.0.7632.6&uamb=0&uam=&uap=Linux&uapv=&uaw=0&data=event%3Dgtag.config&category=acrcp_v1_512&fmt=8",
+        "https://pagead2.googlesyndication.com/ccm/collect?rcb=14&frm=0&en=page_view&dl=https%3A%2F%2Fwww.pgim.com%2Finvestments%2Fetf%2Fpuls&scrsrc=www.googletagmanager.com&rnd=1839749918.1776972422&navt=n&npa=1&did=dYWJhMj&gdid=dYWJhMj&gtm=45be64m0v897598071za200xec&gcs=G100&gcd=13m3mPl2l5l1&dma_cps=-&dma=1&tag_exp=0~115616985~115938466~115938468~117266401~117384405~118463262&apve=1&apvf=f&apvc=0&tids=AW-986939945&tid=AW-986939945&tft=1776972422490&tfd=6102",
+        "https://pgim.piwik.pro/703ba9db-a60c-490b-a2eb-5b1ed6380553/privacy-widgets.json",
+        "https://a.clarity.ms/collect",
+        "https://a.clarity.ms/collect",
+        "https://bf02275nvn.bf.dynatrace.com/bf?type=js3&sn=v_4_srv_1_sn_O3670RLVMT2T26EIHVBL5LBS376IO06B_perc_100000_ol_0_mul_1_app-3A57c6f3b8692d24e1_1&svrid=1&flavor=cors&vi=UVBKOCEDNLFAHEFABVFCFHUSKTERBVMK-0&modifiedSince=1776869339828&bp=3&app=f8cc81f9c3859a49&crc=286256196&en=brz4u4kt&end=1",
+        "https://a.clarity.ms/collect"
+      ]
+    },
+    "PAAA": {
+      "count": 21,
+      "top_scored": [
+        [
+          "https://www.pgim.com/libs/granite/csrf/token.json",
+          1
+        ],
+        [
+          "https://cdn.cookielaw.org/consent/d5fc2099-7bc2-4f4f-8834-ad514a7ef9d8/d5fc2099-7bc2-4f4f-8834-ad514a7ef9d8.json",
+          1
+        ],
+        [
+          "https://cdn.cookielaw.org/consent/d5fc2099-7bc2-4f4f-8834-ad514a7ef9d8/019a2aef-e499-7890-81d4-edc25a87a3af/en.json",
+          1
+        ],
+        [
+          "https://cdn.cookielaw.org/scripttemplates/202601.2.0/assets/otFlat.json",
+          1
+        ],
+        [
+          "https://cdn.cookielaw.org/scripttemplates/202601.2.0/assets/otPcCenter.json",
+          1
+        ],
+        [
+          "https://pgim.piwik.pro/703ba9db-a60c-490b-a2eb-5b1ed6380553/privacy-widgets.json",
+          1
+        ]
+      ],
+      "all_sample": [
+        "https://www.pgim.com/libs/granite/csrf/token.json",
+        "https://dpm.demdex.net/id?d_visid_ver=5.5.0&d_fieldgroup=MC&d_rtbd=json&d_ver=2&d_orgid=A3F5A8DC5886052D0A495CC3%40AdobeOrg&d_nsid=0&ts=1776972431185",
+        "https://cdn.cookielaw.org/consent/d5fc2099-7bc2-4f4f-8834-ad514a7ef9d8/d5fc2099-7bc2-4f4f-8834-ad514a7ef9d8.json",
+        "https://geolocation.onetrust.com/cookieconsentpub/v1/geo/location",
+        "https://adobedc.demdex.net/ee/v1/identity/acquire?configId=5ed513bd-a142-4fbd-a8f3-596072d1c329&requestId=60f7769b-4115-45e0-9fbb-8ed9a22c9183",
+        "https://www.pgim.com/iffearnd-not-Looke-me-When-the-vpon-Thath-Centle?d=www.pgim.com",
+        "https://cdn.cookielaw.org/consent/d5fc2099-7bc2-4f4f-8834-ad514a7ef9d8/019a2aef-e499-7890-81d4-edc25a87a3af/en.json",
+        "https://cdn.cookielaw.org/scripttemplates/202601.2.0/assets/otFlat.json",
+        "https://cdn.cookielaw.org/scripttemplates/202601.2.0/assets/otPcCenter.json",
+        "https://cdn.cookielaw.org/scripttemplates/202601.2.0/assets/otCommonStyles.css",
+        "https://api.ipify.org/?format=json",
+        "https://pagead2.googlesyndication.com/pagead/conversion/986939945/?random=1776972432030&cv=11&fst=1776972432030&bg=ffffff&guid=ON&async=1&en=page_view&gtm=45be64m0v897598071za200xec&gcs=G100&gcd=13m3mPl2l5l1&dma_cps=-&dma=1&tag_exp=0~115938465~115938469~117266400&u_w=1440&u_h=900&url=https%3A%2F%2Fwww.pgim.com%2Finvestments%2Fetf%2Fpaaa&rcb=17&gtm_ee=1&frm=0&tiba=Institutional%20Investors&did=dYWJhMj&gdid=dYWJhMj&npa=1&pscdl=denied&label=SLEcCI6OmZ4ZEKmEztYD&hn=www.googleadservices.com&uaa=x86&uab=64&uafvl=Not%253AA-Brand%3B99.0.0.0%7CHeadlessChrome%3B145.0.7632.6%7CChromium%3B145.0.7632.6&uamb=0&uam=&uap=Linux&uapv=&uaw=0&data=event%3Dgtag.config&category=acrcp_v1_512&fmt=8",
+        "https://pagead2.googlesyndication.com/ccm/collect?rcb=17&frm=0&en=page_view&dl=https%3A%2F%2Fwww.pgim.com%2Finvestments%2Fetf%2Fpaaa&scrsrc=www.googletagmanager.com&rnd=47271242.1776972432&navt=n&npa=1&did=dYWJhMj&gdid=dYWJhMj&gtm=45be64m0v897598071za200xec&gcs=G100&gcd=13m3mPl2l5l1&dma_cps=-&dma=1&tag_exp=0~115938465~115938469~117266400&apve=1&apvf=f&apvc=1&tids=AW-986939945&tid=AW-986939945&tft=1776972432057&tfd=5378",
+        "https://pagead2.googlesyndication.com/pagead/conversion/982226099/?random=1776972432110&cv=11&fst=1776972432110&bg=ffffff&guid=ON&async=1&en=page_view&gtm=45be64m0v9180579374za200xec&gcs=G100&gcd=13m3mPl2l5l1&dma_cps=-&dma=1&tag_exp=0~115938465~115938469~117266400~118463262&u_w=1440&u_h=900&url=https%3A%2F%2Fwww.pgim.com%2Finvestments%2Fetf%2Fpaaa&rcb=7&gtm_ee=1&frm=0&tiba=Institutional%20Investors&did=dYWJhMj&gdid=dYWJhMj&npa=1&pscdl=denied&label=9GyBCOa9oKEZELOprtQD&hn=www.googleadservices.com&uaa=x86&uab=64&uafvl=Not%253AA-Brand%3B99.0.0.0%7CHeadlessChrome%3B145.0.7632.6%7CChromium%3B145.0.7632.6&uamb=0&uam=&uap=Linux&uapv=&uaw=0&data=event%3Dgtag.config&category=acrcp_v1_512&fmt=8",
+        "https://pagead2.googlesyndication.com/ccm/collect?rcb=7&frm=0&en=page_view&dl=https%3A%2F%2Fwww.pgim.com%2Finvestments%2Fetf%2Fpaaa&scrsrc=www.googletagmanager.com&rnd=47271242.1776972432&navt=n&npa=1&did=dYWJhMj&gdid=dYWJhMj&gtm=45be64m0v9180579374za200xec&gcs=G100&gcd=13m3mPl2l5l1&dma_cps=-&dma=1&tag_exp=0~115938465~115938469~117266400~118463262&apve=1&apvf=f&apvc=0&tids=AW-982226099&tid=AW-982226099&tft=1776972432145&tfd=5465",
+        "https://pagead2.googlesyndication.com/ccm/collect?rcb=19&frm=0&en=page_view&dl=https%3A%2F%2Fwww.pgim.com%2Finvestments%2Fetf%2Fpaaa&scrsrc=www.googletagmanager.com&rnd=47271242.1776972432&navt=n&npa=1&gdid=dYWJhMj&gtm=45fe64m0v9135075984za200xec&gcs=G100&gcd=13m3m3l2l5l1&dma_cps=a&dma=1&tag_exp=0~115938465~115938469~117266401~118463262&apve=1&apvf=f&apvc=0&tids=DC-2988838&tid=DC-2988838&tft=1776972432176&tfd=5496",
+        "https://pgim.piwik.pro/703ba9db-a60c-490b-a2eb-5b1ed6380553/privacy-widgets.json",
+        "https://a.clarity.ms/collect",
+        "https://a.clarity.ms/collect",
+        "https://bf02275nvn.bf.dynatrace.com/bf?type=js3&sn=v_4_srv_2_sn_DLP04O5V0O99CBBT6U9PPAI1DI2CGAMA_perc_100000_ol_0_mul_1_app-3A57c6f3b8692d24e1_1&svrid=2&flavor=cors&vi=HGTMEREUHFFRFKCUCLCKMVKPDMCJNTTF-0&modifiedSince=1776869339828&bp=3&app=f8cc81f9c3859a49&crc=1978106387&en=brz4u4kt&end=1",
+        "https://a.clarity.ms/collect"
+      ]
+    }
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "sponsor": "northern_trust",
+  "host": "flexshares.com",
+  "base_path": "/funds/{ticker_lower}",
+  "probe_tickers": [
+    "GUNR",
+    "NFRA"
+  ],
+  "xhrs_by_ticker": {
+    "GUNR": {
+      "count": 1,
+      "top_scored": [],
+      "all_sample": [
+        "__error__:Error:Page.goto: net::ERR_HTTP2_PROTOCOL_ERROR at https://flexshares.com/funds/gunr\nCa"
+      ]
+    },
+    "NFRA": {
+      "count": 1,
+      "top_scored": [],
+      "all_sample": [
+        "__error__:Error:Page.goto: net::ERR_HTTP2_PROTOCOL_ERROR at https://flexshares.com/funds/nfra\nCa"
+      ]
+    }
+  }
+}

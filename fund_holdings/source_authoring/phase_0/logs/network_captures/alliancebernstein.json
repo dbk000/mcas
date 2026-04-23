@@ -1,0 +1,21 @@
+{
+  "sponsor": "alliancebernstein",
+  "host": "www.abfunds.com",
+  "base_path": "/link/en/etf/{ticker_lower}-overview",
+  "probe_tickers": [
+    "YEAR",
+    "NYM"
+  ],
+  "xhrs_by_ticker": {
+    "YEAR": {
+      "count": 0,
+      "top_scored": [],
+      "all_sample": []
+    },
+    "NYM": {
+      "count": 0,
+      "top_scored": [],
+      "all_sample": []
+    }
+  }
+}

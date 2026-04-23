@@ -1,0 +1,95 @@
+{
+  "sponsor": "pacer",
+  "host": "www.paceretfs.com",
+  "base_path": "/products/{ticker_lower}",
+  "probe_tickers": [
+    "PTNQ",
+    "COWG"
+  ],
+  "xhrs_by_ticker": {
+    "PTNQ": {
+      "count": 23,
+      "top_scored": [
+        [
+          "https://www.paceretfs.com/products/holdings/PTNQ",
+          6
+        ],
+        [
+          "https://www.paceretfs.com/products/holdings-count/PTNQ",
+          6
+        ],
+        [
+          "https://entitlements.jwplayer.com/atVvJDpoEeeSdAY3v_uBow.json",
+          1
+        ]
+      ],
+      "all_sample": [
+        "https://www.google.com/ccm/collect?rcb=13&frm=0&en=page_view&dl=https%3A%2F%2Fwww.paceretfs.com%2Fproducts%2Fptnq&scrsrc=www.googletagmanager.com&rnd=1222054863.1776972371&dt=PTNQ%20%7C%20Pacer%20ETFs&auid=1544222026.1776972371&navt=n&npa=1&gtm=45be64m0v874322468za200zd874322468xec&gcd=13l3l3l2l1l1&dma_cps=a&dma=1&tag_exp=0~115938465~115938468~117266401~117384405~118167060&apve=1&apvf=f&apvc=1&tids=AW-946616721&tid=AW-946616721&tft=1776972370663&tfd=534",
+        "https://region1.analytics.google.com/g/collect?v=2&tid=G-21ZYXXVE7H&gtm=45je64m0v879123555z89192799546za20gzb9192799546zd9192799546&_p=1776972370265&_gaz=1&gcd=13l3l3l2l1l1&npa=1&dma_cps=a&dma=1&_eu=EAAAAGA&are=1&cid=2029125651.1776972371&frm=0&ir=1&pscdl=noapi&rcb=2&sr=1440x900&uaa=x86&uab=64&uafvl=Not%253AA-Brand%3B99.0.0.0%7CHeadlessChrome%3B145.0.7632.6%7CChromium%3B145.0.7632.6&uam=&uamb=0&uap=Linux&uapv=&uaw=0&ul=en-us&_s=1&tag_exp=0~115938465~115938468~117266401~117384405~117512543~117625642&sid=1776972370&sct=1&seg=0&dl=https%3A%2F%2Fwww.paceretfs.com%2Fproducts%2Fptnq&dt=PTNQ%20%7C%20Pacer%20ETFs&en=page_view&_fv=1&_nsi=1&_ss=1&tfd=671",
+        "https://entitlements.jwplayer.com/atVvJDpoEeeSdAY3v_uBow.json",
+        "https://www.paceretfs.com/products/dynamic-fund-details-eu",
+        "https://www.paceretfs.com/user-refresh/cart",
+        "https://www.paceretfs.com/nc/recent-performance/ptnq",
+        "https://www.paceretfs.com/nc/distributions/118",
+        "https://www.paceretfs.com/nc/pd_fund/ptnq",
+        "https://www.paceretfs.com/nc/product-materials/ptnq",
+        "https://www.paceretfs.com/products/tickers-ajax",
+        "https://www.paceretfs.com/products/holdings/PTNQ",
+        "https://www.paceretfs.com/nc/sector-breakdown-rows/ptnq",
+        "https://www.paceretfs.com/products/dynamic-fund-details",
+        "https://www.paceretfs.com/products/30-day-median-bid/PTNQ",
+        "https://www.paceretfs.com/products/holdings-count/PTNQ",
+        "https://www.google-analytics.com/j/collect?v=1&_v=j102&a=1498261616&t=pageview&_s=1&dl=https%3A%2F%2Fwww.paceretfs.com%2Fproducts%2Fptnq&ul=en-us&dt=PTNQ%20%7C%20Pacer%20ETFs&sr=1440x900&vp=1440x900&_u=IADAAEABAAAAACAAI~&jid=1487136495&gjid=324569576&cid=2029125651.1776972371&tid=UA-56770488-1&_gid=1958379364.1776972371&_r=1&_slc=1&z=1791946071",
+        "https://px.ads.linkedin.com/attribution_trigger?pid=231748&time=1776972371412&url=https%3A%2F%2Fwww.paceretfs.com%2Fproducts%2Fptnq",
+        "https://www.paceretfs.com/cdn-cgi/challenge-platform/h/b/jsd/oneshot/0b8fb825cb67/0.061696825278882095:1776968958:KgicM8c8BWOI4NxYsYAXjZkcosrU-C6eL3vZKBZzw-A/9f0f4221bf288ed4",
+        "https://a.clarity.ms/collect",
+        "https://px.ads.linkedin.com/wa/?medium=fetch&fmt=g",
+        "https://www.paceretfs.com/token-refresh",
+        "https://a.clarity.ms/collect",
+        "https://a.clarity.ms/collect"
+      ]
+    },
+    "COWG": {
+      "count": 23,
+      "top_scored": [
+        [
+          "https://www.paceretfs.com/products/holdings/COWG",
+          6
+        ],
+        [
+          "https://www.paceretfs.com/products/holdings-count/COWG",
+          6
+        ],
+        [
+          "https://entitlements.jwplayer.com/atVvJDpoEeeSdAY3v_uBow.json",
+          1
+        ]
+      ],
+      "all_sample": [
+        "https://www.google.com/ccm/collect?rcb=16&frm=0&en=page_view&dl=https%3A%2F%2Fwww.paceretfs.com%2Fproducts%2Fcowg&scrsrc=www.googletagmanager.com&rnd=1834802476.1776972377&dt=COWG%20%7C%20Pacer%20ETFs&auid=367893770.1776972377&navt=n&npa=1&gtm=45be64m2h2v874322468za200zd874322468xec&gcd=13l3l3l2l1l1&dma_cps=a&dma=1&tag_exp=0~115938465~115938469~117266401~117384406&apve=1&apvf=f&apvc=1&tids=AW-946616721&tid=AW-946616721&tft=1776972377498&tfd=1843",
+        "https://region1.analytics.google.com/g/collect?v=2&tid=G-21ZYXXVE7H&gtm=45je64m0v879123555z89192799546za20gzb9192799546zd9192799546&_p=1776972377248&_gaz=1&gcd=13l3l3l2l1l1&npa=1&dma_cps=a&dma=1&_eu=EAAAAGA&are=1&cid=1839889916.1776972378&frm=0&ir=1&pscdl=noapi&rcb=16&sr=1440x900&uaa=x86&uab=64&uafvl=Not%253AA-Brand%3B99.0.0.0%7CHeadlessChrome%3B145.0.7632.6%7CChromium%3B145.0.7632.6&uam=&uamb=0&uap=Linux&uapv=&uaw=0&ul=en-us&_s=1&tag_exp=0~115616986~115938465~115938468~117266401~117512542~118128922&sid=1776972377&sct=1&seg=0&dl=https%3A%2F%2Fwww.paceretfs.com%2Fproducts%2Fcowg&dt=COWG%20%7C%20Pacer%20ETFs&en=page_view&_fv=1&_nsi=1&_ss=1&tfd=1942",
+        "https://entitlements.jwplayer.com/atVvJDpoEeeSdAY3v_uBow.json",
+        "https://www.paceretfs.com/products/dynamic-fund-details-eu",
+        "https://www.paceretfs.com/user-refresh/cart",
+        "https://www.paceretfs.com/nc/recent-performance/cowg",
+        "https://www.paceretfs.com/nc/distributions/1171",
+        "https://www.paceretfs.com/nc/pd_fund/cowg",
+        "https://www.paceretfs.com/nc/product-materials/cowg",
+        "https://www.paceretfs.com/products/tickers-ajax",
+        "https://www.paceretfs.com/products/holdings/COWG",
+        "https://www.paceretfs.com/nc/sector-breakdown-rows/cowg",
+        "https://www.paceretfs.com/products/dynamic-fund-details",
+        "https://www.paceretfs.com/products/30-day-median-bid/COWG",
+        "https://www.paceretfs.com/products/holdings-count/COWG",
+        "https://www.google-analytics.com/j/collect?v=1&_v=j102&a=1806056080&t=pageview&_s=1&dl=https%3A%2F%2Fwww.paceretfs.com%2Fproducts%2Fcowg&ul=en-us&dt=COWG%20%7C%20Pacer%20ETFs&sr=1440x900&vp=1440x900&_u=IADAAEABAAAAACAAI~&jid=1412476379&gjid=1334331969&cid=1839889916.1776972378&tid=UA-56770488-1&_gid=223821440.1776972378&_r=1&_slc=1&z=1452539470",
+        "https://px.ads.linkedin.com/attribution_trigger?pid=231748&time=1776972378318&url=https%3A%2F%2Fwww.paceretfs.com%2Fproducts%2Fcowg",
+        "https://www.paceretfs.com/cdn-cgi/challenge-platform/h/b/jsd/oneshot/0b8fb825cb67/0.061696825278882095:1776968958:KgicM8c8BWOI4NxYsYAXjZkcosrU-C6eL3vZKBZzw-A/9f0f424448b9dc89",
+        "https://a.clarity.ms/collect",
+        "https://px.ads.linkedin.com/wa/?medium=fetch&fmt=g",
+        "https://www.paceretfs.com/token-refresh",
+        "https://a.clarity.ms/collect",
+        "https://a.clarity.ms/collect"
+      ]
+    }
+  }
+}

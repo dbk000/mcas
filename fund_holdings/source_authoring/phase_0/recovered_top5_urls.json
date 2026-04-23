@@ -1,0 +1,59 @@
+{
+  "invesco": {
+    "RSP": {
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V357/holdings/fund?idType=cusip&productType=ETF",
+      "format": "json",
+      "cusip": "46137V357"
+    },
+    "QQQM": {
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46138G649/holdings/fund?idType=cusip&productType=ETF",
+      "format": "json",
+      "cusip": "46138G649"
+    },
+    "SPHQ": {
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V241/holdings/fund?idType=cusip&productType=ETF",
+      "format": "json",
+      "cusip": "46137V241"
+    }
+  },
+  "vaneck": {
+    "SMH": {
+      "verify_failed": "no_pageid_found"
+    },
+    "GDX": {
+      "verify_failed": "no_pageid_found"
+    },
+    "MOAT": {
+      "verify_failed": "no_pageid_found"
+    }
+  },
+  "dimensional": {
+    "DFAC": {
+      "verify_failed": "no_candidate_worked"
+    },
+    "DFUS": {
+      "verify_failed": "no_candidate_worked"
+    },
+    "DFUV": {
+      "verify_failed": "no_candidate_worked"
+    }
+  },
+  "jpmorgan": {
+    "JEPI": {
+      "verify_failed": "no_holdings_xhr",
+      "xhr_count": 0
+    },
+    "JPST": {
+      "verify_failed": "no_holdings_xhr",
+      "xhr_count": 0
+    }
+  },
+  "fidelity": {
+    "FBND": {
+      "verify_failed": "playwright_error:TimeoutError"
+    },
+    "FTEC": {
+      "verify_failed": "playwright_error:TimeoutError"
+    }
+  }
+}

@@ -1,0 +1,173 @@
+{
+  "vaneck": {
+    "SMH": {
+      "page_url": "https://www.vaneck.com/us/en/investments/smh/holdings/",
+      "total_captures": 12,
+      "verified": [
+        {
+          "url": "https://www.vaneck.com/Main/FundListingUs/GetFundData",
+          "format": "json",
+          "bytes": 12602,
+          "info": {
+            "path": ".Result.Headers",
+            "keys": [
+              "Name",
+              "Sortable",
+              "Template",
+              "Selected",
+              "Link",
+              "HeaderClassName",
+              "ClassName",
+              "DisplayName",
+              "SubHeaders",
+              "DesktopOnly",
+              "MobileOnly",
+              "excludedCountries"
+            ],
+            "data_rows": 13
+          }
+        }
+      ]
+    },
+    "MOAT": {
+      "page_url": "https://www.vaneck.com/us/en/investments/moat/holdings/",
+      "total_captures": 14,
+      "verified": [
+        {
+          "url": "https://www.vaneck.com/Main/FundListingUs/GetFundData",
+          "format": "json",
+          "bytes": 12638,
+          "info": {
+            "path": ".Result.Headers",
+            "keys": [
+              "Name",
+              "Sortable",
+              "Template",
+              "Selected",
+              "Link",
+              "HeaderClassName",
+              "ClassName",
+              "DisplayName",
+              "SubHeaders",
+              "DesktopOnly",
+              "MobileOnly",
+              "excludedCountries"
+            ],
+            "data_rows": 13
+          }
+        }
+      ]
+    },
+    "GDX": {
+      "page_url": "https://www.vaneck.com/us/en/investments/gdx/holdings/",
+      "total_captures": 14,
+      "verified": [
+        {
+          "url": "https://www.vaneck.com/Main/FundListingUs/GetFundData",
+          "format": "json",
+          "bytes": 12586,
+          "info": {
+            "path": ".Result.Headers",
+            "keys": [
+              "Name",
+              "Sortable",
+              "Template",
+              "Selected",
+              "Link",
+              "HeaderClassName",
+              "ClassName",
+              "DisplayName",
+              "SubHeaders",
+              "DesktopOnly",
+              "MobileOnly",
+              "excludedCountries"
+            ],
+            "data_rows": 13
+          }
+        }
+      ]
+    }
+  },
+  "dimensional": {
+    "DFAC": {
+      "page_url": "https://us.dimensional.com/funds/dfac",
+      "total_captures": 11,
+      "verified": [
+        {
+          "url": "https://www.dimensional.com/investment-api/portfolio-disclosures",
+          "format": "json",
+          "bytes": 17194,
+          "info": {
+            "path": ".Disclosures.DataLensDisclosures.periodicReturns",
+            "keys": [
+              "portfolioNumbers",
+              "name",
+              "text"
+            ],
+            "data_rows": 10
+          }
+        }
+      ]
+    },
+    "DFUS": {
+      "page_url": "https://us.dimensional.com/funds/dfus",
+      "total_captures": 11,
+      "verified": [
+        {
+          "url": "https://www.dimensional.com/investment-api/portfolio-disclosures",
+          "format": "json",
+          "bytes": 17194,
+          "info": {
+            "path": ".Disclosures.DataLensDisclosures.periodicReturns",
+            "keys": [
+              "portfolioNumbers",
+              "name",
+              "text"
+            ],
+            "data_rows": 10
+          }
+        }
+      ]
+    },
+    "DFUV": {
+      "page_url": "https://us.dimensional.com/funds/dfuv",
+      "total_captures": 11,
+      "verified": [
+        {
+          "url": "https://www.dimensional.com/investment-api/portfolio-disclosures",
+          "format": "json",
+          "bytes": 17764,
+          "info": {
+            "path": ".Disclosures.DataLensDisclosures.periodicReturns",
+            "keys": [
+              "portfolioNumbers",
+              "name",
+              "text"
+            ],
+            "data_rows": 10
+          }
+        }
+      ]
+    }
+  },
+  "jpmorgan": {
+    "JEPI": {
+      "page_url": "https://am.jpmorgan.com/us/en/asset-management/adv/products/jepi-etf-shares",
+      "total_captures": 12,
+      "verified": []
+    },
+    "JPST": {
+      "page_url": "https://am.jpmorgan.com/us/en/asset-management/adv/products/jpst-etf-shares",
+      "total_captures": 11,
+      "verified": []
+    }
+  },
+  "fidelity": {
+    "FTEC": {
+      "error": "TimeoutError:Page.goto: Timeout 30000ms exceeded.\nCall log:\n  - navigating to \"https://fundresearch.fidelity.com/etfs/composition/FTEC\", waiting until \"domcontentl"
+    },
+    "FDVV": {
+      "error": "TimeoutError:Page.goto: Timeout 30000ms exceeded.\nCall log:\n  - navigating to \"https://fundresearch.fidelity.com/etfs/composition/FDVV\", waiting until \"domcontentl"
+    }
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "sponsor": "xtrackers",
+  "host": "etfus.dws.com",
+  "base_path": "/en-us/{TICKER}",
+  "probe_tickers": [
+    "DBEF",
+    "HYLB"
+  ],
+  "xhrs_by_ticker": {
+    "DBEF": {
+      "count": 1,
+      "top_scored": [],
+      "all_sample": [
+        "__error__:Error:Page.goto: net::ERR_NAME_NOT_RESOLVED at https://etfus.dws.com/en-us/DBEF\nCall l"
+      ]
+    },
+    "HYLB": {
+      "count": 1,
+      "top_scored": [],
+      "all_sample": [
+        "__error__:Error:Page.goto: net::ERR_NAME_NOT_RESOLVED at https://etfus.dws.com/en-us/HYLB\nCall l"
+      ]
+    }
+  }
+}

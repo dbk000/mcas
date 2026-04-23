@@ -1,0 +1,17 @@
+{
+  "sponsor": "fidelity",
+  "ticker_captures": {
+    "FBND": {
+      "ticker": "FBND",
+      "url": "https://fundresearch.fidelity.com/etfs/summary/FBND",
+      "steps": [],
+      "error": "TimeoutError:Page.goto: Timeout 25000ms exceeded.\nCall log:\n  - navigating to \"https://fundresearch.fidelity.com/etfs/summary/FBND\", waiting until \"domcontentloade"
+    },
+    "FTEC": {
+      "ticker": "FTEC",
+      "url": "https://fundresearch.fidelity.com/etfs/summary/FTEC",
+      "steps": [],
+      "error": "TimeoutError:Page.goto: Timeout 25000ms exceeded.\nCall log:\n  - navigating to \"https://fundresearch.fidelity.com/etfs/summary/FTEC\", waiting until \"domcontentloade"
+    }
+  }
+}

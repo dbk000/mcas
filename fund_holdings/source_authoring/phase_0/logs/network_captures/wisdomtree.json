@@ -1,0 +1,71 @@
+{
+  "sponsor": "wisdomtree",
+  "host": "www.wisdomtree.com",
+  "base_path": "/investments/etfs/equity/{ticker_lower}",
+  "probe_tickers": [
+    "USFR",
+    "UNIY"
+  ],
+  "xhrs_by_ticker": {
+    "USFR": {
+      "count": 19,
+      "top_scored": [
+        [
+          "https://www.wisdomtree.com/api/sitecore/geoapi/getisocode",
+          1
+        ]
+      ],
+      "all_sample": [
+        "https://www.google.com/ccm/collect?rcb=17&frm=0&en=page_view&dl=https%3A%2F%2Fwww.wisdomtree.com%2Finvestments%2Fetfs%2Fequity%2Fusfr&scrsrc=www.googletagmanager.com&rnd=1279865558.1776972355&dt=Page%20Not%20Found%20%7C%20WisdomTree&auid=1708120609.1776972355&navt=n&npa=1&gtm=45be64m0v9103090781za200zd9103090781xec&gcd=13l3lPl2l1l1&dma_cps=a&dma=1&tag_exp=0~115938465~115938469~117266401~117884344&apve=1&apvf=f&apvc=1&tids=AW-1064531831&tid=AW-1064531831&tft=1776972355510&tfd=956",
+        "https://pagead2.googlesyndication.com/ccm/collect?rcb=16&frm=0&ae=g&en=page_view&dl=https%3A%2F%2Fwww.wisdomtree.com%2Finvestments%2Fetfs%2Fequity%2Fusfr&scrsrc=www.googletagmanager.com&rnd=1279865558.1776972355&navt=n&npa=1&ep.ads_data_redaction=0&gtm=45He64m0v72074391za200zd72074391xea&gcs=G100&gcd=13p3p3l2l5l1&dma_cps=a&dma=1&tag_exp=0~115616986~115938465~115938469~117266400~118167058&apve=1&apvf=f&apvc=0&tft=1776972356325&tfd=1771",
+        "https://pagead2.googlesyndication.com/ccm/collect?rcb=7&frm=0&en=page_view&dl=https%3A%2F%2Fwww.wisdomtree.com%2Finvestments%2Fetfs%2Fequity%2Fusfr&scrsrc=www.googletagmanager.com&rnd=1279865558.1776972355&navt=n&npa=1&gtm=45fe64m0v9189977671z872074391za20gzb72074391zd72074391xec&gcs=G100&gcd=13p3p3l2l5l1&dma_cps=a&dma=1&tag_exp=0~115616986~115938465~115938468~117266401&apve=1&apvf=f&apvc=0&tids=DC-14106787&tid=DC-14106787&tft=1776972356365&tfd=1811",
+        "https://px.ads.linkedin.com/attribution_trigger?pid=42198&time=1776972356368&url=https%3A%2F%2Fwww.wisdomtree.com%2Finvestments%2Fetfs%2Fequity%2Fusfr",
+        "https://pixels.spotify.com/v1/config/4a9a4661a1f0461d8348ba3abee4ccda",
+        "https://pixels.spotify.com/v1/ingest",
+        "https://pixel-config.reddit.com/pixels/t2_6ihdsljs/config",
+        "https://www.wisdomtree.com/api/sitecore/geoapi/getisocode",
+        "https://www.wisdomtree.com/cdn-cgi/challenge-platform/h/b/jsd/oneshot/0b8fb825cb67/0.061696825278882095:1776968958:KgicM8c8BWOI4NxYsYAXjZkcosrU-C6eL3vZKBZzw-A/9f0f41c05cf2037c",
+        "https://px.ads.linkedin.com/wa/?medium=fetch&fmt=g",
+        "https://a.clarity.ms/collect",
+        "https://people.api.boomtrain.com/identify/resolve?data=eyJjb29raWUiOnsiYnNpbiI6IiJ9LCJxdWVyeXN0cmluZyI6e30sImV4dGVybmFsX2lkcyI6eyJ6eW5jIjoiZTA5Yjg1NzEtNWE2My00N2FmLWFjZmEtNWQ3YjE5ODc5NDhmOjE3NzY5NzIzNTYuNzkwOTc4NyJ9fQ%3D%3D&site_id=wisdomtree",
+        "https://region1.google-analytics.com/g/collect?v=2&tid=G-RR3Q5ELBCB&gtm=45je64m0v9102373126z872074391za20gzb72074391zd72074391&_p=1776972355433&gcs=G100&gcd=13p3pPl2l5l1&npa=1&dma_cps=-&dma=1&are=1&cid=385305763.1776972357&frm=0&pscdl=denied&rcb=6&sr=1440x900&uaa=x86&uab=64&uafvl=Not%253AA-Brand%3B99.0.0.0%7CHeadlessChrome%3B145.0.7632.6%7CChromium%3B145.0.7632.6&uam=&uamb=0&uap=Linux&uapv=&uaw=0&ul=en-us&_s=1&tag_exp=0~115938465~115938469~117266400~117512543&uid=&sid=1776972357&sct=1&seg=0&dl=https%3A%2F%2Fwww.wisdomtree.com%2Finvestments%2Fetfs%2Fequity%2Fusfr&dt=Page%20Not%20Found%20%7C%20WisdomTree&_tu=aA&en=page_view&_fv=1&_nsi=1&_ss=1&ep.page_region=us&ep.content_group=brand&ep.auth_status=logged%20out&ep.user_type=&ep.page_type=us%7Cbrand&ep.page_name=wisdomtree.com%7Cnot-found&ep.website_type=non-corporate&up.user_type=&tfd=2535",
+        "https://www.google-analytics.com/j/collect?v=1&_v=j102&aip=1&a=1781050856&t=pageview&_s=1&dl=https%3A%2F%2Fwww.wisdomtree.com%2Finvestments%2Fetfs%2Fequity%2Fusfr&ul=en-us&dt=Page%20Not%20Found%20%7C%20WisdomTree&sr=1440x900&vp=1440x900&_u=aGBAAEIhAAAAACAAI~&jid=1473519570&gjid=1665409371&cid=1975519876.1776972357&tid=UA-870697-9&_gid=2134675873.1776972357&_r=1&_slc=1&cm1=1&cd1=wisdomtree.com%7Cnot-found&cd2=us%7Cbrand&cd3=logged%20out&cd17=i_9C189D27FB8E2C7CB21CC068F14AEA6B&cd19=default&cd20=default&z=354136801",
+        "https://a.clarity.ms/collect",
+        "https://events.api.boomtrain.com/event/track",
+        "https://www.wisdomtree.com/cdn-cgi/rum?",
+        "https://rum-collector-2.pingdom.net/img/beacon.gif?id=5d13c91b14cfaa0008000007&sAW=1440&sAH=900&bIW=1440&bIH=900&pD=24&dPR=1&or=landscape-primary&nT=0&rC=0&nS=0&cS=2&cE=52&dLE=2&dLS=1&fS=0&hS=23&rE=-1&rS=-1&reS=53&resS=870&resE=1053&uEE=-1&uES=-1&dL=873&dI=2116&dCLES=2118&dCLEE=2143&dC=4574&lES=4574&lEE=4575&s=nt&title=Page%20Not%20Found%20%7C%20WisdomTree&path=https%3A%2F%2Fwww.wisdomtree.com%2Finvestments%2Fetfs%2Fequity%2Fusfr&ref=&sId=unnqny0l&sST=1776972359&sIS=1&rV=0&v=1.4.1",
+        "https://a.clarity.ms/collect"
+      ]
+    },
+    "UNIY": {
+      "count": 19,
+      "top_scored": [
+        [
+          "https://www.wisdomtree.com/api/sitecore/geoapi/getisocode",
+          1
+        ]
+      ],
+      "all_sample": [
+        "https://www.google.com/ccm/collect?rcb=6&frm=0&en=page_view&dl=https%3A%2F%2Fwww.wisdomtree.com%2Finvestments%2Fetfs%2Fequity%2Funiy&scrsrc=www.googletagmanager.com&rnd=1243908238.1776972363&dt=Page%20Not%20Found%20%7C%20WisdomTree&auid=1510337651.1776972363&navt=n&npa=1&gtm=45be64m0v9103090781za200zd9103090781xec&gcd=13l3lPl2l1l1&dma_cps=a&dma=1&tag_exp=0~115938466~115938469~117266400~118167060~118463261&apve=1&apvf=f&apvc=1&tids=AW-1064531831&tid=AW-1064531831&tft=1776972363322&tfd=956",
+        "https://pagead2.googlesyndication.com/ccm/collect?rcb=6&frm=0&ae=g&en=page_view&dl=https%3A%2F%2Fwww.wisdomtree.com%2Finvestments%2Fetfs%2Fequity%2Funiy&scrsrc=www.googletagmanager.com&rnd=1243908238.1776972363&navt=n&npa=1&ep.ads_data_redaction=0&gtm=45He64m0v72074391za200zd72074391xea&gcs=G100&gcd=13p3p3l2l5l1&dma_cps=a&dma=1&tag_exp=0~115616985~115938466~115938469~117266401&apve=1&apvf=f&apvc=0&tft=1776972364172&tfd=1806",
+        "https://pagead2.googlesyndication.com/ccm/collect?rcb=4&frm=0&en=page_view&dl=https%3A%2F%2Fwww.wisdomtree.com%2Finvestments%2Fetfs%2Fequity%2Funiy&scrsrc=www.googletagmanager.com&rnd=1243908238.1776972363&navt=n&npa=1&gtm=45fe64m0v9189977671z872074391za20gzb72074391zd72074391xec&gcs=G100&gcd=13p3p3l2l5l1&dma_cps=a&dma=1&tag_exp=0~115938466~115938469~117266400&apve=1&apvf=f&apvc=0&tids=DC-14106787&tid=DC-14106787&tft=1776972364200&tfd=1834",
+        "https://px.ads.linkedin.com/attribution_trigger?pid=42198&time=1776972364205&url=https%3A%2F%2Fwww.wisdomtree.com%2Finvestments%2Fetfs%2Fequity%2Funiy",
+        "https://pixels.spotify.com/v1/config/4a9a4661a1f0461d8348ba3abee4ccda",
+        "https://pixels.spotify.com/v1/ingest",
+        "https://pixel-config.reddit.com/pixels/t2_6ihdsljs/config",
+        "https://www.wisdomtree.com/api/sitecore/geoapi/getisocode",
+        "https://www.wisdomtree.com/cdn-cgi/challenge-platform/h/b/jsd/oneshot/0b8fb825cb67/0.061696825278882095:1776968958:KgicM8c8BWOI4NxYsYAXjZkcosrU-C6eL3vZKBZzw-A/9f0f41f13feed398",
+        "https://px.ads.linkedin.com/wa/?medium=fetch&fmt=g",
+        "https://people.api.boomtrain.com/identify/resolve?data=eyJjb29raWUiOnsiYnNpbiI6IiJ9LCJxdWVyeXN0cmluZyI6e30sImV4dGVybmFsX2lkcyI6eyJ6eW5jIjoiNzNiNTdhZGItMTVhMi00NGJiLTliNDctOGRlNTUxN2E3ZWM3OjE3NzY5NzIzNjQuNTg5NTYzOCJ9fQ%3D%3D&site_id=wisdomtree",
+        "https://a.clarity.ms/collect",
+        "https://region1.google-analytics.com/g/collect?v=2&tid=G-RR3Q5ELBCB&gtm=45je64m0v9102373126z872074391za20gzb72074391zd72074391&_p=1776972363227&gcs=G100&gcd=13p3pPl2l5l1&npa=1&dma_cps=-&dma=1&are=1&cid=1717384489.1776972365&frm=0&pscdl=denied&rcb=13&sr=1440x900&uaa=x86&uab=64&uafvl=Not%253AA-Brand%3B99.0.0.0%7CHeadlessChrome%3B145.0.7632.6%7CChromium%3B145.0.7632.6&uam=&uamb=0&uap=Linux&uapv=&uaw=0&ul=en-us&_s=1&tag_exp=0~115938466~115938469~117266401~117512543&uid=&sid=1776972364&sct=1&seg=0&dl=https%3A%2F%2Fwww.wisdomtree.com%2Finvestments%2Fetfs%2Fequity%2Funiy&dt=Page%20Not%20Found%20%7C%20WisdomTree&_tu=aA&en=page_view&_fv=1&_nsi=1&_ss=1&ep.page_region=us&ep.content_group=brand&ep.auth_status=logged%20out&ep.user_type=&ep.page_type=us%7Cbrand&ep.page_name=wisdomtree.com%7Cnot-found&ep.website_type=non-corporate&up.user_type=&tfd=2548",
+        "https://www.google-analytics.com/j/collect?v=1&_v=j102&aip=1&a=1011698475&t=pageview&_s=1&dl=https%3A%2F%2Fwww.wisdomtree.com%2Finvestments%2Fetfs%2Fequity%2Funiy&ul=en-us&dt=Page%20Not%20Found%20%7C%20WisdomTree&sr=1440x900&vp=1440x900&_u=aGBAAEIhAAAAACAAI~&jid=1034687321&gjid=948938045&cid=1463968374.1776972365&tid=UA-870697-9&_gid=1891154566.1776972365&_r=1&_slc=1&cm1=1&cd1=wisdomtree.com%7Cnot-found&cd2=us%7Cbrand&cd3=logged%20out&cd17=i_9C189D27FB8E2C7CB21CC068F14AEA6B&cd19=default&cd20=default&z=575339844",
+        "https://events.api.boomtrain.com/event/track",
+        "https://a.clarity.ms/collect",
+        "https://www.wisdomtree.com/cdn-cgi/rum?",
+        "https://rum-collector-2.pingdom.net/img/beacon.gif?id=5d13c91b14cfaa0008000007&sAW=1440&sAH=900&bIW=1440&bIH=900&pD=24&dPR=1&or=landscape-primary&nT=0&rC=0&nS=0&cS=2&cE=57&dLE=2&dLS=1&fS=0&hS=26&rE=-1&rS=-1&reS=58&resS=848&resE=1028&uEE=-1&uES=-1&dL=853&dI=2110&dCLES=2111&dCLEE=2137&dC=4478&lES=4478&lEE=4478&s=nt&title=Page%20Not%20Found%20%7C%20WisdomTree&path=https%3A%2F%2Fwww.wisdomtree.com%2Finvestments%2Fetfs%2Fequity%2Funiy&ref=&sId=4ewz73jq&sST=1776972366&sIS=1&rV=0&v=1.4.1",
+        "https://a.clarity.ms/collect"
+      ]
+    }
+  }
+}

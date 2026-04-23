@@ -1,0 +1,64 @@
+{
+  "sponsor": "vaneck",
+  "host": "www.vaneck.com",
+  "base_path": "/us/en/investments/{ticker_lower}",
+  "probe_tickers": [
+    "SMH",
+    "GDX"
+  ],
+  "xhrs_by_ticker": {
+    "SMH": {
+      "count": 12,
+      "top_scored": [
+        [
+          "https://www.vaneck.com/main/portfoliopage/getussidelinks/?ticker=SMH&contentId=233107&categoryId=",
+          3
+        ],
+        [
+          "https://www.vaneck.com/main/portfoliopage/getussidelinks/?ticker=SMH&contentId=233107",
+          3
+        ]
+      ],
+      "all_sample": [
+        "https://v1.api.service.cmp.usercentrics.eu/latest/core/TGN4UHclSXsNFA",
+        "https://v1.api.service.cmp.usercentrics.eu/latest/1/cmp/en/GDPR/TGN4UHclSXsNFA/40.18.68/40.18.68",
+        "https://www.vaneck.com/main/portfoliopage/getussidelinks/?ticker=SMH&contentId=233107&categoryId=",
+        "https://www.vaneck.com/common/sharedview/gettopsubmenu?_=1776972344735",
+        "https://www.vaneck.com/banners/get",
+        "https://www.vaneck.com/Main/FundListingUs/GetFundData",
+        "https://www.vaneck.com/cdn-cgi/rum?",
+        "https://consent-api.service.consent.usercentrics.eu/consent/uw/3",
+        "https://www.vaneck.com/Main/FundDetailsBlock/GetContent/?blockid=229617&pageid=233107&ticker=SMH&reactlang=en&reactctr=us&epieditmode=false&latest=false&contextmode=Default&_=1776972344871",
+        "https://www.vaneck.com/main/portfoliopage/getussidelinks/?ticker=SMH&contentId=233107",
+        "https://www.vaneck.com/cdn-cgi/rum?",
+        "https://dc.services.visualstudio.com/v2/track"
+      ]
+    },
+    "GDX": {
+      "count": 11,
+      "top_scored": [
+        [
+          "https://www.vaneck.com/main/portfoliopage/getussidelinks/?ticker=GDX&contentId=233083&categoryId=",
+          3
+        ],
+        [
+          "https://www.vaneck.com/main/portfoliopage/getussidelinks/?ticker=GDX&contentId=233083",
+          3
+        ]
+      ],
+      "all_sample": [
+        "https://v1.api.service.cmp.usercentrics.eu/latest/core/TGN4UHclSXsNFA",
+        "https://v1.api.service.cmp.usercentrics.eu/latest/1/cmp/en/GDPR/TGN4UHclSXsNFA/40.18.68/40.18.68",
+        "https://www.vaneck.com/main/portfoliopage/getussidelinks/?ticker=GDX&contentId=233083&categoryId=",
+        "https://www.vaneck.com/common/sharedview/gettopsubmenu?_=1776972350199",
+        "https://www.vaneck.com/banners/get",
+        "https://www.vaneck.com/Main/FundListingUs/GetFundData",
+        "https://www.vaneck.com/cdn-cgi/rum?",
+        "https://consent-api.service.consent.usercentrics.eu/consent/uw/3",
+        "https://www.vaneck.com/main/portfoliopage/getussidelinks/?ticker=GDX&contentId=233083",
+        "https://www.vaneck.com/cdn-cgi/rum?",
+        "https://dc.services.visualstudio.com/v2/track"
+      ]
+    }
+  }
+}

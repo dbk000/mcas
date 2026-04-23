@@ -1,0 +1,105 @@
+{
+  "sponsor": "invesco",
+  "host": "www.invesco.com",
+  "base_path": "/us/financial-products/etfs/product-detail",
+  "probe_tickers": [
+    "RSP",
+    "QQQM"
+  ],
+  "xhrs_by_ticker": {
+    "RSP": {
+      "count": 16,
+      "top_scored": [
+        [
+          "https://cdn.cookielaw.org/consent/f24a5310-0162-4fce-a06f-1567fe065c62/f24a5310-0162-4fce-a06f-1567fe065c62.json",
+          1
+        ],
+        [
+          "https://www.invesco.com/us/en/financial-products/etfs.i18n.en_US.json",
+          1
+        ],
+        [
+          "https://cdn.cookielaw.org/consent/f24a5310-0162-4fce-a06f-1567fe065c62/0197a1eb-815b-778d-a1fa-bd7b490224b7/en.json",
+          1
+        ],
+        [
+          "https://cdn.cookielaw.org/scripttemplates/202602.1.0/assets/otFloatingRoundedCorner.json",
+          1
+        ],
+        [
+          "https://cdn.cookielaw.org/scripttemplates/202602.1.0/assets/v2/otPcPanel.json",
+          1
+        ],
+        [
+          "https://prompts.maze.co/api/widgets",
+          1
+        ]
+      ],
+      "all_sample": [
+        "https://cdn.cookielaw.org/consent/f24a5310-0162-4fce-a06f-1567fe065c62/f24a5310-0162-4fce-a06f-1567fe065c62.json",
+        "https://dpm.demdex.net/id?d_visid_ver=5.5.0&d_fieldgroup=MC&d_rtbd=json&d_ver=2&d_orgid=74A7357B5B92A3FC0A495C6B%40AdobeOrg&d_nsid=0&ts=1776972344313",
+        "https://geolocation.onetrust.com/cookieconsentpub/v1/geo/location",
+        "https://invescogroup.tt.omtrdc.net/m2/invescogroup/mbox/json?mbox=target-global-mbox&mboxSession=347e62c9d6cb48a78cb9eff95edb60dc&mboxPC=&mboxPage=8f6a6335b4614367ac0ee12d939d532e&mboxRid=672a3f5c135f485bac31008c586daf9d&mboxVersion=1.8.3&mboxCount=1&mboxTime=1776972344326&mboxHost=www.invesco.com&mboxURL=https%3A%2F%2Fwww.invesco.com%2Fus%2Fen%2Ffinancial-products%2Fetfs.html&mboxReferrer=&browserHeight=900&browserWidth=1440&browserTimeOffset=0&screenHeight=900&screenWidth=1440&colorDepth=24&devicePixelRatio=1&screenOrientation=landscape&webGLRenderer=ANGLE%20%28Google%2C%20Vulkan%201.3.0%20%28SwiftShader%20Device%20%28Subzero%29%20%280x0000C0DE%29%29%2C%20SwiftShader%20driver%29&audience=&pageName=not%20available&at_property=6d7acb6c-71c9-de78-cada-3da08a388495&mboxMCSDID=7234B83216A936BE-4232582B54706692&mboxMCGVID=71627452106782299873464877901134372210&mboxAAMB=6G1ynYcLPuiQxYZrsz_pkqfLG9yMXBpb2zX5dvJdYQJzPXImdj0y&mboxMCGLH=6",
+        "https://dng-api.invesco.com/product/search?facet=true&facet.field=assetClass&fq=countryCode:%22US%22&fq=language:%22en_us%22&fq=accountType:%22ETF%22&fq=contentType:%22Product%22&fq=shareClassStatus:%22open%22&q=_suggest_:*&fl=url,uniqueIdentifier,shareClassStatus,shareClassState,primaryShareClassIndicator,assetSubClass,assetClass,cusip,title,accountName,isin,youngFund,fundId,inceptionDate,solutionCategory,shareClassIdentifier,strategy,shareClassInceptionDate,shareClassSuffix,maxLoad,ticker,title,totalExpenseRatio,factsheet,footnotes&rows=2000&start=0&sort=shareClassFullName%20asc&facet.field=assetClass&facet.pivot=assetClass,assetSubClass&fq=assetClass:[*%20TO%20*]&fq=assetSubClass:[*%20TO%20*]&f.assetSubClass.facet.sort=index&f.assetClass.facet.sort=index",
+        "https://www.invesco.com/us/en/financial-products/etfs.i18n.en_US.json",
+        "https://cdn.cookielaw.org/consent/f24a5310-0162-4fce-a06f-1567fe065c62/0197a1eb-815b-778d-a1fa-bd7b490224b7/en.json",
+        "https://bam.nr-data.net/1/4bf05804da?a=1588977597&sa=1&v=1.263.0&t=Unnamed%20Transaction&rst=2299&ck=0&s=01e808d7306120e3&ref=https://www.invesco.com/us/en/financial-products/etfs.html&ptid=63fa4dd995760ce8&af=err,spa,xhr,stn,ins&be=1299&fe=957&dc=907&fsh=1&perf=%7B%22timing%22:%7B%22of%22:1776972342760,%22n%22:0,%22r%22:0,%22re%22:1028,%22f%22:1028,%22dn%22:1028,%22dne%22:1028,%22c%22:1028,%22s%22:1028,%22ce%22:1028,%22rq%22:1029,%22rp%22:1299,%22rpe%22:1308,%22di%22:2130,%22ds%22:2167,%22de%22:2206,%22dc%22:2252,%22l%22:2253,%22le%22:2256%7D,%22navigation%22:%7B%22rc%22:1%7D%7D",
+        "https://cdn.cookielaw.org/scripttemplates/202602.1.0/assets/otFloatingRoundedCorner.json",
+        "https://cdn.cookielaw.org/scripttemplates/202602.1.0/assets/v2/otPcPanel.json",
+        "https://cdn.cookielaw.org/scripttemplates/202602.1.0/assets/otCommonStyles.css",
+        "https://cdn.cookielaw.org/logos/static/ot_guard_logo.svg",
+        "https://dpm.demdex.net/optOutStatus?d_visid_ver=5.5.0&d_rtbd=json&d_ver=2&d_orgid=74A7357B5B92A3FC0A495C6B%40AdobeOrg&d_nsid=0&d_mid=71627452106782299873464877901134372210&d_blob=6G1ynYcLPuiQxYZrsz_pkqfLG9yMXBpb2zX5dvJdYQJzPXImdj0y&ts=1776972345136",
+        "https://bam.nr-data.net/events/1/4bf05804da?a=1588977597&sa=1&v=1.263.0&t=Unnamed%20Transaction&rst=2455&ck=0&s=01e808d7306120e3&ref=https://www.invesco.com/us/en/financial-products/etfs.html&ptid=63fa4dd995760ce8",
+        "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses?idType=cusip&productType=ETF&searchFrequency=quarterly&returnType=nav&variationType=productsListingWithNetPerformance&audienceType=Individual%20Investor",
+        "https://prompts.maze.co/api/widgets"
+      ]
+    },
+    "QQQM": {
+      "count": 16,
+      "top_scored": [
+        [
+          "https://cdn.cookielaw.org/consent/f24a5310-0162-4fce-a06f-1567fe065c62/f24a5310-0162-4fce-a06f-1567fe065c62.json",
+          1
+        ],
+        [
+          "https://www.invesco.com/us/en/financial-products/etfs.i18n.en_US.json",
+          1
+        ],
+        [
+          "https://cdn.cookielaw.org/consent/f24a5310-0162-4fce-a06f-1567fe065c62/0197a1eb-815b-778d-a1fa-bd7b490224b7/en.json",
+          1
+        ],
+        [
+          "https://cdn.cookielaw.org/scripttemplates/202602.1.0/assets/otFloatingRoundedCorner.json",
+          1
+        ],
+        [
+          "https://cdn.cookielaw.org/scripttemplates/202602.1.0/assets/v2/otPcPanel.json",
+          1
+        ],
+        [
+          "https://prompts.maze.co/api/widgets",
+          1
+        ]
+      ],
+      "all_sample": [
+        "https://cdn.cookielaw.org/consent/f24a5310-0162-4fce-a06f-1567fe065c62/f24a5310-0162-4fce-a06f-1567fe065c62.json",
+        "https://dpm.demdex.net/id?d_visid_ver=5.5.0&d_fieldgroup=MC&d_rtbd=json&d_ver=2&d_orgid=74A7357B5B92A3FC0A495C6B%40AdobeOrg&d_nsid=0&ts=1776972350848",
+        "https://geolocation.onetrust.com/cookieconsentpub/v1/geo/location",
+        "https://invescogroup.tt.omtrdc.net/m2/invescogroup/mbox/json?mbox=target-global-mbox&mboxSession=dd463574074a45d0ad1a0d5cd6a3e26a&mboxPC=&mboxPage=892e7d33e84346e39bfe86e1eca72086&mboxRid=4b5a421a24024d2a80ca3c3218ab0dc5&mboxVersion=1.8.3&mboxCount=1&mboxTime=1776972350859&mboxHost=www.invesco.com&mboxURL=https%3A%2F%2Fwww.invesco.com%2Fus%2Fen%2Ffinancial-products%2Fetfs.html&mboxReferrer=&browserHeight=900&browserWidth=1440&browserTimeOffset=0&screenHeight=900&screenWidth=1440&colorDepth=24&devicePixelRatio=1&screenOrientation=landscape&webGLRenderer=ANGLE%20%28Google%2C%20Vulkan%201.3.0%20%28SwiftShader%20Device%20%28Subzero%29%20%280x0000C0DE%29%29%2C%20SwiftShader%20driver%29&audience=&pageName=not%20available&at_property=6d7acb6c-71c9-de78-cada-3da08a388495&mboxMCSDID=0680BF5F85948760-029C750C68316EEF&mboxMCGVID=90411271889352917352766853246554587382&mboxAAMB=6G1ynYcLPuiQxYZrsz_pkqfLG9yMXBpb2zX5dvJdYQJzPXImdj0y&mboxMCGLH=6",
+        "https://dng-api.invesco.com/product/search?facet=true&facet.field=assetClass&fq=countryCode:%22US%22&fq=language:%22en_us%22&fq=accountType:%22ETF%22&fq=contentType:%22Product%22&fq=shareClassStatus:%22open%22&q=_suggest_:*&fl=url,uniqueIdentifier,shareClassStatus,shareClassState,primaryShareClassIndicator,assetSubClass,assetClass,cusip,title,accountName,isin,youngFund,fundId,inceptionDate,solutionCategory,shareClassIdentifier,strategy,shareClassInceptionDate,shareClassSuffix,maxLoad,ticker,title,totalExpenseRatio,factsheet,footnotes&rows=2000&start=0&sort=shareClassFullName%20asc&facet.field=assetClass&facet.pivot=assetClass,assetSubClass&fq=assetClass:[*%20TO%20*]&fq=assetSubClass:[*%20TO%20*]&f.assetSubClass.facet.sort=index&f.assetClass.facet.sort=index",
+        "https://www.invesco.com/us/en/financial-products/etfs.i18n.en_US.json",
+        "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses?idType=cusip&productType=ETF&searchFrequency=quarterly&returnType=nav&variationType=productsListingWithNetPerformance&audienceType=Individual%20Investor",
+        "https://cdn.cookielaw.org/consent/f24a5310-0162-4fce-a06f-1567fe065c62/0197a1eb-815b-778d-a1fa-bd7b490224b7/en.json",
+        "https://bam.nr-data.net/1/4bf05804da?a=1588977597&sa=1&v=1.263.0&t=Unnamed%20Transaction&rst=1549&ck=0&s=288860d1235794bc&ref=https://www.invesco.com/us/en/financial-products/etfs.html&ptid=60f3adccd88dcbd3&af=err,spa,xhr,stn,ins&be=576&fe=925&dc=812&fsh=1&perf=%7B%22timing%22:%7B%22of%22:1776972350039,%22n%22:0,%22r%22:0,%22re%22:479,%22f%22:479,%22dn%22:479,%22dne%22:479,%22c%22:479,%22s%22:479,%22ce%22:479,%22rq%22:480,%22rp%22:577,%22rpe%22:584,%22di%22:1326,%22ds%22:1355,%22de%22:1388,%22dc%22:1486,%22l%22:1499,%22le%22:1501%7D,%22navigation%22:%7B%22rc%22:1%7D%7D&fp=1496&fcp=1496",
+        "https://cdn.cookielaw.org/scripttemplates/202602.1.0/assets/otFloatingRoundedCorner.json",
+        "https://cdn.cookielaw.org/scripttemplates/202602.1.0/assets/v2/otPcPanel.json",
+        "https://cdn.cookielaw.org/scripttemplates/202602.1.0/assets/otCommonStyles.css",
+        "https://dpm.demdex.net/optOutStatus?d_visid_ver=5.5.0&d_rtbd=json&d_ver=2&d_orgid=74A7357B5B92A3FC0A495C6B%40AdobeOrg&d_nsid=0&d_mid=90411271889352917352766853246554587382&d_blob=6G1ynYcLPuiQxYZrsz_pkqfLG9yMXBpb2zX5dvJdYQJzPXImdj0y&ts=1776972351618",
+        "https://cdn.cookielaw.org/logos/static/ot_guard_logo.svg",
+        "https://bam.nr-data.net/events/1/4bf05804da?a=1588977597&sa=1&v=1.263.0&t=Unnamed%20Transaction&rst=1707&ck=0&s=288860d1235794bc&ref=https://www.invesco.com/us/en/financial-products/etfs.html&ptid=60f3adccd88dcbd3",
+        "https://prompts.maze.co/api/widgets"
+      ]
+    }
+  }
+}

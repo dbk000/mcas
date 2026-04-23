@@ -1,0 +1,11 @@
+Dimensional excluded tickers: 37
+/home/darren/Desktop/MCAS/fund_holdings/source_authoring/phase_0/recover_dimensional.py:28: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+  today = datetime.utcnow().date()
+Using date: 20260423
+  [10/37] ok=10 elapsed=1s
+  [20/37] ok=19 elapsed=1s
+  [30/37] ok=29 elapsed=1s
+
+Verified: 36/37
+    1  too_few_rows (6<10)
+Wrote: /home/darren/Desktop/MCAS/fund_holdings/source_authoring/phase_0/recovered_dimensional_urls.json

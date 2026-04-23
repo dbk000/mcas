@@ -1,0 +1,21 @@
+{
+  "sponsor": "john_hancock",
+  "host": "www.jhinvestments.com",
+  "base_path": "/etf/{ticker_lower}",
+  "probe_tickers": [
+    "JHMM",
+    "JHML"
+  ],
+  "xhrs_by_ticker": {
+    "JHMM": {
+      "count": 0,
+      "top_scored": [],
+      "all_sample": []
+    },
+    "JHML": {
+      "count": 0,
+      "top_scored": [],
+      "all_sample": []
+    }
+  }
+}

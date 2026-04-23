@@ -1,0 +1,95 @@
+{
+  "sponsor": "vaneck",
+  "ticker_captures": {
+    "SMH": {
+      "ticker": "SMH",
+      "url": "https://www.vaneck.com/us/en/investments/smh/",
+      "steps": [
+        "goto_ok",
+        "audience_selected",
+        "holdings_clicked"
+      ],
+      "xhr_pre_click": 12,
+      "holdings_clicked": true,
+      "xhr_post_click": 15,
+      "html_bytes": 678769,
+      "n_tables": 0,
+      "xhr_count": 15,
+      "xhr_real_count": 8,
+      "top_scored": [
+        {
+          "url": "https://www.vaneck.com/main/portfoliopage/getussidelinks/?ticker=SMH&contentId=233107&categoryId=",
+          "score": 7
+        },
+        {
+          "url": "https://www.vaneck.com/main/portfoliopage/getussidelinks/?ticker=SMH&contentId=233107",
+          "score": 7
+        },
+        {
+          "url": "https://www.vaneck.com/Main/FundDetailsBlock/GetContent/?blockid=229617&pageid=233107&ticker=SMH&reactlang=en&reactctr=us&epieditmode=false&latest=false&contextmode=Default&_=1776990255843",
+          "score": 2
+        },
+        {
+          "url": "https://www.vaneck.com/Main/ContentAreaUsBlock/GetContent/?blockid=364471&pageid=233107&ticker=SMH&reactlang=en&reactctr=us&epieditmode=false&latest=false&contextmode=Default&_=1776990258498",
+          "score": 2
+        }
+      ],
+      "all_real": [
+        "https://www.vaneck.com/main/portfoliopage/getussidelinks/?ticker=SMH&contentId=233107&categoryId=",
+        "https://www.vaneck.com/common/sharedview/gettopsubmenu?_=1776990255647",
+        "https://www.vaneck.com/banners/get",
+        "https://www.vaneck.com/Main/FundListingUs/GetFundData",
+        "https://www.vaneck.com/cdn-cgi/rum?",
+        "https://www.vaneck.com/main/portfoliopage/getussidelinks/?ticker=SMH&contentId=233107",
+        "https://www.vaneck.com/Main/FundDetailsBlock/GetContent/?blockid=229617&pageid=233107&ticker=SMH&reactlang=en&reactctr=us&epieditmode=false&latest=false&contextmode=Default&_=1776990255843",
+        "https://www.vaneck.com/Main/ContentAreaUsBlock/GetContent/?blockid=364471&pageid=233107&ticker=SMH&reactlang=en&reactctr=us&epieditmode=false&latest=false&contextmode=Default&_=1776990258498"
+      ]
+    },
+    "GDX": {
+      "ticker": "GDX",
+      "url": "https://www.vaneck.com/us/en/investments/gdx/",
+      "steps": [
+        "goto_ok",
+        "audience_selected",
+        "holdings_clicked"
+      ],
+      "xhr_pre_click": 30,
+      "holdings_clicked": true,
+      "xhr_post_click": 50,
+      "html_bytes": 710318,
+      "n_tables": 0,
+      "xhr_count": 50,
+      "xhr_real_count": 10,
+      "top_scored": [
+        {
+          "url": "https://www.google.com/rmkt/collect/11030449101/?random=1776990263279&cv=11&fst=1776990263279&fmt=8&bg=ffffff&guid=ON&async=1&gtm=45be64m2v9216637670z872740925za20gzb72740925zd72740925xea&gcd=13n3n3n2n5l1&dma_cps=a&dma=1&tag_exp=0~115938465~115938468~117266401~117384405~118131808&u_w=1440&u_h=900&url=https%3A%2F%2Fwww.vaneck.com%2Fus%2Fen%2Finvestments%2Fgold-miners-etf-gdx%2Foverview%2F%3FredirectVE%3Dgeneric&rcb=3&label=nxK7CJXokIMYEM2X3Ysp&frm=0&tiba=GDX%20%E2%80%93%20VanEck%20Gold%20Miners%20Equity%20ETF%20(US)%20%7C%20Holdings%20%26%20Performance%20%7C%20VanEck&did=dOThhZD&gdid=dOThhZD&hn=www.googleadservices.com&npa=0&us_privacy=error&pscdl=noapi&auid=2032328483.1776990263&uaa=x86&uab=64&uafvl=Not%253AA-Brand%3B99.0.0.0%7CHeadlessChrome%3B145.0.7632.6%7CChromium%3B145.0.7632.6&uamb=0&uam=&uap=Linux&uapv=&uaw=0&_tu=CA&data=ads_data_redaction%3Dfalse&gcp=5",
+          "score": 10
+        },
+        {
+          "url": "https://www.vaneck.com/main/portfoliopage/getussidelinks/?ticker=GDX&contentId=233083&categoryId=",
+          "score": 7
+        },
+        {
+          "url": "https://www.vaneck.com/main/portfoliopage/getussidelinks/?ticker=GDX&contentId=233083",
+          "score": 7
+        },
+        {
+          "url": "https://www.vaneck.com/Main/ContentAreaUsBlock/GetContent/?blockid=364471&pageid=233083&ticker=GDX&reactlang=en&reactctr=us&epieditmode=false&latest=false&contextmode=Default&_=1776990265252",
+          "score": 2
+        }
+      ],
+      "all_real": [
+        "https://www.vaneck.com/main/portfoliopage/getussidelinks/?ticker=GDX&contentId=233083&categoryId=",
+        "https://www.vaneck.com/common/sharedview/gettopsubmenu?_=1776990262655",
+        "https://www.vaneck.com/banners/get",
+        "https://www.vaneck.com/Main/FundListingUs/GetFundData",
+        "https://www.vaneck.com/cdn-cgi/rum?",
+        "https://www.vaneck.com/main/portfoliopage/getussidelinks/?ticker=GDX&contentId=233083",
+        "https://www.vaneck.com/bundles/scripts/marketo.js?_=1776990262572",
+        "https://www.google.com/rmkt/collect/11030449101/?random=1776990263279&cv=11&fst=1776990263279&fmt=8&bg=ffffff&guid=ON&async=1&gtm=45be64m2v9216637670z872740925za20gzb72740925zd72740925xea&gcd=13n3n3n2n5l1&dma_cps=a&dma=1&tag_exp=0~115938465~115938468~117266401~117384405~118131808&u_w=1440&u_h=900&url=https%3A%2F%2Fwww.vaneck.com%2Fus%2Fen%2Finvestments%2Fgold-miners-etf-gdx%2Foverview%2F%3FredirectVE%3Dgeneric&rcb=3&label=nxK7CJXokIMYEM2X3Ysp&frm=0&tiba=GDX%20%E2%80%93%20VanEck%20Gold%20Miners%20Equity%20ETF%20(US)%20%7C%20Holdings%20%26%20Performance%20%7C%20VanEck&did=dOThhZD&gdid=dOThhZD&hn=www.googleadservices.com&npa=0&us_privacy=error&pscdl=noapi&auid=2032328483.1776990263&uaa=x86&uab=64&uafvl=Not%253AA-Brand%3B99.0.0.0%7CHeadlessChrome%3B145.0.7632.6%7CChromium%3B145.0.7632.6&uamb=0&uam=&uap=Linux&uapv=&uaw=0&_tu=CA&data=ads_data_redaction%3Dfalse&gcp=5",
+        "https://www.vaneck.com/Main/ContentAreaUsBlock/GetContent/?blockid=364471&pageid=233083&ticker=GDX&reactlang=en&reactctr=us&epieditmode=false&latest=false&contextmode=Default&_=1776990265252",
+        "https://trc-events.taboola.com/1625843/log/3/unip?en=pre_d_eng_tb&tos=4556&scd=87&ssd=2&est=1776990263433&ver=36&isls=true&src=i&invt=4500&msa=12689&rv=1&tim=1776990267988&vi=1776990263428&ri=303cf9fac265eada805ca4a554e385b1&sd=v2_946a4cb438b893663834c5c361f885ff_f6e50a30-4377-40a3-96d2-491576992b53-tuct10e43db7_1776990263_1776990263_CNawjgYQ851jGISx_ubbMyABKAEwRTiSxghA04sQSMuG2ANQ8YEPWABgAGj69daL2tnS6PUBcAGAAQCIAQA&ui=f6e50a30-4377-40a3-96d2-491576992b53-tuct10e43db7&ref=null&cv=20260419-12-RELEASE&item-url=https%3A%2F%2Fwww.vaneck.com%2Fus%2Fen%2Finvestments%2Fgold-miners-etf-gdx%2Fresources%2F%3FredirectVE%3Dgeneric&cbp=Usercentrics&cbpv=1&cbcd=true&it=JS_PIXEL"
+      ]
+    }
+  }
+}

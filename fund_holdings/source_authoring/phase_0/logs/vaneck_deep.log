@@ -1,0 +1,17 @@
+
+=== SMH at https://www.vaneck.com/us/en/investments/smh/holdings/ ===
+  rendered_tables: 0
+  verified_responses: 1
+    [['json']] 12602b  https://www.vaneck.com/Main/FundListingUs/GetFundData
+
+=== MOAT at https://www.vaneck.com/us/en/investments/moat/holdings/ ===
+  rendered_tables: 0
+  verified_responses: 1
+    [['json']] 12638b  https://www.vaneck.com/Main/FundListingUs/GetFundData
+
+=== GDX at https://www.vaneck.com/us/en/investments/gdx/holdings/ ===
+  rendered_tables: 0
+  verified_responses: 1
+    [['json']] 12586b  https://www.vaneck.com/Main/FundListingUs/GetFundData
+
+Wrote /home/darren/Desktop/MCAS/fund_holdings/source_authoring/phase_0/vaneck_deep_probe.json

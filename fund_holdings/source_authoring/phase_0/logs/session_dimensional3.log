@@ -1,0 +1,8 @@
+Sponsors: ['dimensional']
+Harvest: True  Replay: False
+
+[harvest] === dimensional ===
+  dimensional:DFAC captures=11 kept=8
+  dimensional:DFUS captures=11 kept=8
+  ✗ no holdings template derived from harvest
+  saved session → /home/darren/Desktop/MCAS/fund_holdings/source_authoring/phase_0/sessions/dimensional.json  + capture → /home/darren/Desktop/MCAS/fund_holdings/source_authoring/phase_0/logs/session_captures/dimensional_harvest.json

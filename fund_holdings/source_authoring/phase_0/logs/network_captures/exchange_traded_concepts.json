@@ -1,0 +1,25 @@
+{
+  "sponsor": "exchange_traded_concepts",
+  "host": "www.etfarchitect.com",
+  "base_path": "/{TICKER}/",
+  "probe_tickers": [
+    "ROBO",
+    "SIXH"
+  ],
+  "xhrs_by_ticker": {
+    "ROBO": {
+      "count": 1,
+      "top_scored": [],
+      "all_sample": [
+        "http://etfarchitect.com/cdn-cgi/challenge-platform/h/g/jsd/oneshot/a80f1640690f/0.24825415577011978:1776971326:NO-AiovdhumBGvltB-f4XfOqkBuIPWeiTXNQwkcjaMo/9f0f43c5cad7d25a"
+      ]
+    },
+    "SIXH": {
+      "count": 1,
+      "top_scored": [],
+      "all_sample": [
+        "http://etfarchitect.com/cdn-cgi/challenge-platform/h/b/jsd/oneshot/0b8fb825cb67/0.061696825278882095:1776968958:KgicM8c8BWOI4NxYsYAXjZkcosrU-C6eL3vZKBZzw-A/9f0f43ec2b2edbc7"
+      ]
+    }
+  }
+}

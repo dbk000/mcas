@@ -1,0 +1,155 @@
+{
+  "sponsor": "franklin_templeton",
+  "host": "www.franklintempleton.com",
+  "base_path": "/investments/options/exchange-traded-funds/products/{ticker_lower}-etf",
+  "probe_tickers": [
+    "FLCB",
+    "FLJP"
+  ],
+  "xhrs_by_ticker": {
+    "FLCB": {
+      "count": 25,
+      "top_scored": [
+        [
+          "https://www.franklintempleton.com/api/caveat",
+          1
+        ],
+        [
+          "https://www.franklintempleton.com/api/pds/price-and-performance?op=Labels&id=0",
+          1
+        ],
+        [
+          "https://cdn.cookielaw.org/consent/b06b57c0-de88-4c03-adb2-ceb3173ea4bb/b06b57c0-de88-4c03-adb2-ceb3173ea4bb.json",
+          1
+        ],
+        [
+          "https://cdn.cookielaw.org/consent/b06b57c0-de88-4c03-adb2-ceb3173ea4bb/019a5454-702a-744c-9d1b-ea30bc2b9ecb/en.json",
+          1
+        ],
+        [
+          "https://cdn.cookielaw.org/scripttemplates/202511.1.0/assets/otCenterRounded.json",
+          1
+        ],
+        [
+          "https://cdn.cookielaw.org/scripttemplates/202511.1.0/assets/v2/otPcTab.json",
+          1
+        ],
+        [
+          "https://www.franklintempleton.com/api/pds/price-and-performance?op=ProductCommon&id=1",
+          1
+        ],
+        [
+          "https://www.franklintempleton.com/api/pds/price-and-performance?op=ShareClassDetail&id=2",
+          1
+        ],
+        [
+          "https://www.franklintempleton.com/api/pds/price-and-performance?op=Identifiers&id=3",
+          1
+        ],
+        [
+          "https://www.franklintempleton.com/api/pds/price-and-performance?op=Ppss&pt=etf&id=4",
+          1
+        ]
+      ],
+      "all_sample": [
+        "https://www.franklintempleton.com/us-retail/resourceapi/site-configuration-labels?first-load=true",
+        "https://www.franklintempleton.com/resources/icons/facebook-micro.svg",
+        "https://www.franklintempleton.com/resources/icons/linkedin-micro.svg",
+        "https://www.franklintempleton.com/resources/icons/instagram-micro.svg",
+        "https://www.franklintempleton.com/resources/icons/youtube-micro.svg",
+        "https://www.franklintempleton.com/resources/icons/social-x-micro.svg",
+        "https://www.franklintempleton.com/resourceapi/site-configuration-labels?first-load=true",
+        "https://www.franklintempleton.com/us-retail/resourceapi/page-frame?segment=investor",
+        "https://www.franklintempleton.com/us-retail/resourceapi/investments/options/exchange-traded-funds/products/flcb-etf?segment=investor",
+        "https://www.franklintempleton.com/api/caveat",
+        "https://www.franklintempleton.com/resourceapi/page-frame?segment=investor",
+        "https://www.franklintempleton.com/api/pds/price-and-performance?op=Labels&id=0",
+        "https://cdn.cookielaw.org/consent/b06b57c0-de88-4c03-adb2-ceb3173ea4bb/b06b57c0-de88-4c03-adb2-ceb3173ea4bb.json",
+        "https://www.franklintempleton.com/cdn-cgi/rum?",
+        "https://geolocation.onetrust.com/cookieconsentpub/v1/geo/location",
+        "https://cdn.cookielaw.org/consent/b06b57c0-de88-4c03-adb2-ceb3173ea4bb/019a5454-702a-744c-9d1b-ea30bc2b9ecb/en.json",
+        "https://cdn.cookielaw.org/scripttemplates/202511.1.0/assets/otCenterRounded.json",
+        "https://cdn.cookielaw.org/scripttemplates/202511.1.0/assets/v2/otPcTab.json",
+        "https://cdn.cookielaw.org/scripttemplates/202511.1.0/assets/otCommonStyles.css",
+        "https://cdn.cookielaw.org/logos/static/ot_guard_logo.svg",
+        "https://www.franklintempleton.com/api/pds/price-and-performance?op=ProductCommon&id=1",
+        "https://www.franklintempleton.com/api/pds/price-and-performance?op=ShareClassDetail&id=2",
+        "https://www.franklintempleton.com/api/pds/price-and-performance?op=Identifiers&id=3",
+        "https://www.franklintempleton.com/us-retail/resourceapi/investments/options/exchange-traded-funds?segment=investor",
+        "https://www.franklintempleton.com/api/pds/price-and-performance?op=Ppss&pt=etf&id=4"
+      ]
+    },
+    "FLJP": {
+      "count": 25,
+      "top_scored": [
+        [
+          "https://www.franklintempleton.com/api/caveat",
+          1
+        ],
+        [
+          "https://www.franklintempleton.com/api/pds/price-and-performance?op=Labels&id=0",
+          1
+        ],
+        [
+          "https://cdn.cookielaw.org/consent/b06b57c0-de88-4c03-adb2-ceb3173ea4bb/b06b57c0-de88-4c03-adb2-ceb3173ea4bb.json",
+          1
+        ],
+        [
+          "https://www.franklintempleton.com/api/pds/price-and-performance?op=ProductCommon&id=1",
+          1
+        ],
+        [
+          "https://www.franklintempleton.com/api/pds/price-and-performance?op=ShareClassDetail&id=2",
+          1
+        ],
+        [
+          "https://www.franklintempleton.com/api/pds/price-and-performance?op=Identifiers&id=3",
+          1
+        ],
+        [
+          "https://cdn.cookielaw.org/consent/b06b57c0-de88-4c03-adb2-ceb3173ea4bb/019a5454-702a-744c-9d1b-ea30bc2b9ecb/en.json",
+          1
+        ],
+        [
+          "https://cdn.cookielaw.org/scripttemplates/202511.1.0/assets/otCenterRounded.json",
+          1
+        ],
+        [
+          "https://cdn.cookielaw.org/scripttemplates/202511.1.0/assets/v2/otPcTab.json",
+          1
+        ],
+        [
+          "https://www.franklintempleton.com/api/pds/price-and-performance?op=Ppss&pt=etf&id=4",
+          1
+        ]
+      ],
+      "all_sample": [
+        "https://www.franklintempleton.com/us-retail/resourceapi/site-configuration-labels?first-load=true",
+        "https://www.franklintempleton.com/resources/icons/facebook-micro.svg",
+        "https://www.franklintempleton.com/resources/icons/linkedin-micro.svg",
+        "https://www.franklintempleton.com/resources/icons/instagram-micro.svg",
+        "https://www.franklintempleton.com/resources/icons/youtube-micro.svg",
+        "https://www.franklintempleton.com/resources/icons/social-x-micro.svg",
+        "https://www.franklintempleton.com/resourceapi/site-configuration-labels?first-load=true",
+        "https://www.franklintempleton.com/us-retail/resourceapi/page-frame?segment=investor",
+        "https://www.franklintempleton.com/us-retail/resourceapi/investments/options/exchange-traded-funds/products/fljp-etf?segment=investor",
+        "https://www.franklintempleton.com/api/caveat",
+        "https://www.franklintempleton.com/resourceapi/page-frame?segment=investor",
+        "https://www.franklintempleton.com/api/pds/price-and-performance?op=Labels&id=0",
+        "https://cdn.cookielaw.org/consent/b06b57c0-de88-4c03-adb2-ceb3173ea4bb/b06b57c0-de88-4c03-adb2-ceb3173ea4bb.json",
+        "https://www.franklintempleton.com/cdn-cgi/rum?",
+        "https://geolocation.onetrust.com/cookieconsentpub/v1/geo/location",
+        "https://www.franklintempleton.com/api/pds/price-and-performance?op=ProductCommon&id=1",
+        "https://www.franklintempleton.com/api/pds/price-and-performance?op=ShareClassDetail&id=2",
+        "https://www.franklintempleton.com/api/pds/price-and-performance?op=Identifiers&id=3",
+        "https://www.franklintempleton.com/us-retail/resourceapi/investments/options/exchange-traded-funds?segment=investor",
+        "https://cdn.cookielaw.org/consent/b06b57c0-de88-4c03-adb2-ceb3173ea4bb/019a5454-702a-744c-9d1b-ea30bc2b9ecb/en.json",
+        "https://cdn.cookielaw.org/scripttemplates/202511.1.0/assets/otCenterRounded.json",
+        "https://cdn.cookielaw.org/scripttemplates/202511.1.0/assets/v2/otPcTab.json",
+        "https://cdn.cookielaw.org/scripttemplates/202511.1.0/assets/otCommonStyles.css",
+        "https://cdn.cookielaw.org/logos/static/ot_guard_logo.svg",
+        "https://www.franklintempleton.com/api/pds/price-and-performance?op=Ppss&pt=etf&id=4"
+      ]
+    }
+  }
+}

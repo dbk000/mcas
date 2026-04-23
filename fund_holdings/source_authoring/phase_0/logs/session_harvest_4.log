@@ -1,0 +1,30 @@
+Sponsors: ['vaneck', 'franklin_templeton', 'jpmorgan', 'fidelity']
+Harvest: True  Replay: False
+
+[harvest] === vaneck ===
+  vaneck:SMH captures=17 kept=13
+  vaneck:MOAT captures=16 kept=12
+  ✗ no holdings template derived from harvest
+  saved session → /home/darren/Desktop/MCAS/fund_holdings/source_authoring/phase_0/sessions/vaneck.json  + capture → /home/darren/Desktop/MCAS/fund_holdings/source_authoring/phase_0/logs/session_captures/vaneck_harvest.json
+
+[harvest] === franklin_templeton ===
+  franklin_templeton:FLCB captures=15 kept=10
+  franklin_templeton:FLIN captures=15 kept=10
+  ✗ no holdings template derived from harvest
+  saved session → /home/darren/Desktop/MCAS/fund_holdings/source_authoring/phase_0/sessions/franklin_templeton.json  + capture → /home/darren/Desktop/MCAS/fund_holdings/source_authoring/phase_0/logs/session_captures/franklin_templeton_harvest.json
+
+[harvest] === jpmorgan ===
+  jpmorgan:JEPI captures=12 kept=7
+  jpmorgan:JPST captures=11 kept=7
+  ✗ no holdings template derived from harvest
+  saved session → /home/darren/Desktop/MCAS/fund_holdings/source_authoring/phase_0/sessions/jpmorgan.json  + capture → /home/darren/Desktop/MCAS/fund_holdings/source_authoring/phase_0/logs/session_captures/jpmorgan_harvest.json
+
+[harvest] === fidelity ===
+  fidelity:FTEC ERROR TimeoutError: Page.goto: Timeout 30000ms exceeded.
+Call log:
+  - navigating to "https://fundresearch.fidelity.com/etfs/summary/FTEC", 
+  fidelity:FDVV ERROR TimeoutError: Page.goto: Timeout 30000ms exceeded.
+Call log:
+  - navigating to "https://fundresearch.fidelity.com/etfs/summary/FDVV", 
+  ✗ no holdings template derived from harvest
+  saved session → /home/darren/Desktop/MCAS/fund_holdings/source_authoring/phase_0/sessions/fidelity.json  + capture → /home/darren/Desktop/MCAS/fund_holdings/source_authoring/phase_0/logs/session_captures/fidelity_harvest.json

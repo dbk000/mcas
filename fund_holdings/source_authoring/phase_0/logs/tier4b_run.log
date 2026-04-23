@@ -1,0 +1,13 @@
+[tier4b] Processing 5 priority sponsors with click-driven capture
+[tier4b] === invesco ===
+  took=58.3s  RSP: clicked=False, xhr_real=14, tables=5; QQQM: clicked=False, xhr_real=14, tables=4  → invesco_click.json
+[tier4b] === dimensional ===
+  took=21.9s  DFAC: clicked=False, xhr_real=8, tables=0; DFUS: clicked=False, xhr_real=4, tables=0  → dimensional_click.json
+[tier4b] === jpmorgan ===
+  took=11.9s  JEPI: clicked=False, xhr_real=3, tables=0; JPST: clicked=False, xhr_real=3, tables=0  → jpmorgan_click.json
+[tier4b] === vaneck ===
+  took=15.9s  SMH: clicked=True, xhr_real=8, tables=0; GDX: clicked=True, xhr_real=10, tables=0  → vaneck_click.json
+[tier4b] === fidelity ===
+  took=50.3s  FBND: clicked=None, xhr_real=None, tables=None; FTEC: clicked=None, xhr_real=None, tables=None  → fidelity_click.json
+
+[tier4b] Captures written. Use curated_from_tier4b.py to probe + verify.

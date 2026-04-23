@@ -1,0 +1,10 @@
+[rebuild_v2] current bible sheets: ['calamos', 'direxion', 'first_trust', 'global_x', 'graniteshares', 'innovator', 'invesco', 'ishares', 'krane', 'neos', 'proshares', 'schwab', 'state_street', 'vanguard', 'yieldmax']
+[rebuild_v2] invesco verified urls: 200
+[rebuild_v2] dimensional verified urls: 36
+    [dimensional] url_map: admitted 36, skipped 1
+[rebuild_v2] dimensional: admitted 36 funds
+[rebuild_v2] template-based confirmed: ['schwab', 'proshares', 'innovator', 'calamos', 'yieldmax']
+[rebuild_v2] wrote /home/darren/Desktop/MCAS/fund_holdings/ground_truth/fund_bible_v1.xlsx.tmp  total_rows=1244  aum=$10.16T
+
+[rebuild_v2] bible total: 1244
+  dimensional                  admitted=36  tmpl=https://tools-blob.dimensional.com/etf/{YYYYMMDD}/{TICKER}.csv

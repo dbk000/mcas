@@ -1,0 +1,77 @@
+{
+  "sponsor": "dimensional",
+  "ticker_captures": {
+    "DFAC": {
+      "ticker": "DFAC",
+      "url": "https://us.dimensional.com/funds/dfac",
+      "steps": [
+        "goto_ok"
+      ],
+      "xhr_pre_click": 17,
+      "holdings_clicked": false,
+      "xhr_post_click": 19,
+      "html_bytes": 992526,
+      "n_tables": 0,
+      "xhr_count": 19,
+      "xhr_real_count": 8,
+      "top_scored": [
+        {
+          "url": "https://etf.dimensional.com/public/v2/portfolios/filters?allowMorningstarFixedIncome=true",
+          "score": 5
+        },
+        {
+          "url": "https://www.dimensional.com/investment-api/portfolio-details",
+          "score": 5
+        },
+        {
+          "url": "https://www.dimensional.com/investment-api/portfolio-disclosures",
+          "score": 5
+        },
+        {
+          "url": "https://www.dimensional.com/coveo/rest/token",
+          "score": 2
+        }
+      ],
+      "all_real": [
+        "https://www.dimensional.com/audience-selector-api/get-splash-page-modal-for-country",
+        "https://www.dimensional.com/coveo/rest/token",
+        "https://etf.dimensional.com/public/v2/fundcenter?allowMorningstarFixedIncome=true",
+        "https://etf.dimensional.com/public/v2/portfolios/filters?allowMorningstarFixedIncome=true",
+        "https://www.dimensional.com/investment-api/portfolio-details",
+        "https://etf.dimensional.com/public/v2/fundcenter/funddetail",
+        "https://www.dimensional.com/investment-api/portfolio-disclosures",
+        "https://tools-blob.dimensional.com/ink/DFAC.pdf"
+      ]
+    },
+    "DFUS": {
+      "ticker": "DFUS",
+      "url": "https://us.dimensional.com/funds/dfus",
+      "steps": [
+        "goto_ok"
+      ],
+      "xhr_pre_click": 1,
+      "holdings_clicked": false,
+      "xhr_post_click": 11,
+      "html_bytes": 420050,
+      "n_tables": 0,
+      "xhr_count": 12,
+      "xhr_real_count": 4,
+      "top_scored": [
+        {
+          "url": "https://etf.dimensional.com/public/v2/portfolios/filters?allowMorningstarFixedIncome=true",
+          "score": 5
+        },
+        {
+          "url": "https://www.dimensional.com/coveo/rest/token",
+          "score": 2
+        }
+      ],
+      "all_real": [
+        "https://www.dimensional.com/coveo/rest/token",
+        "https://etf.dimensional.com/public/v2/fundcenter?allowMorningstarFixedIncome=true",
+        "https://etf.dimensional.com/public/v2/portfolios/filters?allowMorningstarFixedIncome=true",
+        "https://www.dimensional.com/audience-selector-api/get-splash-page-modal-for-country"
+      ]
+    }
+  }
+}

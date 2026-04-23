@@ -1,0 +1,57 @@
+{
+  "sponsor": "franklin_templeton",
+  "harvested_at": "2026-04-24T09:38:16Z",
+  "cookies": [
+    {
+      "name": "__cf_bm",
+      "value": "GvJGl9Sg_9tWbquOzxqx_ijZbb20RaKPdng5Yxko0.c-1777023496.8650033-1.0.1.1-yUcxom3.oAWwpYcNGbBuK20IYPGIHmx6dpOrgSf3wIVZ.v8YCltP_Tg0YePbYLEpoEBHUO0_X6rYrb3J6W0K341pLGqCvqP4vope_r2UCMaw7487Or5jbojM8B9VUOQ5",
+      "domain": ".franklintempleton.com",
+      "path": "/",
+      "expires": 1777025297.115843,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "SERVERID",
+      "value": "1b8617d4a7637adc14a147568098f0f6|173cdb52d303111367d4bc3b18409e3a",
+      "domain": "www.franklintempleton.com",
+      "path": "/",
+      "expires": 1777025368.749107,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "visitor",
+      "value": "afce8361-fcb1-44d6-8997-d84cef4e276c",
+      "domain": "www.franklintempleton.com",
+      "path": "/",
+      "expires": 1811583497.833675,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "OptanonConsent",
+      "value": "isGpcEnabled=0&datestamp=Fri+Apr+24+2026+09%3A38%3A28+GMT%2B0000+(Coordinated+Universal+Time)&version=202511.1.0&browserGpcFlag=0&isIABGlobal=false&hosts=&consentId=d6fd24b2-f74b-41c7-b24a-6de0138607d1&interactionCount=0&isAnonUser=1&landingPath=NotLandingPage&groups=C0001%3A1%2CC0002%3A0%2CC0003%3A0%2CBG296%3A0%2CC0004%3A0&AwaitingReconsent=false",
+      "domain": ".franklintempleton.com",
+      "path": "/",
+      "expires": 1808559508,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "_dd_s",
+      "value": "logs=1&id=8aff9480-71d4-49bd-9a07-e88d4356a2d7&created=1777023497462&expire=1777024415437",
+      "domain": "www.franklintempleton.com",
+      "path": "/",
+      "expires": 1777024415,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Strict"
+    }
+  ],
+  "template": null
+}
