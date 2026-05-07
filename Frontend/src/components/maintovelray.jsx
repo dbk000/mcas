@@ -12,6 +12,10 @@ export default function MaintenanceOverlay() {
   const h = typeof window !== 'undefined' ? window.location.hostname : '';
   if (h === 'localhost' || /^\d+\.\d+\.\d+\.\d+$/.test(h)) return null;
 
+  // Skip on the standalone preset widget — that page is intentionally public.
+  const p = typeof window !== 'undefined' ? window.location.pathname : '';
+  if (p === '/presetwidget' || p.startsWith('/presetwidget/')) return null;
+
   const [visible, setVisible] = useState(false);
   const [dots, setDots] = useState("");
 
