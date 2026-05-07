@@ -8,3 +8,13 @@
   Cross-Origin-Resource-Policy: same-origin
   X-Permitted-Cross-Domain-Policies: none
   Content-Security-Policy: default-src 'self'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'; object-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https: wss:; worker-src 'self' blob:; manifest-src 'self'; frame-src 'none'
+
+# Preset widget — standalone static page with inline <script>; needs script-src
+# 'unsafe-inline' for the widget path only. Cache HTML 5 min, data.json 1 hr.
+/presetwidget/*
+  Cache-Control: public, max-age=300
+  Content-Security-Policy: default-src 'self'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'; object-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self'
+
+/presetwidget/data.json
+  Cache-Control: public, max-age=3600
+  Content-Type: application/json

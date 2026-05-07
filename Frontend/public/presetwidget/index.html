@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FabFilter Preset Cheatsheet — for Carl</title>
+<meta name="description" content="Fast lookup of FabFilter presets by instrument, for mid-mix reference.">
+<style>
+  :root {
+    --bg: #fafaf7;
+    --bg-card: #ffffff;
+    --bg-secondary: #f0efea;
+    --bg-active: #e8e4d6;
+    --bg-pill: #f0efea;
+    --text-primary: #2a2a28;
+    --text-secondary: #6e6d68;
+    --text-tertiary: #999791;
+    --border: #e3e1d8;
+    --accent: #5a4f8a;
+    --accent-text: #3c3489;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1a1a18;
+      --bg-card: #232320;
+      --bg-secondary: #2a2a26;
+      --bg-active: #3a3458;
+      --bg-pill: #2a2a26;
+      --text-primary: #ebeae3;
+      --text-secondary: #a6a59f;
+      --text-tertiary: #76746e;
+      --border: #38362f;
+      --accent: #afa9ec;
+      --accent-text: #c8c2ff;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text-primary);
+    font-size: 14px;
+    line-height: 1.4;
+  }
+  header {
+    padding: 16px 20px 12px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-card);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  header h1 {
+    margin: 0 0 8px;
+    font-size: 16px;
+    font-weight: 600;
+  }
+  header .sub {
+    color: var(--text-tertiary);
+    font-size: 12px;
+    margin-bottom: 10px;
+  }
+  .search-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+  #search {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg);
+    color: var(--text-primary);
+    font-size: 14px;
+    font-family: inherit;
+    outline: none;
+  }
+  #search:focus { border-color: var(--accent); }
+  #count {
+    font-size: 12px;
+    color: var(--text-tertiary);
+    white-space: nowrap;
+  }
+  main {
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    gap: 16px;
+    padding: 16px 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  @media (max-width: 720px) {
+    main { grid-template-columns: 1fr; padding: 12px; }
+    #sidebar { position: relative !important; max-height: none; }
+  }
+  #sidebar {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 8px;
+    position: sticky;
+    top: 88px;
+    max-height: calc(100vh - 110px);
+    overflow-y: auto;
+  }
+  .cat-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    border-radius: 6px;
+    font-size: 13px;
+    margin-bottom: 2px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: var(--text-primary);
+    transition: background 0.1s;
+  }
+  .cat-item:hover { background: var(--bg-secondary); }
+  .cat-item.active {
+    background: var(--bg-active);
+    color: var(--accent-text);
+    font-weight: 500;
+  }
+  .cat-item .num {
+    font-size: 11px;
+    color: var(--text-tertiary);
+  }
+  .cat-item.active .num { color: var(--accent-text); opacity: 0.7; }
+  #content { min-width: 0; }
+  .cat-header {
+    margin-bottom: 16px;
+  }
+  .cat-header h2 {
+    margin: 0 0 4px;
+    font-size: 20px;
+    font-weight: 600;
+  }
+  .cat-header .hint {
+    color: var(--text-secondary);
+    margin: 0 0 4px;
+    font-size: 13px;
+  }
+  .cat-header .meta {
+    color: var(--text-tertiary);
+    font-size: 12px;
+    margin: 0;
+  }
+  .plugin-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+  }
+  .plugin-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+  }
+  .plugin-name {
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .plugin-role {
+    font-size: 11px;
+    color: var(--text-secondary);
+    background: var(--bg-secondary);
+    padding: 3px 10px;
+    border-radius: 8px;
+  }
+  .preset-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+  .preset {
+    font-size: 12px;
+    padding: 4px 10px;
+    background: var(--bg-pill);
+    border-radius: 6px;
+    cursor: default;
+    user-select: text;
+  }
+  .preset.has-desc {
+    border-bottom: 1px dotted var(--text-tertiary);
+  }
+  .preset:hover { background: var(--bg-active); }
+  .search-section {
+    margin-bottom: 16px;
+  }
+  .search-section-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+  }
+  .empty { color: var(--text-tertiary); font-style: italic; }
+  footer {
+    padding: 24px 20px;
+    text-align: center;
+    color: var(--text-tertiary);
+    font-size: 11px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>FabFilter Preset Cheatsheet</h1>
+  <div class="sub">1456 presets indexed by instrument — for Carl, mid-mix</div>
+  <div class="search-row">
+    <input type="text" id="search" placeholder="Search any preset name (try: kick, vocal plate, EDM master)…" autocomplete="off">
+    <span id="count">—</span>
+  </div>
+</header>
+
+<main>
+  <nav id="sidebar"></nav>
+  <section id="content"></section>
+</main>
+
+<footer>Data parsed from your FabFilter preset library · Hover any underlined preset for the description</footer>
+
+<script>
+let DATA = null;
+
+const sidebar = document.getElementById('sidebar');
+const content = document.getElementById('content');
+const search = document.getElementById('search');
+const countEl = document.getElementById('count');
+
+let activeCategory = null;
+let searchTerm = '';
+
+function escapeHtml(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function renderSidebar() {
+  let html = '';
+  DATA.categories.forEach(cat => {
+    const cls = (cat.key === activeCategory && !searchTerm) ? 'cat-item active' : 'cat-item';
+    html += `<div class="${cls}" data-cat="${cat.key}"><span>${escapeHtml(cat.label)}</span><span class="num">${cat.n_presets}</span></div>`;
+  });
+  sidebar.innerHTML = html;
+  sidebar.querySelectorAll('[data-cat]').forEach(el => {
+    el.addEventListener('click', () => {
+      activeCategory = el.getAttribute('data-cat');
+      searchTerm = '';
+      search.value = '';
+      render();
+    });
+  });
+}
+
+function presetPill(name) {
+  const meta = DATA.preset_meta[name];
+  const tooltip = meta ? ` title="${escapeHtml(meta)}"` : '';
+  const cls = meta ? 'preset has-desc' : 'preset';
+  return `<span class="${cls}"${tooltip}>${escapeHtml(name)}</span>`;
+}
+
+function renderCategory(cat) {
+  let html = `<div class="cat-header">
+    <h2>${escapeHtml(cat.label)}</h2>
+    <p class="hint">${escapeHtml(cat.hint)}</p>
+    <p class="meta">${cat.n_presets} presets across ${cat.n_plugins} plugins</p>
+  </div>`;
+  cat.plugins.forEach(plug => {
+    html += `<div class="plugin-card">
+      <div class="plugin-header">
+        <span class="plugin-name">${escapeHtml(plug.plugin)}</span>
+        <span class="plugin-role">${escapeHtml(plug.role)}</span>
+      </div>
+      <div class="preset-list">${plug.presets.map(presetPill).join('')}</div>
+    </div>`;
+  });
+  return html;
+}
+
+function renderSearch() {
+  const term = searchTerm.toLowerCase();
+  let html = `<div class="cat-header"><h2>Search results</h2><p class="hint">Matches across all categories</p></div>`;
+  let total = 0;
+  DATA.categories.forEach(cat => {
+    const hits = [];
+    cat.plugins.forEach(plug => {
+      const matching = plug.presets.filter(p => p.toLowerCase().includes(term));
+      if (matching.length) hits.push({ plug, matching });
+    });
+    if (!hits.length) return;
+    html += `<div class="search-section"><div class="search-section-label">${escapeHtml(cat.label)}</div>`;
+    hits.forEach(h => {
+      html += `<div class="plugin-card">
+        <div class="plugin-header">
+          <span class="plugin-name">${escapeHtml(h.plug.plugin)}</span>
+          <span class="plugin-role">${escapeHtml(h.plug.role)}</span>
+        </div>
+        <div class="preset-list">${h.matching.map(presetPill).join('')}</div>
+      </div>`;
+      total += h.matching.length;
+    });
+    html += `</div>`;
+  });
+  if (total === 0) html += `<p class="empty">No presets match "${escapeHtml(searchTerm)}".</p>`;
+  countEl.textContent = `${total} preset${total === 1 ? '' : 's'}`;
+  return html;
+}
+
+function render() {
+  if (!DATA) return;
+  if (searchTerm) {
+    content.innerHTML = renderSearch();
+  } else {
+    const cat = DATA.categories.find(c => c.key === activeCategory) || DATA.categories[0];
+    activeCategory = cat.key;
+    content.innerHTML = renderCategory(cat);
+    countEl.textContent = `${cat.n_presets} preset${cat.n_presets === 1 ? '' : 's'}`;
+  }
+  renderSidebar();
+}
+
+let searchDebounce;
+search.addEventListener('input', e => {
+  clearTimeout(searchDebounce);
+  searchDebounce = setTimeout(() => {
+    searchTerm = e.target.value.trim();
+    render();
+  }, 80);
+});
+
+fetch('data.json')
+  .then(r => r.json())
+  .then(d => {
+    DATA = d;
+    activeCategory = d.categories[0].key;
+    render();
+  })
+  .catch(err => {
+    content.innerHTML = `<p class="empty">Failed to load preset data: ${escapeHtml(err.message)}</p>`;
+  });
+</script>
+
+</body>
+</html>
