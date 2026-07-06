@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCAS Codebase Snapshot</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #34495e;
+            margin-top: 40px;
+            margin-bottom: 15px;
+            border-left: 4px solid #3498db;
+            padding-left: 10px;
+        }
+        .toc {
+            background-color: #ecf0f1;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .toc h3 {
+            margin-top: 0;
+            color: #2c3e50;
+        }
+        .toc ul {
+            columns: 2;
+            column-gap: 30px;
+        }
+        .toc li {
+            margin: 8px 0;
+        }
+        .toc a {
+            color: #3498db;
+            text-decoration: none;
+        }
+        .toc a:hover {
+            text-decoration: underline;
+        }
+        .file-section {
+            margin: 30px 0;
+            background-color: #fafafa;
+            border-left: 4px solid #27ae60;
+            padding: 15px;
+            border-radius: 4px;
+        }
+        .file-path {
+            font-weight: bold;
+            color: #27ae60;
+            font-size: 14px;
+            margin-bottom: 10px;
+            font-family: 'Courier New', monospace;
+        }
+        pre {
+            background-color: #282c34;
+            color: #abb2bf;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        .metadata {
+            font-size: 12px;
+            color: #7f8c8d;
+            margin-bottom: 10px;
+        }
+        .back-to-top {
+            display: inline-block;
+            margin-top: 15px;
+            color: #3498db;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .back-to-top:hover {
+            text-decoration: underline;
+        }
+        .summary {
+            background-color: #e8f8f5;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 20px 0;
+            border-left: 4px solid #16a085;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📦 MCAS Codebase Snapshot</h1>
+        <p><strong>Generated:</strong> 2026-07-06</p>
+        <p><strong>Repository:</strong> dbk000/mcas</p>
+        
+        <div class="summary">
+            <strong>Note:</strong> This HTML file contains the complete MCAS codebase with all source files included. Backend output files have been excluded to reduce file bloat. This snapshot is designed to be portable and easy to review offline.
+        </div>
+
+        <div class="toc">
+            <h3>📑 Table of Contents</h3>
+            <ul id="toc-list"></ul>
+        </div>
+
+        <div id="files-container"></div>
+
+        <div class="back-to-top">
+            <a href="#" onclick="window.scrollTo(0,0); return false;">↑ Back to Top</a>
+        </div>
+    </div>
+
+    <script>
+        // This will be populated with file data
+        const fileData = {
+            files: []
+        };
+        
+        // Generate TOC
+        function generateTOC() {
+            const tocList = document.getElementById('toc-list');
+            fileData.files.forEach((file, index) => {
+                const li = document.createElement('li');
+                const a = document.createElement('a');
+                a.href = `#file-${index}`;
+                a.textContent = file.path;
+                li.appendChild(a);
+                tocList.appendChild(li);
+            });
+        }
+        
+        // Render files
+        function renderFiles() {
+            const container = document.getElementById('files-container');
+            fileData.files.forEach((file, index) => {
+                const section = document.createElement('div');
+                section.className = 'file-section';
+                section.id = `file-${index}`;
+                
+                section.innerHTML = `
+                    <div class="file-path">📄 ${file.path}</div>
+                    <div class="metadata">Size: ${file.size} bytes | Type: ${file.extension}</div>
+                    <pre><code>${escapeHtml(file.content)}</code></pre>
+                    <a href="#" class="back-to-top" onclick="document.getElementById('toc-list').scrollIntoView(); return false;">↑ Back to TOC</a>
+                `;
+                
+                container.appendChild(section);
+            });
+        }
+        
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, m => map[m]);
+        }
+        
+        // Initialize when file data is ready
+        function initializeSnapshot() {
+            if (fileData.files.length > 0) {
+                generateTOC();
+                renderFiles();
+            }
+        }
+        
+        // Call init when DOM is ready
+        window.addEventListener('DOMContentLoaded', initializeSnapshot);
+    </script>
+</body>
+</html>
