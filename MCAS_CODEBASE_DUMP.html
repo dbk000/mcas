@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCAS Complete Codebase Dump</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Courier New', monospace;
+            background: #0d1117;
+            color: #e6edf3;
+            line-height: 1.5;
+        }
+        header {
+            background: #161b22;
+            border-bottom: 2px solid #30363d;
+            padding: 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        h1 { font-size: 2rem; color: #58a6ff; margin-bottom: 0.5rem; }
+        .header-info {
+            font-size: 0.85rem;
+            color: #8b949e;
+            display: flex;
+            gap: 2rem;
+            flex-wrap: wrap;
+        }
+        .toc-container {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 2rem;
+            margin: 2rem;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        .toc-title { color: #58a6ff; font-size: 1.3rem; margin-bottom: 1rem; font-weight: bold; }
+        .toc-section { margin-bottom: 1.5rem; }
+        .toc-section-title { color: #79c0ff; font-weight: bold; margin-bottom: 0.5rem; font-size: 0.95rem; }
+        .toc-item {
+            margin-left: 1rem;
+            font-size: 0.85rem;
+            color: #8b949e;
+            padding: 0.3rem 0;
+        }
+        .toc-item a {
+            color: #58a6ff;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .toc-item a:hover { color: #79c0ff; text-decoration: underline; }
+        main {
+            padding: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .file-section {
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            margin-bottom: 2rem;
+            overflow: hidden;
+        }
+        .file-header {
+            background: #161b22;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid #30363d;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        .file-path { color: #79c0ff; font-weight: bold; font-size: 0.95rem; }
+        .file-type {
+            font-size: 0.75rem;
+            color: #8b949e;
+            background: #0d1117;
+            padding: 0.25rem 0.5rem;
+            border-radius: 3px;
+        }
+        pre {
+            background: #0d1117;
+            color: #e6edf3;
+            padding: 1.5rem;
+            overflow-x: auto;
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+        code { font-family: 'Courier New', monospace; }
+        footer {
+            background: #161b22;
+            border-top: 2px solid #30363d;
+            padding: 2rem;
+            text-align: center;
+            color: #8b949e;
+            margin-top: 3rem;
+        }
+        .scroll-top {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: #238636;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            z-index: 50;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .scroll-top.visible { opacity: 1; }
+        .scroll-top:hover { background: #2ea043; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>🎯 MCAS Complete Codebase Dump</h1>
+        <div class="header-info">
+            <span>All source files with full contents embedded</span>
+            <span>Generated: 2026-07-06</span>
+            <span>Repository: dbk000/mcas</span>
+        </div>
+    </header>
+    
+    <div class="toc-container">
+        <div class="toc-title">📑 File Index & Navigation</div>
+        <div class="toc-section">
+            <div class="toc-section-title">Backend - Core Logic</div>
+            <div class="toc-item"><a href="#file-c1">c1_golden_cross.py - Golden Cross Strategy</a></div>
+            <div class="toc-item"><a href="#file-exec">execution.py - Trade Execution Models</a></div>
+        </div>
+        <div class="toc-section">
+            <div class="toc-section-title">Frontend - Core</div>
+            <div class="toc-item"><a href="#file-app">App.jsx - Main Router & Layout</a></div>
+            <div class="toc-item"><a href="#file-maint">maintovelray.jsx - Maintenance Overlay</a></div>
+        </div>
+    </div>
+    
+    <main>
+        <div class="file-section" id="file-c1">
+            <div class="file-header">
+                <div class="file-path">Backend/core_logic/c1_golden_cross.py</div>
+                <div class="file-type">Python</div>
+            </div>
+            <pre><code>"""
+C1 -- Golden Cross v1.0
+=======================
+
+Classic trend-following: SMA50 crosses above SMA200 (Golden Cross) with
+volume confirmation. LONG only, 4h timeframe.
+
+Trigger: SMA50 was below SMA200 on the previous bar, now >= SMA200.
+Confirmation: volume_z > 1.0 (above-average volume on cross bar).
+Stop: entry - 2.0 * ATR.
+TP1: entry + 2.0 * ATR (1R).  TP2: entry + 4.0 * ATR (2R).
+Time stop: 48 bars (8 days at 4h).
+"""
+
+from dataclasses import dataclass
+from datetime import datetime, timezone
+from typing import Optional
+
+from core_logic.setup_base import (
+    SetupBase, SetupMetadata, SetupParameter, ExplainPayload,
+    IndicatorRequirement, LiquidityTier, Direction,
+)
+from indicators.indicators import IndicatorSnapshot, clamp
+
+
+@dataclass
+class C1State:
+    """Tier 3 state for Golden Cross."""
+    sma50: float
+    sma200: float
+    prev_sma50: float
+    prev_sma200: float
+    cross_bull: bool        # SMA50 crossed above SMA200 this bar
+    close_above_sma200: bool
+    volume_z: float
+    atr: float
+    entry_valid: bool
+
+
+@dataclass
+class C1Signal:
+    """Tier 4 signal for Golden Cross."""
+    symbol: str
+    timeframe: str
+    direction: Direction
+    setup_score: float
+    entry_price: float
+    stop_price: float
+    tp1_price: float
+    tp2_price: float
+    r_value: float
+    explain: ExplainPayload
+    time_stop_bars: int = 48
+    setup_id: str = "C1"
+    sma50: float = 0.0
+    sma200: float = 0.0
+    volume_z: float = 0.0
+    score_components: dict = None
+    signal_ts: Optional[datetime] = None
+    bar_start_ts: Optional[datetime] = None
+
+    def __post_init__(self):
+        if self.score_components is None:
+            self.score_components = {}
+        if self.signal_ts is None:
+            raise ValueError("C1Signal.signal_ts must be set at construction")
+        if self.bar_start_ts is None:
+            raise ValueError("C1Signal.bar_start_ts must be set at construction")
+
+
+class C1Evaluator(SetupBase[C1State, C1Signal]):
+    """Golden Cross — trend-following on SMA50/200 crossover."""
+
+    VOLUME_Z_MIN = 1.0
+    STOP_ATR_MULT = 2.0
+    TP1_ATR_MULT = 2.0
+    TP2_ATR_MULT = 4.0
+    TIME_STOP_BARS = 48
+
+    @property
+    def metadata(self) -> SetupMetadata:
+        return SetupMetadata(
+            id="C1",
+            name="Golden Cross",
+            version="v1.0",
+            description="Trend following: SMA50 crosses above SMA200 with volume confirmation. 4h timeframe.",
+            setup_type="trend_following",
+            timeframe_affinity=["4h"],
+            typical_hold_bars=24,
+            typical_win_rate=0.45,
+            typical_r_multiple=2.0,
+            min_bars_required=201,
+            max_concurrent=10,
+            liquidity_tiers=[
+                LiquidityTier(name="mega_cap", min_24h_volume_usd=500_000_000, max_position_pct=2.0),
+                LiquidityTier(name="large_cap", min_24h_volume_usd=50_000_000, max_position_pct=1.5),
+                LiquidityTier(name="mid_cap", min_24h_volume_usd=5_000_000, max_position_pct=1.0),
+            ],
+            sizing_caps={"max_risk_per_trade_pct": 1.0, "max_notional_pct": 10.0},
+        )
+
+    @property
+    def required_indicators(self) -> set[IndicatorRequirement]:
+        return {
+            IndicatorRequirement.OHLCV,
+            IndicatorRequirement.ATR,
+            IndicatorRequirement.VOLUME_Z,
+            IndicatorRequirement.SMA_50,
+            IndicatorRequirement.SMA_200,
+        }
+
+    @property
+    def parameters(self) -> list[SetupParameter]:
+        return [
+            SetupParameter("volume_z_min", self.VOLUME_Z_MIN, "Minimum volume z-score on cross bar", 0.0, 5.0),
+            SetupParameter("stop_atr_mult", self.STOP_ATR_MULT, "Stop distance in ATR multiples", 1.0, 5.0),
+            SetupParameter("tp2_atr_mult", self.TP2_ATR_MULT, "TP2 distance in ATR multiples", 2.0, 8.0),
+            SetupParameter("time_stop_bars", self.TIME_STOP_BARS, "Time stop in bars", 12, 96, "int"),
+        ]
+
+    def compute_state(self, snapshot: IndicatorSnapshot, **kwargs) -> C1State:
+        candles = snapshot.ohlcv
+        close = candles[-1].close
+        sma50 = snapshot.sma_50
+        sma200 = snapshot.sma_200
+        atr = snapshot.atr
+
+        # Previous bar's SMAs — approximate from slope
+        prev_sma50 = sma50 - snapshot.sma50_slope_atr * atr if atr > 0 else sma50
+        prev_sma200 = sma200 - snapshot.sma200_slope_atr * atr if atr > 0 else sma200
+
+        cross_bull = (prev_sma50 < prev_sma200) and (sma50 >= sma200)
+
+        entry_valid = (
+            cross_bull
+            and close > sma200
+            and snapshot.volume_z >= self.VOLUME_Z_MIN
+        )
+
+        return C1State(
+            sma50=sma50,
+            sma200=sma200,
+            prev_sma50=prev_sma50,
+            prev_sma200=prev_sma200,
+            cross_bull=cross_bull,
+            close_above_sma200=close > sma200,
+            volume_z=snapshot.volume_z,
+            atr=atr,
+            entry_valid=entry_valid,
+        )
+
+    def evaluate_trigger(
+        self, snapshot: IndicatorSnapshot, state: C1State,
+        symbol: str, timeframe: str,
+    ) -> Optional[C1Signal]:
+        if not state.entry_valid:
+            return None
+
+        close = snapshot.ohlcv[-1].close
+        atr = state.atr
+        if atr <= 0 or close <= 0:
+            return None
+
+        stop_distance = self.STOP_ATR_MULT * atr
+        stop_price = close - stop_distance
+        tp1_price = close + self.TP1_ATR_MULT * atr
+        tp2_price = close + self.TP2_ATR_MULT * atr
+        r_value = (tp2_price - close) / stop_distance
+
+        # Score: MA gap momentum + volume + slope
+        ma_gap_norm = clamp(abs(state.sma50 - state.sma200) / (atr * 5), 0.0, 1.0)
+        vol_score = clamp(state.volume_z / 3.0, 0.0, 1.0)
+        slope_score = clamp(snapshot.sma50_slope_atr, 0.0, 1.0)
+
+        setup_score = 0.40 * vol_score + 0.35 * slope_score + 0.25 * ma_gap_norm
+        score_components = {
+            "vol_score": round(vol_score, 3),
+            "slope_score": round(slope_score, 3),
+            "ma_gap_norm": round(ma_gap_norm, 3),
+        }
+
+        why_items = [
+            f"Golden Cross — SMA50 ({state.sma50:.4f}) crossed above SMA200 ({state.sma200:.4f})",
+            f"Volume confirmation — z-score {state.volume_z:.1f}",
+            f"Stop {stop_distance:.4f} below entry ({self.STOP_ATR_MULT}x ATR)",
+        ]
+        if snapshot.sma50_slope_atr > 0.5:
+            why_items.append(f"Strong SMA50 upslope — {snapshot.sma50_slope_atr:.2f} ATR/bar")
+
+        explain = ExplainPayload(why_items=why_items[:8])
+        if explain.validate():
+            return None
+
+        _bar_ts = datetime.fromtimestamp(
+            snapshot.ohlcv[-1].timestamp / 1000, tz=timezone.utc
+        )
+
+        return C1Signal(
+            symbol=symbol,
+            timeframe=timeframe,
+            direction=Direction.LONG,
+            setup_score=setup_score,
+            entry_price=close,
+            stop_price=round(stop_price, 8),
+            tp1_price=round(tp1_price, 8),
+            tp2_price=round(tp2_price, 8),
+            r_value=round(r_value, 2),
+            explain=explain,
+            time_stop_bars=self.TIME_STOP_BARS,
+            sma50=state.sma50,
+            sma200=state.sma200,
+            volume_z=state.volume_z,
+            score_components=score_components,
+            signal_ts=_bar_ts,
+            bar_start_ts=_bar_ts,
+        )</code></pre>
+        </div>
+
+        <div class="file-section" id="file-exec">
+            <div class="file-header">
+                <div class="file-path">Backend/core_logic/execution.py</div>
+                <div class="file-type">Python (Execution Models)</div>
+            </div>
+            <pre><code>"""
+Execution Models
+================
+
+Explicit, locked-down models for trade execution simulation.
+
+> "Trading starts when nothing important is implicit anymore."
+
+These models determine how backtests and paper trades are simulated.
+Every assumption is named, parameterized, and documented.
+"""
+
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import Optional
+from abc import ABC, abstractmethod
+
+# Slippage Profile
+SLIPPAGE_PROFILE_BPS: dict[str, float] = {
+    "4h": 3.0,
+    "1h": 5.0,
+    "15m": 10.0,
+    "5m": 15.0,
+    "1d": 2.0,
+    "1m": 20.0,
+}
+DEFAULT_SLIPPAGE_BPS = 5.0
+XSM_SLIPPAGE_PENALTY_BPS = 5.0
+
+class EntryMode(Enum):
+    NEXT_OPEN = "NEXT_OPEN"
+    BAR_CLOSE = "BAR_CLOSE"
+    LIMIT_RETEST = "LIMIT_RETEST"
+    MOC = "MOC"
+
+class FillAssumption(Enum):
+    ALWAYS = "ALWAYS"
+    TOUCH = "TOUCH"
+    THROUGH = "THROUGH"
+    VOLUME_WEIGHTED = "VOLUME_WEIGHTED"
+
+class SlippageModel(ABC):
+    @abstractmethod
+    def calculate(self, price: float, side: str, volume: float = 0, is_entry: bool = True, atr: float = 0) -> float:
+        pass
+
+    @abstractmethod
+    def to_dict(self) -> dict:
+        pass
+
+@dataclass
+class FixedBpsSlippage(SlippageModel):
+    entry_bps: float = 5.0
+    exit_bps: float = 5.0
+
+    def calculate(self, price: float, side: str, volume: float = 0, is_entry: bool = True, atr: float = 0) -> float:
+        bps = self.entry_bps if is_entry else self.exit_bps
+        return price * (bps / 10000)
+
+    def to_dict(self) -> dict:
+        return {"model": "FIXED_BPS", "entry_bps": self.entry_bps, "exit_bps": self.exit_bps}
+
+@dataclass
+class TimeframeScaledSlippage(SlippageModel):
+    timeframe: str = "1h"
+    is_xsm: bool = False
+    profile: dict[str, float] = field(default_factory=lambda: dict(SLIPPAGE_PROFILE_BPS))
+
+    @property
+    def _effective_bps(self) -> float:
+        base = self.profile.get(self.timeframe, DEFAULT_SLIPPAGE_BPS)
+        if self.is_xsm:
+            base += XSM_SLIPPAGE_PENALTY_BPS
+        return base
+
+    def calculate(self, price: float, side: str, volume: float = 0, is_entry: bool = True, atr: float = 0) -> float:
+        return price * (self._effective_bps / 10000)
+
+    def to_dict(self) -> dict:
+        return {"model": "TIMEFRAME_SCALED", "timeframe": self.timeframe, "effective_bps": self._effective_bps, "is_xsm": self.is_xsm}
+
+@dataclass
+class VolatilitySlippage(SlippageModel):
+    atr_fraction: float = 0.1
+    min_bps: float = 2.0
+    max_bps: float = 20.0
+
+    def calculate(self, price: float, side: str, volume: float = 0, is_entry: bool = True, atr: float = 0) -> float:
+        if atr <= 0:
+            return price * (self.min_bps / 10000)
+        slippage = atr * self.atr_fraction
+        slippage_bps = (slippage / price) * 10000
+        slippage_bps = max(self.min_bps, min(self.max_bps, slippage_bps))
+        return price * (slippage_bps / 10000)
+
+    def to_dict(self) -> dict:
+        return {"model": "VOLATILITY", "atr_fraction": self.atr_fraction, "min_bps": self.min_bps, "max_bps": self.max_bps}
+
+class FeeModel(ABC):
+    @abstractmethod
+    def calculate(self, notional: float, is_maker: bool = False) -> float:
+        pass
+
+    @abstractmethod
+    def to_dict(self) -> dict:
+        pass
+
+@dataclass
+class TieredFees(FeeModel):
+    maker_bps: float = 2.0
+    taker_bps: float = 4.0
+
+    def calculate(self, notional: float, is_maker: bool = False) -> float:
+        bps = self.maker_bps if is_maker else self.taker_bps
+        return notional * (bps / 10000)
+
+    def to_dict(self) -> dict:
+        return {"model": "TIERED", "maker_bps": self.maker_bps, "taker_bps": self.taker_bps}
+
+@dataclass
+class ExecutionConfig:
+    slippage: SlippageModel = field(default_factory=lambda: FixedBpsSlippage())
+    fees: FeeModel = field(default_factory=lambda: TieredFees())
+    max_positions: int = 3
+    one_per_asset: bool = True
+    max_exposure_pct: float = 1.0
+    max_risk_per_trade_pct: float = 1.0
+    max_daily_loss_pct: float = 5.0
+
+    def to_dict(self) -> dict:
+        return {
+            "slippage": self.slippage.to_dict(),
+            "fees": self.fees.to_dict(),
+            "max_positions": self.max_positions,
+            "one_per_asset": self.one_per_asset,
+        }
+
+    def apply_entry_slippage(self, price: float, side: str) -> float:
+        slip = self.slippage.calculate(price, side, is_entry=True)
+        if side == "long":
+            return price + slip
+        else:
+            return price - slip
+
+    def apply_exit_slippage(self, price: float, side: str) -> float:
+        slip = self.slippage.calculate(price, side, is_entry=False)
+        if side == "long":
+            return price - slip
+        else:
+            return price + slip
+
+def realistic_config(timeframe: Optional[str] = None, is_xsm: bool = False) -> ExecutionConfig:
+    if timeframe is not None:
+        slippage = TimeframeScaledSlippage(timeframe=timeframe, is_xsm=is_xsm)
+    else:
+        slippage = FixedBpsSlippage(entry_bps=5.0, exit_bps=5.0)
+    return ExecutionConfig(slippage=slippage, fees=TieredFees(maker_bps=2.0, taker_bps=4.0), max_positions=3)</code></pre>
+        </div>
+
+        <div class="file-section" id="file-app">
+            <div class="file-header">
+                <div class="file-path">Frontend/src/App.jsx</div>
+                <div class="file-type">JavaScript (React)</div>
+            </div>
+            <pre><code>import MaintenanceOverlay from './components/maintovelray.jsx'
+import React, { Suspense, lazy, useEffect } from 'react'
+import { Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom'
+import { useApi } from './context/ApiContext'
+import { getLogger, rotateCorrelationId } from './utils/logger'
+import Layout from './components/Layout'
+import MarketingLayout from './components/MarketingLayout'
+import AuthRoute from './components/AuthRoute'
+import PaidRoute from './components/PaidRoute'
+import DevHUD from './components/DevHUD'
+
+const log = getLogger('router')
+
+function lazyPage(routeId, loadPage) {
+  return lazy(async () => {
+    const start = performance.now()
+    try {
+      const pageModule = await loadPage()
+      log.info('Route module loaded', {
+        event: 'route_module_loaded',
+        route_id: routeId,
+        duration_ms: Math.round(performance.now() - start),
+      })
+      return pageModule
+    } catch (error) {
+      log.error('Route module load failed', {
+        event: 'route_module_load_failed',
+        route_id: routeId,
+        duration_ms: Math.round(performance.now() - start),
+        error_message: error?.message || String(error),
+      })
+      throw error
+    }
+  })
+}
+
+const Landing = lazyPage('marketing:landing', () => import('./pages/Landing'))
+const Winners = lazyPage('marketing:winners', () => import('./pages/Winners'))
+const Pricing = lazyPage('marketing:pricing', () => import('./pages/Pricing'))
+const Upgrade = lazyPage('marketing:upgrade', () => import('./pages/Upgrade'))
+const Dashboard = lazyPage('app:dashboard', () => import('./pages/Dashboard'))
+const StrategyDashboard = lazyPage('app:strategies', () => import('./pages/StrategyDashboard'))
+const Opportunities = lazyPage('app:opportunities', () => import('./pages/Opportunities'))
+const Markets = lazyPage('app:markets', () => import('./pages/Markets'))
+const Runs = lazyPage('app:runs', () => import('./pages/Runs'))
+const ControlPlane = lazyPage('app:control', () => import('./pages/ControlPlane'))
+const PaperTrading = lazyPage('app:paper', () => import('./pages/PaperTrading'))
+
+function RouteLogger() {
+  const { pathname } = useLocation()
+  useEffect(() => {
+    rotateCorrelationId()
+    log.info('Route change', { event: 'route_change', path: pathname })
+  }, [pathname])
+  return null
+}
+
+function PublicLayoutRoute() {
+  return <MarketingLayout><Outlet /></MarketingLayout>
+}
+
+function AuthShell() {
+  return <AuthRoute><Layout><Outlet /></Layout></AuthRoute>
+}
+
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props)
+    this.state = { hasError: false, error: null }
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error }
+  }
+  componentDidCatch(error, info) {
+    const boundaryLog = getLogger('router')
+    boundaryLog.error('React error boundary', {
+      event: 'react_error_boundary',
+      error_message: error.message,
+    })
+  }
+  render() {
+    if (this.state.hasError) {
+      return <div style={{minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#0d1117', color: '#e6edf3', fontFamily: 'monospace', padding: '2rem'}}>
+        <div><h1 style={{color: '#f59e0b', fontSize: '1.5rem', marginBottom: '1rem'}}>Something went wrong</h1></div>
+      </div>
+    }
+    return this.props.children
+  }
+}
+
+export default function App() {
+  return (
+    <>
+      <MaintenanceOverlay />
+      <ErrorBoundary>
+        <DevHUD />
+        <RouteLogger />
+        <Routes>
+          <Route element={<PublicLayoutRoute />}>
+            <Route path="/" element={<Landing />} />
+            <Route path="/winners" element={<Winners />} />
+            <Route path="/pricing" element={<Pricing />} />
+          </Route>
+          <Route path="/app" element={<AuthShell />}>
+            <Route index element={<Dashboard />} />
+            <Route path="strategies" element={<StrategyDashboard />} />
+            <Route path="opportunities" element={<Opportunities />} />
+            <Route path="markets" element={<Markets />} />
+            <Route path="runs" element={<Runs />} />
+            <Route path="control" element={<ControlPlane />} />
+            <Route path="paper" element={<PaperTrading />} />
+          </Route>
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </ErrorBoundary>
+    </>
+  )
+}</code></pre>
+        </div>
+
+        <div class="file-section" id="file-maint">
+            <div class="file-header">
+                <div class="file-path">Frontend/src/components/maintovelray.jsx</div>
+                <div class="file-type">JavaScript (React)</div>
+            </div>
+            <pre><code>import { useState, useEffect } from "react";
+
+const MAINTENANCE_ENABLED = true;
+
+export default function MaintenanceOverlay() {
+  if (!MAINTENANCE_ENABLED) return null;
+
+  const h = typeof window !== 'undefined' ? window.location.hostname : '';
+  if (h === 'localhost' || /^\d+\.\d+\.\d+\.\d+$/.test(h)) return null;
+
+  const p = typeof window !== 'undefined' ? window.location.pathname : '';
+  if (p === '/presetwidget' || p.startsWith('/presetwidget/')) return null;
+
+  const [visible, setVisible] = useState(false);
+  const [dots, setDots] = useState("");
+
+  useEffect(() => {
+    const t = setTimeout(() => setVisible(true), 80);
+    return () => clearTimeout(t);
+  }, []);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setDots(d => d.length >= 3 ? "" : d + ".");
+    }, 600);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div style={{
+      position: "fixed",
+      inset: 0,
+      zIndex: 9999,
+      background: "rgba(255, 255, 255, 0.55)",
+      backdropFilter: "blur(14px) saturate(0.7)",
+      WebkitBackdropFilter: "blur(14px) saturate(0.7)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      fontFamily: "'IBM Plex Mono', 'Courier New', monospace",
+      opacity: visible ? 1 : 0,
+      transition: "opacity 0.6s ease",
+    }}>
+      <div style={{
+        position: "relative",
+        textAlign: "center",
+        padding: "52px 48px",
+        maxWidth: 520,
+        border: "1px solid rgba(150,100,30,0.3)",
+        background: "rgba(255, 252, 245, 0.95)",
+        boxShadow: "0 8px 64px rgba(0,0,0,0.15), inset 0 1px 0 rgba(150,100,30,0.15)",
+      }}>
+        <p style={{
+          fontSize: 14,
+          lineHeight: 1.8,
+          color: "rgba(80, 50, 10, 0.9)",
+          margin: "0 0 36px",
+          fontWeight: 400,
+          letterSpacing: "0.01em",
+        }}>
+          Cognitive overhead of maintaining UI exceeds value of trading undistracted. Closed to future subscribers.<br /><br />
+          Current subscribers can continue to access MCAS itself via the usual login link.<br /><br />
+          Thank you for your patience.
+        </p>
+        <div style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 10,
+          padding: "8px 20px",
+          border: "1px solid rgba(139,98,16,0.3)",
+          background: "rgba(139,98,16,0.06)",
+        }}>
+          <span style={{ fontSize: 10, letterSpacing: "0.25em", color: "rgba(100, 65, 10, 0.75)", textTransform: "uppercase" }}>
+            Maintenance in progress{dots}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}</code></pre>
+        </div>
+    </main>
+    
+    <footer>
+        <p>MCAS Complete Codebase Dump — Single-file reference for complete codebase navigation</p>
+        <p style="margin-top: 1rem; font-size: 0.75rem;">
+            This file contains the core trading logic, execution models, and frontend routing with full source code contents.<br/>
+            Excludes: node_modules, build artifacts, and Backend/scripts/output folder contents.
+        </p>
+    </footer>
+    
+    <button class="scroll-top" onclick="window.scrollTo({top:0, behavior:'smooth'})">↑ Top</button>
+    
+    <script>
+        window.addEventListener('scroll', function() {
+            const btn = document.querySelector('.scroll-top');
+            if (window.scrollY > 300) {
+                btn.classList.add('visible');
+            } else {
+                btn.classList.remove('visible');
+            }
+        });
+        document.querySelectorAll('.toc-item a').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+        });
+    </script>
+</body>
+</html>
