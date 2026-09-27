@@ -2,6 +2,10 @@
 
 Market Cognition At Scale — Crypto trading analytics with Glass Box causality proofs.
 
+## Trading lab
+
+Open `/lab-preview` for the clearly labelled sample workspace, or `/app/lab` for the live lab behind the existing session and subscription guards. Six views support linked monitor/projector windows, saved display profiles, finalized collector charts and source freshness. See [Trading lab screens](../docs/TRADING_LAB.md) for launch instructions, API contracts and current integration limits.
+
 ## Architecture: Public/Paid Split
 
 This frontend is architecturally split into two distinct zones:

@@ -18,13 +18,16 @@ export default defineConfig({
     },
   },
   fullyParallel: false,
-  reporter: [
-    ['list'],
-    ['json', { outputFile: 'test-results/results.json' }],
-  ],
+  reporter: [['list'], ['json', { outputFile: 'test-results/results.json' }]],
   use: {
     baseURL,
     headless: true,
+    launchOptions: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE
+      ? {
+          executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE,
+          args: ['--no-sandbox', '--disable-dev-shm-usage'],
+        }
+      : {},
     screenshot: 'only-on-failure',
     trace: 'retain-on-failure',
     video: 'off',

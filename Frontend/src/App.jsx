@@ -61,6 +61,7 @@ const Pipeline = lazyPage('app:pipeline', () => import('./pages/Pipeline'))
 const StrategyBuilder = lazyPage('app:strategy-builder', () => import('./pages/StrategyBuilder'))
 const DerivativesDashboard = lazyPage('app:derivatives', () => import('./pages/DerivativesDashboard'))
 const Heatmap = lazyPage('app:heatmap', () => import('./pages/Heatmap'))
+const TradingLab = lazyPage('app:lab', () => import('./pages/TradingLab'))
 
 function RouteLogger() {
   const { pathname } = useLocation()
@@ -202,6 +203,11 @@ export default function App() {
         <DevHUD />
         <RouteLogger />
         <Routes>
+          {/* Standalone wall surface. Live data retains both existing access gates. */}
+          <Route element={<RouteFamilyBoundary title="Loading trading lab" detail="Restoring the display workspace." />}>
+            <Route path="/app/lab" element={<AuthRoute><PaidRoute><TradingLab /></PaidRoute></AuthRoute>} />
+            <Route path="/lab-preview" element={<TradingLab demo />} />
+          </Route>
           {/* Public routes — no auth required */}
           <Route element={<PublicLayoutRoute />}>
             <Route
