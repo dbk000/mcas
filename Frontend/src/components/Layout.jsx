@@ -10,6 +10,7 @@ import {
   LayoutDashboard,
   Layers3,
   Menu,
+  Monitor,
   Network,
   Play,
   Settings,
@@ -35,6 +36,7 @@ const navSections = [
     label: null,
     items: [
       { name: 'Dashboard', href: '/app', icon: LayoutDashboard },
+      { name: 'Trading Lab', href: '/app/lab', icon: Monitor },
       { name: 'Opportunities', href: '/app/opportunities', icon: Target },
       { name: 'Markets', href: '/app/markets', icon: BarChart3 },
       { name: 'Strategies', href: '/app/strategies', icon: Layers3 },

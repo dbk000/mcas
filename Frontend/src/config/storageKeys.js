@@ -3,6 +3,8 @@
  * No string literals at point of use.
  */
 export const STORAGE_KEYS = {
+  TRADING_LAB: 'mcas_trading_lab_v1',
+  TRADING_LAB_SELECTION: 'mcas_trading_lab_selection_v1',
   // Session & connection (SessionContext.jsx)
   API_BASE_URL: 'mcas_api_base_url',
   LEGACY_API_CONFIG: 'mcas_api_config',
